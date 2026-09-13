@@ -496,42 +496,6 @@ public class MiogramPresenceCard extends FrameLayout {
         root.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
 
         TextView title = new TextView(context);
-        title.setText(MiogramLocale.get("Немає підключених платформ", "Нет подключенных платформ", "No Platforms Connected"));
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        title.setTypeface(AndroidUtilities.bold());
-        title.setTextColor(0xFFFFFFFF);
-        title.setGravity(Gravity.CENTER);
-        root.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
-
-        TextView subtitle = new TextView(context);
-        subtitle.setText(MiogramLocale.get(
-                "Підключіть Steam, GitHub, Discord або Spotify у налаштуваннях",
-                "Подключите Steam, GitHub, Discord или Spotify в настройках",
-                "Link Steam, GitHub, Discord or Spotify in settings"
-        ));
-        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
-        subtitle.setTextColor(0x88B0C4DE);
-        subtitle.setGravity(Gravity.CENTER);
-        root.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
-
-        TextView btnConnect = createButton(context, MiogramLocale.get("Підключити сервіси", "Подключить сервисы", "Connect Services"), 0x3366C0F4, 0xFF66C0F4);
-        btnConnect.setOnClickListener(v -> {
-            MiogramHaptic.click(v);
-            openConnectedAppsHub(context);
-        });
-        root.addView(btnConnect, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36));
-
-        return root;
-    }
-
-    // EMPTY STATE (0 platforms linked)
-    private View buildEmptyView(Context context) {
-        LinearLayout root = new LinearLayout(context);
-        root.setOrientation(LinearLayout.VERTICAL);
-        root.setGravity(Gravity.CENTER);
-        root.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
-
-        TextView title = new TextView(context);
         title.setText(isSelf
                 ? MiogramLocale.get("Немає підключених платформ", "Нет подключенных платформ", "No Platforms Connected")
                 : MiogramLocale.get("Немає підключених сервісів", "Нет подключенных сервисов", "No Connected Services"));
@@ -624,8 +588,8 @@ public class MiogramPresenceCard extends FrameLayout {
                 }
             } else if (hasMostPlayed) {
                 title.setText(Emoji.replaceEmoji(p.mostPlayedGame, title.getPaint().getFontMetricsInt(), false));
-                String favSubtitle = !TextUtils.isEmpty(p.mostPlayedGameHours)
-                        ? (MiogramLocale.get("Улюблена гра • ", "Любимая игра • ", "Favorite game • ") + p.mostPlayedGameHours + " " + MiogramLocale.get("год", "ч", "hrs"))
+                String favSubtitle = !TextUtils.isEmpty(p.mostPlayedHours)
+                        ? (MiogramLocale.get("Улюблена гра • ", "Любимая игра • ", "Favorite game • ") + p.mostPlayedHours + " " + MiogramLocale.get("год", "ч", "hrs"))
                         : MiogramLocale.get("Улюблена гра", "Любимая игра", "Favorite game");
                 subtitle.setText(favSubtitle);
 

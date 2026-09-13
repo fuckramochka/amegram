@@ -18,6 +18,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.Utilities;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -96,15 +97,18 @@ public class MiogramDiscordManager {
         return ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    public static String sanitizeUserId(String input) {
+        if (input == null) return "";
+        return input.trim().replace("@", "");
+    }
+
     public String getLinkedUserId() {
         return getPrefs().getString(KEY_DISCORD_USER_ID, "");
     }
 
     public void setLinkedUserId(String userId) {
-        if (userId != null) {
-            userId = userId.trim().replace("@", "");
-        }
-        getPrefs().edit().putString(KEY_DISCORD_USER_ID, userId != null ? userId : "").apply();
+        String clean = sanitizeUserId(userId);
+        getPrefs().edit().putString(KEY_DISCORD_USER_ID, clean).apply();
         cachedPresence = null;
         lastFetchTime = 0;
         app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);

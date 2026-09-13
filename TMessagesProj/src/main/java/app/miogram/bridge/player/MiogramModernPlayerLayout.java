@@ -300,7 +300,18 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 if (lyricsView != null) lyricsView.upgradeLyricsToAi();
             } catch (Throwable ignore) {}
         });
-        topControlsRow.addView(improveBtn, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 2, 0));
+        // Pencil button: customize player (jiggle mode & styling) in both compact & fullscreen
+        ImageView pencilBtn = new ImageView(context);
+        pencilBtn.setImageResource(R.drawable.msg_edit);
+        pencilBtn.setScaleType(ImageView.ScaleType.CENTER);
+        pencilBtn.setColorFilter(new PorterDuffColorFilter(buttonColor, PorterDuff.Mode.SRC_IN));
+        pencilBtn.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, AndroidUtilities.dp(18)));
+        pencilBtn.setContentDescription(MiogramLocale.get("Кастомізація плеєра", "Кастомизация плеера", "Customize player"));
+        pencilBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            setEditMode(!isEditMode());
+        });
+        topControlsRow.addView(pencilBtn, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 2, 0));
 
         // Right button: Expand to fullscreen (in compact) or Dismiss 'X' (in fullscreen)
         expandOrCloseBtn = new ImageView(context);
@@ -591,7 +602,6 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 }
             }
         });
-        addView(floatCustomizeBtn, LayoutHelper.createFrame(46, 46, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 14, 160));
         updateModeButtons();
         // Apply saved customization (visualizer OFF by default, centered trio, compact profile pill).
         try {

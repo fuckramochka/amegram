@@ -685,6 +685,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     public FrameLayout messageEditTextContainer;
     public FrameLayout textFieldContainer;
     public FrameLayout sendButtonContainer;
+    private app.miogram.bridge.media.MiogramMediaDownloadPill mediaDownloadPill;
     private ImageView sendOutlineView;
     public RichMessageLayout.PreviewView richDraftPreview;
     private boolean richDraftActive;
@@ -2705,6 +2706,35 @@ public class ChatActivityEnterView extends FrameLayout implements
         textFieldContainer.setClipToPadding(false);
         textFieldContainer.setPadding(0, dp(1), 0, 0);
         addView(textFieldContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.BOTTOM, 0, 1, 0, 0));
+        mediaDownloadPill = new app.miogram.bridge.media.MiogramMediaDownloadPill(
+                context,
+                resourcesProvider,
+                (mediaUrl, progressListener, callback) -> {
+                    app.miogram.bridge.media.MiogramMediaDownloader.downloadAndSend(
+                            getContext(),
+                            currentAccount,
+                            dialog_id,
+                            replyingMessageObject,
+                            mediaUrl,
+                            progressListener,
+                            callback
+                    );
+                },
+                () -> {
+                    if (messageEditText != null && !TextUtils.isEmpty(messageEditText.getText())) {
+                        String txt = messageEditText.getText().toString();
+                        app.miogram.bridge.media.MiogramMediaDownloader.MediaLinkInfo info = app.miogram.bridge.media.MiogramMediaDownloader.extractSupportedUrl(txt);
+                        if (info != null) {
+                            String updated = txt.replace(info.url, "").trim();
+                            messageEditText.setText(updated);
+                            if (!TextUtils.isEmpty(updated)) {
+                                messageEditText.setSelection(updated.length());
+                            }
+                        }
+                    }
+                }
+        );
+        textFieldContainer.addView(mediaDownloadPill, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 16, 0, 16, 0));
 
         FrameLayout frameLayout = messageEditTextContainer = new FrameLayout(context) {
             @Override
@@ -2716,12 +2746,18 @@ public class ChatActivityEnterView extends FrameLayout implements
                 } else {
                     animatorInputFieldHeight.forceFactor(height);
                 }
+                if (mediaDownloadPill != null && mediaDownloadPill.getVisibility() == VISIBLE) {
+                    mediaDownloadPill.setTranslationY(-height - dp(8));
+                }
                 checkUi_TopViewVisibility();
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
+                if (mediaDownloadPill != null && mediaDownloadPill.getVisibility() == VISIBLE) {
+                    mediaDownloadPill.setTranslationY(-getMeasuredHeight() - dp(8));
+                }
                 if (!animationParamsX.isEmpty()) {
                     for (int i = 0; i < getChildCount(); i++) {
                         View child = getChildAt(i);
@@ -6744,6 +6780,13 @@ public class ChatActivityEnterView extends FrameLayout implements
                     showRichButton(lineCount > 2 && charSequence != null && !TextUtils.isEmpty(charSequence.toString().trim()));
                 } else {
                     heightShouldBeChanged = false;
+                }
+
+                if (mediaDownloadPill != null) {
+                    mediaDownloadPill.inspectText(charSequence);
+                    if (mediaDownloadPill.getVisibility() == VISIBLE && messageEditTextContainer != null) {
+                        mediaDownloadPill.setTranslationY(-messageEditTextContainer.getHeight() - dp(8));
+                    }
                 }
 
                 if (innerTextChange == 1) {

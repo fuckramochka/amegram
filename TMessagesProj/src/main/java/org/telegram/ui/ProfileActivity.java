@@ -9931,6 +9931,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (listAdapter != null) {
             // saveScrollPosition();
             firstLayout = true;
+            loadSteamProfile();
             listAdapter.notifyDataSetChanged();
         }
         if (!parentLayout.isInPreviewMode() && blurredView != null && blurredView.getVisibility() == View.VISIBLE) {
@@ -10855,13 +10856,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
             return;
         }
-        MiogramSteamManager.getInstance().getProfile(userId, profile -> {
-            if (profile != null && !TextUtils.isEmpty(profile.steamId)) {
-                steamProfile = profile;
+        app.miogram.bridge.badge.MiogramSupabaseBridge.fetchUserPresence(userId, presence -> {
+            if (presence != null && presence.isAnyLinked()) {
                 hasSteamCard = true;
-                updateRowsIds();
-                if (listAdapter != null) {
-                    listAdapter.notifyDataSetChanged();
+                if (!TextUtils.isEmpty(presence.steamId)) {
+                    MiogramSteamManager.getInstance().resolvePublicSteam(presence.steamId, profile -> {
+                        if (profile != null) {
+                            steamProfile = profile;
+                        }
+                        updateRowsIds();
+                        if (listAdapter != null) {
+                            listAdapter.notifyDataSetChanged();
+                        }
+                    });
+                } else {
+                    updateRowsIds();
+                    if (listAdapter != null) {
+                        listAdapter.notifyDataSetChanged();
+                    }
                 }
             }
         });
@@ -11053,7 +11065,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 musicCardSectionRow = rowCount++;
             }
 
-            if (hasSteamCard && (steamProfile != null || (user != null && UserObject.isUserSelf(user)))) {
+            if (hasSteamCard) {
                 steamCardRow = rowCount++;
             }
 
@@ -15019,7 +15031,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     break;
                 case VIEW_TYPE_STEAM:
                     if (holder.itemView instanceof app.miogram.bridge.presence.MiogramPresenceCard) {
-                        ((app.miogram.bridge.presence.MiogramPresenceCard) holder.itemView).setSteamProfile(steamProfile);
+                        app.miogram.bridge.presence.MiogramPresenceCard presenceCard = (app.miogram.bridge.presence.MiogramPresenceCard) holder.itemView;
+                        TLRPC.User u = getMessagesController().getUser(userId);
+                        boolean isSelfUser = u != null && UserObject.isUserSelf(u);
+                        presenceCard.bindUser(userId, isSelfUser);
+                        if (steamProfile != null) {
+                            presenceCard.setSteamProfile(steamProfile);
+                        }
                     }
                     break;
                 case VIEW_TYPE_VERSION:

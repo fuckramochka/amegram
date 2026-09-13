@@ -63,12 +63,15 @@ public class MiogramSteamManager {
         public String gameIconUrl = "";
         public String gameHours2Weeks = "";
         public String gameHoursTotal = "";
+        public String mostPlayedGame = "";
+        public String mostPlayedGameId = "";
+        public String mostPlayedHours = "";
         public boolean isInGame = false;
         public String stateMessage = "";
         public long lastUpdated = 0;
 
         public boolean hasGame() {
-            return isInGame && !TextUtils.isEmpty(gameName);
+            return (isInGame && !TextUtils.isEmpty(gameName)) || !TextUtils.isEmpty(mostPlayedGame);
         }
     }
 
@@ -98,6 +101,7 @@ public class MiogramSteamManager {
 
     public void setBroadcastEnabled(boolean enabled) {
         getPrefs().edit().putBoolean(KEY_BROADCAST_ENABLED, enabled).apply();
+        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
     }
 
     public String getLinkedSteamId() {
@@ -108,8 +112,31 @@ public class MiogramSteamManager {
         return getLinkedSteamId();
     }
 
+    public SteamProfile getSelfProfile() {
+        long myId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+        synchronized (profileCache) {
+            SteamProfile p = profileCache.get(myId);
+            if (p != null) return p;
+        }
+        loadSelfFromCache();
+        synchronized (profileCache) {
+            return profileCache.get(myId);
+        }
+    }
+
     public void setLinkedSteamId(String steamId) {
-        getPrefs().edit().putString(KEY_SELF_STEAM_ID, steamId != null ? steamId.trim() : "").apply();
+        String clean = steamId != null ? steamId.trim() : "";
+        getPrefs().edit().putString(KEY_SELF_STEAM_ID, clean).apply();
+        if (TextUtils.isEmpty(clean)) {
+            clearSelfCache();
+            long myId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+            if (myId != 0) {
+                synchronized (profileCache) {
+                    profileCache.remove(myId);
+                }
+            }
+        }
+        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
     }
 
     public boolean isLinked() {
@@ -212,7 +239,12 @@ public class MiogramSteamManager {
                 }
 
                 if (code == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                    InputStream inStream = conn.getInputStream();
+                    String enc = conn.getHeaderField("Content-Encoding");
+                    if (enc != null && enc.toLowerCase().contains("gzip")) {
+                        inStream = new java.util.zip.GZIPInputStream(inStream);
+                    }
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(inStream, StandardCharsets.UTF_8));
                     StringBuilder xml = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -271,6 +303,29 @@ public class MiogramSteamManager {
             p.isInGame = false;
         }
 
+        // If not actively in a match, check most played games to display favorite game
+        if (!p.isInGame && xml.contains("<mostPlayedGame>")) {
+            int start = xml.indexOf("<mostPlayedGame>");
+            int end = xml.indexOf("</mostPlayedGame>", start);
+            if (start != -1 && end != -1) {
+                String sub = xml.substring(start, end);
+                p.mostPlayedGame = extractTag(sub, "gameName");
+                p.mostPlayedHours = extractTag(sub, "hoursOnRecord");
+                String gLink = extractTag(sub, "gameLink");
+                if (!TextUtils.isEmpty(gLink)) {
+                    Matcher m = Pattern.compile("app/(\\d+)").matcher(gLink);
+                    if (m.find()) {
+                        p.mostPlayedGameId = m.group(1);
+                    }
+                }
+                if (TextUtils.isEmpty(p.gameName) && !TextUtils.isEmpty(p.mostPlayedGame)) {
+                    p.gameName = p.mostPlayedGame;
+                    p.gameId = p.mostPlayedGameId;
+                    p.gameHoursTotal = p.mostPlayedHours;
+                }
+            }
+        }
+
         String customUrl = extractTag(xml, "customURL");
         if (!TextUtils.isEmpty(customUrl)) {
             p.profileUrl = "https://steamcommunity.com/id/" + customUrl;
@@ -313,52 +368,16 @@ public class MiogramSteamManager {
         // Persist locally
         saveSelfToCache(profile);
 
-        Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection conn = null;
-            try {
-                URL u = new URL(MiogramSupabaseBridge.DEFAULT_SUPABASE_URL + "/rest/v1/miogram_steam");
-                conn = (HttpURLConnection) u.openConnection();
-                conn.setRequestMethod("POST");
-                conn.setConnectTimeout(6000);
-                conn.setReadTimeout(6000);
-                conn.setDoOutput(true);
-                conn.setRequestProperty("apikey", MiogramSupabaseBridge.DEFAULT_ANON_KEY);
-                conn.setRequestProperty("Authorization", "Bearer " + MiogramSupabaseBridge.DEFAULT_ANON_KEY);
-                conn.setRequestProperty("Content-Type", "application/json");
-                conn.setRequestProperty("Prefer", "resolution=merge-duplicates");
+        // Sync via unified Cloud Presence to Supabase
+        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(userId);
 
-                JSONObject json = new JSONObject();
-                json.put("user_id", userId);
-                json.put("steam_id", profile.steamId);
-                json.put("persona_name", profile.personaName);
-                json.put("avatar_url", profile.avatarUrl);
-                json.put("profile_url", profile.profileUrl);
-                json.put("game_id", profile.gameId);
-                json.put("game_name", profile.gameName);
-                json.put("game_icon_url", profile.gameIconUrl);
-                json.put("game_hours_2weeks", profile.gameHours2Weeks);
-                json.put("is_in_game", profile.isInGame);
-                json.put("state_message", profile.stateMessage);
-
-                OutputStream os = conn.getOutputStream();
-                os.write(json.toString().getBytes(StandardCharsets.UTF_8));
-                os.flush();
-                os.close();
-
-                conn.getResponseCode();
-            } catch (Throwable t) {
-                FileLog.e("MiogramSteamManager: syncSelfToCloud failed", t);
-            } finally {
-                if (conn != null) conn.disconnect();
-            }
-            AndroidUtilities.runOnUIThread(() -> {
-                if (onDone != null) onDone.run();
-            });
-        });
+        if (onDone != null) {
+            AndroidUtilities.runOnUIThread(onDone);
+        }
     }
 
     /**
-     * Retrieves steam profile for any user from Supabase.
+     * Retrieves steam profile for any user from Supabase and live Steam XML.
      */
     public void getProfile(long userId, ProfileCallback callback) {
         if (userId == 0) {
@@ -377,64 +396,21 @@ public class MiogramSteamManager {
             }
         }
 
-        // Fetch from Supabase
-        Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection conn = null;
-            try {
-                URL u = new URL(MiogramSupabaseBridge.DEFAULT_SUPABASE_URL + "/rest/v1/miogram_steam?user_id=eq." + userId + "&select=*");
-                conn = (HttpURLConnection) u.openConnection();
-                conn.setConnectTimeout(6000);
-                conn.setReadTimeout(6000);
-                conn.setRequestProperty("apikey", MiogramSupabaseBridge.DEFAULT_ANON_KEY);
-                conn.setRequestProperty("Authorization", "Bearer " + MiogramSupabaseBridge.DEFAULT_ANON_KEY);
-
-                int code = conn.getResponseCode();
-                if (code == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-                    StringBuilder resp = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        resp.append(line);
-                    }
-                    reader.close();
-
-                    JSONArray arr = new JSONArray(resp.toString());
-                    if (arr.length() > 0) {
-                        JSONObject obj = arr.getJSONObject(0);
-                        SteamProfile p = new SteamProfile();
-                        p.userId = obj.optLong("user_id", userId);
-                        p.steamId = obj.optString("steam_id", "");
-                        p.personaName = obj.optString("persona_name", "");
-                        p.avatarUrl = obj.optString("avatar_url", "");
-                        p.profileUrl = obj.optString("profile_url", "");
-                        p.gameId = obj.optString("game_id", "");
-                        p.gameName = obj.optString("game_name", "");
-                        p.gameIconUrl = obj.optString("game_icon_url", "");
-                        p.gameHours2Weeks = obj.optString("game_hours_2weeks", "");
-                        p.isInGame = obj.optBoolean("is_in_game", false);
-                        p.stateMessage = obj.optString("state_message", "");
-                        p.lastUpdated = System.currentTimeMillis();
-
+        // Fetch user's Steam ID from Supabase presence and resolve live Steam details
+        app.miogram.bridge.badge.MiogramSupabaseBridge.fetchUserPresence(userId, cloud -> {
+            if (cloud != null && !TextUtils.isEmpty(cloud.steamId)) {
+                resolvePublicSteam(cloud.steamId, p -> {
+                    if (p != null) {
                         synchronized (profileCache) {
                             profileCache.put(userId, p);
                             lastFetchTime.put(userId, SystemClock.elapsedRealtime());
                         }
-
-                        AndroidUtilities.runOnUIThread(() -> {
-                            if (callback != null) callback.onProfileLoaded(p);
-                        });
-                        return;
                     }
-                }
-            } catch (Throwable t) {
-                FileLog.e("MiogramSteamManager: getProfile error", t);
-            } finally {
-                if (conn != null) conn.disconnect();
-            }
-
-            AndroidUtilities.runOnUIThread(() -> {
+                    if (callback != null) callback.onProfileLoaded(p);
+                });
+            } else {
                 if (callback != null) callback.onProfileLoaded(null);
-            });
+            }
         });
     }
 
@@ -484,6 +460,19 @@ public class MiogramSteamManager {
                 context.startActivity(webIntent);
             } catch (Throwable ignore) {}
         }
+    }
+
+    private void clearSelfCache() {
+        SharedPreferences.Editor ed = getPrefs().edit();
+        ed.remove("self_steam_id");
+        ed.remove("self_persona_name");
+        ed.remove("self_avatar_url");
+        ed.remove("self_game_id");
+        ed.remove("self_game_name");
+        ed.remove("self_game_icon");
+        ed.remove("self_game_hours");
+        ed.remove("self_is_in_game");
+        ed.apply();
     }
 
     private void saveSelfToCache(SteamProfile p) {

@@ -123,22 +123,33 @@ public class MiogramGitHubManager {
         return ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    public static String sanitizeUsername(String input) {
+        if (input == null) return "";
+        String s = input.trim();
+        if (s.startsWith("https://github.com/")) s = s.substring(19);
+        else if (s.startsWith("http://github.com/")) s = s.substring(18);
+        else if (s.startsWith("github.com/")) s = s.substring(11);
+        if (s.startsWith("@")) s = s.substring(1);
+        if (s.contains("?")) s = s.substring(0, s.indexOf("?"));
+        if (s.contains("#")) s = s.substring(0, s.indexOf("#"));
+        if (s.contains("/")) s = s.substring(0, s.indexOf("/"));
+        return s.trim();
+    }
+
     public String getLinkedUsername() {
         return getPrefs().getString(KEY_USERNAME, "");
     }
 
+    public GitHubUser getSelfUser() {
+        return cachedUser;
+    }
+
     public void setLinkedUsername(String username) {
-        if (username != null) {
-            username = username.trim()
-                    .replace("https://github.com/", "")
-                    .replace("http://github.com/", "")
-                    .replace("github.com/", "")
-                    .replace("@", "")
-                    .replaceAll("/.*", "");
-        }
-        getPrefs().edit().putString(KEY_USERNAME, username != null ? username : "").apply();
+        String clean = sanitizeUsername(username);
+        getPrefs().edit().putString(KEY_USERNAME, clean).apply();
         cachedUser = null;
         lastUserFetchTime = 0;
+        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
     }
 
     public boolean isLinked() {
@@ -156,6 +167,15 @@ public class MiogramGitHubManager {
         lastFetchTime = 0;
     }
 
+    private static InputStream openStream(HttpURLConnection conn) throws java.io.IOException {
+        InputStream is = conn.getInputStream();
+        String enc = conn.getHeaderField("Content-Encoding");
+        if (enc != null && enc.toLowerCase().contains("gzip")) {
+            return new java.util.zip.GZIPInputStream(is);
+        }
+        return is;
+    }
+
     /**
      * Fetches public profile and latest activity for a GitHub user.
      */
@@ -164,8 +184,7 @@ public class MiogramGitHubManager {
     }
 
     public void fetchUser(String targetUser, boolean force, UserCallback callback) {
-        String uName = !TextUtils.isEmpty(targetUser) ? targetUser.trim() : getLinkedUsername();
-        if (uName.startsWith("@")) uName = uName.substring(1);
+        String uName = !TextUtils.isEmpty(targetUser) ? sanitizeUsername(targetUser) : getLinkedUsername();
         if (TextUtils.isEmpty(uName)) {
             if (callback != null) callback.onUserLoaded(null);
             return;
@@ -191,7 +210,7 @@ public class MiogramGitHubManager {
                 conn.setReadTimeout(6000);
                 conn.setRequestProperty("User-Agent", "Miogram-App");
                 if (conn.getResponseCode() == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(openStream(conn), StandardCharsets.UTF_8));
                     StringBuilder sb = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) sb.append(line);
@@ -213,7 +232,7 @@ public class MiogramGitHubManager {
                 connEvents.setReadTimeout(6000);
                 connEvents.setRequestProperty("User-Agent", "Miogram-App");
                 if (connEvents.getResponseCode() == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connEvents.getInputStream(), StandardCharsets.UTF_8));
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(openStream(connEvents), StandardCharsets.UTF_8));
                     StringBuilder sb = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) sb.append(line);
@@ -357,18 +376,30 @@ public class MiogramGitHubManager {
     }
 
     public void openProfile(Context context) {
+        openProfile(context, getLinkedUsername());
+    }
+
+    public void openProfile(Context context, String username) {
         if (context == null) return;
+        String u = !TextUtils.isEmpty(username) ? sanitizeUsername(username) : getLinkedUsername();
+        if (TextUtils.isEmpty(u)) return;
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/" + getLinkedUsername()));
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/" + u));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
         } catch (Throwable ignore) {}
     }
 
     public void openUserRepos(Context context) {
+        openUserRepos(context, getLinkedUsername());
+    }
+
+    public void openUserRepos(Context context, String username) {
         if (context == null) return;
+        String u = !TextUtils.isEmpty(username) ? sanitizeUsername(username) : getLinkedUsername();
+        if (TextUtils.isEmpty(u)) return;
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/" + getLinkedUsername() + "?tab=repositories"));
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/" + u + "?tab=repositories"));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
         } catch (Throwable ignore) {}

@@ -58,6 +58,10 @@ public class MiogramPresenceCard extends FrameLayout {
     private final List<View> dotViews = new ArrayList<>();
     private final List<Integer> activeServices = new ArrayList<>();
 
+    private long currentUserId = 0;
+    private boolean isSelf = true;
+    private MiogramCloudPresence cloudPresence;
+
     private MiogramSteamManager.SteamProfile steamProfile;
     private MiogramGitHubManager.GitHubUser githubUser;
     private MiogramDiscordManager.DiscordPresence discordPresence;
@@ -66,14 +70,14 @@ public class MiogramPresenceCard extends FrameLayout {
         @Override
         public void onSpotifyTrackChanged(String track, String artist, boolean isPlaying) {
             AndroidUtilities.runOnUIThread(() -> {
-                refreshActiveServices();
+                if (isSelf) refreshActiveServices();
             });
         }
 
         @Override
         public void onSpotifyPlaybackChanged(boolean isPlaying) {
             AndroidUtilities.runOnUIThread(() -> {
-                refreshActiveServices();
+                if (isSelf) refreshActiveServices();
             });
         }
     };
@@ -115,8 +119,10 @@ public class MiogramPresenceCard extends FrameLayout {
         serviceTitleView.setTextColor(0xAA66C0F4);
         ScaleStateListAnimator.apply(serviceTitleView, 0.035f, 1.4f);
         serviceTitleView.setOnClickListener(v -> {
-            MiogramHaptic.click(v);
-            openConnectedAppsHub(context);
+            if (isSelf) {
+                MiogramHaptic.click(v);
+                openConnectedAppsHub(context);
+            }
         });
         headerRow.addView(serviceTitleView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
@@ -196,8 +202,10 @@ public class MiogramPresenceCard extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         MiogramSpotifyManager.getInstance().addListener(spotifyListener);
-        refreshActiveServices();
-        loadLiveData();
+        if (isSelf) {
+            refreshActiveServices();
+            loadLiveData();
+        }
     }
 
     @Override
@@ -206,13 +214,86 @@ public class MiogramPresenceCard extends FrameLayout {
         MiogramSpotifyManager.getInstance().removeListener(spotifyListener);
     }
 
+    public void bindUser(long userId, boolean isSelf) {
+        this.currentUserId = userId;
+        this.isSelf = isSelf;
+
+        if (isSelf) {
+            if (MiogramSteamManager.getInstance().isLinked()) {
+                this.steamProfile = MiogramSteamManager.getInstance().getSelfProfile();
+            }
+            this.githubUser = MiogramGitHubManager.getInstance().getSelfUser();
+            refreshActiveServices();
+            loadLiveData();
+        } else {
+            cloudPresence = MiogramCloudPresence.getPresence(userId);
+            if (cloudPresence != null) {
+                applyCloudPresence(cloudPresence);
+            } else {
+                app.miogram.bridge.badge.MiogramSupabaseBridge.fetchUserPresence(userId, presence -> {
+                    if (presence != null && presence.userId == this.currentUserId) {
+                        this.cloudPresence = presence;
+                        applyCloudPresence(presence);
+                    }
+                });
+            }
+        }
+    }
+
+    public void applyCloudPresence(MiogramCloudPresence presence) {
+        activeServices.clear();
+        if (presence != null) {
+            if (!TextUtils.isEmpty(presence.steamId)) {
+                activeServices.add(SERVICE_STEAM);
+                MiogramSteamManager.getInstance().resolvePublicSteam(presence.steamId, profile -> {
+                    this.steamProfile = profile;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            }
+            if (!TextUtils.isEmpty(presence.githubUser)) {
+                activeServices.add(SERVICE_GITHUB);
+                MiogramGitHubManager.getInstance().fetchUser(presence.githubUser, false, user -> {
+                    this.githubUser = user;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            }
+            if (!TextUtils.isEmpty(presence.discordId)) {
+                activeServices.add(SERVICE_DISCORD);
+                MiogramDiscordManager.getInstance().fetchPresence(presence.discordId, false, pres -> {
+                    this.discordPresence = pres;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            }
+            if (!TextUtils.isEmpty(presence.spotifyUser)) {
+                activeServices.add(SERVICE_SPOTIFY);
+            }
+        }
+
+        buildDots();
+        pagerAdapter.notifyDataSetChanged();
+
+        int count = activeServices.isEmpty() ? 1 : activeServices.size();
+        int cur = viewPager.getCurrentItem();
+        if (cur >= count) {
+            viewPager.setCurrentItem(Math.max(0, count - 1), false);
+        }
+        updateDotSelection(viewPager.getCurrentItem());
+    }
+
     public void openConnectedAppsHub(Context context) {
         MiogramConnectedAppsSheet sheet = new MiogramConnectedAppsSheet(context, resourcesProvider);
-        sheet.setOnAppsChangedListener(this::refreshActiveServices);
+        sheet.setOnAppsChangedListener(() -> {
+            if (isSelf) refreshActiveServices();
+        });
         sheet.show();
     }
 
     public void refreshActiveServices() {
+        if (!isSelf && cloudPresence != null) {
+            applyCloudPresence(cloudPresence);
+            return;
+        }
+
         activeServices.clear();
         if (MiogramSteamManager.getInstance().isLinked()) {
             activeServices.add(SERVICE_STEAM);
@@ -443,6 +524,50 @@ public class MiogramPresenceCard extends FrameLayout {
         return root;
     }
 
+    // EMPTY STATE (0 platforms linked)
+    private View buildEmptyView(Context context) {
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setGravity(Gravity.CENTER);
+        root.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
+
+        TextView title = new TextView(context);
+        title.setText(isSelf
+                ? MiogramLocale.get("Немає підключених платформ", "Нет подключенных платформ", "No Platforms Connected")
+                : MiogramLocale.get("Немає підключених сервісів", "Нет подключенных сервисов", "No Connected Services"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(0xFFFFFFFF);
+        title.setGravity(Gravity.CENTER);
+        root.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
+
+        TextView subtitle = new TextView(context);
+        subtitle.setText(isSelf
+                ? MiogramLocale.get(
+                        "Підключіть Steam, GitHub, Discord або Spotify у налаштуваннях",
+                        "Подключите Steam, GitHub, Discord или Spotify в настройках",
+                        "Link Steam, GitHub, Discord or Spotify in settings")
+                : MiogramLocale.get(
+                        "Користувач ще не прив'язав сторонні сервіси",
+                        "Пользователь еще не привязал сторонние сервисы",
+                        "User has not linked third-party services yet"));
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        subtitle.setTextColor(0x88B0C4DE);
+        subtitle.setGravity(Gravity.CENTER);
+        root.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, isSelf ? 12 : 4));
+
+        if (isSelf) {
+            TextView btnConnect = createButton(context, MiogramLocale.get("Підключити сервіси", "Подключить сервисы", "Connect Services"), 0x3366C0F4, 0xFF66C0F4);
+            btnConnect.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                openConnectedAppsHub(context);
+            });
+            root.addView(btnConnect, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 36));
+        }
+
+        return root;
+    }
+
     // SLIDE: Steam
     private View buildSteamView(Context context) {
         LinearLayout root = new LinearLayout(context);
@@ -450,6 +575,7 @@ public class MiogramPresenceCard extends FrameLayout {
 
         MiogramSteamManager.SteamProfile p = steamProfile;
         boolean hasGame = p != null && p.hasGame();
+        boolean hasMostPlayed = p != null && !hasGame && !TextUtils.isEmpty(p.mostPlayedGame);
 
         LinearLayout contentRow = new LinearLayout(context);
         contentRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -496,6 +622,23 @@ public class MiogramPresenceCard extends FrameLayout {
                 } else {
                     artwork.setImageResource(R.drawable.baseline_videogame_asset_16);
                 }
+            } else if (hasMostPlayed) {
+                title.setText(Emoji.replaceEmoji(p.mostPlayedGame, title.getPaint().getFontMetricsInt(), false));
+                String favSubtitle = !TextUtils.isEmpty(p.mostPlayedGameHours)
+                        ? (MiogramLocale.get("Улюблена гра • ", "Любимая игра • ", "Favorite game • ") + p.mostPlayedGameHours + " " + MiogramLocale.get("год", "ч", "hrs"))
+                        : MiogramLocale.get("Улюблена гра", "Любимая игра", "Favorite game");
+                subtitle.setText(favSubtitle);
+
+                String capsuleUrl = !TextUtils.isEmpty(p.mostPlayedGameId)
+                        ? "https://cdn.cloudflare.steamstatic.com/steam/apps/" + p.mostPlayedGameId + "/capsule_184x69.jpg"
+                        : null;
+                if (!TextUtils.isEmpty(capsuleUrl)) {
+                    artwork.setImage(ImageLocation.getForPath(capsuleUrl), "184_69", null, 0, null);
+                } else if (!TextUtils.isEmpty(p.avatarUrl)) {
+                    artwork.setImage(ImageLocation.getForPath(p.avatarUrl), "100_100", null, 0, null);
+                } else {
+                    artwork.setImageResource(R.drawable.baseline_videogame_asset_16);
+                }
             } else {
                 title.setText(p.personaName);
                 subtitle.setText(!TextUtils.isEmpty(p.stateMessage) ? p.stateMessage : MiogramLocale.get("Зараз не у грі", "Сейчас не в игре", "Not in game"));
@@ -516,16 +659,17 @@ public class MiogramPresenceCard extends FrameLayout {
         actions.setOrientation(LinearLayout.HORIZONTAL);
         root.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        if (p != null && hasGame && !TextUtils.isEmpty(p.gameId)) {
+        String launchGameId = hasGame ? p.gameId : (hasMostPlayed ? p.mostPlayedGameId : null);
+        if (!TextUtils.isEmpty(launchGameId)) {
             TextView btnPlay = createButton(context, MiogramLocale.get("Зайти в гру", "Зайти в игру", "Launch Game"), 0xFF5C7E10, 0xFFFFFFFF);
             btnPlay.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
-                MiogramSteamManager.getInstance().openGame(context, p.gameId);
+                MiogramSteamManager.getInstance().openGame(context, launchGameId);
             });
             actions.addView(btnPlay, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
         }
 
-        if (p != null && !TextUtils.isEmpty(p.steamId)) {
+        if (!isSelf && p != null && !TextUtils.isEmpty(p.steamId)) {
             TextView btnFriend = createButton(context, MiogramLocale.get("Додати в друзі", "Добавить в друзья", "Add Friend"), 0x3366C0F4, 0xFF66C0F4);
             btnFriend.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
@@ -539,11 +683,20 @@ public class MiogramPresenceCard extends FrameLayout {
             MiogramHaptic.click(v);
             if (p != null) {
                 MiogramSteamManager.getInstance().openProfile(context, p.profileUrl, p.steamId);
-            } else {
+            } else if (isSelf) {
                 openConnectedAppsHub(context);
             }
         });
-        actions.addView(btnProf, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 0, 0));
+        actions.addView(btnProf, LayoutHelper.createLinear(0, 36, 1f, 0, 0, isSelf ? 6 : 0, 0));
+
+        if (isSelf) {
+            TextView btnSettings = createButton(context, MiogramLocale.get("Налаштувати", "Настроить", "Settings"), 0x1A66C0F4, 0xFF66C0F4);
+            btnSettings.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                openConnectedAppsHub(context);
+            });
+            actions.addView(btnSettings, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 0, 0));
+        }
 
         return root;
     }
@@ -555,6 +708,9 @@ public class MiogramPresenceCard extends FrameLayout {
 
         MiogramGitHubManager gm = MiogramGitHubManager.getInstance();
         MiogramGitHubManager.GitHubUser u = githubUser;
+        String displayUsername = u != null && !TextUtils.isEmpty(u.username)
+                ? u.username
+                : (!isSelf && cloudPresence != null && !TextUtils.isEmpty(cloudPresence.githubUser) ? cloudPresence.githubUser : gm.getLinkedUsername());
 
         LinearLayout contentRow = new LinearLayout(context);
         contentRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -575,7 +731,7 @@ public class MiogramPresenceCard extends FrameLayout {
         contentRow.addView(texts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
         TextView name = new TextView(context);
-        name.setText(u != null ? u.getDisplayName() : ("@" + gm.getLinkedUsername()));
+        name.setText(u != null ? u.getDisplayName() : ("@" + displayUsername));
         name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         name.setTypeface(AndroidUtilities.bold());
         name.setTextColor(0xFFFFFFFF);
@@ -590,7 +746,7 @@ public class MiogramPresenceCard extends FrameLayout {
             String follStr = u.followers + " " + MiogramLocale.get("читачів", "читателей", "followers");
             statsText = "@" + u.username + " • " + repoStr + " • " + follStr;
         } else {
-            statsText = "@" + gm.getLinkedUsername();
+            statsText = "@" + displayUsername;
         }
         stats.setText(statsText);
         stats.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -622,24 +778,31 @@ public class MiogramPresenceCard extends FrameLayout {
         TextView btnProfile = createButton(context, MiogramLocale.get("Профіль", "Профиль", "Profile"), 0x2AFFFFFF, 0xFFFFFFFF);
         btnProfile.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            gm.openProfile(context);
+            gm.openProfile(context, displayUsername);
         });
         actions.addView(btnProfile, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
 
         TextView btnRepos = createButton(context, MiogramLocale.get("Репозиторії", "Репозитории", "Repositories"), 0x1A66C0F4, 0xFF66C0F4);
         btnRepos.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            gm.openUserRepos(context);
+            gm.openUserRepos(context, displayUsername);
         });
         actions.addView(btnRepos, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 6, 0));
 
         TextView btnRefresh = createButton(context, MiogramLocale.get("Оновити", "Обновить", "Refresh"), 0x12FFFFFF, 0xFFD2DBE3);
         btnRefresh.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            gm.fetchUser(true, user -> {
-                this.githubUser = user;
-                pagerAdapter.notifyDataSetChanged();
-            });
+            if (isSelf) {
+                gm.fetchUser(true, user -> {
+                    this.githubUser = user;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            } else {
+                gm.fetchUser(displayUsername, true, user -> {
+                    this.githubUser = user;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            }
         });
         actions.addView(btnRefresh, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 0, 0));
 
@@ -651,7 +814,11 @@ public class MiogramPresenceCard extends FrameLayout {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
 
+        MiogramDiscordManager dm = MiogramDiscordManager.getInstance();
         MiogramDiscordManager.DiscordPresence d = discordPresence;
+        String displayUid = d != null && !TextUtils.isEmpty(d.userId)
+                ? d.userId
+                : (!isSelf && cloudPresence != null && !TextUtils.isEmpty(cloudPresence.discordId) ? cloudPresence.discordId : dm.getLinkedUserId());
 
         LinearLayout contentRow = new LinearLayout(context);
         contentRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -710,24 +877,31 @@ public class MiogramPresenceCard extends FrameLayout {
         TextView btnProfile = createButton(context, MiogramLocale.get("Профіль", "Профиль", "Profile"), 0x335865F2, 0xFFFFFFFF);
         btnProfile.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            MiogramDiscordManager.getInstance().openProfile(context);
+            dm.openProfile(context, displayUid);
         });
         actions.addView(btnProfile, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
 
         TextView btnCopy = createButton(context, MiogramLocale.get("Скопіювати ID", "Скопировать ID", "Copy ID"), 0x2AFFFFFF, 0xFFD2DBE3);
         btnCopy.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            MiogramDiscordManager.getInstance().copyId(context);
+            dm.copyId(context, displayUid);
         });
         actions.addView(btnCopy, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 6, 0));
 
         TextView btnRefresh = createButton(context, MiogramLocale.get("Оновити", "Обновить", "Refresh"), 0x12FFFFFF, 0xFFD2DBE3);
         btnRefresh.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            MiogramDiscordManager.getInstance().fetchPresence(true, presence -> {
-                this.discordPresence = presence;
-                pagerAdapter.notifyDataSetChanged();
-            });
+            if (isSelf) {
+                dm.fetchPresence(true, presence -> {
+                    this.discordPresence = presence;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            } else {
+                dm.fetchPresence(displayUid, true, presence -> {
+                    this.discordPresence = presence;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            }
         });
         actions.addView(btnRefresh, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 0, 0));
 
@@ -740,9 +914,18 @@ public class MiogramPresenceCard extends FrameLayout {
         root.setOrientation(LinearLayout.VERTICAL);
 
         MiogramSpotifyManager sm = MiogramSpotifyManager.getInstance();
-        boolean playing = sm.isPlaying();
-        String track = playing ? sm.getCurrentTrack() : MiogramLocale.get("Spotify в режимі очікування", "Spotify в режиме ожидания", "Spotify in Standby");
-        String artist = playing ? sm.getCurrentArtist() : MiogramLocale.get("Увімкніть трек у додатку", "Включите трек в приложении", "Play a track in Spotify");
+        boolean playing = isSelf && sm.isPlaying();
+        String targetSpotUser = (!isSelf && cloudPresence != null) ? cloudPresence.spotifyUser : sm.getLinkedUsername();
+
+        String track;
+        String artist;
+        if (isSelf) {
+            track = playing ? sm.getCurrentTrack() : (!TextUtils.isEmpty(targetSpotUser) ? ("@" + targetSpotUser) : MiogramLocale.get("Spotify в режимі очікування", "Spotify в режиме ожидания", "Spotify in Standby"));
+            artist = playing ? sm.getCurrentArtist() : (!TextUtils.isEmpty(targetSpotUser) ? MiogramLocale.get("Акаунт підключено", "Аккаунт подключен", "Account linked") : MiogramLocale.get("Увімкніть трек у додатку", "Включите трек в приложении", "Play a track in Spotify"));
+        } else {
+            track = !TextUtils.isEmpty(targetSpotUser) ? ("@" + targetSpotUser) : "Spotify";
+            artist = MiogramLocale.get("Підключено профіль Spotify", "Подключен профиль Spotify", "Spotify profile connected");
+        }
 
         LinearLayout contentRow = new LinearLayout(context);
         contentRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -776,7 +959,7 @@ public class MiogramPresenceCard extends FrameLayout {
         texts.addView(artistView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
         // Synced lyrics line if available
-        String lyrics = sm.getCurrentLyricsLine();
+        String lyrics = isSelf ? sm.getCurrentLyricsLine() : null;
         if (playing && !TextUtils.isEmpty(lyrics)) {
             TextView lyricsView = new TextView(context);
             lyricsView.setText(lyrics);
@@ -801,14 +984,23 @@ public class MiogramPresenceCard extends FrameLayout {
             actions.addView(btnPlayTG, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
         }
 
-        TextView btnOpenSpot = createButton(context, MiogramLocale.get("Відкрити Spotify", "Открыть Spotify", "Open Spotify"), 0x2AFFFFFF, 0xFFD2DBE3);
+        if (!TextUtils.isEmpty(targetSpotUser)) {
+            TextView btnSpotProfile = createButton(context, MiogramLocale.get("Профіль", "Профиль", "Profile"), 0x2AFFFFFF, 0xFFD2DBE3);
+            btnSpotProfile.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                sm.openProfile(context, targetSpotUser);
+            });
+            actions.addView(btnSpotProfile, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 6, 0));
+        }
+
+        TextView btnOpenSpot = createButton(context, MiogramLocale.get("Відкрити Spotify", "Открыть Spotify", "Open Spotify"), playing || !TextUtils.isEmpty(targetSpotUser) ? 0x1A1DB954 : 0x2AFFFFFF, playing || !TextUtils.isEmpty(targetSpotUser) ? 0xFF1DB954 : 0xFFD2DBE3);
         btnOpenSpot.setOnClickListener(v -> {
             MiogramHaptic.click(v);
             sm.openSpotifyApp(context);
         });
-        actions.addView(btnOpenSpot, LayoutHelper.createLinear(0, 36, 1f, 0, 0, playing ? 0 : 6, 0));
+        actions.addView(btnOpenSpot, LayoutHelper.createLinear(0, 36, 1f, 0, 0, (isSelf && !playing) ? 6 : 0, 0));
 
-        if (!playing) {
+        if (isSelf && !playing) {
             TextView btnGuide = createButton(context, MiogramLocale.get("Інструкція", "Инструкция", "Setup Guide"), 0x1A1DB954, 0xFF1DB954);
             btnGuide.setOnClickListener(v -> {
                 MiogramHaptic.click(v);

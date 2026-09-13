@@ -101,9 +101,13 @@ public class MiogramDiscordManager {
     }
 
     public void setLinkedUserId(String userId) {
-        getPrefs().edit().putString(KEY_DISCORD_USER_ID, userId != null ? userId.trim() : "").apply();
+        if (userId != null) {
+            userId = userId.trim().replace("@", "");
+        }
+        getPrefs().edit().putString(KEY_DISCORD_USER_ID, userId != null ? userId : "").apply();
         cachedPresence = null;
         lastFetchTime = 0;
+        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
     }
 
     /**
@@ -114,12 +118,13 @@ public class MiogramDiscordManager {
     }
 
     public void fetchPresence(String targetUid, boolean force, PresenceCallback callback) {
-        final String uid = !TextUtils.isEmpty(targetUid) ? targetUid.trim() : getLinkedUserId();
-        if (TextUtils.isEmpty(uid)) {
+        String u = !TextUtils.isEmpty(targetUid) ? targetUid.trim().replace("@", "") : getLinkedUserId();
+        if (TextUtils.isEmpty(u)) {
             if (callback != null) callback.onPresenceLoaded(null);
             return;
         }
 
+        final String uid = u;
         long now = SystemClock.elapsedRealtime();
         if (!force && cachedPresence != null && uid.equals(cachedPresence.userId) && (now - lastFetchTime < 30000)) {
             if (callback != null) callback.onPresenceLoaded(cachedPresence);
@@ -129,15 +134,20 @@ public class MiogramDiscordManager {
         Utilities.globalQueue.postRunnable(() -> {
             HttpURLConnection conn = null;
             try {
-                URL u = new URL("https://api.lanyard.rest/v1/users/" + uid);
-                conn = (HttpURLConnection) u.openConnection();
+                URL url = new URL("https://api.lanyard.rest/v1/users/" + uid);
+                conn = (HttpURLConnection) url.openConnection();
                 conn.setConnectTimeout(6000);
                 conn.setReadTimeout(6000);
                 conn.setRequestProperty("User-Agent", "Miogram-App");
 
                 int code = conn.getResponseCode();
                 if (code == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                    InputStream is = conn.getInputStream();
+                    String enc = conn.getHeaderField("Content-Encoding");
+                    if (enc != null && enc.toLowerCase().contains("gzip")) {
+                        is = new java.util.zip.GZIPInputStream(is);
+                    }
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
                     StringBuilder resp = new StringBuilder();
                     String line;
                     while ((line = reader.readLine()) != null) {
@@ -201,8 +211,12 @@ public class MiogramDiscordManager {
     }
 
     public void openProfile(Context context) {
+        openProfile(context, getLinkedUserId());
+    }
+
+    public void openProfile(Context context, String userId) {
         if (context == null) return;
-        String uid = getLinkedUserId();
+        String uid = !TextUtils.isEmpty(userId) ? sanitizeUserId(userId) : getLinkedUserId();
         if (TextUtils.isEmpty(uid)) return;
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://discord.com/users/" + uid));
@@ -212,8 +226,12 @@ public class MiogramDiscordManager {
     }
 
     public void copyId(Context context) {
+        copyId(context, getLinkedUserId());
+    }
+
+    public void copyId(Context context, String userId) {
         if (context == null) return;
-        String uid = getLinkedUserId();
+        String uid = !TextUtils.isEmpty(userId) ? sanitizeUserId(userId) : getLinkedUserId();
         if (TextUtils.isEmpty(uid)) return;
         try {
             ClipboardManager cm = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);

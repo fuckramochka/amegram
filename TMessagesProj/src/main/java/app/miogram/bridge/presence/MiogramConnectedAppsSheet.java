@@ -199,6 +199,7 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
             btnUnlink.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
                 sm.setLinkedSteamId("");
+                app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
                 buildCards();
                 notifyChanged();
             });
@@ -339,6 +340,7 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
 
         MiogramSpotifyManager spm = MiogramSpotifyManager.getInstance();
         boolean linked = spm.isLinked();
+        String linkedUser = spm.getLinkedUsername();
 
         LinearLayout headerRow = new LinearLayout(context);
         headerRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -362,10 +364,12 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
         desc.setEllipsize(TextUtils.TruncateAt.END);
         if (spm.isPlaying()) {
             desc.setText("🟢 " + spm.getCurrentTrack() + " — " + spm.getCurrentArtist());
-        } else if (linked) {
+        } else if (!TextUtils.isEmpty(linkedUser)) {
+            desc.setText("@" + linkedUser + " • " + MiogramLocale.get("Акаунт підключено", "Аккаунт подключен", "Account linked"));
+        } else if (spm.isBridgeEnabled()) {
             desc.setText(MiogramLocale.get("Міст активний (очікування відтворення)", "Мост активен (ожидание трека)", "Bridge active (awaiting playback)"));
         } else {
-            desc.setText(MiogramLocale.get("Працює на Free та Premium через трансляцію", "Работает на Free и Premium через трансляцию", "Works on Free & Premium via Broadcast"));
+            desc.setText(MiogramLocale.get("Підключіть акаунт або увімкніть трансляцію", "Подключите аккаунт или включите трансляцию", "Link account or enable live broadcast"));
         }
         card.addView(desc, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
 
@@ -373,26 +377,51 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
         actions.setOrientation(LinearLayout.HORIZONTAL);
         card.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        TextView btnToggle = createButton(context, linked
+        TextView btnConnect = createButton(context, !TextUtils.isEmpty(linkedUser)
+                ? MiogramLocale.get("Змінити", "Изменить", "Change")
+                : MiogramLocale.get("Підключити", "Подключить", "Connect"), 0x331DB954, 0xFF1DB954);
+        btnConnect.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            spm.showLinkUserDialog(context, () -> {
+                buildCards();
+                notifyChanged();
+            });
+        });
+        actions.addView(btnConnect, LayoutHelper.createLinear(0, 34, 1.1f, 0, 0, 6, 0));
+
+        TextView btnToggle = createButton(context, spm.isBridgeEnabled()
                 ? MiogramLocale.get("Вимкнути міст", "Отключить мост", "Disable Bridge")
                 : MiogramLocale.get("Увімкнути міст", "Включить мост", "Enable Bridge"),
-                linked ? 0x22FF4B4B : 0x331DB954,
-                linked ? 0xFFFF6B6B : 0xFF1DB954);
+                spm.isBridgeEnabled() ? 0x22FF4B4B : 0x18FFFFFF,
+                spm.isBridgeEnabled() ? 0xFFFF6B6B : 0xFFD2DBE3);
         btnToggle.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            spm.setBridgeEnabled(!linked);
+            spm.setBridgeEnabled(!spm.isBridgeEnabled());
             buildCards();
             notifyChanged();
         });
-        actions.addView(btnToggle, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 6, 0));
+        actions.addView(btnToggle, LayoutHelper.createLinear(0, 34, 1f, 0, 0, linked ? 6 : 0, 0));
 
-        TextView btnGuide = createButton(context, MiogramLocale.get("Інструкція", "Инструкция", "Setup Guide"), 0x2AFFFFFF, 0xFFD2DBE3);
+        if (linked) {
+            TextView btnUnlink = createButton(context, MiogramLocale.get("Відв'язати", "Отвязать", "Unlink"), 0x22FF4B4B, 0xFFFF6B6B);
+            btnUnlink.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                spm.setLinkedUsername("");
+                spm.setBridgeEnabled(false);
+                app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
+                buildCards();
+                notifyChanged();
+            });
+            actions.addView(btnUnlink, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 6, 0));
+        }
+
+        TextView btnGuide = createButton(context, MiogramLocale.get("Гід", "Гид", "Guide"), 0x18FFFFFF, 0xFFD2DBE3);
         btnGuide.setOnClickListener(v -> {
             MiogramHaptic.click(v);
             new MiogramSpotifySheet(context, resourcesProvider).show();
             dismiss();
         });
-        actions.addView(btnGuide, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 0, 0));
+        actions.addView(btnGuide, LayoutHelper.createLinear(0, 34, 0.7f, 0, 0, 0, 0));
     }
 
     private TextView createStatusBadge(Context context, boolean active) {

@@ -357,6 +357,14 @@ public class MiogramSupabaseBridge {
                             reason = fallbackReason(false);
                         }
                         badgeCache.put(uid, new BadgeRecord(uid, badgeId, title, reason, date, true, verified, grantorId));
+
+                        String clientVersion = obj.optString("client_version", "");
+                        if (!TextUtils.isEmpty(clientVersion)) {
+                            app.miogram.bridge.presence.MiogramCloudPresence p = app.miogram.bridge.presence.MiogramCloudPresence.extractPresence(uid, clientVersion);
+                            if (p != null) {
+                                app.miogram.bridge.presence.MiogramCloudPresence.putPresence(uid, p);
+                            }
+                        }
                     }
                 }
                 if (badgeCache.get(MiogramBadgeManager.FOUNDER_USER_ID) == null) {
@@ -436,6 +444,126 @@ public class MiogramSupabaseBridge {
             if (onComplete != null) {
                 AndroidUtilities.runOnUIThread(onComplete);
             }
+        });
+    }
+
+    public static void syncPresenceToCloud(long userId, app.miogram.bridge.presence.MiogramCloudPresence presence, Runnable onComplete) {
+        if (userId <= 0 || presence == null) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        app.miogram.bridge.presence.MiogramCloudPresence.putPresence(userId, presence);
+
+        final BadgeRecord record;
+        synchronized (badgeCache) {
+            record = badgeCache.get(userId);
+        }
+        final String fBadge = record != null ? record.badgeIdString : "original";
+        final String fTitle = record != null && record.title != null ? record.title : fallbackTitle(userId == MiogramBadgeManager.FOUNDER_USER_ID);
+        final String fReason = record != null && record.obtainedReason != null ? record.obtainedReason : fallbackReason(userId == MiogramBadgeManager.FOUNDER_USER_ID);
+        final String fDate = record != null && record.obtainedAt != null ? record.obtainedAt : "2026";
+        final boolean fActive = record != null ? record.isActive : true;
+        final String encodedClientVersion = app.miogram.bridge.presence.MiogramCloudPresence.encodeClientVersion(presence);
+
+        Utilities.globalQueue.postRunnable(() -> {
+            HttpURLConnection connection = null;
+            try {
+                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?on_conflict=user_id";
+                URL url = new URL(endpoint);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Prefer", "resolution=merge-duplicates");
+
+                JSONObject body = new JSONObject();
+                body.put("user_id", userId);
+                body.put("badge_id", fBadge);
+                body.put("is_active", fActive);
+                body.put("title", fTitle);
+                body.put("obtained_reason", fReason);
+                body.put("obtained_at", fDate);
+                body.put("client_version", encodedClientVersion);
+
+                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                connection.setFixedLengthStreamingMode(outBytes.length);
+                OutputStream os = connection.getOutputStream();
+                os.write(outBytes);
+                os.flush();
+                os.close();
+
+                int code = connection.getResponseCode();
+                FileLog.d("MiogramSupabaseBridge syncPresenceToCloud status: " + code);
+            } catch (Exception e) {
+                FileLog.e("MiogramSupabaseBridge: syncPresenceToCloud error", e);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+            if (onComplete != null) {
+                AndroidUtilities.runOnUIThread(onComplete);
+            }
+        });
+    }
+
+    public static void fetchUserPresence(long userId, Utilities.Callback<app.miogram.bridge.presence.MiogramCloudPresence> callback) {
+        if (userId <= 0) {
+            if (callback != null) callback.run(null);
+            return;
+        }
+
+        app.miogram.bridge.presence.MiogramCloudPresence cached = app.miogram.bridge.presence.MiogramCloudPresence.getPresence(userId);
+        if (cached != null) {
+            if (callback != null) callback.run(cached);
+            return;
+        }
+
+        Utilities.globalQueue.postRunnable(() -> {
+            HttpURLConnection connection = null;
+            app.miogram.bridge.presence.MiogramCloudPresence presence = null;
+            try {
+                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + userId + "&select=*";
+                URL url = new URL(endpoint);
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(8000);
+                connection.setReadTimeout(8000);
+                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                connection.setRequestProperty("Accept", "application/json");
+
+                int code = connection.getResponseCode();
+                if (code >= 200 && code < 300) {
+                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null) sb.append(line);
+                    reader.close();
+
+                    JSONArray arr = new JSONArray(sb.toString());
+                    if (arr.length() > 0) {
+                        JSONObject obj = arr.getJSONObject(0);
+                        String clientVer = obj.optString("client_version", "");
+                        presence = app.miogram.bridge.presence.MiogramCloudPresence.extractPresence(userId, clientVer);
+                        if (presence != null) {
+                            app.miogram.bridge.presence.MiogramCloudPresence.putPresence(userId, presence);
+                        }
+                    }
+                }
+            } catch (Throwable t) {
+                FileLog.e("MiogramSupabaseBridge: fetchUserPresence error", t);
+            } finally {
+                if (connection != null) connection.disconnect();
+            }
+
+            final app.miogram.bridge.presence.MiogramCloudPresence res = presence;
+            AndroidUtilities.runOnUIThread(() -> {
+                if (callback != null) callback.run(res);
+            });
         });
     }
 

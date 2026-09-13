@@ -190,6 +190,39 @@ public class MiogramSpotifyManager {
     }
 
     public static final String PREF_BRIDGE_ENABLED = "spotify_bridge_enabled_v1";
+    public static final String PREF_LINKED_USERNAME = "spotify_linked_username_v1";
+
+    public static String sanitizeUsername(String input) {
+        if (input == null) return "";
+        String s = input.trim();
+        if (s.startsWith("https://open.spotify.com/user/")) s = s.substring("https://open.spotify.com/user/".length());
+        else if (s.startsWith("http://open.spotify.com/user/")) s = s.substring("http://open.spotify.com/user/".length());
+        else if (s.startsWith("open.spotify.com/user/")) s = s.substring("open.spotify.com/user/".length());
+        else if (s.startsWith("spotify:user:")) s = s.substring("spotify:user:".length());
+        if (s.startsWith("@")) s = s.substring(1);
+        if (s.contains("?")) s = s.substring(0, s.indexOf("?"));
+        if (s.contains("#")) s = s.substring(0, s.indexOf("#"));
+        if (s.contains("/")) s = s.substring(0, s.indexOf("/"));
+        return s.trim();
+    }
+
+    public String getLinkedUsername() {
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) return "";
+        return ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE)
+                .getString(PREF_LINKED_USERNAME, "");
+    }
+
+    public void setLinkedUsername(String username) {
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) return;
+        String clean = sanitizeUsername(username);
+        ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE)
+                .edit()
+                .putString(PREF_LINKED_USERNAME, clean)
+                .apply();
+        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
+    }
 
     public boolean isBridgeEnabled() {
         Context ctx = ApplicationLoader.applicationContext;
@@ -205,10 +238,66 @@ public class MiogramSpotifyManager {
                 .edit()
                 .putBoolean(PREF_BRIDGE_ENABLED, enabled)
                 .apply();
+        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
     }
 
     public boolean isLinked() {
-        return isBridgeEnabled() || isPlaying() || !TextUtils.isEmpty(currentTrack);
+        return !TextUtils.isEmpty(getLinkedUsername()) || isBridgeEnabled() || isPlaying() || !TextUtils.isEmpty(currentTrack);
+    }
+
+    public void openSpotifyLogin(Context context) {
+        if (context == null) return;
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://accounts.spotify.com/login"));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        } catch (Throwable t) {
+            FileLog.e(t);
+        }
+    }
+
+    public void openProfile(Context context, String username) {
+        if (context == null) return;
+        String u = !TextUtils.isEmpty(username) ? sanitizeUsername(username) : getLinkedUsername();
+        String url = !TextUtils.isEmpty(u) ? ("https://open.spotify.com/user/" + u) : "https://open.spotify.com";
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+        } catch (Throwable t) {
+            FileLog.e(t);
+        }
+    }
+
+    public void showLinkUserDialog(Context context, Runnable onDone) {
+        if (context == null) return;
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
+        builder.setTitle(app.miogram.bridge.MiogramLocale.get("Spotify Акаунт", "Spotify Аккаунт", "Spotify Account"));
+        builder.setMessage(app.miogram.bridge.MiogramLocale.get(
+                "Введіть ваш Spotify username або посилання на профіль (наприклад, https://open.spotify.com/user/...):",
+                "Введите ваш Spotify username или ссылку на профиль (например, https://open.spotify.com/user/...):",
+                "Enter your Spotify username or profile URL (e.g. https://open.spotify.com/user/...):"
+        ));
+        final android.widget.EditText input = new android.widget.EditText(context);
+        input.setSingleLine(true);
+        input.setText(getLinkedUsername());
+        builder.setView(input);
+
+        builder.setPositiveButton(app.miogram.bridge.MiogramLocale.get("Підключити", "Подключить", "Connect"), (dialog, which) -> {
+            String val = input.getText().toString().trim();
+            if (!TextUtils.isEmpty(val)) {
+                setLinkedUsername(val);
+                setBridgeEnabled(true);
+            }
+            if (onDone != null) onDone.run();
+        });
+
+        builder.setNeutralButton(app.miogram.bridge.MiogramLocale.get("Увійти", "Войти", "Login"), (dialog, which) -> {
+            openSpotifyLogin(context);
+        });
+
+        builder.setNegativeButton(app.miogram.bridge.MiogramLocale.get("Скасувати", "Отмена", "Cancel"), null);
+        builder.show();
     }
 
     public void addListener(SpotifyListener l) {

@@ -10835,6 +10835,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         boolean isSelf = user != null && UserObject.isUserSelf(user);
         if (isSelf) {
             hasSteamCard = true;
+            this.steamProfile = MiogramSteamManager.getInstance().getSelfProfile();
             String linkedSteamId = MiogramSteamManager.getInstance().getLinkedSteamId();
             if (!TextUtils.isEmpty(linkedSteamId) && MiogramSteamManager.getInstance().isBroadcastEnabled()) {
                 MiogramSteamManager.getInstance().resolvePublicSteam(linkedSteamId, profile -> {

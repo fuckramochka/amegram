@@ -32,6 +32,11 @@ public class MiogramCloudPresence {
     public String githubUser = "";
     public String discordId = "";
     public String spotifyUser = "";
+    public String spotifyTrack = "";
+    public String spotifyArtist = "";
+    public String spotifyAlbum = "";
+    public String spotifyArtwork = "";
+    public boolean spotifyPlaying = false;
     public long lastUpdated = 0;
 
     private static final LongSparseArray<MiogramCloudPresence> presenceCache = new LongSparseArray<>();
@@ -47,7 +52,8 @@ public class MiogramCloudPresence {
         return !TextUtils.isEmpty(steamId) ||
                 !TextUtils.isEmpty(githubUser) ||
                 !TextUtils.isEmpty(discordId) ||
-                !TextUtils.isEmpty(spotifyUser);
+                !TextUtils.isEmpty(spotifyUser) ||
+                !TextUtils.isEmpty(spotifyTrack);
     }
 
     public static void putPresence(long userId, MiogramCloudPresence presence) {
@@ -75,6 +81,11 @@ public class MiogramCloudPresence {
             if (!TextUtils.isEmpty(githubUser)) obj.put("g", githubUser);
             if (!TextUtils.isEmpty(discordId)) obj.put("d", discordId);
             if (!TextUtils.isEmpty(spotifyUser)) obj.put("sp", spotifyUser);
+            if (!TextUtils.isEmpty(spotifyTrack)) obj.put("spt", spotifyTrack);
+            if (!TextUtils.isEmpty(spotifyArtist)) obj.put("spa", spotifyArtist);
+            if (!TextUtils.isEmpty(spotifyAlbum)) obj.put("spb", spotifyAlbum);
+            if (!TextUtils.isEmpty(spotifyArtwork)) obj.put("spw", spotifyArtwork);
+            if (spotifyPlaying) obj.put("spp", true);
         } catch (Throwable t) {
             FileLog.e(t);
         }
@@ -92,6 +103,11 @@ public class MiogramCloudPresence {
         p.githubUser = obj.optString("g", obj.optString("github", ""));
         p.discordId = obj.optString("d", obj.optString("discord", ""));
         p.spotifyUser = obj.optString("sp", obj.optString("spotify", ""));
+        p.spotifyTrack = obj.optString("spt", obj.optString("spotify_track", ""));
+        p.spotifyArtist = obj.optString("spa", obj.optString("spotify_artist", ""));
+        p.spotifyAlbum = obj.optString("spb", obj.optString("spotify_album", ""));
+        p.spotifyArtwork = obj.optString("spw", obj.optString("spotify_artwork", ""));
+        p.spotifyPlaying = obj.optBoolean("spp", obj.optBoolean("spotify_playing", false));
         p.lastUpdated = System.currentTimeMillis();
         return p;
     }
@@ -149,9 +165,17 @@ public class MiogramCloudPresence {
         }
 
         if (MiogramSpotifyManager.getInstance().isLinked()) {
-            p.spotifyUser = MiogramSpotifyManager.getInstance().getLinkedUsername();
-            if (TextUtils.isEmpty(p.spotifyUser) && MiogramSpotifyManager.getInstance().isBridgeEnabled()) {
+            MiogramSpotifyManager sm = MiogramSpotifyManager.getInstance();
+            p.spotifyUser = sm.getLinkedUsername();
+            if (TextUtils.isEmpty(p.spotifyUser) && sm.isBridgeEnabled()) {
                 p.spotifyUser = "live";
+            }
+            if (sm.hasTrack()) {
+                p.spotifyTrack = sm.getCurrentTrack();
+                p.spotifyArtist = sm.getCurrentArtist();
+                p.spotifyAlbum = sm.getCurrentAlbum();
+                p.spotifyArtwork = sm.getCurrentAlbumArtUrl();
+                p.spotifyPlaying = sm.isPlaying();
             }
         }
 

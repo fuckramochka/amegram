@@ -24,6 +24,8 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -38,6 +40,17 @@ import app.miogram.bridge.badge.MiogramSupabaseBridge;
  * - Steam URI Deep-linking (steam://run/<appId>, steam://friends/add/<steamId>).
  */
 public class MiogramSteamManager {
+
+    private static class CachedProfile {
+        final SteamProfile profile;
+        final long timestamp;
+        CachedProfile(SteamProfile profile) {
+            this.profile = profile;
+            this.timestamp = SystemClock.elapsedRealtime();
+        }
+    }
+
+    private final Map<String, CachedProfile> profileQueryCache = new ConcurrentHashMap<>();
 
     private static volatile MiogramSteamManager instance;
 
@@ -178,6 +191,15 @@ public class MiogramSteamManager {
             return;
         }
 
+        // Fast In-Memory Cache Lookup for instant 0ms rendering
+        CachedProfile cached = profileQueryCache.get(clean);
+        if (cached != null && cached.profile != null) {
+            if (callback != null) callback.onProfileLoaded(cached.profile);
+            if (SystemClock.elapsedRealtime() - cached.timestamp < 120_000) {
+                return;
+            }
+        }
+
         // Friend Code (7 to 10 digits) -> convert to SteamID64
         String resolvedId64 = null;
         if (!explicitId && clean.matches("\\d{7,10}")) {
@@ -187,6 +209,16 @@ public class MiogramSteamManager {
             } catch (Throwable ignore) {}
         } else if (clean.matches("\\d{17}")) {
             resolvedId64 = clean;
+        }
+
+        if (resolvedId64 != null && cached == null) {
+            CachedProfile cachedById = profileQueryCache.get(resolvedId64);
+            if (cachedById != null && cachedById.profile != null) {
+                if (callback != null) callback.onProfileLoaded(cachedById.profile);
+                if (SystemClock.elapsedRealtime() - cachedById.timestamp < 120_000) {
+                    return;
+                }
+            }
         }
 
         final String primaryUrl;
@@ -201,6 +233,7 @@ public class MiogramSteamManager {
             secondaryUrl = "https://steamcommunity.com/profiles/" + clean + "/?xml=1";
         }
 
+        final String finalResolvedId = resolvedId64;
         Utilities.globalQueue.postRunnable(() -> {
             SteamProfile profile = fetchSteamXmlWithRedirects(primaryUrl);
             if (profile == null && secondaryUrl != null) {
@@ -208,6 +241,15 @@ public class MiogramSteamManager {
             }
 
             final SteamProfile result = profile;
+            if (result != null) {
+                profileQueryCache.put(clean, new CachedProfile(result));
+                if (!TextUtils.isEmpty(result.steamId)) {
+                    profileQueryCache.put(result.steamId, new CachedProfile(result));
+                }
+                if (finalResolvedId != null) {
+                    profileQueryCache.put(finalResolvedId, new CachedProfile(result));
+                }
+            }
             AndroidUtilities.runOnUIThread(() -> {
                 if (callback != null) callback.onProfileLoaded(result);
             });
@@ -222,10 +264,12 @@ public class MiogramSteamManager {
                 URL u = new URL(currentUrl);
                 conn = (HttpURLConnection) u.openConnection();
                 conn.setInstanceFollowRedirects(false);
-                conn.setConnectTimeout(7000);
-                conn.setReadTimeout(7000);
+                conn.setConnectTimeout(3500);
+                conn.setReadTimeout(4000);
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
                 conn.setRequestProperty("Accept", "text/xml,application/xml,*/*");
+                conn.setRequestProperty("Connection", "Keep-Alive");
+                conn.setRequestProperty("Accept-Encoding", "gzip, deflate");
 
                 int code = conn.getResponseCode();
                 if (code >= 300 && code < 400) {

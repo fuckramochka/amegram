@@ -4,17 +4,29 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.text.TextUtils;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.NotificationCenter;
+import org.telegram.messenger.Utilities;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import app.miogram.bridge.ai.tools.MioTool;
@@ -59,9 +71,12 @@ public class MiogramSpotifyManager {
     private String currentArtist = "";
     private String currentAlbum = "";
     private String currentTrackUri = "";
+    private String currentAlbumArtUrl = "";
     private long durationMs = 0;
     private long lastPositionMs = 0;
     private long lastPositionTimestamp = 0;
+
+    private final Map<String, String> artCache = new ConcurrentHashMap<>();
 
     static {
         try {
@@ -79,6 +94,7 @@ public class MiogramSpotifyManager {
                             obj.put("artist", sm.getCurrentArtist());
                             obj.put("album", sm.getCurrentAlbum());
                             obj.put("url", sm.getTrackWebUrl());
+                            obj.put("artwork", sm.getCurrentAlbumArtUrl());
                             obj.put("lyrics_line", sm.getCurrentLyricsLine());
                             if (cb != null) cb.run(obj.toString());
                         } catch (Throwable t) {
@@ -105,29 +121,100 @@ public class MiogramSpotifyManager {
         } catch (Throwable ignore) {}
     }
 
+    private String getExtraString(Intent intent, String... keys) {
+        if (intent == null || intent.getExtras() == null) return null;
+        for (String k : keys) {
+            if (intent.hasExtra(k)) {
+                Object val = intent.getExtras().get(k);
+                if (val != null) {
+                    String s = String.valueOf(val).trim();
+                    if (!s.isEmpty()) return s;
+                }
+            }
+        }
+        return null;
+    }
+
+    private Boolean getExtraBoolean(Intent intent, String... keys) {
+        if (intent == null || intent.getExtras() == null) return null;
+        for (String k : keys) {
+            if (intent.hasExtra(k)) {
+                Object val = intent.getExtras().get(k);
+                if (val instanceof Boolean) return (Boolean) val;
+                if (val instanceof Number) return ((Number) val).intValue() != 0;
+                if (val instanceof String) {
+                    String s = ((String) val).trim().toLowerCase(Locale.ROOT);
+                    if ("true".equals(s) || "1".equals(s)) return true;
+                    if ("false".equals(s) || "0".equals(s)) return false;
+                }
+            }
+        }
+        return null;
+    }
+
+    private int getExtraInt(Intent intent, int fallback, String... keys) {
+        if (intent == null || intent.getExtras() == null) return fallback;
+        for (String k : keys) {
+            if (intent.hasExtra(k)) {
+                Object val = intent.getExtras().get(k);
+                if (val instanceof Number) return ((Number) val).intValue();
+                if (val instanceof String) {
+                    try {
+                        return Integer.parseInt(((String) val).trim());
+                    } catch (Throwable ignore) {}
+                }
+            }
+        }
+        return fallback;
+    }
+
     private final BroadcastReceiver spotifyReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
             String action = intent.getAction();
 
-            if (ACTION_METADATA_CHANGED.equals(action)) {
-                String id = intent.getStringExtra("id");
-                String artist = intent.getStringExtra("artist");
-                String album = intent.getStringExtra("album");
-                String track = intent.getStringExtra("track");
-                int length = intent.getIntExtra("length", 0);
-                boolean playing = intent.getBooleanExtra("playing", false);
-                int position = intent.getIntExtra("playbackPosition", 0);
+            String id = getExtraString(intent, "id", "uri", "trackId");
+            String artist = getExtraString(intent, "artist", "artistName", "singer");
+            String album = getExtraString(intent, "album", "albumName");
+            String track = getExtraString(intent, "track", "trackName", "title", "song");
+            int length = getExtraInt(intent, (int) durationMs, "length", "duration");
+            int position = getExtraInt(intent, (int) lastPositionMs, "playbackPosition", "currentPlaybackPosition", "position");
+            Boolean playingBool = getExtraBoolean(intent, "playing", "playstate", "playState", "isPlaying");
 
-                currentTrackUri = id != null ? id : "";
-                currentArtist = artist != null ? artist : "";
-                currentAlbum = album != null ? album : "";
-                currentTrack = track != null ? track : "";
+            boolean metaUpdated = false;
+            if (!TextUtils.isEmpty(track) && !track.equals(currentTrack)) {
+                currentTrack = track;
+                metaUpdated = true;
+            }
+            if (artist != null && !artist.isEmpty() && !artist.equals(currentArtist)) {
+                currentArtist = artist;
+                metaUpdated = true;
+            }
+            if (album != null && !album.isEmpty() && !album.equals(currentAlbum)) {
+                currentAlbum = album;
+            }
+            if (id != null && !id.isEmpty()) {
+                currentTrackUri = id;
+            }
+            if (length > 0) {
                 durationMs = length;
-                isPlaying = playing;
+            }
+            if (position >= 0) {
                 lastPositionMs = position;
                 lastPositionTimestamp = SystemClock.elapsedRealtime();
+            }
+
+            if (playingBool != null) {
+                isPlaying = playingBool;
+            } else if (ACTION_METADATA_CHANGED.equals(action) && !TextUtils.isEmpty(track)) {
+                isPlaying = true;
+            }
+
+            saveStateToPrefs();
+
+            if (metaUpdated || ACTION_METADATA_CHANGED.equals(action)) {
+                fetchAlbumArt(currentTrackUri, currentArtist, currentTrack);
 
                 // Prefetch lyrics via MiogramLyricsEngine
                 if (!TextUtils.isEmpty(currentTrack)) {
@@ -135,15 +222,10 @@ public class MiogramSpotifyManager {
                 }
 
                 notifyTrackChanged();
-            } else if (ACTION_PLAYBACK_STATE_CHANGED.equals(action)) {
-                boolean playing = intent.getBooleanExtra("playing", false);
-                int position = intent.getIntExtra("playbackPosition", (int) lastPositionMs);
-
-                isPlaying = playing;
-                lastPositionMs = position;
-                lastPositionTimestamp = SystemClock.elapsedRealtime();
-
+                app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
+            } else {
                 notifyPlaybackChanged();
+                app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
             }
         }
     };
@@ -167,7 +249,34 @@ public class MiogramSpotifyManager {
         }
     }
 
+    private void loadStateFromPrefs() {
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) return;
+        SharedPreferences sp = ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE);
+        currentTrack = sp.getString("last_track", "");
+        currentArtist = sp.getString("last_artist", "");
+        currentAlbum = sp.getString("last_album", "");
+        currentTrackUri = sp.getString("last_uri", "");
+        currentAlbumArtUrl = sp.getString("last_art_url", "");
+        durationMs = sp.getLong("last_duration", 0);
+    }
+
+    private void saveStateToPrefs() {
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) return;
+        ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE)
+                .edit()
+                .putString("last_track", currentTrack)
+                .putString("last_artist", currentArtist)
+                .putString("last_album", currentAlbum)
+                .putString("last_uri", currentTrackUri)
+                .putString("last_art_url", currentAlbumArtUrl)
+                .putLong("last_duration", durationMs)
+                .apply();
+    }
+
     private MiogramSpotifyManager() {
+        loadStateFromPrefs();
         ensureRegistered(ApplicationLoader.applicationContext);
     }
 
@@ -178,6 +287,21 @@ public class MiogramSpotifyManager {
             filter.addAction(ACTION_METADATA_CHANGED);
             filter.addAction(ACTION_PLAYBACK_STATE_CHANGED);
             filter.addAction(ACTION_QUEUE_CHANGED);
+            filter.addAction("com.android.music.metachanged");
+            filter.addAction("com.android.music.playstatechanged");
+            filter.addAction("com.android.music.playbackcomplete");
+            filter.addAction("com.android.music.queuechanged");
+            filter.addAction("com.htc.music.metachanged");
+            filter.addAction("fm.last.android.metachanged");
+            filter.addAction("com.sec.android.app.music.metachanged");
+            filter.addAction("com.nullsoft.winamp.metachanged");
+            filter.addAction("com.amazon.mp3.metachanged");
+            filter.addAction("com.miui.player.metachanged");
+            filter.addAction("com.real.IMP.metachanged");
+            filter.addAction("com.sonyericsson.music.metachanged");
+            filter.addAction("com.rdio.android.metachanged");
+            filter.addAction("com.samsung.sec.android.MusicPlayer.metachanged");
+            filter.addAction("com.andrew.apollo.metachanged");
             if (android.os.Build.VERSION.SDK_INT >= 33) {
                 context.registerReceiver(spotifyReceiver, filter, Context.RECEIVER_EXPORTED);
             } else {
@@ -359,6 +483,10 @@ public class MiogramSpotifyManager {
         return isPlaying && !TextUtils.isEmpty(currentTrack);
     }
 
+    public boolean hasTrack() {
+        return !TextUtils.isEmpty(currentTrack);
+    }
+
     public String getCurrentTrack() {
         return currentTrack;
     }
@@ -373,6 +501,118 @@ public class MiogramSpotifyManager {
 
     public String getCurrentTrackUri() {
         return currentTrackUri;
+    }
+
+    public String getCurrentAlbumArtUrl() {
+        return currentAlbumArtUrl;
+    }
+
+    public static String extractTrackId(String uri) {
+        if (TextUtils.isEmpty(uri)) return null;
+        if (uri.startsWith("spotify:track:")) {
+            return uri.substring("spotify:track:".length());
+        }
+        if (uri.contains("open.spotify.com/track/")) {
+            String sub = uri.substring(uri.indexOf("open.spotify.com/track/") + "open.spotify.com/track/".length());
+            if (sub.contains("?")) sub = sub.substring(0, sub.indexOf("?"));
+            if (sub.contains("/")) sub = sub.substring(0, sub.indexOf("/"));
+            return sub;
+        }
+        return null;
+    }
+
+    public void fetchAlbumArt(String trackUri, String artist, String track) {
+        if (TextUtils.isEmpty(trackUri) && (TextUtils.isEmpty(artist) || TextUtils.isEmpty(track))) return;
+
+        final String cacheKey = (!TextUtils.isEmpty(trackUri) ? trackUri : (artist + ":" + track)).toLowerCase(Locale.ROOT);
+        String cached = artCache.get(cacheKey);
+        if (!TextUtils.isEmpty(cached)) {
+            currentAlbumArtUrl = cached;
+            saveStateToPrefs();
+            notifyTrackChanged();
+            return;
+        }
+
+        Utilities.globalQueue.postRunnable(() -> {
+            String artUrl = null;
+            String trackId = extractTrackId(trackUri);
+            if (!TextUtils.isEmpty(trackId)) {
+                artUrl = fetchSpotifyOEmbedThumbnail(trackId);
+            }
+
+            if (TextUtils.isEmpty(artUrl) && !TextUtils.isEmpty(track)) {
+                artUrl = fetchItunesArtwork(artist, track);
+            }
+
+            if (!TextUtils.isEmpty(artUrl)) {
+                artCache.put(cacheKey, artUrl);
+                final String finalUrl = artUrl;
+                AndroidUtilities.runOnUIThread(() -> {
+                    currentAlbumArtUrl = finalUrl;
+                    saveStateToPrefs();
+                    notifyTrackChanged();
+                    app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
+                });
+            }
+        });
+    }
+
+    private String fetchSpotifyOEmbedThumbnail(String trackId) {
+        HttpURLConnection conn = null;
+        try {
+            URL u = new URL("https://open.spotify.com/oembed?url=https://open.spotify.com/track/" + trackId);
+            conn = (HttpURLConnection) u.openConnection();
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            conn.setRequestProperty("User-Agent", "Miogram/1.0 (Android)");
+            if (conn.getResponseCode() == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                StringBuilder sb = new StringBuilder();
+                String l;
+                while ((l = reader.readLine()) != null) sb.append(l);
+                reader.close();
+                JSONObject obj = new JSONObject(sb.toString());
+                return obj.optString("thumbnail_url", null);
+            }
+        } catch (Throwable t) {
+            FileLog.e(t);
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+        return null;
+    }
+
+    private String fetchItunesArtwork(String artist, String track) {
+        HttpURLConnection conn = null;
+        try {
+            String query = (artist != null && !artist.isEmpty() ? artist + " " : "") + track;
+            URL u = new URL("https://itunes.apple.com/search?term=" + URLEncoder.encode(query, "UTF-8") + "&entity=song&limit=1");
+            conn = (HttpURLConnection) u.openConnection();
+            conn.setConnectTimeout(4000);
+            conn.setReadTimeout(4000);
+            conn.setRequestProperty("User-Agent", "Miogram/1.0 (Android)");
+            if (conn.getResponseCode() == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                StringBuilder sb = new StringBuilder();
+                String l;
+                while ((l = reader.readLine()) != null) sb.append(l);
+                reader.close();
+                JSONObject obj = new JSONObject(sb.toString());
+                JSONArray results = obj.optJSONArray("results");
+                if (results != null && results.length() > 0) {
+                    JSONObject first = results.getJSONObject(0);
+                    String art = first.optString("artworkUrl100", null);
+                    if (art != null) {
+                        return art.replace("100x100bb", "600x600bb");
+                    }
+                }
+            }
+        } catch (Throwable t) {
+            FileLog.e(t);
+        } finally {
+            if (conn != null) conn.disconnect();
+        }
+        return null;
     }
 
     public String getTrackWebUrl() {

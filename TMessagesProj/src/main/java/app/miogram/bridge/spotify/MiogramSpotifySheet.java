@@ -18,10 +18,12 @@ import android.widget.Toast;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ImageLocation;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ScaleStateListAnimator;
 
@@ -287,6 +289,7 @@ public class MiogramSpotifySheet extends BottomSheet {
 
     private void updateStatusCardAppearance() {
         Context context = getContext();
+        boolean hasTrack = spotifyManager.hasTrack();
         boolean isPlaying = spotifyManager.isPlaying();
 
         statusCard.removeAllViews();
@@ -296,6 +299,9 @@ public class MiogramSpotifySheet extends BottomSheet {
         if (isPlaying) {
             cardBg.setColor(ColorUtils.setAlphaComponent(SPOTIFY_GREEN, 30));
             cardBg.setStroke(AndroidUtilities.dp(1.5f), ColorUtils.setAlphaComponent(SPOTIFY_GREEN, 120));
+        } else if (hasTrack) {
+            cardBg.setColor(0x18FFFFFF);
+            cardBg.setStroke(AndroidUtilities.dp(1), 0x33FFFFFF);
         } else {
             cardBg.setColor(0x18FFFFFF);
             cardBg.setStroke(AndroidUtilities.dp(1), 0x28FFFFFF);
@@ -313,19 +319,44 @@ public class MiogramSpotifySheet extends BottomSheet {
         if (isPlaying) {
             statusIndicator.setText(MiogramLocale.get("🟢 ЗАРАЗ ГРАЄ В SPOTIFY", "🟢 СЕЙЧАС ИГРАЕТ В SPOTIFY", "🟢 NOW PLAYING IN SPOTIFY"));
             statusIndicator.setTextColor(SPOTIFY_GREEN);
+        } else if (hasTrack) {
+            statusIndicator.setText(MiogramLocale.get("⏸ ПРИЗУПИНЕНО В SPOTIFY", "⏸ ПРИОСТАНОВЛЕНО В SPOTIFY", "⏸ PAUSED IN SPOTIFY"));
+            statusIndicator.setTextColor(0xFF8FB0C6);
         } else {
             statusIndicator.setText(MiogramLocale.get("⚪ SPOTIFY НЕ ТРАНСЛЮЄ МУЗИКУ", "⚪ SPOTIFY НЕ ТРАНСЛИРУЕТ МУЗЫКУ", "⚪ NO ACTIVE SPOTIFY BROADCAST"));
             statusIndicator.setTextColor(subTextColor);
         }
-        statusCard.addView(statusIndicator, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+        statusCard.addView(statusIndicator, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
-        if (isPlaying) {
+        if (hasTrack) {
+            LinearLayout mediaRow = new LinearLayout(context);
+            mediaRow.setOrientation(LinearLayout.HORIZONTAL);
+            mediaRow.setGravity(Gravity.CENTER_VERTICAL);
+            statusCard.addView(mediaRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+
+            BackupImageView artView = new BackupImageView(context);
+            artView.setClipToOutline(true);
+            artView.setRoundRadius(AndroidUtilities.dp(10));
+            String artUrl = spotifyManager.getCurrentAlbumArtUrl();
+            if (!TextUtils.isEmpty(artUrl)) {
+                artView.setImage(ImageLocation.getForPath(artUrl), "100_100", null, 0, null);
+            } else {
+                artView.setImageResource(R.drawable.msg_media);
+            }
+            mediaRow.addView(artView, LayoutHelper.createLinear(54, 54, 0, 0, 12, 0));
+
+            LinearLayout textCol = new LinearLayout(context);
+            textCol.setOrientation(LinearLayout.VERTICAL);
+            mediaRow.addView(textCol, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
+
             trackTitleView = new TextView(context);
             trackTitleView.setText(spotifyManager.getCurrentTrack());
-            trackTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+            trackTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
             trackTitleView.setTypeface(AndroidUtilities.bold());
             trackTitleView.setTextColor(textColor);
-            statusCard.addView(trackTitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 2));
+            trackTitleView.setSingleLine(true);
+            trackTitleView.setEllipsize(TextUtils.TruncateAt.END);
+            textCol.addView(trackTitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 2));
 
             trackArtistView = new TextView(context);
             String artistAndAlbum = spotifyManager.getCurrentArtist();
@@ -333,12 +364,14 @@ public class MiogramSpotifySheet extends BottomSheet {
                 artistAndAlbum += " — " + spotifyManager.getCurrentAlbum();
             }
             trackArtistView.setText(artistAndAlbum);
-            trackArtistView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
+            trackArtistView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
             trackArtistView.setTextColor(subTextColor);
-            statusCard.addView(trackArtistView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+            trackArtistView.setSingleLine(true);
+            trackArtistView.setEllipsize(TextUtils.TruncateAt.END);
+            textCol.addView(trackArtistView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             String lyricsLine = spotifyManager.getCurrentLyricsLine();
-            if (!TextUtils.isEmpty(lyricsLine)) {
+            if (isPlaying && !TextUtils.isEmpty(lyricsLine)) {
                 lyricsPreviewView = new TextView(context);
                 lyricsPreviewView.setText("“" + lyricsLine + "”");
                 lyricsPreviewView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
@@ -354,16 +387,59 @@ public class MiogramSpotifySheet extends BottomSheet {
             LinearLayout buttonRow = new LinearLayout(context);
             buttonRow.setOrientation(LinearLayout.HORIZONTAL);
 
+            TextView tgPlayBtn = new TextView(context);
+            tgPlayBtn.setText(MiogramLocale.get("Грати в TG", "Играть в TG", "Play in TG"));
+            tgPlayBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            tgPlayBtn.setTextColor(0xFFFFFFFF);
+            tgPlayBtn.setTypeface(AndroidUtilities.bold());
+            tgPlayBtn.setGravity(Gravity.CENTER);
+            GradientDrawable tgBg = new GradientDrawable();
+            tgBg.setColor(SPOTIFY_GREEN);
+            tgBg.setCornerRadius(AndroidUtilities.dp(12));
+            tgPlayBtn.setBackground(tgBg);
+            tgPlayBtn.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(8), AndroidUtilities.dp(10), AndroidUtilities.dp(8));
+            ScaleStateListAnimator.apply(tgPlayBtn, 0.035f, 1.4f);
+            tgPlayBtn.setOnClickListener(v -> {
+                MiogramHaptic.tap(v);
+                spotifyManager.checkAutoTransfer(context, org.telegram.messenger.UserConfig.selectedAccount);
+            });
+            buttonRow.addView(tgPlayBtn, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1.1f));
+
+            View spacer1 = new View(context);
+            buttonRow.addView(spacer1, LayoutHelper.createLinear(8, 1));
+
+            TextView openBtn = new TextView(context);
+            openBtn.setText(MiogramLocale.get("Spotify", "Spotify", "Spotify"));
+            openBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            openBtn.setTextColor(textColor);
+            openBtn.setTypeface(AndroidUtilities.bold());
+            openBtn.setGravity(Gravity.CENTER);
+            GradientDrawable openBg = new GradientDrawable();
+            openBg.setColor(0x22FFFFFF);
+            openBg.setCornerRadius(AndroidUtilities.dp(12));
+            openBtn.setBackground(openBg);
+            openBtn.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(8), AndroidUtilities.dp(10), AndroidUtilities.dp(8));
+            ScaleStateListAnimator.apply(openBtn, 0.035f, 1.4f);
+            openBtn.setOnClickListener(v -> {
+                MiogramHaptic.tap(v);
+                spotifyManager.openInSpotify(context);
+            });
+            buttonRow.addView(openBtn, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+            View spacer2 = new View(context);
+            buttonRow.addView(spacer2, LayoutHelper.createLinear(8, 1));
+
             TextView copyLinkBtn = new TextView(context);
-            copyLinkBtn.setText(MiogramLocale.get("Копіювати посилання", "Копировать ссылку", "Copy Link"));
+            copyLinkBtn.setText(MiogramLocale.get("Лінк", "Линк", "Copy"));
             copyLinkBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             copyLinkBtn.setTextColor(textColor);
             copyLinkBtn.setGravity(Gravity.CENTER);
             GradientDrawable copyBg = new GradientDrawable();
-            copyBg.setColor(0x22FFFFFF);
+            copyBg.setColor(0x18FFFFFF);
             copyBg.setCornerRadius(AndroidUtilities.dp(12));
             copyLinkBtn.setBackground(copyBg);
-            copyLinkBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
+            copyLinkBtn.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(8), AndroidUtilities.dp(10), AndroidUtilities.dp(8));
+            ScaleStateListAnimator.apply(copyLinkBtn, 0.035f, 1.4f);
             copyLinkBtn.setOnClickListener(v -> {
                 MiogramHaptic.tap(v);
                 String url = spotifyManager.getTrackWebUrl();
@@ -375,27 +451,7 @@ public class MiogramSpotifySheet extends BottomSheet {
                     }
                 }
             });
-            buttonRow.addView(copyLinkBtn, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
-
-            View spacer = new View(context);
-            buttonRow.addView(spacer, LayoutHelper.createLinear(8, 1));
-
-            TextView openBtn = new TextView(context);
-            openBtn.setText(MiogramLocale.get("Відкрити трек", "Открыть трек", "Open Track"));
-            openBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            openBtn.setTextColor(0xFFFFFFFF);
-            openBtn.setTypeface(AndroidUtilities.bold());
-            openBtn.setGravity(Gravity.CENTER);
-            GradientDrawable openBg = new GradientDrawable();
-            openBg.setColor(SPOTIFY_GREEN);
-            openBg.setCornerRadius(AndroidUtilities.dp(12));
-            openBtn.setBackground(openBg);
-            openBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
-            openBtn.setOnClickListener(v -> {
-                MiogramHaptic.tap(v);
-                spotifyManager.openInSpotify(context);
-            });
-            buttonRow.addView(openBtn, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
+            buttonRow.addView(copyLinkBtn, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 0.9f));
 
             statusCard.addView(buttonRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         } else {

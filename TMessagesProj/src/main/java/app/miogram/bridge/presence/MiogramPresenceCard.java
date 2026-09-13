@@ -245,9 +245,21 @@ public class MiogramPresenceCard extends FrameLayout {
         if (presence != null) {
             if (!TextUtils.isEmpty(presence.steamId)) {
                 activeServices.add(SERVICE_STEAM);
+                if (!TextUtils.isEmpty(presence.steamName) || !TextUtils.isEmpty(presence.steamGame)) {
+                    MiogramSteamManager.SteamProfile fastProfile = new MiogramSteamManager.SteamProfile();
+                    fastProfile.steamId = presence.steamId;
+                    fastProfile.personaName = !TextUtils.isEmpty(presence.steamName) ? presence.steamName : "Steam Player";
+                    fastProfile.avatarUrl = presence.steamAvatar;
+                    fastProfile.gameName = presence.steamGame;
+                    fastProfile.gameId = presence.steamGameId;
+                    fastProfile.inGame = !TextUtils.isEmpty(presence.steamGame);
+                    this.steamProfile = fastProfile;
+                }
                 MiogramSteamManager.getInstance().resolvePublicSteam(presence.steamId, profile -> {
-                    this.steamProfile = profile;
-                    pagerAdapter.notifyDataSetChanged();
+                    if (profile != null) {
+                        this.steamProfile = profile;
+                        pagerAdapter.notifyDataSetChanged();
+                    }
                 });
             }
             if (!TextUtils.isEmpty(presence.githubUser)) {
@@ -264,7 +276,7 @@ public class MiogramPresenceCard extends FrameLayout {
                     pagerAdapter.notifyDataSetChanged();
                 });
             }
-            if (!TextUtils.isEmpty(presence.spotifyUser)) {
+            if (!TextUtils.isEmpty(presence.spotifyUser) || !TextUtils.isEmpty(presence.spotifyTrack)) {
                 activeServices.add(SERVICE_SPOTIFY);
             }
         }
@@ -878,17 +890,40 @@ public class MiogramPresenceCard extends FrameLayout {
         root.setOrientation(LinearLayout.VERTICAL);
 
         MiogramSpotifyManager sm = MiogramSpotifyManager.getInstance();
-        boolean playing = isSelf && sm.isPlaying();
         String targetSpotUser = (!isSelf && cloudPresence != null) ? cloudPresence.spotifyUser : sm.getLinkedUsername();
 
         String track;
         String artist;
+        String artUrl;
+        boolean hasTrack;
+        boolean isPlaying;
+
         if (isSelf) {
-            track = playing ? sm.getCurrentTrack() : (!TextUtils.isEmpty(targetSpotUser) ? ("@" + targetSpotUser) : MiogramLocale.get("Spotify в режимі очікування", "Spotify в режиме ожидания", "Spotify in Standby"));
-            artist = playing ? sm.getCurrentArtist() : (!TextUtils.isEmpty(targetSpotUser) ? MiogramLocale.get("Акаунт підключено", "Аккаунт подключен", "Account linked") : MiogramLocale.get("Увімкніть трек у додатку", "Включите трек в приложении", "Play a track in Spotify"));
+            hasTrack = sm.hasTrack();
+            isPlaying = sm.isPlaying();
+            if (hasTrack) {
+                track = sm.getCurrentTrack();
+                String baseArtist = sm.getCurrentArtist();
+                artist = isPlaying ? baseArtist : (!TextUtils.isEmpty(baseArtist) ? baseArtist + " • " + MiogramLocale.get("Пауза", "Пауза", "Paused") : MiogramLocale.get("Пауза", "Пауза", "Paused"));
+            } else {
+                track = (!TextUtils.isEmpty(targetSpotUser) && !targetSpotUser.equals("live")) ? ("@" + targetSpotUser) : "Spotify";
+                artist = !TextUtils.isEmpty(targetSpotUser) ? MiogramLocale.get("Акаунт підключено", "Аккаунт подключен", "Account linked") : MiogramLocale.get("Увімкніть трансляцію в Spotify", "Включите трансляцию в Spotify", "Enable broadcast in Spotify");
+            }
+            artUrl = sm.getCurrentAlbumArtUrl();
         } else {
-            track = !TextUtils.isEmpty(targetSpotUser) ? ("@" + targetSpotUser) : "Spotify";
-            artist = MiogramLocale.get("Підключено профіль Spotify", "Подключен профиль Spotify", "Spotify profile connected");
+            boolean remoteHasTrack = cloudPresence != null && !TextUtils.isEmpty(cloudPresence.spotifyTrack);
+            hasTrack = remoteHasTrack;
+            isPlaying = cloudPresence != null && cloudPresence.spotifyPlaying;
+            if (remoteHasTrack) {
+                track = cloudPresence.spotifyTrack;
+                String baseArtist = cloudPresence.spotifyArtist;
+                artist = isPlaying ? baseArtist : (!TextUtils.isEmpty(baseArtist) ? baseArtist + " • " + MiogramLocale.get("Пауза", "Пауза", "Paused") : MiogramLocale.get("Пауза", "Пауза", "Paused"));
+                artUrl = cloudPresence.spotifyArtwork;
+            } else {
+                track = (!TextUtils.isEmpty(targetSpotUser) && !targetSpotUser.equals("live")) ? ("@" + targetSpotUser) : "Spotify";
+                artist = MiogramLocale.get("Підключено профіль Spotify", "Подключен профиль Spotify", "Spotify profile connected");
+                artUrl = null;
+            }
         }
 
         LinearLayout contentRow = new LinearLayout(context);
@@ -897,8 +932,13 @@ public class MiogramPresenceCard extends FrameLayout {
         root.addView(contentRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
 
         BackupImageView artwork = new BackupImageView(context);
+        artwork.setClipToOutline(true);
         artwork.setRoundRadius(AndroidUtilities.dp(10));
-        artwork.setImageResource(R.drawable.msg_media);
+        if (!TextUtils.isEmpty(artUrl)) {
+            artwork.setImage(ImageLocation.getForPath(artUrl), "100_100", null, 0, null);
+        } else {
+            artwork.setImageResource(R.drawable.msg_media);
+        }
         contentRow.addView(artwork, LayoutHelper.createLinear(48, 48, 0, 0, 12, 0));
 
         LinearLayout texts = new LinearLayout(context);
@@ -924,7 +964,7 @@ public class MiogramPresenceCard extends FrameLayout {
 
         // Synced lyrics line if available
         String lyrics = isSelf ? sm.getCurrentLyricsLine() : null;
-        if (playing && !TextUtils.isEmpty(lyrics)) {
+        if (hasTrack && isPlaying && !TextUtils.isEmpty(lyrics)) {
             TextView lyricsView = new TextView(context);
             lyricsView.setText(lyrics);
             lyricsView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
@@ -939,16 +979,41 @@ public class MiogramPresenceCard extends FrameLayout {
         actions.setOrientation(LinearLayout.HORIZONTAL);
         root.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        if (playing) {
+        final String trackToFind = track;
+        final String artistToFind = (isSelf ? sm.getCurrentArtist() : (cloudPresence != null ? cloudPresence.spotifyArtist : ""));
+
+        if (hasTrack) {
             TextView btnPlayTG = createButton(context, MiogramLocale.get("Грати в Telegram", "Играть в Telegram", "Play in Telegram"), 0xFF1DB954, 0xFFFFFFFF);
             btnPlayTG.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
-                sm.checkAutoTransfer(context, UserConfig.selectedAccount);
+                if (isSelf) {
+                    sm.checkAutoTransfer(context, UserConfig.selectedAccount);
+                } else {
+                    String query = (!TextUtils.isEmpty(artistToFind) ? artistToFind + " " : "") + trackToFind;
+                    app.miogram.bridge.music.MiogramMusicSearchEngine.searchAll(query, UserConfig.selectedAccount, new app.miogram.bridge.music.MiogramMusicSearchEngine.SearchCallback() {
+                        @Override
+                        public void onResults(java.util.List<app.miogram.bridge.music.MiogramMusicTrack> tracks, boolean isFinal) {
+                            if (tracks != null && !tracks.isEmpty()) {
+                                for (app.miogram.bridge.music.MiogramMusicTrack t : tracks) {
+                                    if (t != null && t.telegramMessage != null) {
+                                        AndroidUtilities.runOnUIThread(() -> {
+                                            org.telegram.messenger.MediaController.getInstance().playMessage(t.telegramMessage);
+                                        });
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void onError(String error) {}
+                    });
+                }
             });
             actions.addView(btnPlayTG, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
         }
 
-        if (!TextUtils.isEmpty(targetSpotUser)) {
+        if (!TextUtils.isEmpty(targetSpotUser) && !targetSpotUser.equals("live")) {
             TextView btnSpotProfile = createButton(context, MiogramLocale.get("Профіль", "Профиль", "Profile"), 0x2AFFFFFF, 0xFFD2DBE3);
             btnSpotProfile.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
@@ -957,14 +1022,27 @@ public class MiogramPresenceCard extends FrameLayout {
             actions.addView(btnSpotProfile, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 6, 0));
         }
 
-        TextView btnOpenSpot = createButton(context, MiogramLocale.get("Відкрити Spotify", "Открыть Spotify", "Open Spotify"), playing || !TextUtils.isEmpty(targetSpotUser) ? 0x1A1DB954 : 0x2AFFFFFF, playing || !TextUtils.isEmpty(targetSpotUser) ? 0xFF1DB954 : 0xFFD2DBE3);
+        TextView btnOpenSpot = createButton(context, MiogramLocale.get("Відкрити Spotify", "Открыть Spotify", "Open Spotify"), hasTrack ? 0x1A1DB954 : 0x2AFFFFFF, hasTrack ? 0xFF1DB954 : 0xFFD2DBE3);
         btnOpenSpot.setOnClickListener(v -> {
             MiogramHaptic.click(v);
-            sm.openSpotifyApp(context);
+            if (isSelf) {
+                if (sm.hasTrack()) {
+                    sm.openInSpotify(context);
+                } else {
+                    sm.openSpotifyApp(context);
+                }
+            } else {
+                if (hasTrack) {
+                    String query = (!TextUtils.isEmpty(artistToFind) ? artistToFind + " " : "") + trackToFind;
+                    MiogramSpotifyManager.openSpotifySearch(context, query);
+                } else {
+                    sm.openProfile(context, targetSpotUser);
+                }
+            }
         });
-        actions.addView(btnOpenSpot, LayoutHelper.createLinear(0, 36, 1f, 0, 0, (isSelf && !playing) ? 6 : 0, 0));
+        actions.addView(btnOpenSpot, LayoutHelper.createLinear(0, 36, 1f, 0, 0, (isSelf && !hasTrack) ? 6 : 0, 0));
 
-        if (isSelf && !playing) {
+        if (isSelf && !hasTrack) {
             TextView btnGuide = createButton(context, MiogramLocale.get("Інструкція", "Инструкция", "Setup Guide"), 0x1A1DB954, 0xFF1DB954);
             btnGuide.setOnClickListener(v -> {
                 MiogramHaptic.click(v);

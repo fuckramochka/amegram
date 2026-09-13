@@ -27,6 +27,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
@@ -327,7 +328,10 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
 
         builder.setPositiveButton(MiogramLocale.get("Додати", "Добавить", "Add"), (dialog, which) -> {
             String address = addressInput.getText().toString().trim();
-            int port = Utilities.parseInt(portInput.getText().toString().trim());
+            int port = 443;
+            try {
+                port = Utilities.parseInt(portInput.getText().toString().trim());
+            } catch (Exception ignored) {}
             String secret = secretInput.getText().toString().trim();
             String sni = sniInput.getText().toString().trim();
 

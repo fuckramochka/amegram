@@ -105,7 +105,7 @@ public class MiogramMediaDownloadPill extends FrameLayout {
         badgeIconHolder.setBackground(badgeBg);
 
         badgeIcon = new ImageView(context);
-        badgeIcon.setImageResource(R.drawable.media_doc_video);
+        badgeIcon.setImageResource(R.drawable.msg_video);
         badgeIcon.setScaleType(ImageView.ScaleType.CENTER);
         badgeIcon.setColorFilter(new PorterDuffColorFilter(accentColor, PorterDuff.Mode.SRC_IN));
         badgeIconHolder.addView(badgeIcon, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
@@ -221,7 +221,7 @@ public class MiogramMediaDownloadPill extends FrameLayout {
         } else {
             titleView.setText(MiogramLocale.get("Надіслати як відео 🎬", "Отправить как видео 🎬", "Send as video 🎬"));
             subtitleView.setText(info.platformName + MiogramLocale.get(" • Без водяного знаку у високій якості", " • Без водяного знака в высоком качестве", " • HD no-watermark"));
-            badgeIcon.setImageResource(R.drawable.media_doc_video);
+            badgeIcon.setImageResource(R.drawable.msg_video);
         }
 
         progressBar.setVisibility(View.GONE);

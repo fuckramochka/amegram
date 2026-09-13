@@ -81,6 +81,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     private TextView kangelSelectBtn;
     private View dotAme;
     private View dotKAngel;
+    private TextView tabAme;
+    private TextView tabKAngel;
 
     private TextView statDay;
     private TextView statFollowers;
@@ -231,11 +233,41 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     }
 
     private int getCardSlideWidth() {
-        int w = AndroidUtilities.displaySize != null ? AndroidUtilities.displaySize.x : 0;
+        int w = 0;
+        if (heroCarouselScroll != null && heroCarouselScroll.getWidth() > 0) {
+            w = heroCarouselScroll.getWidth();
+        } else if (chatMessagesLayout != null && chatMessagesLayout.getWidth() > 0) {
+            w = chatMessagesLayout.getWidth();
+        } else if (fragmentView != null && fragmentView.getWidth() > 0) {
+            w = fragmentView.getWidth() - AndroidUtilities.dp(20);
+        } else if (AndroidUtilities.displaySize != null && AndroidUtilities.displaySize.x > 0) {
+            w = AndroidUtilities.displaySize.x - AndroidUtilities.dp(20);
+        }
         if (w <= 0) {
             w = 1080;
         }
-        return Math.max(AndroidUtilities.dp(290), w - AndroidUtilities.dp(36));
+        // heroCarouselLayout has 16dp horizontal padding (8dp left + 8dp right)
+        // Keep card bounds strictly inside container to avoid overflow on all screens/tablets
+        int maxSafe = Math.min(w - AndroidUtilities.dp(24), AndroidUtilities.dp(360));
+        return Math.max(AndroidUtilities.dp(260), maxSafe);
+    }
+
+    private void updateCardWidths() {
+        int w = getCardSlideWidth();
+        if (ameSlideCard != null) {
+            ViewGroup.LayoutParams lp = ameSlideCard.getLayoutParams();
+            if (lp != null && lp.width != w) {
+                lp.width = w;
+                ameSlideCard.setLayoutParams(lp);
+            }
+        }
+        if (kangelSlideCard != null) {
+            ViewGroup.LayoutParams lp = kangelSlideCard.getLayoutParams();
+            if (lp != null && lp.width != w) {
+                lp.width = w;
+                kangelSlideCard.setLayoutParams(lp);
+            }
+        }
     }
 
     private void buildHeroCard(Context context, LinearLayout parent) {
@@ -245,6 +277,38 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         heroCard.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(4));
         LinearLayout.LayoutParams cardLp = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4);
         parent.addView(heroCard, cardLp);
+
+        // Top Segmented Character Switcher Bar
+        LinearLayout switcherBar = new LinearLayout(context);
+        switcherBar.setOrientation(LinearLayout.HORIZONTAL);
+        switcherBar.setGravity(Gravity.CENTER);
+        switcherBar.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_windowBackgroundWhite)));
+        switcherBar.setPadding(AndroidUtilities.dp(3), AndroidUtilities.dp(3), AndroidUtilities.dp(3), AndroidUtilities.dp(3));
+        heroCard.addView(switcherBar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 32, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
+
+        tabAme = new TextView(context);
+        tabAme.setText("໒꒱ Ame-chan");
+        tabAme.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        tabAme.setTypeface(AndroidUtilities.bold());
+        tabAme.setGravity(Gravity.CENTER);
+        tabAme.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+        switcherBar.addView(tabAme, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+        tabAme.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            switchCompanion(true);
+        });
+
+        tabKAngel = new TextView(context);
+        tabKAngel.setText("✧ KAngel †");
+        tabKAngel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        tabKAngel.setTypeface(AndroidUtilities.bold());
+        tabKAngel.setGravity(Gravity.CENTER);
+        tabKAngel.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+        switcherBar.addView(tabKAngel, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, 4, 0, 0, 0));
+        tabKAngel.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            switchCompanion(false);
+        });
 
         // 1. Horizontal Scroll Slides Carousel
         heroCarouselScroll = new HorizontalScrollView(context);
@@ -267,7 +331,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         LinearLayout dotsLayout = new LinearLayout(context);
         dotsLayout.setOrientation(LinearLayout.HORIZONTAL);
         dotsLayout.setGravity(Gravity.CENTER);
-        dotsLayout.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(2));
+        dotsLayout.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(2));
         heroCard.addView(dotsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         boolean isAme = MiogramCompanionPrefs.isAmeActive();
@@ -292,6 +356,12 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                 heroCarouselScroll.postDelayed(this::snapCarouselToNearestPage, 120);
             }
             return false;
+        });
+
+        heroCard.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (right - left != oldRight - oldLeft) {
+                updateCardWidths();
+            }
         });
 
         updateCarouselVisuals(isAme);
@@ -320,12 +390,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         name.setTypeface(AndroidUtilities.bold());
         name.setTextColor(0xFFFF70A6);
+        name.setSingleLine(true);
+        name.setEllipsize(TextUtils.TruncateAt.END);
         titles.addView(name);
 
         TextView sub = new TextView(context);
         sub.setText(MiogramLocale.get("Нервова отаку-вайфу • DARK ROOM", "Нервная отаку-вайфу • DARK ROOM", "Nervous otaku waifu • DARK ROOM"));
         sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         sub.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        sub.setSingleLine(true);
+        sub.setEllipsize(TextUtils.TruncateAt.END);
         titles.addView(sub);
 
         TextView model = new TextView(context);
@@ -335,7 +409,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         model.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         model.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_windowBackgroundGray)));
         model.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(2), AndroidUtilities.dp(6), AndroidUtilities.dp(2));
-        headerRow.addView(model, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        model.setSingleLine(true);
+        headerRow.addView(model, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 6, 0, 0, 0));
 
         // Middle Row: Sprite + Speech Bubble
         LinearLayout middleRow = new LinearLayout(context);
@@ -346,7 +421,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         ameSlideAvatar = new ImageView(context);
         ameSlideAvatar.setScaleType(ImageView.ScaleType.FIT_CENTER);
         ameSlideAvatar.setImageResource(R.drawable.miogram_ai_ame_neutral);
-        middleRow.addView(ameSlideAvatar, LayoutHelper.createLinear(80, 60));
+        middleRow.addView(ameSlideAvatar, LayoutHelper.createLinear(64, 56));
 
         ameSpeechBubble = new TextView(context);
         ameSpeechBubble.setText(MiogramLocale.get("«Дякую, П-тян! ♡ Тепер я тільки твоя назавжди!»", "«Спасибо, Пи-тян! ♡ Теперь я только твоя навсегда!»", "\"Thank you, P-chan! ♡ Now I am yours forever!\""));
@@ -374,8 +449,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         statStress = createStatChip(context, "STR " + MiogramCompanionPrefs.getStress() + "%", 0xFFE84393);
         statsBar.addView(statStress, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
 
-        statAffection = createStatChip(context, "LOVE ♡ " + MiogramCompanionPrefs.getAffection() + "%", 0xFFFF70A6);
-        statsBar.addView(statAffection, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.2f, 0, 0, 3, 0));
+        statAffection = createStatChip(context, "LOVE " + MiogramCompanionPrefs.getAffection() + "%", 0xFFFF70A6);
+        statsBar.addView(statAffection, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f, 0, 0, 3, 0));
 
         statDarkness = createStatChip(context, "DARK " + MiogramCompanionPrefs.getDarkness() + "%", 0xFF636E72);
         statsBar.addView(statDarkness, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
@@ -420,12 +495,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         name.setTypeface(AndroidUtilities.bold());
         name.setTextColor(0xFF00B4D8);
+        name.setSingleLine(true);
+        name.setEllipsize(TextUtils.TruncateAt.END);
         titles.addView(name);
 
         TextView sub = new TextView(context);
         sub.setText(MiogramLocale.get("Інтернет-Ангел №1 • † 昇天 ✧ BLESSING †", "Интернет-Ангел №1 • † 昇天 ✧ BLESSING †", "Internet Angel #1 • † 昇天 ✧ BLESSING †"));
         sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         sub.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        sub.setSingleLine(true);
+        sub.setEllipsize(TextUtils.TruncateAt.END);
         titles.addView(sub);
 
         TextView model = new TextView(context);
@@ -435,7 +514,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         model.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         model.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), Theme.getColor(Theme.key_windowBackgroundGray)));
         model.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(2), AndroidUtilities.dp(6), AndroidUtilities.dp(2));
-        headerRow.addView(model, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        model.setSingleLine(true);
+        headerRow.addView(model, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 6, 0, 0, 0));
 
         // Middle Row: Sprite + Speech Bubble
         LinearLayout middleRow = new LinearLayout(context);
@@ -446,7 +526,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         kangelSlideAvatar = new ImageView(context);
         kangelSlideAvatar.setScaleType(ImageView.ScaleType.FIT_CENTER);
         kangelSlideAvatar.setImageResource(R.drawable.miogram_ai_kangel_neutral);
-        middleRow.addView(kangelSlideAvatar, LayoutHelper.createLinear(80, 60));
+        middleRow.addView(kangelSlideAvatar, LayoutHelper.createLinear(64, 56));
 
         kangelSpeechBubble = new TextView(context);
         kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Полетимо у стратосферу разом, любий отаку! ✧»", "«† BLESSING † Полетим в стратосферу вместе, милый отаку! ✧»", "\"† BLESSING † Let's fly into the stratosphere together, dear otaku! ✧\""));
@@ -472,13 +552,13 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         statsBar.addView(statDay2, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
 
         statFollowers = createStatChip(context, "FOL 1.3M", 0xFF00B4D8);
-        statsBar.addView(statFollowers, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.2f, 0, 0, 3, 0));
+        statsBar.addView(statFollowers, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f, 0, 0, 3, 0));
 
         TextView statHype = createStatChip(context, "HYPE 98%", 0xFFE84393);
         statsBar.addView(statHype, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
 
-        TextView statBlessing = createStatChip(context, "BLESSING †", 0xFFFFD700);
-        statsBar.addView(statBlessing, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.2f));
+        TextView statBlessing = createStatChip(context, "BLESS †", 0xFFFFD700);
+        statsBar.addView(statBlessing, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f));
 
         // Bottom Select / Active Button
         kangelSelectBtn = new TextView(context);
@@ -550,6 +630,14 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             }
             dotKAngel.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), !isAme ? 0xFF00B4D8 : 0x44888888));
         }
+        if (tabAme != null) {
+            tabAme.setTextColor(isAme ? 0xFFFFFFFF : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            tabAme.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), isAme ? 0xFFFF70A6 : 0x00000000));
+        }
+        if (tabKAngel != null) {
+            tabKAngel.setTextColor(!isAme ? 0xFFFFFFFF : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            tabKAngel.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), !isAme ? 0xFF00B4D8 : 0x00000000));
+        }
     }
 
     private Drawable createCompanionSlideDrawable(boolean active, int accentColor) {
@@ -569,13 +657,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     private TextView createStatChip(Context context, String text, int color) {
         TextView chip = new TextView(context);
         chip.setText(text);
-        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
+        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
         chip.setTypeface(AndroidUtilities.bold());
         chip.setTextColor(color);
         chip.setGravity(Gravity.CENTER);
+        chip.setSingleLine(true);
+        chip.setMaxLines(1);
+        chip.setEllipsize(TextUtils.TruncateAt.END);
         int bg = Color.argb(0x22, Color.red(color), Color.green(color), Color.blue(color));
         chip.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), bg));
-        chip.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(3), AndroidUtilities.dp(4), AndroidUtilities.dp(3));
+        chip.setPadding(AndroidUtilities.dp(2), AndroidUtilities.dp(3), AndroidUtilities.dp(2), AndroidUtilities.dp(3));
         return chip;
     }
 

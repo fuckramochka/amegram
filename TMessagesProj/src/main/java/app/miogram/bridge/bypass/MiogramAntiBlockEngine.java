@@ -45,9 +45,21 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
     private static final String PREFS_NAME = "miogram_bypass";
 
     // TSPU throttling detection thresholds
-    private static final long THROTTLE_DETECTION_TIMEOUT_MS = 5000L; // 5 seconds stuck connecting directly
-    private static final long PROXY_STUCK_TIMEOUT_MS = 8000L; // 8 seconds stuck connecting to proxy
+    public static final long DEFAULT_DETECTION_TIMEOUT_MS = 20000L; // 20 seconds stuck connecting directly
+    private static final long PROXY_STUCK_TIMEOUT_MS = 10000L; // 10 seconds stuck connecting to proxy
     private static final long MAX_ACCEPTABLE_PING_MS = 2500L;
+
+    // Direct Telegram DC probes for deep diagnostic check
+    public static final String[][] TELEGRAM_CORE_DCS = {
+            {"DC2 (Amsterdam)", "149.154.167.51", "443"},
+            {"DC4 (Amsterdam)", "149.154.167.91", "443"},
+            {"DC1 (Miami)", "149.154.175.50", "443"},
+            {"DC5 (Singapore)", "91.108.56.165", "443"}
+    };
+
+    public interface DiagnosticCallback {
+        void onResult(boolean isBlocked, String diagnosticReport);
+    }
 
     private static volatile MiogramAntiBlockEngine instance;
 
@@ -115,8 +127,20 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
         int currentAccount = UserConfig.selectedAccount;
         int state = ConnectionsManager.getInstance(currentAccount).getConnectionState();
         if (state == ConnectionsManager.ConnectionStateConnecting && ApplicationLoader.isNetworkOnline()) {
-            FileLog.d(TAG + ": Direct connection throttled or blocked by TSPU/ISP (>5s). Engaging Fake-TLS Yandex bypass!");
-            engageFastestBypassServer(true);
+            if (isDeepDiagnosticsEnabled()) {
+                FileLog.d(TAG + ": Connection hanging. Performing comprehensive deep block check before engaging bypass...");
+                performDeepBlockCheck((isBlocked, report) -> {
+                    if (isBlocked) {
+                        FileLog.d(TAG + ": Deep check CONFIRMED TSPU block! (" + report + "). Engaging Fake-TLS bypass!");
+                        engageFastestBypassServer(true);
+                    } else {
+                        FileLog.d(TAG + ": Deep check passed: direct connection works or general network offline (" + report + "). Bypass NOT engaged.");
+                    }
+                });
+            } else {
+                FileLog.d(TAG + ": Direct connection hanging. Engaging bypass directly.");
+                engageFastestBypassServer(true);
+            }
         }
     };
 
@@ -269,6 +293,22 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
 
     public void setAutoBypassEnabled(boolean enabled) {
         prefs.edit().putBoolean("auto_bypass", enabled).apply();
+    }
+
+    public boolean isDeepDiagnosticsEnabled() {
+        return prefs.getBoolean("deep_diagnostics", true);
+    }
+
+    public void setDeepDiagnosticsEnabled(boolean enabled) {
+        prefs.edit().putBoolean("deep_diagnostics", enabled).apply();
+    }
+
+    public long getDetectionDelayMs() {
+        return prefs.getLong("detection_delay_ms", DEFAULT_DETECTION_TIMEOUT_MS);
+    }
+
+    public void setDetectionDelayMs(long delayMs) {
+        prefs.edit().putLong("detection_delay_ms", delayMs).apply();
     }
 
     public boolean isPrioritizeYandexEnabled() {
@@ -464,7 +504,7 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
             if (state == ConnectionsManager.ConnectionStateConnecting) {
                 if (ApplicationLoader.isNetworkOnline() && isAutoBypassEnabled()) {
                     AndroidUtilities.cancelRunOnUIThread(throttleCheckRunnable);
-                    AndroidUtilities.runOnUIThread(throttleCheckRunnable, THROTTLE_DETECTION_TIMEOUT_MS);
+                    AndroidUtilities.runOnUIThread(throttleCheckRunnable, getDetectionDelayMs());
                 }
             } else {
                 AndroidUtilities.cancelRunOnUIThread(throttleCheckRunnable);
@@ -480,6 +520,88 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
                 AndroidUtilities.cancelRunOnUIThread(proxyStuckRunnable);
             }
         }
+    }
+
+    /**
+     * Conducts a comprehensive multi-DC socket probe to verify if Telegram
+     * is genuinely blocked by government/ISP censorship (TSPU / DPI),
+     * preventing false-positive bypass activation for users without blocks.
+     */
+    public void performDeepBlockCheck(DiagnosticCallback callback) {
+        Utilities.globalQueue.postRunnable(() -> {
+            if (!ApplicationLoader.isNetworkOnline()) {
+                if (callback != null) {
+                    AndroidUtilities.runOnUIThread(() -> callback.onResult(false, MiogramLocale.get("Немає підключення до мережі інтернет", "Нет подключения к сети интернет", "No internet network connection")));
+                }
+                return;
+            }
+
+            // 1. Probe neutral external internet host (1.1.1.1 or 8.8.8.8) to verify device has general network access
+            boolean neutralReachable = false;
+            try {
+                java.net.Socket s = new java.net.Socket();
+                s.connect(new java.net.InetSocketAddress("1.1.1.1", 443), 3000);
+                neutralReachable = true;
+                s.close();
+            } catch (Throwable t) {
+                try {
+                    java.net.Socket s2 = new java.net.Socket();
+                    s2.connect(new java.net.InetSocketAddress("8.8.8.8", 53), 3000);
+                    neutralReachable = true;
+                    s2.close();
+                } catch (Throwable ignored) {}
+            }
+
+            if (!neutralReachable) {
+                if (callback != null) {
+                    AndroidUtilities.runOnUIThread(() -> callback.onResult(false, MiogramLocale.get("Загальний інтернет відсутній (не блокування Telegram)", "Общий интернет недоступен (не блокировка Telegram)", "General internet unavailable (not a Telegram block)")));
+                }
+                return;
+            }
+
+            // 2. Probe Telegram Core DCs directly (TCP port 443)
+            int reachableCount = 0;
+            int failedCount = 0;
+            StringBuilder dcLog = new StringBuilder();
+
+            for (String[] dc : TELEGRAM_CORE_DCS) {
+                String name = dc[0];
+                String ip = dc[1];
+                int port = Integer.parseInt(dc[2]);
+                long start = SystemClock.elapsedRealtime();
+                try {
+                    java.net.Socket socket = new java.net.Socket();
+                    socket.connect(new java.net.InetSocketAddress(ip, port), 3500);
+                    long rtt = SystemClock.elapsedRealtime() - start;
+                    socket.close();
+                    reachableCount++;
+                    dcLog.append(name).append(": OK (").append(rtt).append("ms); ");
+                } catch (Throwable e) {
+                    failedCount++;
+                    dcLog.append(name).append(": BLOCKED/TIMEOUT; ");
+                }
+            }
+
+            final boolean isBlocked;
+            final String report;
+
+            // Block confirmed ONLY when neutral internet works BUT Telegram DCs are systematically dead/reset
+            if (reachableCount == 0 && failedCount >= 3) {
+                isBlocked = true;
+                report = MiogramLocale.get("Виявлено блокування ТСПУ: сервери Telegram недоступні (" + dcLog.toString().trim() + ")",
+                        "Обнаружена блокировка ТСПУ: серверы Telegram недоступны (" + dcLog.toString().trim() + ")",
+                        "TSPU block detected: Telegram DCs unreachable (" + dcLog.toString().trim() + ")");
+            } else {
+                isBlocked = false;
+                report = MiogramLocale.get("Блокувань не виявлено: пряме підключення до Telegram працює (" + dcLog.toString().trim() + ")",
+                        "Блокировок не обнаружено: прямое подключение к Telegram работает (" + dcLog.toString().trim() + ")",
+                        "No blocks detected: direct Telegram connection works (" + dcLog.toString().trim() + ")");
+            }
+
+            if (callback != null) {
+                AndroidUtilities.runOnUIThread(() -> callback.onResult(isBlocked, report));
+            }
+        });
     }
 
     /**

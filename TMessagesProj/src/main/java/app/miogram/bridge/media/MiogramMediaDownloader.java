@@ -10,6 +10,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.SendMessageChatArguments;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.Utilities;
 
@@ -211,7 +212,7 @@ public class MiogramMediaDownloader {
                                 media.add(mi);
                             }
                             SendMessagesHelper.prepareSendingMedia(ai, media, dialogId, replyToMsg, null, null, null,
-                                    false, true, null, null, true, 0, 0, 0, false, null, null, 0, false, 0, 0, null);
+                                    false, true, null, true, 0, 0, 0, false, null, (SendMessageChatArguments) null, 0L, false, 0L, 0L, null);
                         }
 
                         // 2. Send background music
@@ -251,7 +252,7 @@ public class MiogramMediaDownloader {
                     AndroidUtilities.runOnUIThread(() -> {
                         AccountInstance ai = AccountInstance.getInstance(currentAccount);
                         SendMessagesHelper.prepareSendingVideo(ai, videoFile.getAbsolutePath(), null, null, null,
-                                dialogId, replyToMsg, null, null, null, null, 0, null, true, 0, 0, false, false, finalTitle, null, 0, 0);
+                                dialogId, replyToMsg, null, null, null, null, 0, null, true, 0, 0, false, false, finalTitle, (SendMessageChatArguments) null, 0L, 0L);
                         MiogramHaptic.success();
                         if (callback != null) callback.onSuccess(MiogramLocale.get("Відео успішно надіслано!", "Видео успешно отправлено!", "Video sent successfully!"));
                     });
@@ -354,10 +355,10 @@ public class MiogramMediaDownloader {
                     boolean isVideo = localFile.getName().endsWith(".mp4") || localFile.getName().endsWith(".webm") || localFile.getName().endsWith(".mkv");
                     if (isVideo) {
                         SendMessagesHelper.prepareSendingVideo(ai, localFile.getAbsolutePath(), null, null, null,
-                                dialogId, replyToMsg, null, null, null, null, 0, null, true, 0, 0, false, false, "", null, 0, 0);
+                                dialogId, replyToMsg, null, null, null, null, 0, null, true, 0, 0, false, false, "", (SendMessageChatArguments) null, 0L, 0L);
                     } else {
                         SendMessagesHelper.prepareSendingPhoto(ai, localFile.getAbsolutePath(), null,
-                                dialogId, replyToMsg, null, null, "", null, null, null, 0, null, true, 0, 0, null);
+                                dialogId, replyToMsg, null, null, "", null, null, null, 0, null, true, 0, 0, (SendMessageChatArguments) null);
                     }
                     MiogramHaptic.success();
                     if (callback != null) callback.onSuccess(MiogramLocale.get("Медіа успішно надіслано!", "Медиа успешно отправлено!", "Media sent successfully!"));

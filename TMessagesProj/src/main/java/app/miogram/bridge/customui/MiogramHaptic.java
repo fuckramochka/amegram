@@ -159,12 +159,24 @@ public final class MiogramHaptic {
         play(view, SUCCESS, SUCCESS_A, HapticFeedbackConstants.KEYBOARD_TAP, false);
     }
 
+    public static void success() {
+        success(null);
+    }
+
     public static void warn(View view) {
         play(view, WARN, WARN_A, HapticFeedbackConstants.KEYBOARD_TAP, false);
     }
 
+    public static void warn() {
+        warn(null);
+    }
+
     public static void error(View view) {
         play(view, ERROR, ERROR_A, HapticFeedbackConstants.LONG_PRESS, false);
+    }
+
+    public static void error() {
+        error(null);
     }
 
     public static boolean isEnabled() {

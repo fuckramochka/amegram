@@ -301,9 +301,12 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         );
                     } else if (position == antiBlockRow) {
                         boolean active = app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().isBypassActive();
+                        boolean auto = app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().isAutoBypassEnabled();
                         String val = active
-                                ? MiogramLocale.get("Захищено (docs.yandex.ru)", "Защищено (docs.yandex.ru)", "Protected (Fake-TLS)")
-                                : MiogramLocale.get("Fake-TLS Яндекс • Авто", "Fake-TLS Яндекс • Авто", "Fake-TLS Yandex • Auto");
+                                ? MiogramLocale.get("Захищено (Fake-TLS)", "Защищено (Fake-TLS)", "Protected (Fake-TLS)")
+                                : (auto
+                                        ? MiogramLocale.get("Розумний авто-обхід", "Умный авто-обход", "Smart Auto-Bypass")
+                                        : MiogramLocale.get("Вимкнено (пряме)", "Отключено (прямое)", "Disabled (direct)"));
                         cell.setTextAndValueAndIcon(
                                 MiogramLocale.get("Обхід блокувань (Анти-ТСПУ)", "Обход блокировок (Анти-ТСПУ)", "Anti-Censorship & Bypass"),
                                 val,

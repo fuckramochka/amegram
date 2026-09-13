@@ -59,9 +59,12 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
 
     private int headerSettingsRow;
     private int autoBypassRow;
+    private int deepDiagnosticsRow;
+    private int sensitivityRow;
     private int prioritizeYandexRow;
     private int autoRotateRow;
     private int notifyRow;
+    private int runDiagnosticsRow;
     private int settingsInfoRow;
 
     private int headerServersRow;
@@ -112,9 +115,12 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
         // 2. Intelligence & Automation Section
         headerSettingsRow = addRow();
         autoBypassRow = addRow();
+        deepDiagnosticsRow = addRow();
+        sensitivityRow = addRow();
         prioritizeYandexRow = addRow();
         autoRotateRow = addRow();
         notifyRow = addRow();
+        runDiagnosticsRow = addRow();
         settingsInfoRow = addRow();
 
         // 3. Fake-TLS Pool Section
@@ -171,6 +177,26 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
             boolean next = !engine.isAutoBypassEnabled();
             engine.setAutoBypassEnabled(next);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(next);
+        } else if (position == deepDiagnosticsRow) {
+            boolean next = !engine.isDeepDiagnosticsEnabled();
+            engine.setDeepDiagnosticsEnabled(next);
+            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(next);
+        } else if (position == sensitivityRow) {
+            AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
+            b.setTitle(MiogramLocale.get("Затримка перед перевіркою", "Задержка перед проверкой", "Block Check Delay"));
+            String[] options = {
+                    "15 " + MiogramLocale.get("секунд", "секунд", "seconds"),
+                    "20 " + MiogramLocale.get("секунд (рекомендовано)", "секунд (рекомендовано)", "seconds (recommended)"),
+                    "30 " + MiogramLocale.get("секунд", "секунд", "seconds"),
+                    "45 " + MiogramLocale.get("секунд", "секунд", "seconds")
+            };
+            long[] delays = {15000L, 20000L, 30000L, 45000L};
+            b.setItems(options, (dialog, which) -> {
+                engine.setDetectionDelayMs(delays[which]);
+                if (listAdapter != null) listAdapter.notifyDataSetChanged();
+            });
+            b.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            showDialog(b.create());
         } else if (position == prioritizeYandexRow) {
             boolean next = !engine.isPrioritizeYandexEnabled();
             engine.setPrioritizeYandexEnabled(next);
@@ -183,6 +209,27 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
             boolean next = !engine.isNotifyOnActivation();
             engine.setNotifyOnActivation(next);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(next);
+        } else if (position == runDiagnosticsRow) {
+            BulletinFactory.of(this).createSimpleBulletin(
+                    R.raw.chats_infotip,
+                    MiogramLocale.get("Виконується велика перевірка зв'язку з Telegram DC…", "Выполняется глубокая проверка связи с Telegram DC…", "Testing connection to Telegram DCs…")
+            ).show();
+            engine.performDeepBlockCheck((isBlocked, report) -> {
+                AlertDialog.Builder resDialog = new AlertDialog.Builder(getParentActivity());
+                resDialog.setTitle(isBlocked
+                        ? MiogramLocale.get("⚠️ Виявлено блокування Telegram!", "⚠️ Обнаружена блокировка Telegram!", "⚠️ Telegram Block Detected!")
+                        : MiogramLocale.get("✅ Блокувань не виявлено", "✅ Блокировок не обнаружено", "✅ No Blocks Detected"));
+                resDialog.setMessage(report);
+                if (isBlocked) {
+                    resDialog.setPositiveButton(MiogramLocale.get("Підключити Fake-TLS", "Подключить Fake-TLS", "Connect Fake-TLS"), (d, w) -> {
+                        engine.engageFastestBypassServer(true);
+                        updateRows();
+                        if (listAdapter != null) listAdapter.notifyDataSetChanged();
+                    });
+                }
+                resDialog.setNegativeButton(LocaleController.getString(R.string.Close), null);
+                showDialog(resDialog.create());
+            });
         } else if (position == pingAllRow) {
             BulletinFactory.of(this).createSimpleBulletin(
                     R.raw.chats_infotip,
@@ -370,13 +417,13 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
         public int getItemViewType(int position) {
             if (position == headerStatusRow || position == headerSettingsRow || position == headerServersRow) {
                 return TYPE_HEADER;
-            } else if (position == autoBypassRow || position == prioritizeYandexRow || position == autoRotateRow || position == notifyRow) {
+            } else if (position == autoBypassRow || position == deepDiagnosticsRow || position == prioritizeYandexRow || position == autoRotateRow || position == notifyRow) {
                 return TYPE_CHECK;
             } else if (position == settingsInfoRow || position == serversInfoRow) {
                 return TYPE_INFO_PRIVACY;
-            } else if (position == statusCardRow) {
+            } else if (position == statusCardRow || position == sensitivityRow) {
                 return TYPE_DETAIL_SETTINGS;
-            } else if (position == masterToggleRow || position == pingAllRow || position == refreshPoolRow || position == addCustomProxyRow) {
+            } else if (position == masterToggleRow || position == pingAllRow || position == refreshPoolRow || position == addCustomProxyRow || position == runDiagnosticsRow) {
                 return TYPE_TEXT;
             } else if (position >= serversStartRow && position < serversEndRow) {
                 return TYPE_DETAIL_SETTINGS;
@@ -428,6 +475,14 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                             subtitle = MiogramLocale.get("Проксі вимкнено • Прямий маршрут до Telegram", "Прокси выключен • Прямой маршрут", "Proxy disabled • Direct routing");
                         }
                         cell.setTextAndValue(title, subtitle, false);
+                    } else if (position == sensitivityRow) {
+                        long delay = engine.getDetectionDelayMs() / 1000L;
+                        String val = delay + " " + MiogramLocale.get("сек", "сек", "s");
+                        cell.setTextAndValue(
+                                MiogramLocale.get("Затримка перед перевіркою блокування", "Задержка перед проверкой блокировки", "Delay before block check"),
+                                val,
+                                true
+                        );
                     } else if (position >= serversStartRow && position < serversEndRow) {
                         int index = position - serversStartRow;
                         if (index >= 0 && index < currentDisplayServers.size()) {
@@ -467,7 +522,9 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                     } else if (position == refreshPoolRow) {
                         cell.setTextAndIcon(MiogramLocale.get("🔄 Оновити список серверів з хмари", "🔄 Обновить список с облака", "🔄 Refresh cloud pool"), R.drawable.msg_channel, true);
                     } else if (position == addCustomProxyRow) {
-                        cell.setTextAndIcon(MiogramLocale.get("➕ Додати власний Fake-TLS сервер", "➕ Добавить свой Fake-TLS сервер", "➕ Add custom Fake-TLS server"), R.drawable.msg_add, false);
+                        cell.setTextAndIcon(MiogramLocale.get("➕ Додати власний Fake-TLS сервер", "➕ Добавить свой Fake-TLS сервер", "➕ Add custom Fake-TLS server"), R.drawable.msg_add, true);
+                    } else if (position == runDiagnosticsRow) {
+                        cell.setTextAndIcon(MiogramLocale.get("🔍 Провести діагностику блокування зараз", "🔍 Провести диагностику блокировки сейчас", "🔍 Run Block Diagnostics Now"), R.drawable.msg_retry, false);
                     }
                     break;
                 }
@@ -476,8 +533,16 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                     if (position == autoBypassRow) {
                         cell.setTextAndValueAndCheck(
                                 MiogramLocale.get("Розумний авто-обхід ТСПУ", "Умный авто-обход ТСПУ", "Smart TSPU Auto-Bypass"),
-                                MiogramLocale.get("Автоматично активувати Fake-TLS при блокуванні прямого з'єднання > 5 сек", "Автоматически включать Fake-TLS при блокировке прямого соединения > 5 сек", "Engage Fake-TLS when direct is blocked > 5s"),
+                                MiogramLocale.get("Автоматично активувати Fake-TLS при підтвердженні блокування", "Автоматически включать Fake-TLS при подтверждении блокировки", "Engage Fake-TLS when block is confirmed"),
                                 engine.isAutoBypassEnabled(),
+                                true,
+                                true
+                        );
+                    } else if (position == deepDiagnosticsRow) {
+                        cell.setTextAndValueAndCheck(
+                                MiogramLocale.get("Велика перевірка блокування", "Глубокая проверка блокировки", "Deep Block Diagnostics"),
+                                MiogramLocale.get("Перевіряти всі DC Telegram перед увімкненням, щоб не вмикати обхід при звичайних лагах", "Проверять все DC Telegram перед включением, чтобы не включать обход при обычных лагах", "Probe all Telegram DCs before enabling to prevent false triggers on lag"),
+                                engine.isDeepDiagnosticsEnabled(),
                                 true,
                                 true
                         );

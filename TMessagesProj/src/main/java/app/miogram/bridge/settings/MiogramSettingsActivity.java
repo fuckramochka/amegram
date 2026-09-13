@@ -49,6 +49,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int chatsRow;
     private int cloudVaultRow;
     private int privacyRow;
+    private int antiBlockRow;
     private int telemetryRow;
     private int translatorRow;
     private int localizerRow;
@@ -93,6 +94,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         chatsRow = addRow();
         cloudVaultRow = addRow();
         privacyRow = addRow();
+        antiBlockRow = addRow();
         telemetryRow = addRow();
         translatorRow = addRow();
         localizerRow = addRow();
@@ -143,6 +145,8 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new app.miogram.bridge.cloudvault.MiogramCloudVaultActivity());
         } else if (position == privacyRow) {
             presentFragment(new MiogramPrivacySettingsActivity());
+        } else if (position == antiBlockRow) {
+            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
         } else if (position == translatorRow) {
             presentFragment(new NekoTranslatorSettingsActivity());
         } else if (position == localizerRow) {
@@ -293,6 +297,17 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Приватність та Ghost Mode", "Приватность и Ghost Mode", "Privacy & Ghost Mode"),
                                 R.drawable.msg_secret,
+                                true
+                        );
+                    } else if (position == antiBlockRow) {
+                        boolean active = app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().isBypassActive();
+                        String val = active
+                                ? MiogramLocale.get("Захищено (docs.yandex.ru)", "Защищено (docs.yandex.ru)", "Protected (Fake-TLS)")
+                                : MiogramLocale.get("Fake-TLS Яндекс • Авто", "Fake-TLS Яндекс • Авто", "Fake-TLS Yandex • Auto");
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Обхід блокувань (Анти-ТСПУ)", "Обход блокировок (Анти-ТСПУ)", "Anti-Censorship & Bypass"),
+                                val,
+                                R.drawable.msg_bot,
                                 true
                         );
                     } else if (position == translatorRow) {

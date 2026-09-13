@@ -252,7 +252,7 @@ public class MiogramPresenceCard extends FrameLayout {
                     fastProfile.avatarUrl = presence.steamAvatar;
                     fastProfile.gameName = presence.steamGame;
                     fastProfile.gameId = presence.steamGameId;
-                    fastProfile.inGame = !TextUtils.isEmpty(presence.steamGame);
+                    fastProfile.isInGame = !TextUtils.isEmpty(presence.steamGame);
                     this.steamProfile = fastProfile;
                 }
                 MiogramSteamManager.getInstance().resolvePublicSteam(presence.steamId, profile -> {

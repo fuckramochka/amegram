@@ -148,14 +148,14 @@ public class MiogramMediaDownloader {
 
     private static void downloadTikTok(int currentAccount, long dialogId, MessageObject replyToMsg,
                                        String mediaUrl, ProgressListener progressListener, CompletionCallback callback) {
+        String tikTokUrl = mediaUrl;
         try {
             reportProgress(progressListener, 10, MiogramLocale.get("Аналіз TikTok...", "Анализ TikTok...", "Analyzing TikTok..."));
 
             // Short links (vt./vm./lite.tiktok.com) must be expanded first —
             // extractors often reject them or resolve to the wrong clip.
             String resolvedUrl = resolveRedirects(mediaUrl);
-            if (TextUtils.isEmpty(resolvedUrl)) resolvedUrl = mediaUrl;
-            final String tikTokUrl = resolvedUrl;
+            if (!TextUtils.isEmpty(resolvedUrl)) tikTokUrl = resolvedUrl;
 
             String jsonStr = null;
             String[] tikwmHosts = new String[]{

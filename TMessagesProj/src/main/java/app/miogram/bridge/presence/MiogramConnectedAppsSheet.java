@@ -77,7 +77,7 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
 
         // Title
         TextView titleView = new TextView(context);
-        titleView.setText(MiogramLocale.get("Прив'язані додатки ໒꒱", "Привязанные приложения ໒꒱", "Connected Apps ໒꒱"));
+        titleView.setText(MiogramLocale.get("Прив'язані додатки", "Привязанные приложения", "Connected Apps"));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(textColor);
@@ -178,7 +178,9 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
         desc.setEllipsize(TextUtils.TruncateAt.END);
         if (linked) {
             String steamId = sm.getLinkedSteamId();
-            desc.setText(MiogramLocale.get("Прив'язаний ID: ", "Привязанный ID: ", "Linked ID: ") + steamId);
+            String warn = sm.getStaleWarning();
+            desc.setText(MiogramLocale.get("Прив'язаний ID: ", "Привязанный ID: ", "Linked ID: ") + steamId
+                    + (warn != null ? " • ⚠ " + warn : ""));
         } else {
             desc.setText(MiogramLocale.get("Трансляція ігор, статистика та статус", "Трансляция игр, статистика и статус", "Live game broadcasts, stats & status"));
         }

@@ -94,6 +94,14 @@ public final class MiogramMusorDrop {
      * @return true when handled (caller should suppress default navigation/sending).
      */
     public static boolean tryHandle(Context context) {
+        return tryHandleMedia(context, "musordrop.mp4",
+                "МУСОРДРОП НЕ ЗНАЙДЕНО\n\nПокладіть musordrop.mp4\nу папку Завантаження (Downloads)");
+    }
+
+    /**
+     * Shared easter-egg player for bundled/local mp4 files (musordrop, rules...).
+     */
+    public static boolean tryHandleMedia(Context context, String assetName, String missingText) {
         Activity activity = null;
         Context c = context;
         while (c instanceof ContextWrapper) {
@@ -114,9 +122,9 @@ public final class MiogramMusorDrop {
 
         final Activity act = activity;
         AndroidUtilities.runOnUIThread(() -> {
-            MediaSource source = locateMedia();
+            MediaSource source = locateMedia(assetName);
             if (source == null) {
-                showMissingOverlay(act);
+                showMissingOverlay(act, missingText);
             } else {
                 showOverlay(act, source);
             }
@@ -124,24 +132,44 @@ public final class MiogramMusorDrop {
         return true;
     }
 
+    /** Routes any easter-egg link (musordrop, rules...). True when handled. */
+    public static boolean tryHandleAny(Context context, String url) {
+        if (isTrigger(url)) {
+            return tryHandle(context);
+        }
+        if (MiogramRuleDrop.isTrigger(url)) {
+            return MiogramRuleDrop.tryHandle(context);
+        }
+        return false;
+    }
+
+    /** True for any easter-egg trigger link. */
+    public static boolean isAnyTrigger(String url) {
+        return isTrigger(url) || MiogramRuleDrop.isTrigger(url);
+    }
+
     private static MediaSource locateMedia() {
+        return locateMedia("musordrop.mp4");
+    }
+
+    private static MediaSource locateMedia(String assetName) {
         Context ctx = ApplicationLoader.applicationContext;
 
-        // 1. Try bundled asset musordrop.mp4 (direct openFd)
+        // 1. Try bundled asset (direct openFd)
         if (ctx != null) {
             try {
-                AssetFileDescriptor afd = ctx.getAssets().openFd("musordrop.mp4");
+                AssetFileDescriptor afd = ctx.getAssets().openFd(assetName);
                 if (afd != null && afd.getLength() > 0) {
                     return new MediaSource(afd, true);
                 }
             } catch (Throwable ignored) {}
 
-            // Extract bundled asset musordrop.mp4 to files dir if openFd is unsupported or compressed
+            // Extract bundled asset to files dir if openFd is unsupported or compressed
             try {
-                File out = new File(ctx.getFilesDir(), "musordrop.mp4");
+                File out = new File(ctx.getFilesDir(), assetName);
                 if (!out.isFile() || out.length() == 0) {
-                    try (InputStream in = ctx.getAssets().open("musordrop.mp4")) {
-                        File tmp = new File(ctx.getFilesDir(), "musordrop.mp4.tmp");
+                    try (InputStream in = ctx.getAssets().open(assetName)) {
+                        File tmp = new File(ctx.getFilesDir(), assetName + ".tmp");
                         try (FileOutputStream fos = new FileOutputStream(tmp)) {
                             byte[] buf = new byte[65536];
                             int n;
@@ -161,8 +189,8 @@ public final class MiogramMusorDrop {
             } catch (Throwable ignored) {}
         }
 
-        // 2. Try external/shared storage locations for musordrop.mp4
-        File videoFile = findLocalFile("musordrop.mp4");
+        // 2. Try external/shared storage locations
+        File videoFile = findLocalFile(assetName);
         if (videoFile != null) {
             return new MediaSource(videoFile, true);
         }
@@ -339,6 +367,10 @@ public final class MiogramMusorDrop {
     }
 
     private static void showMissingOverlay(Activity activity) {
+        showMissingOverlay(activity, "МУСОРДРОП НЕ ЗНАЙДЕНО\n\nПокладіть musordrop.mp4\nу папку Завантаження (Downloads)");
+    }
+
+    private static void showMissingOverlay(Activity activity, String text) {
         try {
             final Dialog dialog = new Dialog(activity, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
             dialog.setCancelable(true);
@@ -346,7 +378,7 @@ public final class MiogramMusorDrop {
             FrameLayout root = new FrameLayout(activity);
             root.setBackgroundColor(Color.BLACK);
             TextView hint = new TextView(activity);
-            hint.setText("🗑️ МУСОРДРОП НЕ ЗНАЙДЕНО 🗑️\n\nПокладіть musordrop.mp4\nу папку Завантаження (Downloads)");
+            hint.setText(text);
             hint.setTextColor(Color.WHITE);
             hint.setTextSize(16);
             hint.setGravity(Gravity.CENTER);

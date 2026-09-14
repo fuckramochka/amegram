@@ -14645,10 +14645,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     channelPrefs.edit().putBoolean("channel_intro", true).apply();
                 }
             });
-            io.add(R.drawable.ic_feed, app.miogram.bridge.MiogramLocale.get("Стрічка новин ໒꒱", "Лента новостей ໒꒱", "News Feed ໒꒱"), () -> app.exteraless.feed.ui.FeedActivity.presentFeed(this));
+            io.add(R.drawable.ic_feed, app.miogram.bridge.MiogramLocale.get("Стрічка новин", "Лента новостей", "News Feed"), () -> app.exteraless.feed.ui.FeedActivity.presentFeed(this));
             io.add(R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Канбан-нотатки 📋", "Канбан-заметки 📋", "Kanban Notes 📋"), () -> presentFragment(new app.miogram.bridge.kanban.MiogramKanbanActivity()));
             io.add(R.drawable.msg_fave, app.miogram.bridge.MiogramLocale.get("Мультичат (Split-Screen) 🪟", "Мультичат (Split-Screen) 🪟", "Multi-Chat (Split-Screen) 🪟"), () -> presentFragment(new app.miogram.bridge.multichat.MiogramSplitChatActivity(0, 0)));
-            io.add(R.drawable.baseline_stars_24, app.miogram.bridge.MiogramLocale.get("ШІ Супутник (Ame / KAngel) ໒꒱", "ИИ Спутник (Ame / KAngel) ໒꒱", "AI Companion (Ame / KAngel) ໒꒱"), () -> presentFragment(new app.miogram.bridge.ai.companion.MiogramCompanionActivity()));
+            io.add(R.drawable.baseline_stars_24, app.miogram.bridge.MiogramLocale.get("ШІ Супутник (Ame / KAngel)", "ИИ Спутник (Ame / KAngel)", "AI Companion (Ame / KAngel)"), () -> presentFragment(new app.miogram.bridge.ai.companion.MiogramCompanionActivity()));
             if (hideBottomNavigationBar || MainTabsHelper.isContactsTabHidden()) {
                 io.add(R.drawable.msg_contacts, getString(R.string.Contacts), () -> {
                     Bundle args = new Bundle();

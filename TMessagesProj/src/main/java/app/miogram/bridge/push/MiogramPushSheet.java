@@ -83,7 +83,7 @@ public class MiogramPushSheet extends BottomSheet {
         root.addView(dragHandle, LayoutHelper.createLinear(38, 5, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16));
 
         TextView titleView = new TextView(context);
-        titleView.setText(MiogramLocale.get("Сповіщення та фон ໒꒱", "Уведомления и фон ໒꒱", "Notifications & Background ໒꒱"));
+        titleView.setText(MiogramLocale.get("Сповіщення та фон", "Уведомления и фон", "Notifications & Background"));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(textColor);
@@ -345,7 +345,7 @@ public class MiogramPushSheet extends BottomSheet {
                     openIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
             androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(context, channelId)
                     .setSmallIcon(R.drawable.exteraless_notification)
-                    .setContentTitle(MiogramLocale.get("Тест Miogram ໒꒱", "Тест Miogram ໒꒱", "Miogram test ໒꒱"))
+                    .setContentTitle(MiogramLocale.get("Тест Miogram", "Тест Miogram", "Miogram test"))
                     .setContentText(MiogramLocale.get("Якщо бачиш це — шторка, дозвіл і канали працюють. Згорни додаток і попроси друга написати тобі.", "Если видишь это — шторка, разрешение и каналы работают. Сверни приложение и попроси друга написать тебе.", "If you see this — tray, permission and channels work. Minimize the app and ask a friend to message you."))
                     .setContentIntent(pi)
                     .setAutoCancel(true)

@@ -35,7 +35,7 @@ import tw.nekomimi.nekogram.ui.cells.HeaderCell;
  */
 public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
-    // 1. Aesthetics & Atmosphere ໒꒱
+    // 1. Aesthetics & Atmosphere
     private int headerCustomizationRow;
     private int visualsRow;
     private int iconPacksRow;
@@ -44,7 +44,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int badgeStudioRow;
     private int connectedAppsRow;
 
-    // 2. Chats, Multichat & Private Vault 💬
+    // 2. Chats, Multichat & Private Vault
     private int headerChatsPrivacyRow;
     private int multichatRow;
     private int chatsRow;
@@ -55,16 +55,16 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int translatorRow;
     private int localizerRow;
 
-    // 3. AI & Companions ✧
+    // 3. AI & Companions
     private int headerAiRow;
     private int companionRow;
     private int aiEngineRow;
 
-    // 4. Heroku Userbot & Automation 🪐
+    // 4. Heroku Userbot & Automation
     private int headerUserbotRow;
     private int userbotHubRow;
 
-    // 5. System, Plugins & Updates ⚙
+    // 5. System, Plugins & Updates
     private int headerSystemRow;
     private int pluginsRow;
     private int performanceRow;
@@ -222,15 +222,15 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == headerCustomizationRow) {
-                        cell.setText(MiogramLocale.get("Кастомізація та дизайн ໒꒱", "Кастомизация и дизайн ໒꒱", "Customization & Design ໒꒱"));
+                        cell.setText(MiogramLocale.get("Кастомізація та дизайн", "Кастомизация и дизайн", "Customization & Design"));
                     } else if (position == headerChatsPrivacyRow) {
-                        cell.setText(MiogramLocale.get("Чати, мультичат та сховище 💬", "Чаты, мультичат и хранилище 💬", "Chats, Multichat & Vault 💬"));
+                        cell.setText(MiogramLocale.get("Чати, мультичат та сховище", "Чаты, мультичат и хранилище", "Chats, Multichat & Vault"));
                     } else if (position == headerAiRow) {
-                        cell.setText(MiogramLocale.get("Штучний інтелект та супутники ✧", "Искусственный интеллект и спутники ✧", "AI & Companions ✧"));
+                        cell.setText(MiogramLocale.get("Штучний інтелект та супутники", "Искусственный интеллект и спутники", "AI & Companions"));
                     } else if (position == headerUserbotRow) {
-                        cell.setText(MiogramLocale.get("Heroku Юзербот та автоматизація 🪐", "Heroku Юзербот и автоматизация 🪐", "Heroku Userbot & Automation 🪐"));
+                        cell.setText(MiogramLocale.get("Heroku Юзербот та автоматизація", "Heroku Юзербот и автоматизация", "Heroku Userbot & Automation"));
                     } else if (position == headerSystemRow) {
-                        cell.setText(MiogramLocale.get("Система, плагіни та екосистема ⚙", "Система, плагины и экосистема ⚙", "System, Plugins & Ecosystem ⚙"));
+                        cell.setText(MiogramLocale.get("Система, плагіни та екосистема", "Система, плагины и экосистема", "System, Plugins & Ecosystem"));
                     }
                     break;
                 }
@@ -278,7 +278,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                                 ? (count + " " + MiogramLocale.get("підключено", "подключено", "linked"))
                                 : MiogramLocale.get("Steam, GitHub, Discord, Spotify, Roblox", "Steam, GitHub, Discord, Spotify, Roblox", "Steam, GitHub, Discord, Spotify, Roblox");
                         cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Прив'язані додатки ໒꒱", "Привязанные приложения ໒꒱", "Connected Apps ໒꒱"),
+                                MiogramLocale.get("Прив'язані додатки", "Привязанные приложения", "Connected Apps"),
                                 val,
                                 R.drawable.msg_openin,
                                 false
@@ -339,7 +339,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                     // Section 3
                     else if (position == companionRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("ШІ Супутник ໒꒱", "ИИ Спутник ໒꒱", "AI Companion ໒꒱"),
+                                MiogramLocale.get("ШІ Супутник", "ИИ Спутник", "AI Companion"),
                                 R.drawable.baseline_stars_24,
                                 true
                         );

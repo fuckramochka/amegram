@@ -4150,6 +4150,15 @@ public class ChatActivityEnterView extends FrameLayout implements
         recordedAudioPanel.setFocusable(true);
         recordedAudioPanel.setFocusableInTouchMode(true);
         recordedAudioPanel.setClickable(true);
+        // Tapping the recorded-voice preview (outside its buttons/waveform)
+        // focuses the field and brings the keyboard back — otherwise, once
+        // hidden, it can never be reopened in this state.
+        recordedAudioPanel.setOnClickListener(v -> {
+            if (messageEditText != null) {
+                messageEditText.requestFocus();
+                openKeyboard();
+            }
+        });
         messageEditTextContainer.addView(recordedAudioPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, DEFAULT_HEIGHT, Gravity.BOTTOM));
 
         recordDeleteImageView = new RLottieImageView(getContext());

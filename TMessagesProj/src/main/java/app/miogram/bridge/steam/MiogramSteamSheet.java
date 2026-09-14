@@ -84,7 +84,7 @@ public class MiogramSteamSheet extends BottomSheet {
 
         // Title
         TextView titleView = new TextView(context);
-        titleView.setText(MiogramLocale.get("Steam Профіль 🎮", "Steam Профиль 🎮", "Steam Profile 🎮"));
+        titleView.setText(MiogramLocale.get("Steam Профіль", "Steam Профиль", "Steam Profile"));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(textColor);

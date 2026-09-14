@@ -5048,7 +5048,7 @@ public class ChatActivity extends BaseFragment implements
             }
 
             // 1.4 AI Companion (marquee feature)
-            chatMenuPrimaryItems.add(headerItem.lazilyAddSubItem(miogram_chat_ai, R.drawable.baseline_stars_24, app.miogram.bridge.MiogramLocale.get("ШІ Супутник ໒꒱", "ИИ Спутник ໒꒱", "AI Companion ໒꒱")));
+            chatMenuPrimaryItems.add(headerItem.lazilyAddSubItem(miogram_chat_ai, R.drawable.baseline_stars_24, app.miogram.bridge.MiogramLocale.get("ШІ Супутник", "ИИ Спутник", "AI Companion")));
 
             // 1.5 Clear History
             if (!isTopic && !ChatObject.isMonoForum(currentChat)) {
@@ -5236,7 +5236,7 @@ public class ChatActivity extends BaseFragment implements
             }
 
             // 2.14 Split Screen (Multi-Chat)
-            chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_split_screen, R.drawable.msg_fave, app.miogram.bridge.MiogramLocale.get("Розділити екран (Мультичат) ໒꒱", "Разделить экран (Мультичат) ໒꒱", "Split Screen (Multi-Chat) ໒꒱")));
+            chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_split_screen, R.drawable.msg_fave, app.miogram.bridge.MiogramLocale.get("Розділити екран (Мультичат)", "Разделить экран (Мультичат)", "Split Screen (Multi-Chat)")));
 
             // 2.15 Navigation & History Utilities
             boolean addedSettings = false;
@@ -45777,13 +45777,13 @@ public class ChatActivity extends BaseFragment implements
     }
 
     private boolean openLinkInternally(String urlFinal, ChatMessageCell cell, CharacterStyle span, int fromMessageId, int fromMessageProgressType) {
-        if (app.miogram.bridge.fun.MiogramMusorDrop.isTrigger(urlFinal)) {
+        if (app.miogram.bridge.fun.MiogramMusorDrop.isAnyTrigger(urlFinal)) {
             if (cell != null) {
                 try {
                     cell.resetPressedLink(-1);
                 } catch (Throwable ignored) {}
             }
-            app.miogram.bridge.fun.MiogramMusorDrop.tryHandle(getParentActivity());
+            app.miogram.bridge.fun.MiogramMusorDrop.tryHandleAny(getParentActivity(), urlFinal);
             return true;
         }
         if (currentChat == null || urlFinal == null || chatMode != 0) {

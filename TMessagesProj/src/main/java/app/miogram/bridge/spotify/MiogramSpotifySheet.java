@@ -83,7 +83,7 @@ public class MiogramSpotifySheet extends BottomSheet {
 
         // Title
         TextView titleView = new TextView(context);
-        titleView.setText(MiogramLocale.get("Spotify Міст ໒꒱", "Spotify Мост ໒꒱", "Spotify Bridge ໒꒱"));
+        titleView.setText(MiogramLocale.get("Spotify Міст", "Spotify Мост", "Spotify Bridge"));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(textColor);

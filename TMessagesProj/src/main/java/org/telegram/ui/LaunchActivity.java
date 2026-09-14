@@ -2819,8 +2819,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                                             FileLog.e(e);
                                         }
                                         checkAppUpdate(true, null, updateAlways);
-                                    } else if (app.miogram.bridge.fun.MiogramMusorDrop.isTrigger(url)) {
-                                        app.miogram.bridge.fun.MiogramMusorDrop.tryHandle(this);
+                                    } else if (app.miogram.bridge.fun.MiogramMusorDrop.isAnyTrigger(url)) {
+                                        app.miogram.bridge.fun.MiogramMusorDrop.tryHandleAny(this, url);
                                     } else if (url.startsWith("tg:neko") || url.startsWith("tg://neko")) {
                                         url = url.replace("tg:neko", "tg://t.me/nasettings").replace("tg://neko", "tg://t.me/nasettings");
                                         data = Uri.parse(url);

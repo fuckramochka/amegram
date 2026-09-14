@@ -158,8 +158,8 @@ public class Browser {
         if (url == null) {
             return;
         }
-        if (app.miogram.bridge.fun.MiogramMusorDrop.isTrigger(url)) {
-            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandle(context)) {
+        if (app.miogram.bridge.fun.MiogramMusorDrop.isAnyTrigger(url)) {
+            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandleAny(context, url)) {
                 return;
             }
         }
@@ -174,8 +174,8 @@ public class Browser {
     }
 
     public static void openUrl(Context context, Uri uri) {
-        if (uri != null && app.miogram.bridge.fun.MiogramMusorDrop.isTrigger(uri.toString())) {
-            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandle(context)) {
+        if (uri != null && app.miogram.bridge.fun.MiogramMusorDrop.isAnyTrigger(uri.toString())) {
+            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandleAny(context, uri.toString())) {
                 return;
             }
         }
@@ -302,8 +302,8 @@ public class Browser {
     // Все публичные openUrl(...) сходятся сюда; внутренние tg://-ссылки дополнительно
     // пройдут через диспетч LaunchActivity.handleIntent (там from_intent=true).
     public static void openUrl(final Context context, Uri uri, boolean _allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading, String browser, boolean allowIntent, boolean allowInAppBrowser, boolean forceRequest) {
-        if (uri != null && app.miogram.bridge.fun.MiogramMusorDrop.isTrigger(uri.toString())) {
-            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandle(context)) {
+        if (uri != null && app.miogram.bridge.fun.MiogramMusorDrop.isAnyTrigger(uri.toString())) {
+            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandleAny(context, uri.toString())) {
                 return;
             }
         }
@@ -327,8 +327,8 @@ public class Browser {
         if (context == null || uri == null) {
             return;
         }
-        if (app.miogram.bridge.fun.MiogramMusorDrop.isTrigger(uri.toString())) {
-            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandle(context)) {
+        if (app.miogram.bridge.fun.MiogramMusorDrop.isAnyTrigger(uri.toString())) {
+            if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandleAny(context, uri.toString())) {
                 return;
             }
         }

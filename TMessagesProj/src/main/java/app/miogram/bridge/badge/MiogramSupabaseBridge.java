@@ -10,12 +10,15 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.ConnectionsManager;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.TLRPC;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -378,6 +381,39 @@ public class MiogramSupabaseBridge {
 
     private static long lastFetchTime = 0;
 
+    /**
+     * PostgREST date columns accept ISO only. Local values like "01.09.2026"
+     * or "2026" produce HTTP 400 on every write — normalize before upsert.
+     */
+    static String normalizeCloudDate(String raw) {
+        if (raw != null) {
+            String s = raw.trim();
+            if (s.matches("\\d{2}\\.\\d{2}\\.\\d{4}")) {
+                return s.substring(6, 10) + "-" + s.substring(3, 5) + "-" + s.substring(0, 2);
+            }
+            if (s.matches("\\d{4}-\\d{2}-\\d{2}")) return s;
+            if (s.matches("\\d{4}")) return s + "-01-01";
+        }
+        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
+        return f.format(new java.util.Date());
+    }
+
+    /** Reads the server error body (PostgREST explains the 400 here). */
+    static String readErrorBody(HttpURLConnection connection) {
+        try {
+            java.io.InputStream err = connection != null ? connection.getErrorStream() : null;
+            if (err == null) return "";
+            BufferedReader reader = new BufferedReader(new InputStreamReader(err, StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null && sb.length() < 600) sb.append(line);
+            reader.close();
+            return sb.toString();
+        } catch (Throwable ignore) {
+            return "";
+        }
+    }
+
     public static void checkRefreshBadges() {
         long now = System.currentTimeMillis();
         if (now - lastFetchTime > 60_000L) {
@@ -394,7 +430,9 @@ public class MiogramSupabaseBridge {
         }
         final String fTitle = record != null && record.title != null ? record.title : fallbackTitle(false);
         final String fReason = record != null && record.obtainedReason != null ? record.obtainedReason : fallbackReason(false);
-        final String fDate = record != null && record.obtainedAt != null ? record.obtainedAt : "2026";
+        final String fDate = normalizeCloudDate(record != null ? record.obtainedAt : null);
+        final boolean fVerified = record != null && record.verified;
+        final long fGrantor = record != null ? record.grantorId : 0;
 
         Utilities.globalQueue.postRunnable(() -> {
             HttpURLConnection connection = null;
@@ -418,6 +456,8 @@ public class MiogramSupabaseBridge {
                 body.put("title", fTitle);
                 body.put("obtained_reason", fReason);
                 body.put("obtained_at", fDate);
+                body.put("verified", fVerified);
+                body.put("grantor_id", fGrantor);
                 body.put("client_version", "Miogram " + BuildVars.BUILD_VERSION_STRING);
 
                 byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
@@ -430,7 +470,9 @@ public class MiogramSupabaseBridge {
                 int code = connection.getResponseCode();
                 FileLog.d("MiogramSupabaseBridge upsert badge status: " + code);
                 if (code < 200 || code >= 300) {
-                    showSyncErrorDialog(null, "Badge sync HTTP " + code);
+                    String serverMsg = readErrorBody(connection);
+                    FileLog.e("MiogramSupabaseBridge upsert badge failed: HTTP " + code + " " + serverMsg);
+                    showSyncErrorDialog(null, "Badge sync HTTP " + code + (serverMsg.isEmpty() ? "" : ": " + serverMsg));
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -462,8 +504,10 @@ public class MiogramSupabaseBridge {
         final String fBadge = record != null ? record.badgeIdString : "original";
         final String fTitle = record != null && record.title != null ? record.title : fallbackTitle(userId == MiogramBadgeManager.FOUNDER_USER_ID);
         final String fReason = record != null && record.obtainedReason != null ? record.obtainedReason : fallbackReason(userId == MiogramBadgeManager.FOUNDER_USER_ID);
-        final String fDate = record != null && record.obtainedAt != null ? record.obtainedAt : "2026";
+        final String fDate = normalizeCloudDate(record != null ? record.obtainedAt : null);
         final boolean fActive = record != null ? record.isActive : true;
+        final boolean fVerified = record != null && record.verified;
+        final long fGrantor = record != null ? record.grantorId : 0;
         final String encodedClientVersion = app.miogram.bridge.presence.MiogramCloudPresence.encodeClientVersion(presence);
 
         Utilities.globalQueue.postRunnable(() -> {
@@ -488,6 +532,8 @@ public class MiogramSupabaseBridge {
                 body.put("title", fTitle);
                 body.put("obtained_reason", fReason);
                 body.put("obtained_at", fDate);
+                body.put("verified", fVerified);
+                body.put("grantor_id", fGrantor);
                 body.put("client_version", encodedClientVersion);
 
                 byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
@@ -499,6 +545,10 @@ public class MiogramSupabaseBridge {
 
                 int code = connection.getResponseCode();
                 FileLog.d("MiogramSupabaseBridge syncPresenceToCloud status: " + code);
+                if (code < 200 || code >= 300) {
+                    String serverMsg = readErrorBody(connection);
+                    FileLog.e("MiogramSupabaseBridge syncPresenceToCloud failed: HTTP " + code + " " + serverMsg);
+                }
             } catch (Exception e) {
                 FileLog.e("MiogramSupabaseBridge: syncPresenceToCloud error", e);
             } finally {
@@ -612,16 +662,126 @@ public class MiogramSupabaseBridge {
 
                 try {
                     Toast.makeText(ctx, MiogramLocale.get(
-                            "Звіт та лог надіслано до @dkramochka",
-                            "Отчет и лог отправлены к @dkramochka",
-                            "Bug report sent to @dkramochka"
+                            "Звіт скопійовано, надсилаємо...",
+                            "Отчет скопирован, отправляем...",
+                            "Report copied, sending..."
                     ), Toast.LENGTH_SHORT).show();
                 } catch (Throwable ignore) {}
 
-                // 2. Resolve @dkramochka, send message into chat, and open chat natively
+                // 2. Route: channel members -> logs thread (t.me/dkmiogram/8),
+                //    everyone else -> creator PM.
                 final BaseFragment lastFragment = LaunchActivity.getLastFragment();
                 final MessagesController mc = MessagesController.getInstance(account);
-                mc.getUserNameResolver().resolve("dkramochka", (peerId) -> {
+                routeBugReport(account, lastFragment, ctx, fullReport,
+                        () -> sendBugReportToCreatorPm(account, lastFragment, ctx, fullReport));
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+        });
+    }
+
+    /** Logs thread root message in @dkmiogram. */
+    private static final int BUG_LOG_THREAD_MSG_ID = 8;
+    private static final String BUG_LOG_CHANNEL = "dkmiogram";
+    private static final String BUG_CREATOR = "dkramochka";
+
+    /**
+     * If the user participates in @dkmiogram, posts the report as a reply in
+     * the logs thread (message 8). Otherwise (or on any failure) runs pmFallback.
+     */
+    private static void routeBugReport(int account, BaseFragment lastFragment, Context ctx,
+                                       String fullReport, Runnable pmFallback) {
+        try {
+            final MessagesController mc = MessagesController.getInstance(account);
+            mc.getUserNameResolver().resolve(BUG_LOG_CHANNEL, (peerId) -> {
+                if (peerId == null || peerId >= 0) {
+                    pmFallback.run();
+                    return;
+                }
+                final long channelDialogId = peerId;
+                TLRPC.Chat chat = mc.getChat(-channelDialogId);
+                if (chat == null || chat.access_hash == 0) {
+                    pmFallback.run();
+                    return;
+                }
+                TLRPC.TL_inputChannel inputChannel = new TLRPC.TL_inputChannel();
+                inputChannel.channel_id = -channelDialogId;
+                inputChannel.access_hash = chat.access_hash;
+
+                // Membership check: only participants may write into the logs thread.
+                TLRPC.TL_channels_getParticipant partReq = new TLRPC.TL_channels_getParticipant();
+                partReq.channel = inputChannel;
+                partReq.participant = new TLRPC.TL_inputPeerSelf();
+                ConnectionsManager.getInstance(account).sendRequest(partReq, (partResp, partErr) -> AndroidUtilities.runOnUIThread(() -> {
+                    boolean member = false;
+                    if (partResp instanceof TLRPC.TL_channels_channelParticipant) {
+                        TLRPC.ChannelParticipant p = ((TLRPC.TL_channels_channelParticipant) partResp).participant;
+                        member = p != null && !(p instanceof TLRPC.TL_channelParticipantLeft)
+                                && !(p instanceof TLRPC.TL_channelParticipantBanned);
+                    }
+                    if (!member) {
+                        pmFallback.run();
+                        return;
+                    }
+                    // Fetch thread root (message 8) to reply inside the logs thread.
+                    TLRPC.TL_messages_getMessages msgsReq = new TLRPC.TL_messages_getMessages();
+                    msgsReq.id.add(BUG_LOG_THREAD_MSG_ID);
+                    ConnectionsManager.getInstance(account).sendRequest(msgsReq, (msgsResp, msgsErr) -> AndroidUtilities.runOnUIThread(() -> {
+                        MessageObject replyTo = null;
+                        try {
+                            if (msgsResp instanceof TLRPC.messages_Messages) {
+                                TLRPC.messages_Messages mm = (TLRPC.messages_Messages) msgsResp;
+                                mc.putUsers(mm.users, false);
+                                mc.putChats(mm.chats, false);
+                                if (!mm.messages.isEmpty() && mm.messages.get(0) != null
+                                        && !(mm.messages.get(0) instanceof TLRPC.TL_messageEmpty)) {
+                                    replyTo = new MessageObject(account, mm.messages.get(0), false, false);
+                                }
+                            }
+                        } catch (Throwable ignore) {}
+                        final MessageObject fReplyTo = replyTo;
+                        try {
+                            SendMessagesHelper.getInstance(account).sendMessage(
+                                    SendMessagesHelper.SendMessageParams.of(fullReport, channelDialogId, fReplyTo, null, null, true, null, null, null, true, 0, 0, null, false)
+                            );
+                        } catch (Throwable t) {
+                            FileLog.e(t);
+                            pmFallback.run();
+                            return;
+                        }
+                        try {
+                            Toast.makeText(ctx, MiogramLocale.get(
+                                    "Звіт надіслано у гілку логів @dkmiogram",
+                                    "Отчет отправлен в ветку логов @dkmiogram",
+                                    "Report posted to @dkmiogram logs thread"
+                            ), Toast.LENGTH_SHORT).show();
+                        } catch (Throwable ignore) {}
+                        AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                if (lastFragment != null) {
+                                    mc.openByUserName(BUG_LOG_CHANNEL, lastFragment, 1);
+                                } else {
+                                    Browser.openUrl(ctx, "https://t.me/" + BUG_LOG_CHANNEL);
+                                }
+                            } catch (Throwable t) {
+                                FileLog.e(t);
+                            }
+                        });
+                    }));
+                }));
+            });
+        } catch (Throwable t) {
+            FileLog.e(t);
+            pmFallback.run();
+        }
+    }
+
+    /** Original behavior: send the report to the creator's PM. */
+    private static void sendBugReportToCreatorPm(int account, BaseFragment lastFragment, Context ctx, String fullReport) {
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                final MessagesController mc = MessagesController.getInstance(account);
+                mc.getUserNameResolver().resolve(BUG_CREATOR, (peerId) -> {
                     if (peerId != null && peerId > 0) {
                         try {
                             SendMessagesHelper.getInstance(account).sendMessage(
@@ -637,13 +797,13 @@ public class MiogramSupabaseBridge {
                     AndroidUtilities.runOnUIThread(() -> {
                         try {
                             if (lastFragment != null) {
-                                mc.openByUserName("dkramochka", lastFragment, 1);
+                                mc.openByUserName(BUG_CREATOR, lastFragment, 1);
                             } else {
-                                Browser.openUrl(ctx, "https://t.me/dkramochka");
+                                Browser.openUrl(ctx, "https://t.me/" + BUG_CREATOR);
                             }
                         } catch (Throwable t) {
                             FileLog.e(t);
-                            Browser.openUrl(ctx, "https://t.me/dkramochka");
+                            Browser.openUrl(ctx, "https://t.me/" + BUG_CREATOR);
                         }
                     });
                 });

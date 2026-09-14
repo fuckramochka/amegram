@@ -177,6 +177,15 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
 
         // Background update of remote proxy pool if needed (once every 12h)
         fetchRemotePoolAsync(false, null);
+
+        // Fast path: previous session ended behind a block — re-engage at once
+        // instead of hanging 20s on direct first.
+        try {
+            if (prefs.getBoolean("was_blocked", false) && isAutoBypassEnabled() && !SharedConfig.isProxyEnabled()) {
+                FileLog.d(TAG + ": last session was blocked — engaging bypass immediately at startup");
+                engageFastestBypassServer(false);
+            }
+        } catch (Throwable ignore) {}
     }
 
     private void initBuiltInServers() {
@@ -508,6 +517,14 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
                 }
             } else {
                 AndroidUtilities.cancelRunOnUIThread(throttleCheckRunnable);
+                if (state == ConnectionsManager.ConnectionStateConnected) {
+                    // Direct works — environment is clean, drop the blocked flag.
+                    try {
+                        if (prefs.getBoolean("was_blocked", false)) {
+                            prefs.edit().putBoolean("was_blocked", false).apply();
+                        }
+                    } catch (Throwable ignore) {}
+                }
             }
         } else {
             AndroidUtilities.cancelRunOnUIThread(throttleCheckRunnable);
@@ -710,6 +727,10 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
             ConnectionsManager.setProxySettings(true, added.address, added.port, added.username, added.password, added.secret);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.proxySettingsChanged);
 
+            try {
+                prefs.edit().putBoolean("was_blocked", true).apply();
+            } catch (Throwable ignore) {}
+
             FileLog.d(TAG + ": Activated Fake-TLS node -> " + server.name + " (" + server.sniDomain + ")");
 
             if (showBulletin && isNotifyOnActivation()) {
@@ -822,55 +843,79 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
 
         Utilities.globalQueue.postRunnable(() -> {
             boolean success = false;
-            try {
-                URL url = new URL("https://raw.githubusercontent.com/oznurakaro04/telegram-proxy-live/main/proxies.txt");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setConnectTimeout(6000);
-                conn.setReadTimeout(6000);
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Telegram-Bypass)");
+            // Multiple mirrors: one dead list must not starve the pool.
+            String[] poolUrls = new String[]{
+                    "https://raw.githubusercontent.com/oznurakaro04/telegram-proxy-live/main/proxies.txt",
+                    "https://raw.githubusercontent.com/hookzof/socks5_list/master/tg/mtproto.txt",
+                    "https://raw.githubusercontent.com/mrtotzied/mtproto-proxy-list/main/proxies.txt"
+            };
+            List<BypassServer> fetched = new ArrayList<>();
+            int idx = 0;
+            for (String poolUrl : poolUrls) {
+                if (fetched.size() >= 20) break;
+                try {
+                    URL url = new URL(poolUrl);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setConnectTimeout(6000);
+                    conn.setReadTimeout(6000);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Telegram-Bypass)");
 
-                if (conn.getResponseCode() == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-                    String line;
-                    List<BypassServer> fetched = new ArrayList<>();
-                    int idx = 0;
+                    if (conn.getResponseCode() == 200) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                        String line;
 
-                    while ((line = reader.readLine()) != null && idx < 20) {
-                        line = line.trim();
-                        if (!line.startsWith("https://t.me/proxy?")) continue;
+                        while ((line = reader.readLine()) != null && fetched.size() < 20) {
+                            line = line.trim();
+                            if (!line.startsWith("https://t.me/proxy?")) continue;
 
-                        try {
-                            android.net.Uri uri = android.net.Uri.parse(line);
-                            String server = uri.getQueryParameter("server");
-                            int port = Utilities.parseInt(uri.getQueryParameter("port"));
-                            String secret = uri.getQueryParameter("secret");
+                            try {
+                                android.net.Uri uri = android.net.Uri.parse(line);
+                                String server = uri.getQueryParameter("server");
+                                int port = Utilities.parseInt(uri.getQueryParameter("port"));
+                                String secret = uri.getQueryParameter("secret");
 
-                            if (!TextUtils.isEmpty(server) && port > 0 && !TextUtils.isEmpty(secret) && secret.startsWith("ee")) {
-                                String sni = extractSniDomain(secret);
-                                if (sni != null && (sni.contains("yandex") || sni.contains("ya.ru") || sni.contains("ozon.ru") || sni.contains("vk.com"))) {
-                                    String displayName = "Хмарний вузол: " + sni;
-                                    fetched.add(new BypassServer("remote_" + idx, displayName, server, port, secret, sni, false));
-                                    idx++;
+                                if (TextUtils.isEmpty(server) || port <= 0 || TextUtils.isEmpty(secret) || !secret.startsWith("ee")) {
+                                    continue;
                                 }
-                            }
-                        } catch (Exception ignored) {}
-                    }
-                    reader.close();
-
-                    if (!fetched.isEmpty()) {
-                        synchronized (MiogramAntiBlockEngine.this) {
-                            remoteServers.clear();
-                            remoteServers.addAll(fetched);
-                            saveRemoteServers();
+                                // Dedupe against everything collected so far.
+                                boolean dup = false;
+                                for (BypassServer s : fetched) {
+                                    if (s.address.equalsIgnoreCase(server) && s.port == port) {
+                                        dup = true;
+                                        break;
+                                    }
+                                }
+                                if (dup) continue;
+                                String sni = extractSniDomain(secret);
+                                String displayName;
+                                if (sni != null && (sni.contains("yandex") || sni.contains("ya.ru") || sni.contains("ozon.ru") || sni.contains("vk.com"))) {
+                                    displayName = "Хмарний вузол: " + sni;
+                                } else if (sni != null) {
+                                    displayName = "Хмарний вузол: " + sni;
+                                } else {
+                                    displayName = "Хмарний вузол #" + (idx + 1);
+                                }
+                                fetched.add(new BypassServer("remote_" + idx, displayName, server, port, secret, sni, false));
+                                idx++;
+                            } catch (Exception ignored) {}
                         }
-                        prefs.edit().putLong("last_remote_fetch", now).apply();
-                        success = true;
-                        FileLog.d(TAG + ": Fetched " + fetched.size() + " fresh Fake-TLS nodes from cloud.");
+                        reader.close();
                     }
+                } catch (Exception e) {
+                    FileLog.e(TAG + ": Cloud fetch failed for " + poolUrl + ": " + e.getMessage());
                 }
-            } catch (Exception e) {
-                FileLog.e(TAG + ": Cloud fetch failed: " + e.getMessage());
+            }
+
+            if (!fetched.isEmpty()) {
+                synchronized (MiogramAntiBlockEngine.this) {
+                    remoteServers.clear();
+                    remoteServers.addAll(fetched);
+                    saveRemoteServers();
+                }
+                prefs.edit().putLong("last_remote_fetch", now).apply();
+                success = true;
+                FileLog.d(TAG + ": Fetched " + fetched.size() + " fresh Fake-TLS nodes from cloud.");
             }
 
             final boolean finalSuccess = success;

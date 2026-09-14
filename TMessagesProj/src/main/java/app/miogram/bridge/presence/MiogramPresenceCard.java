@@ -418,7 +418,7 @@ public class MiogramPresenceCard extends FrameLayout {
 
     private void updateDotSelection(int selectedIndex) {
         if (activeServices.isEmpty()) {
-            serviceTitleView.setText(MiogramLocale.get("ЦИФРОВА ПРИСУТНІСТЬ ໒꒱", "ЦИФРОВОЕ ПРИСУТСТВИЕ ໒꒱", "DIGITAL PRESENCE ໒꒱"));
+            serviceTitleView.setText(MiogramLocale.get("ЦИФРОВА ПРИСУТНІСТЬ", "ЦИФРОВОЕ ПРИСУТСТВИЕ", "DIGITAL PRESENCE"));
             serviceTitleView.setTextColor(0xAA66C0F4);
             return;
         }

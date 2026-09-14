@@ -1321,6 +1321,7 @@ public class MiogramCompanionToolbox {
                     : fc.isChannel ? MiogramLocale.get("[Канал] ", "[Канал] ", "[Channel] ") : "");
             sb.append(fc.name.isEmpty() ? MiogramLocale.get("(без назви)", "(без названия)", "(no name)") : fc.name);
             if (!fc.username.isEmpty()) sb.append(" (@").append(fc.username).append(")");
+            sb.append(" [id: ").append(fc.dialogId).append("]");
             try {
                 Integer unread = unreadByDialog.get(fc.dialogId);
                 if (unread != null && unread > 0) sb.append(" [").append(unread).append("]");
@@ -1337,6 +1338,43 @@ public class MiogramCompanionToolbox {
 
     public static ChatResolution resolveChatTarget(int account, JSONObject p) {
         return resolveChatTarget(account, p, null);
+    }
+
+    /**
+     * Builds a server-ready InputPeer for a dialog id, or null when the peer
+     * is not usable (unknown user/chat, missing access_hash). Central guard
+     * against raw PEER_ID_INVALID from getHistory/search/send calls.
+     */
+    public static TLRPC.InputPeer resolveInputPeer(int account, long dialogId) {
+        if (dialogId == 0) return null;
+        try {
+            MessagesController mc = MessagesController.getInstance(account);
+            if (mc == null) return null;
+            if (dialogId > 0) {
+                if (dialogId == UserConfig.getInstance(account).getClientUserId()) {
+                    return new TLRPC.TL_inputPeerSelf();
+                }
+                TLRPC.User u = mc.getUser(dialogId);
+                if (u == null || u.access_hash == 0) return null;
+                TLRPC.TL_inputPeerUser peer = new TLRPC.TL_inputPeerUser();
+                peer.user_id = dialogId;
+                peer.access_hash = u.access_hash;
+                return peer;
+            } else {
+                TLRPC.Chat c = mc.getChat(-dialogId);
+                if (c == null) return null;
+                if (org.telegram.messenger.ChatObject.isChannel(c) && c.access_hash == 0) return null;
+                return MessagesController.getInputPeer(c);
+            }
+        } catch (Throwable ignore) {
+            return null;
+        }
+    }
+
+    public static String peerUnreachableText() {
+        return MiogramLocale.get("Не можу звернутись до цього чату напряму (немає доступу або кешу). Відкрий його в додатку один раз або дай точний @username — і повторю.",
+                "Не могу обратиться к этому чату напрямую (нет доступа или кэша). Открой его в приложении один раз или дай точный @username — и повторю.",
+                "I can't reach this chat directly (no access or cache). Open it in the app once or give me the exact @username — then I'll retry.");
     }
 
     /**
@@ -1433,6 +1471,7 @@ public class MiogramCompanionToolbox {
             if (!fc.username.isEmpty()) {
                 sb.append(" (@").append(fc.username).append(")");
             }
+            sb.append(" [id: ").append(fc.dialogId).append("]");
             sb.append("\n");
         }
         sb.append(MiogramLocale.get("Скажи номер (наприклад «2» або «другий») — і я продовжу. «Далі» — гортаю список чатів.",
@@ -1485,6 +1524,7 @@ public class MiogramCompanionToolbox {
                         if (!fc.username.isEmpty()) {
                             sb.append(" (@").append(fc.username).append(")");
                         }
+                        sb.append(" [id: ").append(fc.dialogId).append("]");
                         sb.append("\n");
                     }
                     sb.append(MiogramLocale.get("Скажи номер (наприклад «2» або «другий») — продовжу. «Далі» — гортаю список чатів.",
@@ -1685,7 +1725,11 @@ public class MiogramCompanionToolbox {
                         }
                         long targetId = res.dialogId;
                         TLRPC.TL_messages_search req = new TLRPC.TL_messages_search();
-                        req.peer = mc.getInputPeer(targetId);
+                        req.peer = resolveInputPeer(account, targetId);
+                        if (req.peer == null) {
+                            callback.run(peerUnreachableText());
+                            return;
+                        }
                         req.q = fQuery;
                         req.filter = new TLRPC.TL_inputMessagesFilterEmpty();
                         req.limit = 10;
@@ -1797,6 +1841,10 @@ public class MiogramCompanionToolbox {
                         callback.run(MiogramLocale.get("Помилка: не вказано текст повідомлення для відправки.", "Ошибка: не указан текст сообщения для отправки.", "Error: no message text provided to send."));
                         return;
                     }
+                    if (resolveInputPeer(account, res.dialogId) == null) {
+                        callback.run(peerUnreachableText());
+                        return;
+                    }
                     SendMessagesHelper.getInstance(account).sendMessage(
                             SendMessagesHelper.SendMessageParams.of(text, res.dialogId, null, null, null, true, null, null, null, true, 0, 0, null, false)
                     );
@@ -1812,7 +1860,11 @@ public class MiogramCompanionToolbox {
                     }
                     int limit = Math.min(30, Math.max(1, p.optInt("limit", 15)));
                     TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
-                    req.peer = MessagesController.getInstance(account).getInputPeer(res.dialogId);
+                    req.peer = resolveInputPeer(account, res.dialogId);
+                    if (req.peer == null) {
+                        callback.run(peerUnreachableText());
+                        return;
+                    }
                     req.limit = limit;
                     final FoundChat fc = res.foundChat;
                     ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {

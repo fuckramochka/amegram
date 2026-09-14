@@ -706,83 +706,83 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         chipsRow.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(6));
         chipsScroll.addView(chipsRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        addChip(context, chipsRow, "⚡ " + MiogramLocale.get("Що нового?", "Что нового?", "What's new?"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Що нового?", "Что нового?", "What's new?"), () -> {
             inputField.setText(MiogramLocale.get("Що нового в моїх чатах? Зроби короткий огляд!", "Что нового в моих чатах? Сделай краткий обзор!", "What's new in my chats? Give me a quick summary!"));
             onSendMessage();
         });
 
-        addChip(context, chipsRow, "📬 " + MiogramLocale.get("Непрочитані", "Непрочитанные", "Unread"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Непрочитані", "Непрочитанные", "Unread"), () -> {
             inputField.setText(MiogramLocale.get("Почитай мої непрочитані повідомлення і розкажи що там пишуть", "Почитай мои непрочитанные сообщения и расскажи что там пишут", "Read my unread messages and summarize what's happening"));
             onSendMessage();
         });
 
-        addChip(context, chipsRow, "🎵 " + MiogramLocale.get("Зараз грає", "Сейчас играет", "Now playing"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Зараз грає", "Сейчас играет", "Now playing"), () -> {
             inputField.setText(MiogramLocale.get("Що зараз грає в плеєрі?", "Что сейчас играет в плеере?", "What's currently playing in the music player?"));
             onSendMessage();
         });
 
-        addChip(context, chipsRow, "🔍 " + MiogramLocale.get("Знайти чат", "Найти чат", "Find chat"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Знайти чат", "Найти чат", "Find chat"), () -> {
             inputField.setText(MiogramLocale.get("Знайди в лс з ", "Найди в лс с ", "Find chat with "));
             inputField.setSelection(inputField.getText().length());
             inputField.requestFocus();
             AndroidUtilities.showKeyboard(inputField);
         });
 
-        addChip(context, chipsRow, "👥 " + MiogramLocale.get("Пошук по групах", "Поиск по группам", "Search groups"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Пошук по групах", "Поиск по группам", "Search groups"), () -> {
             inputField.setText(MiogramLocale.get("Пі-тян, пошукай по групах що пишуть про ", "Пи-тян, поищи по группам что пишут про ", "P-chan, search groups for "));
             inputField.setSelection(inputField.getText().length());
             inputField.requestFocus();
             AndroidUtilities.showKeyboard(inputField);
         });
 
-        addChip(context, chipsRow, "💊 " + MiogramLocale.get("Магічна пігулка", "Магическая пилюля", "Magic Pill"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Магічна пігулка", "Магическая пилюля", "Magic Pill"), () -> {
             inputField.setText(MiogramLocale.get("Тримай магічну пігулку Дюск, заспокойся і не нервуй ♡", "Держи магическую пилюлю Дюск, успокойся и не нервничай ♡", "Take a magic pill Dysk, calm down and don't stress ♡"));
             onSendMessage();
         });
 
-        addChip(context, chipsRow, "🪐 " + MiogramLocale.get("Юзербот .ping", "Юзербот .ping", "Userbot .ping"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Юзербот .ping", "Юзербот .ping", "Userbot .ping"), () -> {
             inputField.setText(MiogramLocale.get("Пі-тян, перевір затримку через юзербот команду ping", "Пи-тян, проверь пинг через команду юзербота ping", "P-chan, check latency using userbot command ping"));
             onSendMessage();
         });
 
-        addChip(context, chipsRow, "📦 " + MiogramLocale.get("Мої плагіни", "Мои плагины", "My Plugins"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Мої плагіни", "Мои плагины", "My Plugins"), () -> {
             inputField.setText(MiogramLocale.get("Аме, покажи список встановлених плагінів MioHook", "Аме, покажи список установленных плагинов MioHook", "Ame, show list of installed MioHook plugins"));
             onSendMessage();
         });
 
         if (scopedDialogId != 0) {
-            addChip(context, chipsRow, "💬 " + MiogramLocale.get("Що тут пишуть?", "Что тут пишут?", "What are they writing?"), () -> {
+            addChip(context, chipsRow, MiogramLocale.get("Що тут пишуть?", "Что тут пишут?", "What are they writing?"), () -> {
                 inputField.setText(MiogramLocale.get("П-тян, прочитай останні повідомлення цього чату", "П-тян, прочитай последние сообщения этого чата", "Read the latest messages in this chat"));
                 onSendMessage();
             });
-            addChip(context, chipsRow, "🧹 " + MiogramLocale.get("Почистити цей чат", "Очистить этот чат", "Clear this chat"), () -> {
+            addChip(context, chipsRow, MiogramLocale.get("Почистити цей чат", "Очистить этот чат", "Clear this chat"), () -> {
                 inputField.setText(MiogramLocale.get("П-тян, будь ласка, очисти історію цього чату", "П-тян, пожалуйста, очисти историю этого чата", "Please clear history of this chat"));
                 onSendMessage();
             });
         } else {
-            addChip(context, chipsRow, "🧹 " + MiogramLocale.get("Почистити чат", "Очистить чат", "Clear chat"), () -> {
+            addChip(context, chipsRow, MiogramLocale.get("Почистити чат", "Очистить чат", "Clear chat"), () -> {
                 inputField.setText(MiogramLocale.get("Аме, допоможи мені почистити непотрібні чати", "Аме, помоги мне очистить ненужные чаты", "Help me clear unneeded chats"));
                 onSendMessage();
             });
         }
-        addChip(context, chipsRow, "⚡ " + MiogramLocale.get("Написати плагін (3.8)", "Написать плагин (3.8)", "Write Plugin (3.8)"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Написати плагін (3.8)", "Написать плагин (3.8)", "Write Plugin (3.8)"), () -> {
             inputField.setText(MiogramLocale.get("Напиши для мене плагін Miogram для автоперекладу на Gemini 3.8", "Напиши для меня плагин Miogram для автоперевода на Gemini 3.8", "Write a Miogram translation plugin using Gemini 3.8"));
         });
-        addChip(context, chipsRow, "👻 " + MiogramLocale.get("Ghost Mode", "Ghost Mode", "Ghost Mode"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Ghost Mode", "Ghost Mode", "Ghost Mode"), () -> {
             inputField.setText(MiogramLocale.get("Перемкни Ghost Mode", "Переключи Ghost Mode", "Toggle Ghost Mode"));
             onSendMessage();
         });
-        addChip(context, chipsRow, "♡ " + MiogramLocale.get("Як справи?", "Как дела?", "How are you?"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Як справи?", "Как дела?", "How are you?"), () -> {
             inputField.setText(MiogramLocale.get("Аме, як ти почуваєшся сьогодні?", "Аме, как ты себя чувствуешь сегодня?", "Ame, how are you feeling today?"));
             onSendMessage();
         });
-        addChip(context, chipsRow, "† " + MiogramLocale.get("BLESSING †", "BLESSING †", "BLESSING †"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("BLESSING †", "BLESSING †", "BLESSING †"), () -> {
             inputField.setText(MiogramLocale.get("Кангель, подаруй мені своє благословення! †BLESSING†", "Кангель, подари мне своё благословение! †BLESSING†", "KAngel, bestow your blessing upon me! †BLESSING†"));
             onSendMessage();
         });
-        addChip(context, chipsRow, "⌨ " + MiogramLocale.get("Консоль", "Консоль", "Console"), this::toggleConsole);
+        addChip(context, chipsRow, MiogramLocale.get("Консоль", "Консоль", "Console"), this::toggleConsole);
 
-        addChip(context, chipsRow, "🐞 " + MiogramLocale.get("Звіт про баг", "Отчет о баге", "Report Bug"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Звіт про баг", "Отчет о баге", "Report Bug"), () -> {
             MiogramSupabaseBridge.showBugReportDialog(
                     getParentActivity(),
                     MiogramLocale.get("Звіт про баг", "Отчет о баге", "Bug Report"),

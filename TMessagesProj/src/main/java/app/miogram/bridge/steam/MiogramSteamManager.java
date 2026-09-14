@@ -104,6 +104,25 @@ public class MiogramSteamManager {
     private final LongSparseArray<SteamProfile> profileCache = new LongSparseArray<>();
     private final LongSparseArray<Long> lastFetchTime = new LongSparseArray<>();
 
+    /** Last successful live Steam XML fetch (any profile). 0 = never yet. */
+    private volatile long lastLiveOkTime = 0;
+    /** Last live fetch failure reason (network/private profile). Null when healthy. */
+    private volatile String lastFetchError = null;
+
+    /**
+     * Warns when live Steam data is stale: profile closed/private, network
+     * blocked, or Steam XML lagging. Null when fresh.
+     */
+    public String getStaleWarning() {
+        if (!isLinked()) return null;
+        long ok = lastLiveOkTime;
+        if (ok == 0) return null;
+        if (SystemClock.elapsedRealtime() - ok < 30 * 60 * 1000L) return null;
+        String reason = lastFetchError;
+        return MiogramLocale.get("Steam не оновлюється >30 хв", "Steam не обновляется >30 мин", "Steam stale >30 min")
+                + (reason != null ? " (" + reason + ")" : "");
+    }
+
     private MiogramSteamManager() {
         // Load self profile from cache if present
         loadSelfFromCache();
@@ -256,6 +275,8 @@ public class MiogramSteamManager {
 
             final SteamProfile result = profile;
             if (result != null) {
+                lastLiveOkTime = SystemClock.elapsedRealtime();
+                lastFetchError = null;
                 profileQueryCache.put(clean, new CachedProfile(result));
                 if (!TextUtils.isEmpty(result.steamId)) {
                     profileQueryCache.put(result.steamId, new CachedProfile(result));
@@ -263,6 +284,8 @@ public class MiogramSteamManager {
                 if (finalResolvedId != null) {
                     profileQueryCache.put(finalResolvedId, new CachedProfile(result));
                 }
+            } else {
+                lastFetchError = MiogramLocale.get("профіль закритий або мережа", "профиль закрыт или сеть", "private profile or network");
             }
             AndroidUtilities.runOnUIThread(() -> {
                 if (callback != null) callback.onProfileLoaded(result);

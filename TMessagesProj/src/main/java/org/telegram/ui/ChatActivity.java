@@ -1914,6 +1914,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int miogram_split_screen = 4402;
     private final static int miogram_add_to_kanban = 4403;
     private final static int miogram_chat_ai = 4404;
+    private final static int miogram_download_video = 4405;
 
     private ActionBarMenuItem actionModeOtherItem; // NekoX
 
@@ -4533,6 +4534,39 @@ public class ChatActivity extends BaseFragment implements
                         });
                         presentFragment(companionActivity);
                     }
+                } else if (id == miogram_download_video) {
+                    CharSequence inputText = chatActivityEnterView != null ? chatActivityEnterView.getFieldText() : null;
+                    app.miogram.bridge.media.MiogramMediaDownloader.MediaLinkInfo info =
+                            app.miogram.bridge.media.MiogramMediaDownloader.extractSupportedUrl(inputText);
+                    if (info == null) {
+                        if (getParentActivity() != null) {
+                            BulletinFactory.of(ChatActivity.this).createErrorBulletin(
+                                    app.miogram.bridge.MiogramLocale.get("Вставте посилання на відео в поле вводу", "Вставьте ссылку на видео в поле ввода", "Paste a video link into the input field"), themeDelegate).show();
+                        }
+                    } else {
+                        app.miogram.bridge.media.MiogramMediaDownloader.downloadAndSend(
+                                getContext(), currentAccount, dialog_id, replyingMessageObject, info.url,
+                                (percent, statusText) -> {
+                                },
+                                new app.miogram.bridge.media.MiogramMediaDownloader.CompletionCallback() {
+                                    @Override
+                                    public void onSuccess(String message) {
+                                        if (chatActivityEnterView == null) return;
+                                        CharSequence cur = chatActivityEnterView.getFieldText();
+                                        if (!TextUtils.isEmpty(cur)) {
+                                            String updated = cur.toString().replace(info.url, "").trim();
+                                            AndroidUtilities.runOnUIThread(() -> chatActivityEnterView.setFieldText(updated, false));
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onError(String errorText) {
+                                        if (getParentActivity() != null) {
+                                            BulletinFactory.of(ChatActivity.this).createErrorBulletin("Помилка: " + errorText, themeDelegate).show();
+                                        }
+                                    }
+                                });
+                    }
                 } else if (id == call || id == video_call) {
                     if (currentUser != null && getParentActivity() != null) {
                         VoIPHelper.startCall(currentUser, id == video_call, userInfo != null && userInfo.video_calls_available, getParentActivity(), getMessagesController().getUserFull(currentUser.id), getAccountInstance());
@@ -5049,6 +5083,9 @@ public class ChatActivity extends BaseFragment implements
 
             // 1.4 AI Companion (marquee feature)
             chatMenuPrimaryItems.add(headerItem.lazilyAddSubItem(miogram_chat_ai, R.drawable.baseline_stars_24, app.miogram.bridge.MiogramLocale.get("ШІ Супутник ໒꒱", "ИИ Спутник ໒꒱", "AI Companion ໒꒱")));
+
+            // 1.4b Download video from link in input (TikTok / YouTube / Instagram / X)
+            chatMenuPrimaryItems.add(headerItem.lazilyAddSubItem(miogram_download_video, R.drawable.msg_video, app.miogram.bridge.MiogramLocale.get("Завантажити відео", "Скачать видео", "Download video")));
 
             // 1.5 Clear History
             if (!isTopic && !ChatObject.isMonoForum(currentChat)) {

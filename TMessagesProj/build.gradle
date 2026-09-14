@@ -3,8 +3,8 @@ import org.gradle.internal.os.OperatingSystem
 
 plugins {
     id 'com.android.application'
-    // MIogram-first-build: id 'com.google.gms.google-services'
-    // Miogram-first-build: id 'com.google.firebase.crashlytics'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
     id 'com.chaquo.python'
     id 'org.telegram.lottie-meta'
     id 'idea'

@@ -118,6 +118,11 @@ public class MiogramMediaDownloader {
 
         Utilities.globalQueue.postRunnable(() -> {
             try {
+                // Direct media file links (mp4/mov/webm/mkv/jpg/png/webp) need no extractor.
+                if (isDirectMediaUrl(mediaUrl)) {
+                    downloadDirectFile(currentAccount, dialogId, replyToMsg, mediaUrl, progressListener, callback);
+                    return;
+                }
                 MediaLinkInfo info = extractSupportedUrl(mediaUrl);
                 String platform = info != null ? info.platform : "";
 
@@ -272,11 +277,13 @@ public class MiogramMediaDownloader {
     // COBALT (YouTube, Shorts, Instagram, Twitter/X, Pinterest, etc.)
     // =========================================================================
 
+    // Keyless community mirrors first — api.cobalt.tools requires an API key
+    // since 2024 and usually answers 401, so it stays last as a fallback.
     private static final String[] COBALT_INSTANCES = new String[]{
-            "https://api.cobalt.tools/",
-            "https://cobalt.api.scity.network/",
             "https://co.wuk.sh/api/json",
-            "https://cobalt-api.kwiatekm.tokyo/"
+            "https://cobalt-api.kwiatekm.tokyo/",
+            "https://cobalt.api.scity.network/",
+            "https://api.cobalt.tools/"
     };
 
     private static void downloadViaCobalt(int currentAccount, long dialogId, MessageObject replyToMsg,
@@ -286,6 +293,7 @@ public class MiogramMediaDownloader {
 
             String downloadUrl = null;
             String filename = "media_" + System.currentTimeMillis() + ".mp4";
+            StringBuilder instanceErrors = new StringBuilder();
 
             for (String instance : COBALT_INSTANCES) {
                 try {
@@ -308,9 +316,19 @@ public class MiogramMediaDownloader {
                                 downloadUrl = picker.getJSONObject(0).optString("url", "");
                                 break;
                             }
+                        } else if ("error".equals(status)) {
+                            String errText = json.optJSONObject("error") != null
+                                    ? json.optJSONObject("error").optString("code", status)
+                                    : status;
+                            instanceErrors.append(shortHost(instance)).append(": ").append(errText).append("; ");
+                            FileLog.d("MiogramDL cobalt " + instance + " -> " + response);
+                            continue;
                         }
                     }
-                } catch (Throwable ignore) {}
+                    instanceErrors.append(shortHost(instance)).append(": empty; ");
+                } catch (Throwable e) {
+                    instanceErrors.append(shortHost(instance)).append(": ").append(e.getMessage() != null ? e.getMessage() : "net-err").append("; ");
+                }
             }
 
             if (TextUtils.isEmpty(downloadUrl)) {
@@ -331,8 +349,11 @@ public class MiogramMediaDownloader {
             }
 
             if (TextUtils.isEmpty(downloadUrl)) {
+                final String errDetails = instanceErrors.length() > 0 ? instanceErrors.toString() : "";
+                FileLog.d("MiogramDL all extractors failed for " + mediaUrl + " :: " + errDetails);
                 AndroidUtilities.runOnUIThread(() -> {
-                    if (callback != null) callback.onError(MiogramLocale.get("Не вдалося отримати відео з цього посилання", "Не удалось извлечь видео по этой ссылке", "Could not extract video"));
+                    if (callback != null) callback.onError(MiogramLocale.get("Не вдалося отримати відео з цього посилання", "Не удалось извлечь видео по этой ссылке", "Could not extract video")
+                            + (TextUtils.isEmpty(errDetails) ? "" : " (" + errDetails + ")"));
                 });
                 return;
             }
@@ -350,19 +371,7 @@ public class MiogramMediaDownloader {
 
             if (localFile.exists() && localFile.length() > 0) {
                 reportProgress(progressListener, 96, MiogramLocale.get("Відправка в чат...", "Отправка в чат...", "Sending to chat..."));
-                AndroidUtilities.runOnUIThread(() -> {
-                    AccountInstance ai = AccountInstance.getInstance(currentAccount);
-                    boolean isVideo = localFile.getName().endsWith(".mp4") || localFile.getName().endsWith(".webm") || localFile.getName().endsWith(".mkv");
-                    if (isVideo) {
-                        SendMessagesHelper.prepareSendingVideo(ai, localFile.getAbsolutePath(), null, null, null,
-                                dialogId, replyToMsg, null, null, null, null, 0, null, true, 0, 0, false, false, "", (SendMessageChatArguments) null, 0L, 0L);
-                    } else {
-                        SendMessagesHelper.prepareSendingPhoto(ai, localFile.getAbsolutePath(), null,
-                                dialogId, replyToMsg, null, null, "", null, null, null, 0, null, true, 0, 0, (SendMessageChatArguments) null);
-                    }
-                    MiogramHaptic.success();
-                    if (callback != null) callback.onSuccess(MiogramLocale.get("Медіа успішно надіслано!", "Медиа успешно отправлено!", "Media sent successfully!"));
-                });
+                sendLocalFile(currentAccount, dialogId, replyToMsg, localFile, "", callback);
             } else {
                 AndroidUtilities.runOnUIThread(() -> {
                     if (callback != null) callback.onError(MiogramLocale.get("Помилка завантаження потоку", "Ошибка загрузки потока", "Stream download failed"));
@@ -375,6 +384,84 @@ public class MiogramMediaDownloader {
                 if (callback != null) callback.onError(e.getMessage() != null ? e.getMessage() : "Cobalt error");
             });
         }
+    }
+
+    // =========================================================================
+    // DIRECT FILE FALLBACK (plain .mp4/.mov/.webm/.mkv/.jpg/.png links)
+    // =========================================================================
+
+    private static final Pattern DIRECT_MEDIA_PATTERN =
+            Pattern.compile("(?i)\\.(mp4|mov|webm|mkv|jpg|jpeg|png|webp)(\\?|#|$)");
+
+    private static boolean isDirectMediaUrl(String url) {
+        if (TextUtils.isEmpty(url)) return false;
+        try {
+            String path = new URL(url.split("\\s")[0]).getPath();
+            return DIRECT_MEDIA_PATTERN.matcher(path).find();
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    private static String shortHost(String instanceUrl) {
+        try {
+            return new URL(instanceUrl).getHost();
+        } catch (Throwable ignore) {
+            return instanceUrl;
+        }
+    }
+
+    private static void downloadDirectFile(int currentAccount, long dialogId, MessageObject replyToMsg,
+                                           String mediaUrl, ProgressListener progressListener, CompletionCallback callback) {
+        try {
+            reportProgress(progressListener, 30, MiogramLocale.get("Завантаження файлу...", "Загрузка файла...", "Downloading file..."));
+            String cleanUrl = mediaUrl.split("\\s")[0];
+            String name = cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1);
+            int q = name.indexOf('?');
+            if (q > 0) name = name.substring(0, q);
+            if (TextUtils.isEmpty(name)) name = "media_" + System.currentTimeMillis() + ".mp4";
+            File cacheDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
+            File localFile = new File(cacheDir, name);
+            downloadFileWithProgress(cleanUrl, localFile, (p, s) -> {
+                int calcP = 30 + (int) (p * 0.65f);
+                reportProgress(progressListener, calcP, p + "%");
+            });
+            if (localFile.exists() && localFile.length() > 0) {
+                sendLocalFile(currentAccount, dialogId, replyToMsg, localFile, "", callback);
+            } else {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (callback != null) callback.onError(MiogramLocale.get("Помилка завантаження потоку", "Ошибка загрузки потока", "Stream download failed"));
+                });
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+            AndroidUtilities.runOnUIThread(() -> {
+                if (callback != null) callback.onError(e.getMessage() != null ? e.getMessage() : "Download error");
+            });
+        }
+    }
+
+    private static void sendLocalFile(int currentAccount, long dialogId, MessageObject replyToMsg,
+                                      File localFile, String caption, CompletionCallback callback) {
+        reportProgress(null, 96, "");
+        AndroidUtilities.runOnUIThread(() -> {
+            AccountInstance ai = AccountInstance.getInstance(currentAccount);
+            String n = localFile.getName().toLowerCase();
+            boolean isVideo = n.endsWith(".mp4") || n.endsWith(".mov") || n.endsWith(".webm") || n.endsWith(".mkv");
+            boolean isPhoto = n.endsWith(".jpg") || n.endsWith(".jpeg") || n.endsWith(".png") || n.endsWith(".webp");
+            if (isVideo) {
+                SendMessagesHelper.prepareSendingVideo(ai, localFile.getAbsolutePath(), null, null, null,
+                        dialogId, replyToMsg, null, null, null, null, 0, null, true, 0, 0, false, false, caption, (SendMessageChatArguments) null, 0L, 0L);
+            } else if (isPhoto) {
+                SendMessagesHelper.prepareSendingPhoto(ai, localFile.getAbsolutePath(), null,
+                        dialogId, replyToMsg, null, null, caption, null, null, null, 0, null, true, 0, 0, (SendMessageChatArguments) null);
+            } else {
+                SendMessagesHelper.prepareSendingDocument(ai, localFile.getAbsolutePath(), localFile.getAbsolutePath(),
+                        null, caption, "", dialogId, replyToMsg, null, null, null, null, true, 0, null, null, false);
+            }
+            MiogramHaptic.success();
+            if (callback != null) callback.onSuccess(MiogramLocale.get("Медіа успішно надіслано!", "Медиа успешно отправлено!", "Media sent successfully!"));
+        });
     }
 
     // =========================================================================
@@ -424,7 +511,11 @@ public class MiogramMediaDownloader {
             out.close();
 
             int code = conn.getResponseCode();
-            InputStream in = (code >= 200 && code < 300) ? conn.getInputStream() : conn.getErrorStream();
+            if (code < 200 || code >= 300) {
+                FileLog.d("MiogramDL POST " + urlStr + " -> HTTP " + code);
+                return null;
+            }
+            InputStream in = conn.getInputStream();
             if (in != null) {
                 java.io.ByteArrayOutputStream resOut = new java.io.ByteArrayOutputStream();
                 byte[] buf = new byte[4096];
@@ -444,7 +535,10 @@ public class MiogramMediaDownloader {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setConnectTimeout(12000);
         conn.setReadTimeout(20000);
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+        conn.setInstanceFollowRedirects(true);
+        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+        conn.setRequestProperty("Accept", "video/*,image/*,*/*");
+        conn.setRequestProperty("Referer", url.getProtocol() + "://" + url.getHost() + "/");
         conn.connect();
 
         int responseCode = conn.getResponseCode();
@@ -456,8 +550,16 @@ public class MiogramMediaDownloader {
             conn = (HttpURLConnection) url.openConnection();
             conn.setConnectTimeout(12000);
             conn.setReadTimeout(20000);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+            conn.setRequestProperty("Accept", "video/*,image/*,*/*");
             conn.connect();
+            responseCode = conn.getResponseCode();
+        }
+
+        if (responseCode < 200 || responseCode >= 300) {
+            conn.disconnect();
+            throw new Exception("HTTP " + responseCode);
         }
 
         long fileLength = conn.getContentLength();

@@ -676,6 +676,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     private AiButtonDrawable aiButtonIcon;
     private ImageView aiButton;
     private ImageView richButton;
+    private ImageView mediaDotsButton;
     private float attachButtonAlpha = 1.0f;
     private ImageView suggestButton;
     @Nullable
@@ -2988,6 +2989,20 @@ public class ChatActivityEnterView extends FrameLayout implements
         richButton.setAlpha(0.0f);
         richButton.setScaleX(0.6f);
         richButton.setScaleY(0.6f);
+
+        // Miogram: ⋮ button with video-download block. Lives INSIDE the input
+        // field (left of attach), visible only while the field contains
+        // a supported media link.
+        mediaDotsButton = new ImageView(context);
+        mediaDotsButton.setImageResource(R.drawable.ic_ab_other);
+        mediaDotsButton.setScaleType(ImageView.ScaleType.CENTER);
+        mediaDotsButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.SRC_IN));
+        mediaDotsButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_CIRCLE_20DP, dp(16)));
+        messageEditTextContainer.addView(mediaDotsButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 48, 0));
+        mediaDotsButton.setContentDescription(app.miogram.bridge.MiogramLocale.get("Завантажити відео", "Скачать видео", "Download video"));
+        ScaleStateListAnimator.apply(mediaDotsButton);
+        mediaDotsButton.setOnClickListener(v -> showMediaDotsMenu());
+        mediaDotsButton.setVisibility(View.GONE);
 
         if (audioToSend != null) {
             createRecordAudioPanel();
@@ -6746,6 +6761,13 @@ public class ChatActivityEnterView extends FrameLayout implements
                     heightShouldBeChanged = false;
                 }
 
+                if (mediaDotsButton != null) {
+                    boolean hasLink = app.miogram.bridge.media.MiogramMediaDownloader.extractSupportedUrl(charSequence) != null;
+                    if (mediaDotsButton.getVisibility() != (hasLink ? VISIBLE : GONE)) {
+                        mediaDotsButton.setVisibility(hasLink ? VISIBLE : GONE);
+                        updateFieldRight(lastAttachVisible);
+                    }
+                }
                 if (innerTextChange == 1) {
                     return;
                 }
@@ -7807,6 +7829,59 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     public final ColoredImageSpan[] spans = new ColoredImageSpan[1];
+
+    /**
+     * Miogram ⋮ menu in the input row: download block for supported media links.
+     */
+    private void showMediaDotsMenu() {
+        if (mediaDotsButton == null || messageEditText == null) {
+            return;
+        }
+        CharSequence txt = messageEditText.getText();
+        app.miogram.bridge.media.MiogramMediaDownloader.MediaLinkInfo info =
+                app.miogram.bridge.media.MiogramMediaDownloader.extractSupportedUrl(txt);
+        if (info == null) {
+            return;
+        }
+        ItemOptions options = ItemOptions.makeOptions(textFieldContainer, resourcesProvider, mediaDotsButton);
+        options.add(R.drawable.msg_video,
+                "⬇ " + app.miogram.bridge.MiogramLocale.get("Завантажити відео", "Скачать видео", "Download video") + " • " + info.platformName,
+                () -> downloadVideoFromInput(info.url));
+        options.show();
+    }
+
+    private void downloadVideoFromInput(String mediaUrl) {
+        Toast.makeText(getContext(), app.miogram.bridge.MiogramLocale.get("Завантаження відео…", "Загрузка видео…", "Downloading video…"), Toast.LENGTH_SHORT).show();
+        app.miogram.bridge.media.MiogramMediaDownloader.downloadAndSend(
+                getContext(),
+                currentAccount,
+                dialog_id,
+                replyingMessageObject,
+                mediaUrl,
+                (percent, statusText) -> {
+                },
+                new app.miogram.bridge.media.MiogramMediaDownloader.CompletionCallback() {
+                    @Override
+                    public void onSuccess(String message) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (messageEditText == null) return;
+                            CharSequence cur = messageEditText.getText();
+                            if (!TextUtils.isEmpty(cur)) {
+                                String updated = cur.toString().replace(mediaUrl, "").trim();
+                                messageEditText.setText(updated);
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String errorText) {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            if (parentFragment == null || parentFragment.getParentActivity() == null) return;
+                            Toast.makeText(getContext(), app.miogram.bridge.MiogramLocale.get("Не вийшло: ", "Не вышло: ", "Failed: ") + errorText, Toast.LENGTH_LONG).show();
+                        });
+                    }
+                });
+    }
 
     private CharSequence getActiveSongLyricsHint() {
         try {
@@ -10119,6 +10194,17 @@ public class ChatActivityEnterView extends FrameLayout implements
         layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, sendButton.width() - dp(DEFAULT_HEIGHT)));
         if (doneButton != null && doneButton.getVisibility() == VISIBLE) {
             layoutParams.rightMargin = Math.max(layoutParams.rightMargin, Math.max(0, doneButton.width() - dp(DEFAULT_HEIGHT)));
+        }
+        // Miogram: reserve room for the ⋮ download button inside the field.
+        if (mediaDotsButton != null && mediaDotsButton.getVisibility() == VISIBLE) {
+            boolean attachShown = attachVisible == 1 || attachVisible == 2;
+            FrameLayout.LayoutParams dotsLp = (FrameLayout.LayoutParams) mediaDotsButton.getLayoutParams();
+            int dotsRight = attachShown ? dp(48) : dp(2);
+            if (dotsLp.rightMargin != dotsRight) {
+                dotsLp.rightMargin = dotsRight;
+                mediaDotsButton.setLayoutParams(dotsLp);
+            }
+            layoutParams.rightMargin += dp(48);
         }
         if (oldRightMargin != layoutParams.rightMargin) {
             messageEditText.setLayoutParams(layoutParams);

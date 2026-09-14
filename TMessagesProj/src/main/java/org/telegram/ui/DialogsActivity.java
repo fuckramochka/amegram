@@ -15266,8 +15266,20 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (communityId != 0) {
             return navigationBarHeight + dp(12 + 48 + 12);
         } else {
-            return navigationBarHeight + additionNavigationBarHeight + getListViewFloatingTabsPadding();
+            return navigationBarHeight + getDockedTabsPadding() + getListViewFloatingTabsPadding();
         }
+    }
+
+    // Miogram: docked bottom-tabs height computed live — nav style/visibility can
+    // change at runtime without view recreate; stale cache hid the last chats.
+    private int getDockedTabsPadding() {
+        if (!hasMainTabs) {
+            return 0;
+        }
+        if (MainTabsLayout.isBottomNavigationVisible() && !MainTabsLayout.isBottomNavigationFloating()) {
+            return dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp());
+        }
+        return 0;
     }
 
     private int getListViewFloatingTabsPadding() {
@@ -15340,6 +15352,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private void checkUi_chatListViewPaddingsBottom() {
         if (viewPages != null) {
+            additionNavigationBarHeight = getDockedTabsPadding();
             final int listPaddingBottom = calculateListViewPaddingBottom();
             for (int i = 0; i < viewPages.length; i++) {
                 if (viewPages[i] != null) {

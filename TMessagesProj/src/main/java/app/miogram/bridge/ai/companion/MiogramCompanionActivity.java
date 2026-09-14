@@ -249,8 +249,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         }
         // heroCarouselLayout has 16dp horizontal padding (8dp left + 8dp right)
         // Keep card bounds strictly inside container to avoid overflow on all screens/tablets
-        int maxSafe = Math.min(w - AndroidUtilities.dp(24), AndroidUtilities.dp(360));
-        return Math.max(AndroidUtilities.dp(260), maxSafe);
+        int maxSafe = Math.min(w - AndroidUtilities.dp(24), AndroidUtilities.dp(340));
+        return Math.max(AndroidUtilities.dp(220), maxSafe);
     }
 
     private void updateCardWidths() {
@@ -362,6 +362,12 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         heroCard.addOnLayoutChangeListener((v, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> {
             if (right - left != oldRight - oldLeft) {
                 updateCardWidths();
+                // Re-seat the active persona page after resize/rotation so the
+                // card never renders half-cut (looks like overflow off-screen).
+                if (heroCarouselScroll != null) {
+                    int pageWidth = getCardSlideWidth() + AndroidUtilities.dp(8);
+                    heroCarouselScroll.scrollTo(MiogramCompanionPrefs.isAmeActive() ? 0 : pageWidth, 0);
+                }
             }
         });
 

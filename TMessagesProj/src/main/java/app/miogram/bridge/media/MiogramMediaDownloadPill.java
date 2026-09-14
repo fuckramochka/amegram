@@ -51,6 +51,10 @@ public class MiogramMediaDownloadPill extends FrameLayout {
     private MiogramMediaDownloader.MediaLinkInfo currentInfo;
     private boolean isDownloading = false;
     private boolean isDismissedForCurrentUrl = false;
+    // Docked Y offset above the input (negative). Replaces the old pattern of
+    // animating translationY back to 0, which dropped the pill onto the text.
+    private float dockTranslationY = 0f;
+    private boolean showAnimRunning = false;
 
     // UI elements
     private final FrameLayout pillContainer;
@@ -289,41 +293,70 @@ public class MiogramMediaDownloadPill extends FrameLayout {
         }
     }
 
+    /**
+     * Updates where the pill docks above the input. Applied immediately when
+     * visible and idle, otherwise picked up by the next show() animation.
+     */
+    public void setDockTranslationY(float y) {
+        dockTranslationY = y;
+        if (getVisibility() == View.VISIBLE && !showAnimRunning) {
+            setTranslationY(y);
+        }
+    }
+
+    public float getDockTranslationY() {
+        return dockTranslationY;
+    }
+
     public void show() {
         if (getVisibility() == View.VISIBLE && getAlpha() >= 0.9f) return;
 
+        animate().cancel();
         setVisibility(View.VISIBLE);
         setAlpha(0f);
         setScaleX(0.82f);
         setScaleY(0.82f);
-        setTranslationY(AndroidUtilities.dp(16));
+        setTranslationY(dockTranslationY + AndroidUtilities.dp(16));
 
+        showAnimRunning = true;
         animate()
                 .alpha(1.0f)
                 .scaleX(1.0f)
                 .scaleY(1.0f)
-                .translationY(0f)
+                .translationY(dockTranslationY)
                 .setDuration(240)
                 .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .setListener(null)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        showAnimRunning = false;
+                        setTranslationY(dockTranslationY);
+                    }
+
+                    @Override
+                    public void onAnimationCancel(Animator animation) {
+                        showAnimRunning = false;
+                    }
+                })
                 .start();
     }
 
     public void hide() {
         if (getVisibility() != View.VISIBLE) return;
 
+        animate().cancel();
         animate()
                 .alpha(0f)
                 .scaleX(0.82f)
                 .scaleY(0.82f)
-                .translationY(AndroidUtilities.dp(12))
+                .translationY(dockTranslationY + AndroidUtilities.dp(12))
                 .setDuration(180)
                 .setInterpolator(CubicBezierInterpolator.DEFAULT)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         setVisibility(View.GONE);
-                        setTranslationY(0);
+                        setTranslationY(dockTranslationY);
                         setScaleX(1f);
                         setScaleY(1f);
                     }

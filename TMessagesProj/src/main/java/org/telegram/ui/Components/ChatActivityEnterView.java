@@ -686,6 +686,22 @@ public class ChatActivityEnterView extends FrameLayout implements
     public FrameLayout textFieldContainer;
     public FrameLayout sendButtonContainer;
     private app.miogram.bridge.media.MiogramMediaDownloadPill mediaDownloadPill;
+
+    /**
+     * Docks the download pill above everything it could overlap: the input
+     * row plus the reply/top panel when visible (scaled by its enter progress
+     * so the pill tracks the slide animation instead of jumping).
+     */
+    private void updateMediaPillDock() {
+        if (mediaDownloadPill == null || messageEditTextContainer == null) {
+            return;
+        }
+        int dock = messageEditTextContainer.getHeight();
+        if (topView != null && topView.getVisibility() == VISIBLE && topView.getMeasuredHeight() > 0) {
+            dock += Math.round(topView.getMeasuredHeight() * topViewVisible());
+        }
+        mediaDownloadPill.setDockTranslationY(-dock - dp(8));
+    }
     private ImageView sendOutlineView;
     public RichMessageLayout.PreviewView richDraftPreview;
     private boolean richDraftActive;
@@ -2739,6 +2755,8 @@ public class ChatActivityEnterView extends FrameLayout implements
         FrameLayout frameLayout = messageEditTextContainer = new FrameLayout(context) {
             @Override
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                 final int height = Math.max(dp(44), getMeasuredHeight());
                 if (animatorInputFieldHeight.getFactor() > 0) {
@@ -2746,18 +2764,14 @@ public class ChatActivityEnterView extends FrameLayout implements
                 } else {
                     animatorInputFieldHeight.forceFactor(height);
                 }
-                if (mediaDownloadPill != null && mediaDownloadPill.getVisibility() == VISIBLE) {
-                    mediaDownloadPill.setTranslationY(-height - dp(8));
-                }
+                updateMediaPillDock();
                 checkUi_TopViewVisibility();
             }
 
             @Override
             protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
                 super.onLayout(changed, left, top, right, bottom);
-                if (mediaDownloadPill != null && mediaDownloadPill.getVisibility() == VISIBLE) {
-                    mediaDownloadPill.setTranslationY(-getMeasuredHeight() - dp(8));
-                }
+                updateMediaPillDock();
                 if (!animationParamsX.isEmpty()) {
                     for (int i = 0; i < getChildCount(); i++) {
                         View child = getChildAt(i);
@@ -6784,8 +6798,8 @@ public class ChatActivityEnterView extends FrameLayout implements
 
                 if (mediaDownloadPill != null) {
                     mediaDownloadPill.inspectText(charSequence);
-                    if (mediaDownloadPill.getVisibility() == VISIBLE && messageEditTextContainer != null) {
-                        mediaDownloadPill.setTranslationY(-messageEditTextContainer.getHeight() - dp(8));
+                    if (mediaDownloadPill.getVisibility() == VISIBLE) {
+                        updateMediaPillDock();
                     }
                 }
 

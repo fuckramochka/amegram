@@ -6,6 +6,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Cells.TextCell;
@@ -67,6 +68,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int headerSystemRow;
     private int pluginsRow;
     private int performanceRow;
+    private int pushRow;
     private int generalRow;
     private int updaterRow;
 
@@ -112,6 +114,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         headerSystemRow = addRow();
         pluginsRow = addRow();
         performanceRow = addRow();
+        pushRow = addRow();
         generalRow = addRow();
         updaterRow = addRow();
     }
@@ -161,6 +164,12 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new app.exteraless.plugins.ui.PluginsActivity());
         } else if (position == performanceRow) {
             presentFragment(new MiogramPerformanceActivity());
+        } else if (position == pushRow) {
+            app.miogram.bridge.push.MiogramPushSheet sheet = new app.miogram.bridge.push.MiogramPushSheet(getParentActivity(), null);
+            sheet.show();
+            if (listView != null && listView.getAdapter() != null) {
+                AndroidUtilities.runOnUIThread(() -> listView.getAdapter().notifyDataSetChanged(), 1500);
+            }
         } else if (position == telemetryRow) {
             boolean nextState = !MiogramSupabaseBridge.isTelemetryEnabled();
             MiogramSupabaseBridge.setTelemetryEnabled(nextState);
@@ -360,6 +369,13 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Продуктивність та оптимізація", "Производительность и оптимизация", "Performance & Optimization"),
                                 R.drawable.msg_speed_solar,
+                                true
+                        );
+                    } else if (position == pushRow) {
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Сповіщення та фон", "Уведомления и фон", "Notifications & Background"),
+                                app.miogram.bridge.push.MiogramPushSheet.getShortStatus(),
+                                R.drawable.baseline_notifications_24,
                                 true
                         );
                     } else if (position == generalRow) {

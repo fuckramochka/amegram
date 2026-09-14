@@ -23,13 +23,14 @@ import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.customui.MiogramHaptic;
 import app.miogram.bridge.discord.MiogramDiscordManager;
 import app.miogram.bridge.github.MiogramGitHubManager;
+import app.miogram.bridge.roblox.MiogramRobloxManager;
 import app.miogram.bridge.spotify.MiogramSpotifyManager;
 import app.miogram.bridge.spotify.MiogramSpotifySheet;
 import app.miogram.bridge.steam.MiogramSteamManager;
 import app.miogram.bridge.steam.MiogramSteamSheet;
 
 /**
- * Unified Hub for Connected Platforms (Steam, GitHub, Discord, Spotify).
+ * Unified Hub for Connected Platforms (Steam, GitHub, Discord, Spotify, Roblox).
  * Zero tacky emojis in buttons — pure Durov-grade typography & micro-interactions.
  */
 public class MiogramConnectedAppsSheet extends BottomSheet {
@@ -130,6 +131,9 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
 
         // 4. Spotify Card
         buildSpotifyCard(context);
+
+        // 5. Roblox Card
+        buildRobloxCard(context);
     }
 
     private LinearLayout createCardContainer(Context context) {
@@ -422,6 +426,88 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
             dismiss();
         });
         actions.addView(btnGuide, LayoutHelper.createLinear(0, 34, 0.7f, 0, 0, 0, 0));
+    }
+
+    // ROBLOX
+    private void buildRobloxCard(Context context) {
+        LinearLayout card = createCardContainer(context);
+        cardsContainer.addView(card, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        MiogramRobloxManager rm = MiogramRobloxManager.getInstance();
+        boolean linked = rm.isLinked();
+
+        LinearLayout headerRow = new LinearLayout(context);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        headerRow.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(headerRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
+
+        TextView name = new TextView(context);
+        name.setText("Roblox");
+        name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        name.setTypeface(AndroidUtilities.bold());
+        name.setTextColor(0xFFFF8A80);
+        headerRow.addView(name, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
+
+        TextView badge = createStatusBadge(context, linked);
+        headerRow.addView(badge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        TextView desc = new TextView(context);
+        desc.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        desc.setTextColor(0xAAFFFFFF);
+        desc.setSingleLine(true);
+        desc.setEllipsize(TextUtils.TruncateAt.END);
+        if (linked) {
+            MiogramRobloxManager.RobloxPresence sp = rm.getSelfPresence();
+            String status = "@" + rm.getLinkedUsername();
+            if (sp != null && sp.type != MiogramRobloxManager.TYPE_UNKNOWN) {
+                status += " • " + sp.getStatusText();
+            } else if (!rm.hasCookie()) {
+                status += " • " + MiogramLocale.get("додайте cookie для live-статусу", "добавьте cookie для live-статуса", "add cookie for live status");
+            }
+            desc.setText(status);
+        } else {
+            desc.setText(MiogramLocale.get("Онлайн / у грі / назва гри", "Онлайн / в игре / название игры", "Online / in-game / game name"));
+        }
+        card.addView(desc, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        LinearLayout actions = new LinearLayout(context);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        card.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        TextView btnConnect = createButton(context, linked
+                ? MiogramLocale.get("Змінити", "Изменить", "Change")
+                : MiogramLocale.get("Підключити", "Подключить", "Connect"), 0x33E2231A, 0xFFFF8A80);
+        btnConnect.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            rm.showLinkDialog(context, user -> {
+                buildCards();
+                notifyChanged();
+            });
+        });
+        actions.addView(btnConnect, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 6, 0));
+
+        TextView btnCookie = createButton(context, rm.hasCookie()
+                ? MiogramLocale.get("Cookie ✓", "Cookie ✓", "Cookie ✓")
+                : MiogramLocale.get("Cookie", "Cookie", "Cookie"), 0x18FFFFFF, 0xFFD2DBE3);
+        btnCookie.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            rm.showCookieDialog(context, () -> {
+                buildCards();
+                notifyChanged();
+            });
+        });
+        actions.addView(btnCookie, LayoutHelper.createLinear(0, 34, 0.9f, 0, 0, linked ? 6 : 0, 0));
+
+        if (linked) {
+            TextView btnUnlink = createButton(context, MiogramLocale.get("Відв'язати", "Отвязать", "Unlink"), 0x22FF4B4B, 0xFFFF6B6B);
+            btnUnlink.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                rm.unlink();
+                buildCards();
+                notifyChanged();
+            });
+            actions.addView(btnUnlink, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 0, 0));
+        }
     }
 
     private TextView createStatusBadge(Context context, boolean active) {

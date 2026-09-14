@@ -11,12 +11,13 @@ import org.telegram.messenger.UserConfig;
 import app.miogram.bridge.badge.MiogramSupabaseBridge;
 import app.miogram.bridge.discord.MiogramDiscordManager;
 import app.miogram.bridge.github.MiogramGitHubManager;
+import app.miogram.bridge.roblox.MiogramRobloxManager;
 import app.miogram.bridge.spotify.MiogramSpotifyManager;
 import app.miogram.bridge.steam.MiogramSteamManager;
 
 /**
  * Unified Cloud Presence model and caching engine for Miogram users.
- * Synchronizes connected platforms (Steam, GitHub, Discord, Spotify)
+ * Synchronizes connected platforms (Steam, GitHub, Discord, Spotify, Roblox)
  * through the Supabase miogram_badges table using client_version payload.
  */
 public class MiogramCloudPresence {
@@ -37,6 +38,11 @@ public class MiogramCloudPresence {
     public String spotifyAlbum = "";
     public String spotifyArtwork = "";
     public boolean spotifyPlaying = false;
+    public String robloxUser = "";
+    public String robloxId = "";
+    public String robloxGame = "";
+    public String robloxUniverse = "";
+    public int robloxState = -1;
     public long lastUpdated = 0;
 
     private static final LongSparseArray<MiogramCloudPresence> presenceCache = new LongSparseArray<>();
@@ -53,7 +59,9 @@ public class MiogramCloudPresence {
                 !TextUtils.isEmpty(githubUser) ||
                 !TextUtils.isEmpty(discordId) ||
                 !TextUtils.isEmpty(spotifyUser) ||
-                !TextUtils.isEmpty(spotifyTrack);
+                !TextUtils.isEmpty(spotifyTrack) ||
+                !TextUtils.isEmpty(robloxUser) ||
+                !TextUtils.isEmpty(robloxId);
     }
 
     public static void putPresence(long userId, MiogramCloudPresence presence) {
@@ -86,6 +94,11 @@ public class MiogramCloudPresence {
             if (!TextUtils.isEmpty(spotifyAlbum)) obj.put("spb", spotifyAlbum);
             if (!TextUtils.isEmpty(spotifyArtwork)) obj.put("spw", spotifyArtwork);
             if (spotifyPlaying) obj.put("spp", true);
+            if (!TextUtils.isEmpty(robloxUser)) obj.put("rbu", robloxUser);
+            if (!TextUtils.isEmpty(robloxId)) obj.put("rbi", robloxId);
+            if (!TextUtils.isEmpty(robloxGame)) obj.put("rbg", robloxGame);
+            if (!TextUtils.isEmpty(robloxUniverse)) obj.put("rbgi", robloxUniverse);
+            if (robloxState >= 0) obj.put("rbs", robloxState);
         } catch (Throwable t) {
             FileLog.e(t);
         }
@@ -108,6 +121,11 @@ public class MiogramCloudPresence {
         p.spotifyAlbum = obj.optString("spb", obj.optString("spotify_album", ""));
         p.spotifyArtwork = obj.optString("spw", obj.optString("spotify_artwork", ""));
         p.spotifyPlaying = obj.optBoolean("spp", obj.optBoolean("spotify_playing", false));
+        p.robloxUser = obj.optString("rbu", obj.optString("roblox_user", ""));
+        p.robloxId = obj.optString("rbi", obj.optString("roblox_id", ""));
+        p.robloxGame = obj.optString("rbg", obj.optString("roblox_game", ""));
+        p.robloxUniverse = obj.optString("rbgi", obj.optString("roblox_universe", ""));
+        p.robloxState = obj.optInt("rbs", obj.optInt("roblox_state", -1));
         p.lastUpdated = System.currentTimeMillis();
         return p;
     }
@@ -149,7 +167,9 @@ public class MiogramCloudPresence {
             if (sp != null) {
                 p.steamName = sp.personaName;
                 p.steamAvatar = sp.avatarUrl;
-                if (sp.hasGame()) {
+                // Broadcast only the LIVE game. Most-played stays card-only,
+                // otherwise idle users look like they play their favorite 24/7.
+                if (sp.isLiveGame()) {
                     p.steamGame = sp.gameName;
                     p.steamGameId = sp.gameId;
                 }
@@ -179,6 +199,21 @@ public class MiogramCloudPresence {
             }
         }
 
+        if (MiogramRobloxManager.getInstance().isLinked()) {
+            MiogramRobloxManager rm = MiogramRobloxManager.getInstance();
+            p.robloxUser = rm.getDisplayName();
+            p.robloxId = String.valueOf(rm.getLinkedUserId());
+            MiogramRobloxManager.RobloxPresence rp = rm.getSelfPresence();
+            if (rp != null) {
+                p.robloxState = rp.type;
+                // Broadcast the game only while actually in-game (same rule as Steam).
+                if (rp.isInGame()) {
+                    p.robloxGame = rp.gameName;
+                    p.robloxUniverse = String.valueOf(rp.universeId);
+                }
+            }
+        }
+
         p.lastUpdated = System.currentTimeMillis();
         putPresence(userId, p);
         return p;
@@ -186,8 +221,12 @@ public class MiogramCloudPresence {
 
     /**
      * Synchronizes current self presence snapshot to Supabase.
+     * Lazily starts the periodic refresher so live sources keep updating.
      */
     public static void syncSelfToCloud(long userId) {
+        try {
+            MiogramPresenceRefresher.start();
+        } catch (Throwable ignore) {}
         if (userId == 0) {
             try {
                 userId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();

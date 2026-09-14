@@ -264,9 +264,10 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         if (app.miogram.bridge.github.MiogramGitHubManager.getInstance().isLinked()) count++;
                         if (app.miogram.bridge.discord.MiogramDiscordManager.getInstance().isLinked()) count++;
                         if (app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().isLinked()) count++;
+                        if (app.miogram.bridge.roblox.MiogramRobloxManager.getInstance().isLinked()) count++;
                         String val = count > 0
                                 ? (count + " " + MiogramLocale.get("підключено", "подключено", "linked"))
-                                : MiogramLocale.get("Steam, GitHub, Discord, Spotify", "Steam, GitHub, Discord, Spotify", "Steam, GitHub, Discord, Spotify");
+                                : MiogramLocale.get("Steam, GitHub, Discord, Spotify, Roblox", "Steam, GitHub, Discord, Spotify, Roblox", "Steam, GitHub, Discord, Spotify, Roblox");
                         cell.setTextAndValueAndIcon(
                                 MiogramLocale.get("Прив'язані додатки ໒꒱", "Привязанные приложения ໒꒱", "Connected Apps ໒꒱"),
                                 val,

@@ -548,6 +548,22 @@ public class MiogramCompanionToolbox {
                             }
                         });
                     }));
+            app.miogram.bridge.ai.tools.MioTool.register(new app.miogram.bridge.ai.tools.MioTool.Def(
+                    "roblox_status", "Roblox", "roblox_status() — check Roblox online / in-game status and current game.", false,
+                    (account, params, cb) -> {
+                        app.miogram.bridge.roblox.MiogramRobloxManager rm = app.miogram.bridge.roblox.MiogramRobloxManager.getInstance();
+                        if (!rm.isLinked()) {
+                            cb.run("Roblox account is not linked.");
+                            return;
+                        }
+                        rm.refreshSelf(p -> {
+                            if (p == null) {
+                                cb.run("Roblox @" + rm.getLinkedUsername() + ": live status unavailable (link .ROBLOSECURITY cookie for live presence).");
+                            } else {
+                                cb.run("Roblox @" + rm.getLinkedUsername() + " (" + rm.getDisplayName() + "): " + p.getStatusText());
+                            }
+                        });
+                    }));
         } catch (Throwable ignore) {}
     }
 

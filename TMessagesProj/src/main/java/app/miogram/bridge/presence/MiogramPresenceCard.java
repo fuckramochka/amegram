@@ -30,15 +30,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 import app.miogram.bridge.MiogramLocale;
+import app.miogram.bridge.badge.MiogramSupabaseBridge;
 import app.miogram.bridge.customui.MiogramHaptic;
 import app.miogram.bridge.discord.MiogramDiscordManager;
 import app.miogram.bridge.github.MiogramGitHubManager;
+import app.miogram.bridge.roblox.MiogramRobloxManager;
 import app.miogram.bridge.spotify.MiogramSpotifyManager;
 import app.miogram.bridge.steam.MiogramSteamManager;
 
 /**
  * Unified Multi-Platform Digital Presence Card for Telegram Profiles.
- * Dynamically displays only connected services (Steam, GitHub, Discord, Spotify).
+ * Dynamically displays only connected services (Steam, GitHub, Discord, Spotify, Roblox).
  * Navigation is controlled via reactive indicator dots that only exist for connected platforms.
  * Zero tacky emojis in buttons — pure Durov-grade minimalism.
  */
@@ -48,6 +50,7 @@ public class MiogramPresenceCard extends FrameLayout {
     public static final int SERVICE_GITHUB = 1;
     public static final int SERVICE_DISCORD = 2;
     public static final int SERVICE_SPOTIFY = 3;
+    public static final int SERVICE_ROBLOX = 4;
 
     private final Theme.ResourcesProvider resourcesProvider;
     private final ViewPager viewPager;
@@ -65,6 +68,7 @@ public class MiogramPresenceCard extends FrameLayout {
     private MiogramSteamManager.SteamProfile steamProfile;
     private MiogramGitHubManager.GitHubUser githubUser;
     private MiogramDiscordManager.DiscordPresence discordPresence;
+    private MiogramRobloxManager.RobloxPresence robloxPresence;
 
     private final MiogramSpotifyManager.SpotifyListener spotifyListener = new MiogramSpotifyManager.SpotifyListener() {
         @Override
@@ -206,13 +210,41 @@ public class MiogramPresenceCard extends FrameLayout {
             refreshActiveServices();
             loadLiveData();
         }
+        // Live auto-refresh while the card is open: cloud snapshot (forced,
+        // bypasses the memory cache) + per-service live pulls. This is what
+        // makes other users' new game / track appear without reopening.
+        AndroidUtilities.cancelRunOnUIThread(liveRefreshRunnable);
+        AndroidUtilities.runOnUIThread(liveRefreshRunnable, 60_000);
     }
 
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         MiogramSpotifyManager.getInstance().removeListener(spotifyListener);
+        AndroidUtilities.cancelRunOnUIThread(liveRefreshRunnable);
     }
+
+    private final Runnable liveRefreshRunnable = new Runnable() {
+        @Override
+        public void run() {
+            try {
+                if (!isSelf && currentUserId != 0) {
+                    MiogramSupabaseBridge.fetchUserPresence(currentUserId, true, presence -> {
+                        if (presence != null && presence.userId == currentUserId) {
+                            cloudPresence = presence;
+                            applyCloudPresence(presence);
+                        } else {
+                            refreshLiveServices();
+                        }
+                    });
+                } else {
+                    refreshActiveServices();
+                    refreshLiveServices();
+                }
+            } catch (Throwable ignore) {}
+            AndroidUtilities.runOnUIThread(liveRefreshRunnable, 60_000);
+        }
+    };
 
     public void bindUser(long userId, boolean isSelf) {
         this.currentUserId = userId;
@@ -227,15 +259,18 @@ public class MiogramPresenceCard extends FrameLayout {
             loadLiveData();
         } else {
             cloudPresence = MiogramCloudPresence.getPresence(userId);
+            // Forced cloud re-fetch: the memory cache never expires on its own,
+            // so reopened profiles would otherwise show yesterday's game/track.
+            MiogramSupabaseBridge.fetchUserPresence(userId, true, presence -> {
+                if (presence != null && presence.userId == this.currentUserId) {
+                    this.cloudPresence = presence;
+                    applyCloudPresence(presence);
+                } else if (cloudPresence != null) {
+                    applyCloudPresence(cloudPresence);
+                }
+            });
             if (cloudPresence != null) {
                 applyCloudPresence(cloudPresence);
-            } else {
-                app.miogram.bridge.badge.MiogramSupabaseBridge.fetchUserPresence(userId, presence -> {
-                    if (presence != null && presence.userId == this.currentUserId) {
-                        this.cloudPresence = presence;
-                        applyCloudPresence(presence);
-                    }
-                });
             }
         }
     }
@@ -279,6 +314,11 @@ public class MiogramPresenceCard extends FrameLayout {
             if (!TextUtils.isEmpty(presence.spotifyUser) || !TextUtils.isEmpty(presence.spotifyTrack)) {
                 activeServices.add(SERVICE_SPOTIFY);
             }
+            if (!TextUtils.isEmpty(presence.robloxUser) || !TextUtils.isEmpty(presence.robloxId)) {
+                if (!activeServices.contains(SERVICE_ROBLOX)) {
+                    activeServices.add(SERVICE_ROBLOX);
+                }
+            }
         }
 
         buildDots();
@@ -290,6 +330,7 @@ public class MiogramPresenceCard extends FrameLayout {
             viewPager.setCurrentItem(Math.max(0, count - 1), false);
         }
         updateDotSelection(viewPager.getCurrentItem());
+        refreshLiveServices();
     }
 
     public void openConnectedAppsHub(Context context) {
@@ -318,6 +359,11 @@ public class MiogramPresenceCard extends FrameLayout {
         }
         if (MiogramSpotifyManager.getInstance().isLinked()) {
             activeServices.add(SERVICE_SPOTIFY);
+        }
+        if (MiogramRobloxManager.getInstance().isLinked()) {
+            if (!activeServices.contains(SERVICE_ROBLOX)) {
+                activeServices.add(SERVICE_ROBLOX);
+            }
         }
 
         buildDots();
@@ -390,6 +436,9 @@ public class MiogramPresenceCard extends FrameLayout {
         } else if (activeService == SERVICE_DISCORD) {
             accentColor = 0xFF5865F2;
             title = "DISCORD PRESENCE";
+        } else if (activeService == SERVICE_ROBLOX) {
+            accentColor = 0xFFE2231A;
+            title = "ROBLOX STATUS";
         } else {
             accentColor = 0xFF1DB954;
             title = "SPOTIFY LIVE";
@@ -420,15 +469,46 @@ public class MiogramPresenceCard extends FrameLayout {
     }
 
     public void loadLiveData() {
-        MiogramGitHubManager.getInstance().fetchUser(false, user -> {
-            this.githubUser = user;
-            pagerAdapter.notifyDataSetChanged();
-        });
+        refreshLiveServices();
+    }
 
-        MiogramDiscordManager.getInstance().fetchPresence(false, presence -> {
-            this.discordPresence = presence;
-            pagerAdapter.notifyDataSetChanged();
-        });
+    /** Live per-service pulls (GitHub/Discord self, Roblox self-or-other). */
+    private void refreshLiveServices() {
+        if (isSelf) {
+            MiogramGitHubManager.getInstance().fetchUser(false, user -> {
+                this.githubUser = user;
+                pagerAdapter.notifyDataSetChanged();
+            });
+
+            MiogramDiscordManager.getInstance().fetchPresence(false, presence -> {
+                this.discordPresence = presence;
+                pagerAdapter.notifyDataSetChanged();
+            });
+        }
+
+        try {
+            if (isSelf) {
+                if (MiogramRobloxManager.getInstance().isLinked()) {
+                    MiogramRobloxManager.getInstance().refreshSelf(p -> {
+                        this.robloxPresence = p;
+                        pagerAdapter.notifyDataSetChanged();
+                    });
+                }
+            } else if (cloudPresence != null && !TextUtils.isEmpty(cloudPresence.robloxId)) {
+                try {
+                    long targetId = Long.parseLong(cloudPresence.robloxId);
+                    ArrayList<Long> ids = new ArrayList<>(1);
+                    ids.add(targetId);
+                    // Queried with OUR OWN cookie; without it only the cloud snapshot shows.
+                    MiogramRobloxManager.getInstance().fetchPresenceList(ids, list -> {
+                        if (list != null && !list.isEmpty() && list.get(0) != null && list.get(0).userId == targetId) {
+                            this.robloxPresence = list.get(0);
+                            pagerAdapter.notifyDataSetChanged();
+                        }
+                    });
+                } catch (Throwable ignore) {}
+            }
+        } catch (Throwable ignore) {}
     }
 
     private static TextView createButton(Context context, String text, int bgColor, int textColor) {
@@ -481,6 +561,8 @@ public class MiogramPresenceCard extends FrameLayout {
                     page = buildGitHubView(context);
                 } else if (service == SERVICE_DISCORD) {
                     page = buildDiscordView(context);
+                } else if (service == SERVICE_ROBLOX) {
+                    page = buildRobloxView(context);
                 } else {
                     page = buildSpotifyView(context);
                 }
@@ -550,7 +632,7 @@ public class MiogramPresenceCard extends FrameLayout {
         root.setOrientation(LinearLayout.VERTICAL);
 
         MiogramSteamManager.SteamProfile p = steamProfile;
-        boolean hasGame = p != null && p.hasGame();
+        boolean hasGame = p != null && p.isLiveGame();
         boolean hasMostPlayed = p != null && !hasGame && !TextUtils.isEmpty(p.mostPlayedGame);
 
         LinearLayout contentRow = new LinearLayout(context);
@@ -880,6 +962,159 @@ public class MiogramPresenceCard extends FrameLayout {
             }
         });
         actions.addView(btnRefresh, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 0, 0));
+
+        return root;
+    }
+
+    // SLIDE: Roblox Status
+    private View buildRobloxView(Context context) {
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+
+        MiogramRobloxManager rm = MiogramRobloxManager.getInstance();
+        MiogramRobloxManager.RobloxPresence live = robloxPresence;
+
+        long targetId = 0;
+        String cloudName = "";
+        String cloudGame = "";
+        int cloudState = -1;
+        if (!isSelf && cloudPresence != null) {
+            cloudName = cloudPresence.robloxUser;
+            cloudGame = cloudPresence.robloxGame;
+            cloudState = cloudPresence.robloxState;
+            try {
+                targetId = Long.parseLong(cloudPresence.robloxId);
+            } catch (Throwable ignore) {}
+            if (live != null && live.userId != targetId) live = null;
+        } else if (isSelf) {
+            targetId = rm.getLinkedUserId();
+        }
+
+        String displayName;
+        if (isSelf) {
+            displayName = rm.getDisplayName();
+            if (TextUtils.isEmpty(displayName)) displayName = rm.getLinkedUsername();
+        } else {
+            displayName = !TextUtils.isEmpty(cloudName) ? cloudName : ("ID: " + targetId);
+        }
+
+        LinearLayout contentRow = new LinearLayout(context);
+        contentRow.setOrientation(LinearLayout.HORIZONTAL);
+        contentRow.setGravity(Gravity.CENTER_VERTICAL);
+        root.addView(contentRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        BackupImageView avatar = new BackupImageView(context);
+        avatar.setRoundRadius(AndroidUtilities.dp(24));
+        String avatarUrl = isSelf ? rm.getAvatarUrl() : "";
+        if (!TextUtils.isEmpty(avatarUrl)) {
+            avatar.setImage(ImageLocation.getForPath(avatarUrl), "100_100", null, 0, null);
+        } else {
+            avatar.setImageResource(R.drawable.msg_contacts);
+        }
+        contentRow.addView(avatar, LayoutHelper.createLinear(48, 48, 0, 0, 12, 0));
+
+        LinearLayout texts = new LinearLayout(context);
+        texts.setOrientation(LinearLayout.VERTICAL);
+        contentRow.addView(texts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
+
+        boolean inGame = live != null ? live.isInGame() : !TextUtils.isEmpty(cloudGame);
+
+        TextView title = new TextView(context);
+        String titleText = inGame
+                ? (live != null && !TextUtils.isEmpty(live.gameName) ? live.gameName : cloudGame)
+                : displayName;
+        title.setText(Emoji.replaceEmoji(titleText, title.getPaint().getFontMetricsInt(), false));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(0xFFFFFFFF);
+        title.setSingleLine(true);
+        title.setEllipsize(TextUtils.TruncateAt.END);
+        texts.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        TextView subtitle = new TextView(context);
+        String statusText;
+        if (live != null) {
+            statusText = live.getStatusText();
+        } else if (!TextUtils.isEmpty(cloudGame)) {
+            statusText = cloudGame;
+        } else if (cloudState == MiogramRobloxManager.TYPE_ONLINE) {
+            statusText = MiogramLocale.get("В мережі", "В сети", "Online");
+        } else if (cloudState == MiogramRobloxManager.TYPE_OFFLINE) {
+            statusText = MiogramLocale.get("Не в мережі", "Не в сети", "Offline");
+        } else if (!rm.hasCookie() && !isSelf) {
+            statusText = MiogramLocale.get("Підключіть cookie щоб бачити live-статус", "Подключите cookie чтобы видеть live-статус", "Link cookie to see live status");
+        } else {
+            statusText = "@" + (isSelf ? rm.getLinkedUsername() : displayName);
+        }
+        if (inGame && !TextUtils.isEmpty(displayName) && !displayName.equals(titleText)) {
+            statusText = displayName + " • " + statusText;
+        }
+        subtitle.setText(statusText);
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        subtitle.setTextColor(0xFFFF8A80);
+        subtitle.setSingleLine(true);
+        subtitle.setEllipsize(TextUtils.TruncateAt.END);
+        texts.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+
+        LinearLayout actions = new LinearLayout(context);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        root.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        final long fTargetId = targetId;
+        final MiogramRobloxManager.RobloxPresence fLive = live;
+        if (inGame) {
+            TextView btnPlay = createButton(context, MiogramLocale.get("Грати", "Играть", "Play"), 0x33E2231A, 0xFFFF8A80);
+            btnPlay.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                long placeId = fLive != null ? fLive.placeId : 0;
+                long universeId = fLive != null ? fLive.universeId : 0;
+                if (placeId <= 0 && universeId <= 0 && !isSelf && cloudPresence != null) {
+                    try {
+                        universeId = Long.parseLong(cloudPresence.robloxUniverse);
+                    } catch (Throwable ignore) {}
+                }
+                rm.openGame(context, placeId, universeId);
+            });
+            actions.addView(btnPlay, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
+        }
+
+        TextView btnProfile = createButton(context, MiogramLocale.get("Профіль", "Профиль", "Profile"), 0x2AFFFFFF, 0xFFFFFFFF);
+        btnProfile.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            if (fTargetId > 0) rm.openProfile(context, fTargetId);
+            else if (isSelf) openConnectedAppsHub(context);
+        });
+        actions.addView(btnProfile, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 6, 0));
+
+        TextView btnRefresh = createButton(context, MiogramLocale.get("Оновити", "Обновить", "Refresh"), 0x12FFFFFF, 0xFFD2DBE3);
+        btnRefresh.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            if (isSelf) {
+                rm.refreshSelf(p -> {
+                    this.robloxPresence = p;
+                    pagerAdapter.notifyDataSetChanged();
+                });
+            } else if (fTargetId > 0) {
+                ArrayList<Long> ids = new ArrayList<>(1);
+                ids.add(fTargetId);
+                rm.fetchPresenceList(ids, list -> {
+                    if (list != null && !list.isEmpty()) {
+                        this.robloxPresence = list.get(0);
+                        pagerAdapter.notifyDataSetChanged();
+                    }
+                });
+            }
+        });
+        actions.addView(btnRefresh, LayoutHelper.createLinear(0, 36, 1f, 0, 0, isSelf ? 6 : 0, 0));
+
+        if (isSelf) {
+            TextView btnSettings = createButton(context, MiogramLocale.get("Налаштувати", "Настроить", "Settings"), 0x1AE2231A, 0xFFFF8A80);
+            btnSettings.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                openConnectedAppsHub(context);
+            });
+            actions.addView(btnSettings, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 0, 0));
+        }
 
         return root;
     }

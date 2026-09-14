@@ -86,6 +86,11 @@ public class MiogramSteamManager {
         public boolean hasGame() {
             return (isInGame && !TextUtils.isEmpty(gameName)) || !TextUtils.isEmpty(mostPlayedGame);
         }
+
+        /** True only while Steam reports the user inside a game right now. */
+        public boolean isLiveGame() {
+            return isInGame && !TextUtils.isEmpty(gameName);
+        }
     }
 
     public interface ProfileCallback {
@@ -362,11 +367,9 @@ public class MiogramSteamManager {
                         p.mostPlayedGameId = m.group(1);
                     }
                 }
-                if (TextUtils.isEmpty(p.gameName) && !TextUtils.isEmpty(p.mostPlayedGame)) {
-                    p.gameName = p.mostPlayedGame;
-                    p.gameId = p.mostPlayedGameId;
-                    p.gameHoursTotal = p.mostPlayedHours;
-                }
+                // NOTE: most-played stays in mostPlayedGame* only. gameName/gameId
+                // always describe the LIVE session, otherwise idle users broadcast
+                // their favorite as "currently playing".
             }
         }
 
@@ -412,8 +415,8 @@ public class MiogramSteamManager {
         // Persist locally
         saveSelfToCache(profile);
 
-        // Sync via unified Cloud Presence to Supabase
-        app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(userId);
+        // Sync via unified Cloud Presence to Supabase (change-guarded inside).
+        app.miogram.bridge.presence.MiogramPresenceRefresher.pushIfChanged();
 
         if (onDone != null) {
             AndroidUtilities.runOnUIThread(onDone);

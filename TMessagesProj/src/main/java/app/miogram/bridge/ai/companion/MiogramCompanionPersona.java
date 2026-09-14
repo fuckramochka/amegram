@@ -102,7 +102,8 @@ public class MiogramCompanionPersona {
         sb.append("29. `github_status(repo)` - Check latest GitHub Actions CI run status, workflow conclusion, and commit for a repo (e.g. 'fuckramochka/miogram').\n");
         sb.append("30. `discord_status(user_id)` - Check Discord presence, online status, custom status and active game via Lanyard.\n");
         sb.append("31. `spotify_status()` - Check currently playing track, artist, and playback state in Spotify.\n");
-        sb.append("32. `steam_status(steam_id)` - Check Steam profile and what game P-chan or friends are currently playing.\n\n");
+        sb.append("32. `steam_status(steam_id)` - Check Steam profile and what game P-chan or friends are currently playing.\n");
+        sb.append("33. `roblox_status()` - Check Roblox online / in-game status and current game.\n\n");
 
         sb.append("### AUTONOMOUS ReAct PROTOCOL (Thought -> Action -> Observation -> Response):\n");
         sb.append("- You are a TRULY AUTONOMOUS reasoning agent, NOT a static script or template bot!\n");

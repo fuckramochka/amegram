@@ -511,15 +511,21 @@ public class MiogramSupabaseBridge {
     }
 
     public static void fetchUserPresence(long userId, Utilities.Callback<app.miogram.bridge.presence.MiogramCloudPresence> callback) {
+        fetchUserPresence(userId, false, callback);
+    }
+
+    public static void fetchUserPresence(long userId, boolean force, Utilities.Callback<app.miogram.bridge.presence.MiogramCloudPresence> callback) {
         if (userId <= 0) {
             if (callback != null) callback.run(null);
             return;
         }
 
-        app.miogram.bridge.presence.MiogramCloudPresence cached = app.miogram.bridge.presence.MiogramCloudPresence.getPresence(userId);
-        if (cached != null) {
-            if (callback != null) callback.run(cached);
-            return;
+        if (!force) {
+            app.miogram.bridge.presence.MiogramCloudPresence cached = app.miogram.bridge.presence.MiogramCloudPresence.getPresence(userId);
+            if (cached != null) {
+                if (callback != null) callback.run(cached);
+                return;
+            }
         }
 
         Utilities.globalQueue.postRunnable(() -> {

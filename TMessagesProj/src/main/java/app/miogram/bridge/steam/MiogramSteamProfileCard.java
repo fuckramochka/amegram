@@ -253,7 +253,7 @@ public class MiogramSteamProfileCard extends FrameLayout {
         String name = !TextUtils.isEmpty(profile.personaName) ? profile.personaName : ("ID: " + profile.steamId);
         personaNameView.setText(Emoji.replaceEmoji(name, personaNameView.getPaint().getFontMetricsInt(), false));
 
-        if (profile.hasGame()) {
+        if (profile.isLiveGame()) {
             // In-Game state
             statusDotView.setColor(0xFFA4D007, true);
             statusTextView.setText(MiogramLocale.get("У грі", "В игре", "In-Game"));

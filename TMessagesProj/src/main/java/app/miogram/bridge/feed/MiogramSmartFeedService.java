@@ -33,6 +33,8 @@ public class MiogramSmartFeedService {
     /** Prompt budget: keeps requests inside model token limits. */
     private static final int MAX_POSTS_PER_CHANNEL = 25;
     private static final int MAX_PROMPT_CHARS = 12000;
+    /** Single post squeeze: one huge post must not eat the whole channel budget. */
+    private static final int MAX_POST_CHARS = 1500;
 
     private static final String PREFS_NAME = "miogram_smart_feed_prefs";
     private static final String KEY_CHANNELS = "tracked_channels";
@@ -209,7 +211,12 @@ public class MiogramSmartFeedService {
                     if (msg.date >= minDate && !TextUtils.isEmpty(msg.message)) {
                         if (recentMessages.size() >= MAX_POSTS_PER_CHANNEL) break;
                         String text = msg.message.trim();
-                        if (promptPosts.length() + text.length() > MAX_PROMPT_CHARS) break;
+                        // Over-budget posts are squeezed, not dropped with the
+                        // rest of the channel: truncate the single post and keep going.
+                        if (text.length() > MAX_POST_CHARS) {
+                            text = text.substring(0, MAX_POST_CHARS) + "…";
+                        }
+                        if (promptPosts.length() + text.length() > MAX_PROMPT_CHARS) continue;
                         recentMessages.add(msg);
                         promptPosts.append("--- ПОСТ ID: ").append(msg.id).append(" ---\n");
                         promptPosts.append(text).append("\n\n");
@@ -234,6 +241,7 @@ public class MiogramSmartFeedService {
                         + promptPosts.toString();
 
                 MiogramAiService.processFeedWithAi(aiPrompt, aiResult -> {
+                    boolean aiOk = false;
                     if (!TextUtils.isEmpty(aiResult)) {
                         try {
                             String cleanedJson = aiResult.trim();
@@ -268,11 +276,17 @@ public class MiogramSmartFeedService {
                                         item.originalMessage = matchedMsg;
                                     }
                                     resultAccumulator.add(item);
+                                    aiOk = true;
                                 }
                             }
                         } catch (Exception e) {
                             FileLog.e("SmartFeed parse error: " + e.getMessage());
                         }
+                    }
+                    if (!aiOk) {
+                        // AI failed/empty for this channel: keep raw posts instead
+                        // of silently dropping the whole channel from the feed.
+                        addRawFallbackItems(dialogId, channelName, recentMessages, resultAccumulator);
                     }
 
                     // Move to next channel
@@ -283,5 +297,33 @@ public class MiogramSmartFeedService {
                 processNextChannel(currentAccount, channels, index + 1, minDate, resultAccumulator, callback);
             }
         });
+    }
+
+    /**
+     * Raw fallback: full post text as title+summary when the AI digest for
+     * a channel failed. Guarantees no channel silently disappears.
+     */
+    private static void addRawFallbackItems(long dialogId, String channelName,
+                                            List<TLRPC.Message> recentMessages,
+                                            List<FeedItem> resultAccumulator) {
+        if (recentMessages == null) return;
+        for (TLRPC.Message m : recentMessages) {
+            if (m == null || TextUtils.isEmpty(m.message)) continue;
+            String text = m.message.trim();
+            String title = text;
+            int nl = text.indexOf('\n');
+            if (nl > 0 && nl < 120) {
+                title = text.substring(0, nl).trim();
+            } else if (title.length() > 80) {
+                title = title.substring(0, 80).trim() + "…";
+            }
+            FeedItem item = new FeedItem(dialogId, m.id, channelName, title, text,
+                    MiogramLocale.get("Інше", "Другое", "Other"), (long) m.date * 1000L);
+            if (m.media instanceof TLRPC.TL_messageMediaPhoto) {
+                item.hasPhoto = true;
+                item.originalMessage = m;
+            }
+            resultAccumulator.add(item);
+        }
     }
 }

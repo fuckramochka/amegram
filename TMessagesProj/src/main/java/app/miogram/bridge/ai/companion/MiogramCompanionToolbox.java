@@ -113,9 +113,10 @@ public class MiogramCompanionToolbox {
     public static boolean isSensitiveTool(String name) {
         if (name == null) return false;
         String n = name.toLowerCase(java.util.Locale.US);
-        return n.contains("clear") || n.contains("delete") || n.contains("send") || n.contains("profile") || n.contains("setting")
-                || n.contains("create_chat") || n.contains("toggle_plugin") || n.contains("userbot") || n.contains("eval")
-                || n.contains("write_plugin") || n.contains("diagnose") || n.contains("report");
+        // Only irreversible/destructive tools need a tap. Everything else
+        // (send, read, settings, userbot, reports) runs free like a terminal.
+        return n.contains("clear") || n.contains("delete")
+                || n.contains("create_chat") || n.contains("toggle_plugin") || n.contains("write_plugin");
     }
 
     public static String describeTool(String name, org.json.JSONObject params) {

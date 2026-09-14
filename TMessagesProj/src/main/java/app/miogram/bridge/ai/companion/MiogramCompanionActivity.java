@@ -1251,7 +1251,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         });
     }
 
-    private static final int AGENT_MAX_STEPS = 4;
+    private static final int AGENT_MAX_STEPS = 6;
 
     private static class AgentStepRecord {
         final String actionRaw;
@@ -1271,13 +1271,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         inputField.setText("");
         MiogramCompanionToolbox.PickResolution pick =
                 MiogramCompanionToolbox.tryResolvePendingPick(currentAccount, query);
+        // System routing hints go ONLY to the model — never into the visible
+        // bubble or saved history (otherwise P-chan sees "message + prompt").
+        String modelQuery = query;
         if ("RESOLVED".equals(pick.kind) && pick.foundChat != null) {
             String ref = pick.foundChat.username.isEmpty() ? pick.foundChat.name : "@" + pick.foundChat.username;
-            query = query + "\n[Система: P-chan обрав «" + pick.foundChat.name + "» (" + ref + "). "
-                    + "Твій наступний виклик МУСИТЬ містити {\"chat_id\": " + pick.foundChat.dialogId + "}. "
-                    + "Не показуй список знову, не проси уточнити — дій з цим чатом.]";
+            modelQuery = query + "\n[System routing: P-chan picked «" + pick.foundChat.name + "» (" + ref + "). "
+                    + "Your next call MUST contain {\"chat_id\": " + pick.foundChat.dialogId + "}. "
+                    + "Do not list again, do not ask — act on this chat.]";
         } else if ("NEXT_PAGE".equals(pick.kind)) {
-            query = query + "\n[Не той варіант; покажи наступні або гортай список чатів далі.]";
+            modelQuery = query + "\n[Not the right pick; show next options or keep paging the chat list.]";
         }
         MiogramCompanionPrefs.ChatMessage userMsg = new MiogramCompanionPrefs.ChatMessage(true, query, "neutral", System.currentTimeMillis(), null, null);
         history.add(userMsg);
@@ -1290,10 +1293,10 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         if (sendButton != null) sendButton.setAlpha(0.6f);
 
         List<AgentStepRecord> steps = new ArrayList<>();
-        executeAgentStep(1, query, steps, null);
+        executeAgentStep(1, query, modelQuery, steps, null);
     }
 
-    private String buildPromptForTurn(String userQuery, List<AgentStepRecord> steps, boolean forceFinal) {
+    private String buildPromptForTurn(String displayQuery, String modelQuery, List<AgentStepRecord> steps, boolean forceFinal) {
         TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
         String userName = currentUser != null ? UserObject.getUserName(currentUser) : "P-chan";
         String systemPrompt = MiogramCompanionPersona.getSystemPrompt(MiogramCompanionPrefs.getActiveCompanion(), userName, scopedDialogId, currentAccount);
@@ -1303,12 +1306,12 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         int start = Math.max(0, history.size() - 8);
         for (int i = start; i < history.size(); i++) {
             MiogramCompanionPrefs.ChatMessage m = history.get(i);
-            if (i == history.size() - 1 && m.isUser && m.text.equals(userQuery)) continue;
+            if (i == history.size() - 1 && m.isUser && m.text.equals(displayQuery)) continue;
             sb.append(m.isUser ? "P-chan: " : "Companion: ").append(m.text).append("\n");
         }
 
         sb.append("\n### CURRENT TURN:\n");
-        sb.append("P-chan: ").append(userQuery).append("\n");
+        sb.append("P-chan: ").append(modelQuery).append("\n");
 
         if (steps != null && !steps.isEmpty()) {
             for (AgentStepRecord s : steps) {
@@ -1316,24 +1319,24 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                 sb.append("[OBSERVATION: ").append(s.observation).append("]\n");
             }
             if (forceFinal) {
-                sb.append("System: All tool operations completed. Now formulate your final, comprehensive in-character response to P-chan based on the observations above. Do NOT call any more tools.\n");
+                sb.append("System: tools done — write the final in-character reply now ([MOOD: ...] first). No more tool calls.\n");
             } else {
-                sb.append("System: You received the observation above. Analyze it carefully. You can either invoke another tool using [ACTION: ...] if more actions or information are needed, or formulate your final in-character response to P-chan (starting with [MOOD: ...]). Never output raw observation text directly.\n");
+                sb.append("System: observation above. Reply with the next [ACTION: ...] or the final in-character reply ([MOOD: ...] first).\n");
             }
         }
         sb.append("Companion:");
         return sb.toString();
     }
 
-    private void executeAgentStep(final int stepIndex, final String userQuery,
+    private void executeAgentStep(final int stepIndex, final String displayQuery, final String modelQuery,
                                   final List<AgentStepRecord> steps,
                                   final MiogramCompanionPrefs.ChatMessage existingBubble) {
         if (stepIndex > AGENT_MAX_STEPS) {
-            executeFinalSynthesis(userQuery, steps, existingBubble);
+            executeFinalSynthesis(displayQuery, modelQuery, steps, existingBubble);
             return;
         }
 
-        String prompt = buildPromptForTurn(userQuery, steps, false);
+        String prompt = buildPromptForTurn(displayQuery, modelQuery, steps, false);
         MiogramAiService.generateText(prompt, (rawReply, err) -> AndroidUtilities.runOnUIThread(() -> {
             if (err != null && (rawReply == null || rawReply.isEmpty())) {
                 finishAgentTurn();
@@ -1387,7 +1390,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                     if (agentResultIsError(resultText)) {
                         updateStageMood("sad");
                     }
-                    executeAgentStep(stepIndex + 1, userQuery, steps, activeBubble);
+                    executeAgentStep(stepIndex + 1, displayQuery, modelQuery, steps, activeBubble);
                 }));
             } else {
                 // Final response reached
@@ -1409,9 +1412,9 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         }));
     }
 
-    private void executeFinalSynthesis(final String userQuery, final List<AgentStepRecord> steps,
+    private void executeFinalSynthesis(final String displayQuery, final String modelQuery, final List<AgentStepRecord> steps,
                                        final MiogramCompanionPrefs.ChatMessage existingBubble) {
-        String prompt = buildPromptForTurn(userQuery, steps, true);
+        String prompt = buildPromptForTurn(displayQuery, modelQuery, steps, true);
         MiogramAiService.generateText(prompt, (rawReply, err) -> AndroidUtilities.runOnUIThread(() -> {
             finishAgentTurn();
             if (err != null && (rawReply == null || rawReply.isEmpty())) {

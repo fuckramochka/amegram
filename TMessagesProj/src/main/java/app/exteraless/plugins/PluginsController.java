@@ -117,7 +117,8 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         preferences = appContext.getSharedPreferences(PluginsConstants.PREFS_NAME, Context.MODE_PRIVATE);
         watchdog = new PluginsWatchdog(preferences);
         getPluginsDir().mkdirs();
-        copyBuiltinPlugins();
+        // Asset copies = file I/O, must not block cold start.
+        fileExecutor.execute(this::copyBuiltinPlugins);
 
         if (!isEngineEnabled()) {
             return;

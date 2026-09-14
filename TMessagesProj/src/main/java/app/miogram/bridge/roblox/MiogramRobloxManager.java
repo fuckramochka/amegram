@@ -131,6 +131,11 @@ public class MiogramRobloxManager {
         return getLinkedUserId() > 0;
     }
 
+    /** Account-scoped visibility: the link shows only on the account that created it (legacy: everywhere). */
+    public boolean isActiveFor(long tgUserId) {
+        return isLinked() && app.miogram.bridge.presence.MiogramLinkOwner.visibleFor(getPrefs(), tgUserId);
+    }
+
     public boolean hasCookie() {
         return !TextUtils.isEmpty(getCookie());
     }
@@ -165,6 +170,7 @@ public class MiogramRobloxManager {
             if (callback != null) callback.onUserLoaded(null);
             return;
         }
+        app.miogram.bridge.presence.MiogramLinkOwner.stamp(getPrefs());
         resolveUser(clean, user -> {
             if (user != null) {
                 SharedPreferences.Editor ed = getPrefs().edit();

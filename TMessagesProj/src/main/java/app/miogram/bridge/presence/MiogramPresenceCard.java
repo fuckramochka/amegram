@@ -251,10 +251,13 @@ public class MiogramPresenceCard extends FrameLayout {
         this.isSelf = isSelf;
 
         if (isSelf) {
-            if (MiogramSteamManager.getInstance().isLinked()) {
+            if (MiogramSteamManager.getInstance().isActiveFor(userId)) {
                 this.steamProfile = MiogramSteamManager.getInstance().getSelfProfile();
+            } else {
+                this.steamProfile = null;
             }
-            this.githubUser = MiogramGitHubManager.getInstance().getSelfUser();
+            this.githubUser = MiogramGitHubManager.getInstance().isActiveFor(userId)
+                    ? MiogramGitHubManager.getInstance().getSelfUser() : null;
             refreshActiveServices();
             loadLiveData();
         } else {
@@ -348,19 +351,20 @@ public class MiogramPresenceCard extends FrameLayout {
         }
 
         activeServices.clear();
-        if (MiogramSteamManager.getInstance().isLinked()) {
+        long ownerId = isSelf ? currentUserId : 0;
+        if (MiogramSteamManager.getInstance().isActiveFor(ownerId)) {
             activeServices.add(SERVICE_STEAM);
         }
-        if (MiogramGitHubManager.getInstance().isLinked()) {
+        if (MiogramGitHubManager.getInstance().isActiveFor(ownerId)) {
             activeServices.add(SERVICE_GITHUB);
         }
-        if (MiogramDiscordManager.getInstance().isLinked()) {
+        if (MiogramDiscordManager.getInstance().isActiveFor(ownerId)) {
             activeServices.add(SERVICE_DISCORD);
         }
-        if (MiogramSpotifyManager.getInstance().isLinked()) {
+        if (MiogramSpotifyManager.getInstance().isActiveFor(ownerId)) {
             activeServices.add(SERVICE_SPOTIFY);
         }
-        if (MiogramRobloxManager.getInstance().isLinked()) {
+        if (MiogramRobloxManager.getInstance().isActiveFor(ownerId)) {
             if (!activeServices.contains(SERVICE_ROBLOX)) {
                 activeServices.add(SERVICE_ROBLOX);
             }

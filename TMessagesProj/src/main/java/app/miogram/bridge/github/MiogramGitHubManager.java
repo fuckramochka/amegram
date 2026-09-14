@@ -147,7 +147,13 @@ public class MiogramGitHubManager {
 
     public void setLinkedUsername(String username) {
         String clean = sanitizeUsername(username);
-        getPrefs().edit().putString(KEY_USERNAME, clean).apply();
+        SharedPreferences prefs = getPrefs();
+        prefs.edit().putString(KEY_USERNAME, clean).apply();
+        if (TextUtils.isEmpty(clean)) {
+            app.miogram.bridge.presence.MiogramLinkOwner.clear(prefs);
+        } else {
+            app.miogram.bridge.presence.MiogramLinkOwner.stamp(prefs);
+        }
         cachedUser = null;
         lastUserFetchTime = 0;
         app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
@@ -155,6 +161,11 @@ public class MiogramGitHubManager {
 
     public boolean isLinked() {
         return !TextUtils.isEmpty(getLinkedUsername());
+    }
+
+    /** Account-scoped visibility: the link shows only on the account that created it (legacy: everywhere). */
+    public boolean isActiveFor(long tgUserId) {
+        return isLinked() && app.miogram.bridge.presence.MiogramLinkOwner.visibleFor(getPrefs(), tgUserId);
     }
 
     public String getTrackedRepo() {

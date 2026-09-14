@@ -161,7 +161,7 @@ public class MiogramCloudPresence {
     public static MiogramCloudPresence buildSelfPresence(long userId) {
         MiogramCloudPresence p = new MiogramCloudPresence(userId);
 
-        if (MiogramSteamManager.getInstance().isLinked()) {
+        if (MiogramSteamManager.getInstance().isActiveFor(userId)) {
             p.steamId = MiogramSteamManager.getInstance().getLinkedSteamId();
             MiogramSteamManager.SteamProfile sp = MiogramSteamManager.getInstance().getSelfProfile();
             if (sp != null) {
@@ -176,16 +176,17 @@ public class MiogramCloudPresence {
             }
         }
 
-        if (MiogramGitHubManager.getInstance().isLinked()) {
+        if (MiogramGitHubManager.getInstance().isActiveFor(userId)) {
             p.githubUser = MiogramGitHubManager.getInstance().getLinkedUsername();
         }
 
-        if (MiogramDiscordManager.getInstance().isLinked()) {
+        if (MiogramDiscordManager.getInstance().isActiveFor(userId)) {
             p.discordId = MiogramDiscordManager.getInstance().getLinkedUserId();
         }
 
-        if (MiogramSpotifyManager.getInstance().isLinked()) {
+        if (MiogramSpotifyManager.getInstance().isActiveFor(userId)) {
             MiogramSpotifyManager sm = MiogramSpotifyManager.getInstance();
+            sm.dropStaleTrack();
             p.spotifyUser = sm.getLinkedUsername();
             if (TextUtils.isEmpty(p.spotifyUser) && sm.isBridgeEnabled()) {
                 p.spotifyUser = "live";
@@ -199,7 +200,7 @@ public class MiogramCloudPresence {
             }
         }
 
-        if (MiogramRobloxManager.getInstance().isLinked()) {
+        if (MiogramRobloxManager.getInstance().isActiveFor(userId)) {
             MiogramRobloxManager rm = MiogramRobloxManager.getInstance();
             p.robloxUser = rm.getDisplayName();
             p.robloxId = String.valueOf(rm.getLinkedUserId());

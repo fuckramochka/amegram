@@ -327,6 +327,14 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         initPushServices();
         FileLog.d("app initied");
 
+        // Miogram: (re)start periodic presence engine + push one fresh snapshot.
+        // Without this, Steam/Spotify/Roblox stay frozen after update/reboot until
+        // some random link/track event fires — and other users see nothing.
+        try {
+            app.miogram.bridge.presence.MiogramPresenceRefresher.start();
+            app.miogram.bridge.presence.MiogramPresenceRefresher.pushIfChanged();
+        } catch (Throwable ignore) {}
+
         MediaController.getInstance();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             ContactsController.getInstance(a).checkAppAccount();

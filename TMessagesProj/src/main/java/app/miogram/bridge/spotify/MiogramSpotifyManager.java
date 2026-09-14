@@ -75,6 +75,10 @@ public class MiogramSpotifyManager {
     private long durationMs = 0;
     private long lastPositionMs = 0;
     private long lastPositionTimestamp = 0;
+    /** Last wall-clock broadcast from Spotify (any action). */
+    private long lastBroadcastTime = 0;
+    /** A paused/idle track older than this stops broadcasting (stale song bug). */
+    private static final long STALE_TRACK_AGE_MS = 15 * 60 * 1000L;
 
     private final Map<String, String> artCache = new ConcurrentHashMap<>();
 
@@ -172,6 +176,7 @@ public class MiogramSpotifyManager {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent == null || intent.getAction() == null) return;
+            lastBroadcastTime = SystemClock.elapsedRealtime();
             String action = intent.getAction();
 
             String id = getExtraString(intent, "id", "uri", "trackId");
@@ -341,10 +346,13 @@ public class MiogramSpotifyManager {
         Context ctx = ApplicationLoader.applicationContext;
         if (ctx == null) return;
         String clean = sanitizeUsername(username);
-        ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE)
-                .edit()
-                .putString(PREF_LINKED_USERNAME, clean)
-                .apply();
+        SharedPreferences prefs = ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE);
+        prefs.edit().putString(PREF_LINKED_USERNAME, clean).apply();
+        if (TextUtils.isEmpty(clean)) {
+            app.miogram.bridge.presence.MiogramLinkOwner.clear(prefs);
+        } else {
+            app.miogram.bridge.presence.MiogramLinkOwner.stamp(prefs);
+        }
         app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
     }
 
@@ -367,6 +375,23 @@ public class MiogramSpotifyManager {
 
     public boolean isLinked() {
         return !TextUtils.isEmpty(getLinkedUsername()) || isBridgeEnabled() || isPlaying() || !TextUtils.isEmpty(currentTrack);
+    }
+
+    /**
+     * Account-scoped visibility. A linked username belongs to the account that
+     * linked it; pure device state (bridge/live track, no username) is shared.
+     */
+    public boolean isActiveFor(long tgUserId) {
+        if (!isLinked()) return false;
+        if (TextUtils.isEmpty(getLinkedUsername())) return true;
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx == null) return true;
+            SharedPreferences prefs = ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE);
+            return app.miogram.bridge.presence.MiogramLinkOwner.visibleFor(prefs, tgUserId);
+        } catch (Throwable ignore) {
+            return true;
+        }
     }
 
     public void openSpotifyLogin(Context context) {
@@ -485,6 +510,25 @@ public class MiogramSpotifyManager {
 
     public boolean hasTrack() {
         return !TextUtils.isEmpty(currentTrack);
+    }
+
+    /**
+     * Drops a long-idle track so a song switched off an hour ago stops
+     * haunting presence, hints and cards. Playing state is never dropped.
+     */
+    public void dropStaleTrack() {
+        if (TextUtils.isEmpty(currentTrack) || isPlaying) return;
+        long age = lastBroadcastTime <= 0 ? Long.MAX_VALUE : (SystemClock.elapsedRealtime() - lastBroadcastTime);
+        if (age < STALE_TRACK_AGE_MS) return;
+        currentTrack = "";
+        currentArtist = "";
+        currentAlbum = "";
+        currentTrackUri = "";
+        currentAlbumArtUrl = "";
+        durationMs = 0;
+        lastPositionMs = 0;
+        saveStateToPrefs();
+        notifyPlaybackChanged();
     }
 
     public String getCurrentTrack() {

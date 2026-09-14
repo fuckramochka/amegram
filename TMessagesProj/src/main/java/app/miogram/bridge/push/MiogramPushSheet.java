@@ -21,6 +21,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.PushListenerController;
+import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -145,6 +146,10 @@ public class MiogramPushSheet extends BottomSheet {
                 Toast.makeText(context, t.getMessage(), Toast.LENGTH_SHORT).show();
             }
             AndroidUtilities.runOnUIThread(this::refreshAll, 3000);
+        });
+
+        addAction(context, MiogramLocale.get("Тестове сповіщення в шторку", "Тестовое уведомление в шторку", "Send test notification"), 0x3323836E, 0xFFFFFFFF, v -> {
+            postTestNotification(context);
         });
 
         if (!st.permissionOk) {
@@ -317,8 +322,42 @@ public class MiogramPushSheet extends BottomSheet {
         return st;
     }
 
-    /** Short one-line status for the settings row: OK or what is broken. */
-    public static String getShortStatus() {
+    /**
+     * Posts a local test notification through the system tray (own channel).
+     * Verifies the on-device half: runtime permission, channels, tray delivery.
+     * If this shows but real messages don't while closed — the server/FCM link is at fault.
+     */
+    private void postTestNotification(Context context) {
+        try {
+            android.app.NotificationManager nm = (android.app.NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            String channelId = "miogram_push_test";
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                android.app.NotificationChannel ch = new android.app.NotificationChannel(
+                        channelId,
+                        MiogramLocale.get("Тест сповіщень Miogram", "Тест уведомлений Miogram", "Miogram notification test"),
+                        android.app.NotificationManager.IMPORTANCE_HIGH);
+                nm.createNotificationChannel(ch);
+            }
+            android.content.Intent openIntent = new android.content.Intent(context, org.telegram.ui.LaunchActivity.class);
+            openIntent.setAction("miogram_push_test");
+            android.app.PendingIntent pi = android.app.PendingIntent.getActivity(context, 991,
+                    openIntent, android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+            androidx.core.app.NotificationCompat.Builder b = new androidx.core.app.NotificationCompat.Builder(context, channelId)
+                    .setSmallIcon(R.drawable.exteraless_notification)
+                    .setContentTitle(MiogramLocale.get("Тест Miogram ໒꒱", "Тест Miogram ໒꒱", "Miogram test ໒꒱"))
+                    .setContentText(MiogramLocale.get("Якщо бачиш це — шторка, дозвіл і канали працюють. Згорни додаток і попроси друга написати тобі.", "Если видишь это — шторка, разрешение и каналы работают. Сверни приложение и попроси друга написать тебе.", "If you see this — tray, permission and channels work. Minimize the app and ask a friend to message you."))
+                    .setContentIntent(pi)
+                    .setAutoCancel(true)
+                    .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH);
+            nm.notify(991001, b.build());
+            Toast.makeText(context, MiogramLocale.get("Тест надіслано в шторку", "Тест отправлен в шторку", "Test sent to tray"), Toast.LENGTH_SHORT).show();
+        } catch (Throwable t) {
+            Toast.makeText(context, String.valueOf(t.getMessage()), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /** Short one-line status for the settings row: OK or what is broken. */    public static String getShortStatus() {
         try {
             int serviceType = NaConfig.INSTANCE.getPushServiceType().Int();
             boolean hasServices = false;

@@ -232,10 +232,10 @@ public class MiogramHerokuManager {
         if (initialized) return;
         initialized = true;
 
+        // Built-ins are pure in-memory registration: instant, stays on caller thread.
         registerBuiltinModules();
-        scanExternalModules();
 
-        // Wire into MioHook pre-send bus
+        // Wire into MioHook pre-send bus (cheap, stays on caller thread)
         MioHook.onPreSend("miogram_heroku_userbot", "userbot_interceptor", 999, (dialogId, text) -> {
             if (!isEnabled()) {
                 return true;
@@ -245,6 +245,15 @@ public class MiogramHerokuManager {
                 return false; // Veto normal message sending, userbot handles it!
             }
             return true;
+        });
+
+        // External .py discovery = file I/O + parsing, must not block cold start.
+        executor.execute(() -> {
+            try {
+                scanExternalModules();
+            } catch (Throwable t) {
+                android.util.Log.e("MiogramHeroku", "background module scan failed", t);
+            }
         });
     }
 

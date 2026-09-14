@@ -144,21 +144,30 @@ public class MiogramSteamManager {
 
     public void setLinkedSteamId(String steamId) {
         String clean = steamId != null ? steamId.trim() : "";
-        getPrefs().edit().putString(KEY_SELF_STEAM_ID, clean).apply();
+        SharedPreferences prefs = getPrefs();
+        prefs.edit().putString(KEY_SELF_STEAM_ID, clean).apply();
         if (TextUtils.isEmpty(clean)) {
             clearSelfCache();
+            app.miogram.bridge.presence.MiogramLinkOwner.clear(prefs);
             long myId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
             if (myId != 0) {
                 synchronized (profileCache) {
                     profileCache.remove(myId);
                 }
             }
+        } else {
+            app.miogram.bridge.presence.MiogramLinkOwner.stamp(prefs);
         }
         app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
     }
 
     public boolean isLinked() {
         return !TextUtils.isEmpty(getLinkedSteamId());
+    }
+
+    /** Account-scoped visibility: the link shows only on the account that created it (legacy: everywhere). */
+    public boolean isActiveFor(long tgUserId) {
+        return isLinked() && app.miogram.bridge.presence.MiogramLinkOwner.visibleFor(getPrefs(), tgUserId);
     }
 
     /**

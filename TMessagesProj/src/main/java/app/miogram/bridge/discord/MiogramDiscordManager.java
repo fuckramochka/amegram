@@ -108,7 +108,13 @@ public class MiogramDiscordManager {
 
     public void setLinkedUserId(String userId) {
         String clean = sanitizeUserId(userId);
-        getPrefs().edit().putString(KEY_DISCORD_USER_ID, clean).apply();
+        SharedPreferences prefs = getPrefs();
+        prefs.edit().putString(KEY_DISCORD_USER_ID, clean).apply();
+        if (TextUtils.isEmpty(clean)) {
+            app.miogram.bridge.presence.MiogramLinkOwner.clear(prefs);
+        } else {
+            app.miogram.bridge.presence.MiogramLinkOwner.stamp(prefs);
+        }
         cachedPresence = null;
         lastFetchTime = 0;
         app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
@@ -248,6 +254,11 @@ public class MiogramDiscordManager {
 
     public boolean isLinked() {
         return !TextUtils.isEmpty(getLinkedUserId());
+    }
+
+    /** Account-scoped visibility: the link shows only on the account that created it (legacy: everywhere). */
+    public boolean isActiveFor(long tgUserId) {
+        return isLinked() && app.miogram.bridge.presence.MiogramLinkOwner.visibleFor(getPrefs(), tgUserId);
     }
 
     public void showConfigDialog(Context context, PresenceCallback callback) {

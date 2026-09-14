@@ -151,19 +151,38 @@ public class MiogramMediaDownloader {
         try {
             reportProgress(progressListener, 10, MiogramLocale.get("Аналіз TikTok...", "Анализ TikTok...", "Analyzing TikTok..."));
 
-            String apiUrl = "https://www.tikwm.com/api/?url=" + URLEncoder.encode(mediaUrl, "UTF-8") + "&hd=1";
-            String jsonStr = httpGet(apiUrl);
+            // Short links (vt./vm./lite.tiktok.com) must be expanded first —
+            // extractors often reject them or resolve to the wrong clip.
+            String resolvedUrl = resolveRedirects(mediaUrl);
+            if (TextUtils.isEmpty(resolvedUrl)) resolvedUrl = mediaUrl;
+            final String tikTokUrl = resolvedUrl;
+
+            String jsonStr = null;
+            String[] tikwmHosts = new String[]{
+                    "https://www.tikwm.com/api/?url=",
+                    "https://tikwm.com/api/?url="
+            };
+            for (String host : tikwmHosts) {
+                try {
+                    jsonStr = httpGet(host + URLEncoder.encode(tikTokUrl, "UTF-8") + "&hd=1");
+                } catch (Throwable e) {
+                    FileLog.d("MiogramDL tikwm host failed: " + host + " :: " + e.getMessage());
+                    jsonStr = null;
+                }
+                if (!TextUtils.isEmpty(jsonStr)) break;
+            }
             if (TextUtils.isEmpty(jsonStr)) {
                 // Fallback to cobalt
-                downloadViaCobalt(currentAccount, dialogId, replyToMsg, mediaUrl, progressListener, callback);
+                downloadViaCobalt(currentAccount, dialogId, replyToMsg, tikTokUrl, progressListener, callback);
                 return;
             }
 
             JSONObject json = new JSONObject(jsonStr);
             int code = json.optInt("code", -1);
             if (code != 0 || !json.has("data")) {
+                FileLog.d("MiogramDL tikwm code=" + code + " msg=" + json.optString("msg", "") + " for " + tikTokUrl);
                 // Fallback to cobalt
-                downloadViaCobalt(currentAccount, dialogId, replyToMsg, mediaUrl, progressListener, callback);
+                downloadViaCobalt(currentAccount, dialogId, replyToMsg, tikTokUrl, progressListener, callback);
                 return;
             }
 
@@ -266,10 +285,10 @@ public class MiogramMediaDownloader {
             }
 
             // Fallback to cobalt
-            downloadViaCobalt(currentAccount, dialogId, replyToMsg, mediaUrl, progressListener, callback);
+            downloadViaCobalt(currentAccount, dialogId, replyToMsg, tikTokUrl, progressListener, callback);
         } catch (Throwable e) {
             FileLog.e(e);
-            downloadViaCobalt(currentAccount, dialogId, replyToMsg, mediaUrl, progressListener, callback);
+            downloadViaCobalt(currentAccount, dialogId, replyToMsg, tikTokUrl, progressListener, callback);
         }
     }
 
@@ -468,15 +487,51 @@ public class MiogramMediaDownloader {
     // HTTP UTILITIES
     // =========================================================================
 
+    /**
+     * Expands short links (vt./vm./lite.tiktok.com, bit.ly, t.co, ...) by
+     * following up to 5 redirects manually. Returns final URL or null.
+     */
+    private static String resolveRedirects(String urlStr) {
+        try {
+            String current = urlStr.split("\\s")[0];
+            for (int i = 0; i < 5; i++) {
+                URL url = new URL(current);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setInstanceFollowRedirects(false);
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(8000);
+                conn.setRequestMethod("HEAD");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36");
+                int code = conn.getResponseCode();
+                String location = conn.getHeaderField("Location");
+                conn.disconnect();
+                if ((code == HttpURLConnection.HTTP_MOVED_TEMP
+                        || code == HttpURLConnection.HTTP_MOVED_PERM
+                        || code == 307 || code == 308) && !TextUtils.isEmpty(location)) {
+                    current = location.startsWith("http") ? location
+                            : new URL(url, location).toString();
+                } else {
+                    return current;
+                }
+            }
+            return current;
+        } catch (Throwable e) {
+            FileLog.d("MiogramDL resolve failed for " + urlStr + " :: " + e.getMessage());
+            return null;
+        }
+    }
+
     private static String httpGet(String urlStr) {
         try {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setConnectTimeout(9000);
-            conn.setReadTimeout(12000);
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");
+            conn.setInstanceFollowRedirects(true);
+            conn.setConnectTimeout(12000);
+            conn.setReadTimeout(20000);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36");
             conn.setRequestProperty("Accept", "application/json, text/plain, */*");
-            if (conn.getResponseCode() >= 200 && conn.getResponseCode() < 300) {
+            int code = conn.getResponseCode();
+            if (code >= 200 && code < 300) {
                 InputStream in = conn.getInputStream();
                 java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
                 byte[] buf = new byte[4096];
@@ -487,7 +542,10 @@ public class MiogramMediaDownloader {
                 in.close();
                 return out.toString("UTF-8");
             }
-        } catch (Throwable ignore) {}
+            FileLog.d("MiogramDL GET " + shortHost(urlStr) + " -> HTTP " + code);
+        } catch (Throwable e) {
+            FileLog.d("MiogramDL GET failed " + shortHost(urlStr) + " :: " + e.getMessage());
+        }
         return null;
     }
 
@@ -526,7 +584,9 @@ public class MiogramMediaDownloader {
                 in.close();
                 return resOut.toString("UTF-8");
             }
-        } catch (Throwable ignore) {}
+        } catch (Throwable e) {
+            FileLog.d("MiogramDL POST failed " + shortHost(urlStr) + " :: " + e.getMessage());
+        }
         return null;
     }
 

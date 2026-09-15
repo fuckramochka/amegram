@@ -2002,6 +2002,114 @@ public class MiogramCompanionToolbox {
                     }));
                     return;
                 }
+                case "view_photo": {
+                    ChatResolution res = resolveChatTarget(account, p, "view_photo");
+                    if (res.errorMessage != null) {
+                        callback.run(res.errorMessage);
+                        return;
+                    }
+                    String question = p.optString("question", "");
+                    if (question.isEmpty()) question = p.optString("text", "");
+                    final String fQuestion = question;
+                    TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
+                    req.peer = resolveInputPeer(account, res.dialogId);
+                    if (req.peer == null) {
+                        callback.run(peerUnreachableText());
+                        return;
+                    }
+                    req.limit = 20;
+                    final FoundChat fc = res.foundChat;
+                    ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                        if (isPeerIdInvalid(error)) {
+                            callback.run(peerUnreachableText());
+                            return;
+                        }
+                        if (!(response instanceof TLRPC.messages_Messages)) {
+                            callback.run(MiogramLocale.get("Не вдалося відкрити фото: ", "Не удалось открыть фото: ", "Could not open the photo: ")
+                                    + (error != null ? error.text : MiogramLocale.get("помилка запиту", "ошибка запроса", "request error")));
+                            return;
+                        }
+                        TLRPC.messages_Messages msgRes = (TLRPC.messages_Messages) response;
+                        TLRPC.Message photoMsg = null;
+                        for (int i = 0; i < msgRes.messages.size(); i++) {
+                            TLRPC.Message m = msgRes.messages.get(i);
+                            if (m == null || m instanceof TLRPC.TL_messageEmpty) continue;
+                            MessageObject mo = new MessageObject(account, m, false, false);
+                            if (mo.isPhoto() && !mo.isSponsored()) {
+                                photoMsg = m;
+                                break;
+                            }
+                        }
+                        if (photoMsg == null) {
+                            String chatTitle = fc != null ? fc.getReference() : String.valueOf(res.dialogId);
+                            callback.run(MiogramLocale.get("В останніх 20 повідомленнях «", "В последних 20 сообщениях «", "No photos in the last 20 messages of \"") + chatTitle + "».");
+                            return;
+                        }
+                        final TLRPC.Message fPhotoMsg = photoMsg;
+                        Utilities.globalQueue.postRunnable(() -> {
+                            try {
+                                if (!(fPhotoMsg.media instanceof TLRPC.TL_messageMediaPhoto)) {
+                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("Це не звичайне фото.", "Это не обычное фото.", "That is not a regular photo.")));
+                                    return;
+                                }
+                                TLRPC.Photo photo = ((TLRPC.TL_messageMediaPhoto) fPhotoMsg.media).photo;
+                                if (photo == null || photo.sizes == null || photo.sizes.isEmpty()) {
+                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("У фото немає даних.", "У фото нет данных.", "The photo has no data.")));
+                                    return;
+                                }
+                                org.telegram.messenger.FileLoader fl = org.telegram.messenger.FileLoader.getInstance(account);
+                                TLRPC.PhotoSize size = org.telegram.messenger.FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 1280);
+                                if (size == null) {
+                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("У фото немає даних.", "У фото нет данных.", "The photo has no data.")));
+                                    return;
+                                }
+                                java.io.File img = null;
+                                if (size instanceof TLRPC.TL_photoCachedSize) {
+                                    byte[] bytes = ((TLRPC.TL_photoCachedSize) size).bytes;
+                                    if (bytes != null && bytes.length > 0) {
+                                        java.io.File cacheDir = fl.getDirectory(org.telegram.messenger.FileLoader.MEDIA_DIR_CACHE);
+                                        img = new java.io.File(cacheDir, "ai_view_" + fPhotoMsg.id + ".jpg");
+                                        java.io.FileOutputStream out = new java.io.FileOutputStream(img);
+                                        out.write(bytes);
+                                        out.close();
+                                    }
+                                } else {
+                                    if (photo.dc_id != 0 && size.location != null) {
+                                        size.location.dc_id = photo.dc_id;
+                                        size.location.file_reference = photo.file_reference;
+                                    }
+                                    img = fl.getPathToAttach(size, true);
+                                    if (img == null || !img.exists() || img.length() == 0) {
+                                        org.telegram.messenger.ImageLocation loc = org.telegram.messenger.ImageLocation.getForPhoto(size, photo);
+                                        fl.loadFile(loc, fPhotoMsg, "jpg", 0, 0);
+                                        int waited = 0;
+                                        while (waited < 30000) {
+                                            Thread.sleep(500);
+                                            waited += 500;
+                                            img = fl.getPathToAttach(size, true);
+                                            if (img != null && img.exists() && img.length() > 0) break;
+                                        }
+                                    }
+                                }
+                                final java.io.File fImg = img;
+                                if (fImg == null || !fImg.exists() || fImg.length() == 0) {
+                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("Фото ще завантажується — попроси ще раз за хвилину.", "Фото ещё загружается — попроси ещё раз через минуту.", "The photo is still downloading — ask again in a minute.")));
+                                    return;
+                                }
+                                MiogramAiService.describeImage(fImg, "image/jpeg", fQuestion, (text, err) -> AndroidUtilities.runOnUIThread(() -> {
+                                    if (text != null) {
+                                        callback.run(MiogramLocale.get("Дивлюсь на фото: ", "Смотрю на фото: ", "Looking at the photo: ") + text);
+                                    } else {
+                                        callback.run(MiogramLocale.get("Не змогла роздивитися фото: ", "Не смогла разглядеть фото: ", "Could not view the photo: ") + (err != null ? err : ""));
+                                    }
+                                }));
+                            } catch (Throwable t) {
+                                AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("Не змогла відкрити фото.", "Не смогла открыть фото.", "Could not open the photo.")));
+                            }
+                        });
+                    }));
+                    return;
+                }
                 case "read_unread_summary": {
                     MessagesController mc = MessagesController.getInstance(account);
                     ArrayList<TLRPC.Dialog> all = mc.getAllDialogs();

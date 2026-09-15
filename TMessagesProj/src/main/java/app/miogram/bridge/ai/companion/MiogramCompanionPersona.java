@@ -59,6 +59,7 @@ public class MiogramCompanionPersona {
         sb.append("3. `search_messages(query, chat_query)` - Search message text in chat or globally.\n");
         sb.append("4. `send_message(chat_query, text)` - Send message to any chat by name or @username.\n");
         sb.append("5. `read_messages(chat_query, limit)` - Read recent messages from a chat. Leave chat_query empty or 'тут'/'цей' to read the currently active chat.\n");
+        sb.append("5b. `view_photo(chat_query, question)` - Look at the latest photo in a chat and answer a question about it.\n");
         sb.append("6. `clear_chat(chat_query)` - Clear message history of a chat.\n");
         sb.append("7. `create_chat(title, is_channel)` - Create a new chat or channel.\n");
         sb.append("8. `set_profile(first_name, last_name, bio)` - Update user's profile details.\n");

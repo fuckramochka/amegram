@@ -597,7 +597,76 @@ public class MiogramCloudVaultEngine {
         } catch (Throwable ignored) {}
     }
 
-    /** Restores last known manifests into memory (chunk docs resolve on demand). */
+    /** Full-vault backup: chat link + master key + all manifests (no file bytes). */
+    public static JSONObject exportBackupJson(int currentAccount) {
+        JSONObject root = new JSONObject();
+        try {
+            root.put("v", 1);
+            root.put("app", "miogram-vault-backup");
+            root.put("chatId", getVaultChatId(currentAccount));
+            root.put("masterKeyHex", getMasterKeyHex());
+            JSONArray arr = new JSONArray();
+            for (MiogramCloudVaultFile f : memoryFiles.values()) {
+                if (f == null || TextUtils.isEmpty(f.fileId)) continue;
+                arr.put(f.toJson());
+            }
+            root.put("files", arr);
+        } catch (Throwable ignore) {}
+        return root;
+    }
+
+    /** Writes the backup into Downloads/Miogram Vault, returns the file or null. */
+    public static File writeBackupFile(int currentAccount) {
+        try {
+            JSONObject root = exportBackupJson(currentAccount);
+            File downloadsDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Miogram Vault");
+            if (!downloadsDir.exists()) downloadsDir.mkdirs();
+            String stamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(new java.util.Date());
+            File out = new File(downloadsDir, "miogram-vault-backup-" + stamp + ".json");
+            java.io.FileWriter w = new java.io.FileWriter(out, false);
+            w.write(root.toString());
+            w.close();
+            try {
+                MediaScannerConnection.scanFile(ApplicationLoader.applicationContext,
+                        new String[]{out.getAbsolutePath()}, null, null);
+            } catch (Throwable ignore) {}
+            return out;
+        } catch (Throwable t) {
+            FileLog.e(t);
+            return null;
+        }
+    }
+
+    /**
+     * Restores chat link + master key + manifests from a backup.
+     * @return imported file count, -1 on invalid input.
+     */
+    public static int importBackupJson(int currentAccount, String jsonStr) {
+        if (TextUtils.isEmpty(jsonStr)) return -1;
+        try {
+            JSONObject root = new JSONObject(jsonStr);
+            JSONArray arr = root.optJSONArray("files");
+            if (arr == null) return -1;
+            String keyHex = root.optString("masterKeyHex", "");
+            if (keyHex.length() == 64) setMasterKeyHex(keyHex);
+            long chatId = root.optLong("chatId", 0);
+            if (chatId != 0) setVaultChatId(currentAccount, chatId);
+            int count = 0;
+            for (int i = 0; i < arr.length(); i++) {
+                try {
+                    MiogramCloudVaultFile f = MiogramCloudVaultFile.fromJson(arr.getJSONObject(i));
+                    if (f != null && !TextUtils.isEmpty(f.fileId)) {
+                        memoryFiles.put(f.fileId, f);
+                        count++;
+                    }
+                } catch (Throwable ignore) {}
+            }
+            saveCache(currentAccount);
+            return count;
+        } catch (Throwable t) {
+            return -1;
+        }
+    }
     public static void loadCache(int currentAccount) {
         try {
             File f = getIndexCacheFile(currentAccount);

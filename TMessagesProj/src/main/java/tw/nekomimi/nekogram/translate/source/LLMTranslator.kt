@@ -74,9 +74,12 @@ object LLMTranslator : Translator {
         val llmProvider = NaConfig.llmProviderPreset.Int()
         val keyConfig = LlmConfig.getApiKeyConfigItem(llmProvider)
         var key = keyConfig.String()
-        if (key.isNullOrBlank() && llmProvider == PresetRegistry.GOOGLE_AI_STUDIO) {
+        if (llmProvider == PresetRegistry.GOOGLE_AI_STUDIO) {
+            // Shared ring: keys added from Miogram AI settings must work here too,
+            // with this translator's own rotation (not just the first key).
             try {
-                key = MiogramAiService.getApiKey()
+                val merged = MiogramAiService.getApiKeys()
+                if (merged.isNotEmpty()) key = merged.joinToString(",")
             } catch (_: Throwable) {}
         }
 

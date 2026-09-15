@@ -125,15 +125,25 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
         handleDrawable.setColor(Theme.getColor(Theme.key_sheet_scrollUp, resourcesProvider));
         handleDrawable.setCornerRadius(AndroidUtilities.dp(3));
         dragHandle.setImageDrawable(handleDrawable);
-        root.addView(dragHandle, LayoutHelper.createLinear(36, 4, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16));
+        root.addView(dragHandle, LayoutHelper.createLinear(36, 4, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 12));
 
-        // 2. Telegram Native Preview Chamber (Soft Squircle Background)
+        // 1b. Needy Streamer angel divider (magenta -> cyan).
+        View nsoDivider = new View(context);
+        GradientDrawable nsoDivBg = new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[]{0xFFFF2A85, 0xFF00E5FF});
+        nsoDivBg.setShape(GradientDrawable.RECTANGLE);
+        nsoDivBg.setCornerRadius(AndroidUtilities.dp(1));
+        nsoDivider.setBackground(nsoDivBg);
+        root.addView(nsoDivider, LayoutHelper.createLinear(120, 2, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 12));
+
+        // 2. NSO Stage: dark idol-goods chamber with a magenta glow edge.
         FrameLayout previewContainer = new FrameLayout(context);
         GradientDrawable previewBg = new GradientDrawable();
         previewBg.setShape(GradientDrawable.RECTANGLE);
         previewBg.setCornerRadius(AndroidUtilities.dp(24));
-        int accentColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
-        previewBg.setColor(Color.argb(22, Color.red(accentColor), Color.green(accentColor), Color.blue(accentColor)));
+        previewBg.setColor(0xFF1E1F22);
+        previewBg.setStroke(AndroidUtilities.dp(2), 0xFFFF2A85);
         previewContainer.setBackground(previewBg);
         previewContainer.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(16), AndroidUtilities.dp(20), AndroidUtilities.dp(16));
 
@@ -235,7 +245,7 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             reasonTitle.setText(MiogramLocale.get("Обґрунтування надання відзнаки", "Обоснование выдачи отличия", "Award Citation & Reason"));
             reasonTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             reasonTitle.setTypeface(AndroidUtilities.bold());
-            reasonTitle.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+            reasonTitle.setTextColor(0xFFFF2A85);
             reasonCard.addView(reasonTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
             TextView reasonBody = new TextView(context);
@@ -277,23 +287,11 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             metaCard.addView(createTgMetaRow(context,
                     MiogramLocale.get("Дата надання:", "Дата выдачи:", "Date Granted:"),
                     obtainDate));
-            boolean rowVerified = record != null && record.verified;
-            metaCard.addView(createTgMetaRow(context,
-                    MiogramLocale.get("Хмарний статус:", "Облачный статус:", "Cloud Status:"),
-                    rowVerified
-                            ? "Supabase Verified ✓"
-                            : MiogramLocale.get("Учасник спільноти", "Участник сообщества", "Community member")));
             if (record != null && record.grantorId == MiogramBadgeManager.FOUNDER_USER_ID) {
                 metaCard.addView(createTgMetaRow(context,
                         MiogramLocale.get("Видав:", "Выдал:", "Granted by:"),
                         MiogramLocale.get("★ Засновник Miogram", "★ Основатель Miogram", "★ Miogram Founder")));
             }
-            metaCard.addView(createTgMetaRow(context,
-                    MiogramLocale.get("Ідентифікатор користувача:", "Идентификатор пользователя:", "User ID:"),
-                    String.valueOf(targetUserId)));
-            metaCard.addView(createTgMetaRow(context,
-                    MiogramLocale.get("Стиль бейджа:", "Стиль бейджа:", "Badge Style:"),
-                    selectedBadge.getTitle()));
 
             root.addView(metaCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
@@ -311,7 +309,7 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             loreTitle.setText(MiogramLocale.get("Символізм стилю", "Символизм стиля", "Style Symbolism"));
             loreTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             loreTitle.setTypeface(AndroidUtilities.bold());
-            loreTitle.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+            loreTitle.setTextColor(0xFFFF2A85);
             loreCard.addView(loreTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
 
             TextView loreBody = new TextView(context);
@@ -453,7 +451,7 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             loreTitle.setText(MiogramLocale.get("Опис обраного стилю", "Описание выбранного стиля", "Selected Style Details"));
             loreTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             loreTitle.setTypeface(AndroidUtilities.bold());
-            loreTitle.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+            loreTitle.setTextColor(0xFFFF2A85);
             dynamicLoreCard.addView(loreTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
 
             dynamicLoreView = new TextView(context);
@@ -465,29 +463,19 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
 
             root.addView(dynamicLoreCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
 
-            // Native Telegram Status Hint (TextInfoPrivacyCell style)
-            TextView syncHint = new TextView(context);
-            syncHint.setText(MiogramLocale.get(
-                    "Хмарна синхронізація Supabase активна. Обраний стиль миттєво відображається у всіх співрозмовників у чатах.",
-                    "Облачная синхронизация Supabase активна. Выбранный стиль мгновенно отображается у всех собеседников в чатах.",
-                    "Supabase cloud sync active. Selected badge is instantly visible to everyone across chats."));
-            syncHint.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            syncHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText4, resourcesProvider));
-            syncHint.setGravity(Gravity.CENTER);
-            root.addView(syncHint, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
-
-            // Telegram Native Primary Action Button
+            // NSO Primary Action Button: kawaii pink -> purple gradient.
             TextView saveButton = new TextView(context);
             saveButton.setText(MiogramLocale.get("Застосувати стиль", "Применить стиль", "Apply Badge Style"));
             saveButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
             saveButton.setTypeface(AndroidUtilities.bold());
-            saveButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+            saveButton.setTextColor(0xFFFFFFFF);
             saveButton.setGravity(Gravity.CENTER);
 
-            GradientDrawable btnBg = new GradientDrawable();
+            GradientDrawable btnBg = new GradientDrawable(
+                    GradientDrawable.Orientation.LEFT_RIGHT,
+                    new int[]{0xFFFF2A85, 0xFFB537F2});
             btnBg.setShape(GradientDrawable.RECTANGLE);
-            btnBg.setCornerRadius(AndroidUtilities.dp(10));
-            btnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider));
+            btnBg.setCornerRadius(AndroidUtilities.dp(12));
             saveButton.setBackground(btnBg);
             saveButton.setPadding(0, AndroidUtilities.dp(13), 0, AndroidUtilities.dp(13));
 
@@ -501,10 +489,11 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
 
             root.addView(saveButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            // Founder-only: grant badges to other users.
+            // Founder-only: grant badges to other users. The entry itself
+            // renders for the founder only — everyone else must not see it.
             try {
                 long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
-                if (isFounder || selfId == MiogramBadgeManager.FOUNDER_USER_ID) {
+                if (selfId == MiogramBadgeManager.FOUNDER_USER_ID) {
                     TextView grantEntry = new TextView(context);
                     grantEntry.setText(MiogramLocale.get("★ Видати стрілочку людині", "★ Выдать стрелочку человеку", "★ Grant a badge"));
                     grantEntry.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

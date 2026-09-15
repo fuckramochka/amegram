@@ -17,6 +17,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 import org.telegram.ui.LaunchActivity;
@@ -62,6 +63,13 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
     private int monetStyleRow;
     private int uiInfoRow;
 
+    private int headerLinksRow;
+    private int iconPacksRow;
+    private int navigationRow;
+    private int subfoldersRow;
+    private int badgeStudioRow;
+    private int connectedAppsRow;
+
     @Override
     protected String getActionBarTitle() {
         return MiogramLocale.get("Зовнішній вигляд", "Внешний вид", "Appearance & Design");
@@ -98,6 +106,13 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         titleTextRow = addRow();
         monetStyleRow = addRow();
         uiInfoRow = addRow();
+
+        headerLinksRow = addRow();
+        iconPacksRow = addRow();
+        navigationRow = addRow();
+        subfoldersRow = addRow();
+        badgeStudioRow = addRow();
+        connectedAppsRow = addRow();
     }
 
     private Context getSafeContext() {
@@ -184,6 +199,23 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                     LaunchActivity.instance.rebuildAllFragments(false);
                 }
             });
+        } else if (position == iconPacksRow) {
+            presentFragment(new app.exteraless.icons.IconPacksActivity());
+        } else if (position == navigationRow) {
+            presentFragment(new app.exteraless.settings.OpenExteraAppNavigationActivity());
+        } else if (position == subfoldersRow) {
+            presentFragment(new app.miogram.bridge.folders.MiogramSubfolderSettingsActivity());
+        } else if (position == badgeStudioRow) {
+            long clientUserId = org.telegram.messenger.UserConfig.getInstance(currentAccount).getClientUserId();
+            app.miogram.bridge.badge.MiogramBadgeBottomSheet.show(getParentActivity(), clientUserId);
+        } else if (position == connectedAppsRow) {
+            app.miogram.bridge.presence.MiogramConnectedAppsSheet sheet = new app.miogram.bridge.presence.MiogramConnectedAppsSheet(getParentActivity(), null);
+            sheet.setOnAppsChangedListener(() -> {
+                if (listView != null && listView.getAdapter() != null) {
+                    listView.getAdapter().notifyDataSetChanged();
+                }
+            });
+            sheet.show();
         }
     }
 
@@ -304,7 +336,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == headerModeRow || position == headerGlassRow || position == headerAvatarsRow || position == headerUiRow) {
+            if (position == headerModeRow || position == headerGlassRow || position == headerAvatarsRow || position == headerUiRow || position == headerLinksRow) {
                 return TYPE_HEADER;
             } else if (position == ameVibeRow || position == activeLyricsLineRow
                     || position == glassToggleRow || position == singleCornerRadiusRow
@@ -312,6 +344,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                 return TYPE_CHECK;
             } else if (position == modeInfoRow || position == glassInfoRow || position == avatarsInfoRow || position == uiInfoRow) {
                 return TYPE_INFO_PRIVACY;
+            } else if (position == iconPacksRow || position == navigationRow || position == subfoldersRow
+                    || position == badgeStudioRow || position == connectedAppsRow) {
+                return TYPE_TEXT;
             }
             return TYPE_SETTINGS;
         }
@@ -329,6 +364,8 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Аватарки та список чатів", "Аватарки и список чатов", "Avatars & Chat List"));
                     } else if (position == headerUiRow) {
                         cell.setText(MiogramLocale.get("Елементи інтерфейсу та Теми", "Элементы интерфейса и Темы", "UI & Themes"));
+                    } else if (position == headerLinksRow) {
+                        cell.setText(MiogramLocale.get("Папки, іконки та спільнота", "Папки, иконки и сообщество", "Folders, Icons & Community"));
                     }
                     break;
                 }
@@ -374,6 +411,51 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                                 ? "Telemone (Material 3)"
                                 : MiogramLocale.get("Класичний", "Классический", "Classic");
                         cell.setTextAndValue(MiogramLocale.get("Стиль Monet теми", "Стиль Monet темы", "Monet Theme Style"), val, false);
+                    }
+                    break;
+                }
+                case TYPE_TEXT: {
+                    TextCell cell = (TextCell) holder.itemView;
+                    if (position == iconPacksRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Паки іконок", "Паки иконок", "Icon Packs"),
+                                R.drawable.msg_customize,
+                                true
+                        );
+                    } else if (position == navigationRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Навігація та панель вкладок", "Навигация и панель вкладок", "Navigation & Tab Bar"),
+                                R.drawable.msg_folders,
+                                true
+                        );
+                    } else if (position == subfoldersRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Підпапки чатів", "Подпапки чатов", "Chat Subfolders"),
+                                R.drawable.msg_archive,
+                                true
+                        );
+                    } else if (position == badgeStudioRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Студія бейджів спільноти", "Студия бейджей сообщества", "Community Badge Studio"),
+                                R.drawable.msg_fave,
+                                true
+                        );
+                    } else if (position == connectedAppsRow) {
+                        int count = 0;
+                        if (app.miogram.bridge.steam.MiogramSteamManager.getInstance().isLinked()) count++;
+                        if (app.miogram.bridge.github.MiogramGitHubManager.getInstance().isLinked()) count++;
+                        if (app.miogram.bridge.discord.MiogramDiscordManager.getInstance().isLinked()) count++;
+                        if (app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().isLinked()) count++;
+                        if (app.miogram.bridge.roblox.MiogramRobloxManager.getInstance().isLinked()) count++;
+                        String val = count > 0
+                                ? (count + " " + MiogramLocale.get("підключено", "подключено", "linked"))
+                                : MiogramLocale.get("Steam, GitHub, Discord, Spotify, Roblox", "Steam, GitHub, Discord, Spotify, Roblox", "Steam, GitHub, Discord, Spotify, Roblox");
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Прив'язані додатки", "Привязанные приложения", "Connected Apps"),
+                                val,
+                                R.drawable.msg_openin,
+                                false
+                        );
                     }
                     break;
                 }

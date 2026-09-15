@@ -43,6 +43,7 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
     private int hidePhoneRow;
     private int allowScreenshotRow;
     private int telemetryRow;
+    private int antiBlockRow;
     private int generalPrivacyInfoRow;
 
     @Override
@@ -75,6 +76,7 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         hidePhoneRow = addRow();
         allowScreenshotRow = addRow();
         telemetryRow = addRow();
+        antiBlockRow = addRow();
         generalPrivacyInfoRow = addRow();
     }
 
@@ -121,6 +123,8 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             boolean nextState = !app.miogram.bridge.badge.MiogramSupabaseBridge.isTelemetryEnabled();
             app.miogram.bridge.badge.MiogramSupabaseBridge.setTelemetryEnabled(nextState);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(nextState);
+        } else if (position == antiBlockRow) {
+            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
         }
     }
 
@@ -139,7 +143,7 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                     || position == saveDeletedMessagesRow || position == saveDeletedMediaRow
                     || position == hidePhoneRow || position == allowScreenshotRow || position == telemetryRow) {
                 return TYPE_CHECK;
-            } else if (position == vaultManageRow || position == ghostVaultRow) {
+            } else if (position == vaultManageRow || position == ghostVaultRow || position == antiBlockRow) {
                 return TYPE_TEXT;
             } else if (position == vaultInfoRow || position == ghostInfoRow
                     || position == historyInfoRow || position == generalPrivacyInfoRow) {
@@ -191,6 +195,20 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(MiogramLocale.get("Налаштування прихованих акаунтів та кодів", "Настройки скрытых аккаунтов и кодов", "Hidden accounts & Passcodes setup"), R.drawable.msg_permissions, false);
                     } else if (position == ghostVaultRow) {
                         cell.setTextAndIcon(MiogramLocale.get("Збережені самознищувані", "Сохранённые самоуничтожающиеся", "Kept view-once media"), R.drawable.msg_saved, false);
+                    } else if (position == antiBlockRow) {
+                        boolean active = app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().isBypassActive();
+                        boolean auto = app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().isAutoBypassEnabled();
+                        String val = active
+                                ? MiogramLocale.get("Захищено (Fake-TLS)", "Защищено (Fake-TLS)", "Protected (Fake-TLS)")
+                                : (auto
+                                        ? MiogramLocale.get("Розумний авто-обхід", "Умный авто-обход", "Smart Auto-Bypass")
+                                        : MiogramLocale.get("Вимкнено (пряме)", "Отключено (прямое)", "Disabled (direct)"));
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Обхід блокувань (Анти-ТСПУ)", "Обход блокировок (Анти-ТСПУ)", "Anti-Censorship & Bypass"),
+                                val,
+                                R.drawable.msg_bot,
+                                false
+                        );
                     }
                     break;
                 }

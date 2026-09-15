@@ -908,6 +908,16 @@ public class MiogramCompanionToolbox {
         if (q.isEmpty()) return matches;
 
         MessagesController mc = MessagesController.getInstance(account);
+
+        // 0. Phone numbers and numeric ids NEVER go fuzzy: an exact phone/id
+        // hit returns immediately, a miss returns empty (no random stranger).
+        List<FoundChat> direct = resolveByPhoneOrId(mc, q);
+        if (direct != null) {
+            return direct;
+        }
+
+        // Query-side normalization, computed ONCE (not per candidate).
+        QueryNorm qn = normQuery(rawQuery);
         Map<Long, ScoredFoundChat> dedup = new HashMap<>();
 
         // 1. Scan Dialogs
@@ -928,7 +938,7 @@ public class MiogramCompanionToolbox {
                     if (u != null) {
                         String fullName = UserObject.getUserName(u);
                         String uname = u.username != null ? u.username : "";
-                        int score = calculateMatchScore(q, fullName, uname, u.first_name, u.last_name);
+                        int score = calculateMatchScoreFast(qn, fullName, uname, u.first_name, u.last_name);
                         if (score >= 55) {
                             dedup.put(did, new ScoredFoundChat(new FoundChat(did, fullName, uname, false, false), score));
                         }
@@ -940,7 +950,7 @@ public class MiogramCompanionToolbox {
                         String uname = c.username != null ? c.username : "";
                         boolean isChannel = ChatObject.isChannelAndNotMegaGroup(c);
                         boolean isGroup = !isChannel;
-                        int score = calculateMatchScore(q, title, uname, null, null);
+                        int score = calculateMatchScoreFast(qn, title, uname, null, null);
                         if (score >= 55) {
                             dedup.put(did, new ScoredFoundChat(new FoundChat(did, title, uname, isChannel, isGroup), score));
                         }
@@ -960,7 +970,7 @@ public class MiogramCompanionToolbox {
                 if (u != null) {
                     String fullName = UserObject.getUserName(u);
                     String uname = u.username != null ? u.username : "";
-                    int score = calculateMatchScore(q, fullName, uname, u.first_name, u.last_name);
+                    int score = calculateMatchScoreFast(qn, fullName, uname, u.first_name, u.last_name);
                     if (score >= 55) {
                         ScoredFoundChat existing = dedup.get(uid);
                         if (existing == null || score > existing.score) {
@@ -977,7 +987,7 @@ public class MiogramCompanionToolbox {
                 if (u == null || u.id == 0 || u.id == UserConfig.getInstance(account).getClientUserId()) continue;
                 String fullName = UserObject.getUserName(u);
                 String uname = u.username != null ? u.username : "";
-                int score = calculateMatchScore(q, fullName, uname, u.first_name, u.last_name);
+                int score = calculateMatchScoreFast(qn, fullName, uname, u.first_name, u.last_name);
                 if (score >= 55) {
                     ScoredFoundChat existing = dedup.get(u.id);
                     if (existing == null || score > existing.score) {
@@ -996,7 +1006,7 @@ public class MiogramCompanionToolbox {
                 String uname = c.username != null ? c.username : "";
                 boolean isChannel = ChatObject.isChannelAndNotMegaGroup(c);
                 boolean isGroup = !isChannel;
-                int score = calculateMatchScore(q, title, uname, null, null);
+                int score = calculateMatchScoreFast(qn, title, uname, null, null);
                 if (score >= 55) {
                     ScoredFoundChat existing = dedup.get(did);
                     if (existing == null || score > existing.score) {
@@ -1042,14 +1052,97 @@ public class MiogramCompanionToolbox {
         return matches;
     }
 
+    /**
+     * Exact phone / numeric-id resolution. Returns a singleton hit, an empty
+     * list on definitive miss, or null when the query is not phone/id-like
+     * (caller proceeds to fuzzy matching).
+     */
+    private static List<FoundChat> resolveByPhoneOrId(MessagesController mc, String q) {
+        if (mc == null) return null;
+        String digits = q.replaceAll("[^0-9]", "");
+        if (digits.length() < 5 || digits.length() > 20 || !q.matches(".*\\d.*")) {
+            return null;
+        }
+        boolean negative = q.trim().startsWith("-");
+        try {
+            // 1. Phone match (contacts + all known users).
+            if (digits.length() >= 7 && digits.length() <= 15) {
+                try {
+                    for (TLRPC.User u : mc.getUsers().values()) {
+                        if (u == null || u.id == 0) continue;
+                        String uphone = u.phone != null ? u.phone.replaceAll("[^0-9]", "") : "";
+                        if (uphone.length() >= 7 && (uphone.equals(digits)
+                                || uphone.endsWith(digits) || digits.endsWith(uphone))) {
+                            List<FoundChat> hit = new ArrayList<>();
+                            hit.add(new FoundChat(u.id, UserObject.getUserName(u),
+                                    u.username != null ? u.username : "", false, false));
+                            return hit;
+                        }
+                    }
+                } catch (Throwable ignore) {}
+            }
+            // 2. Raw Telegram id.
+            try {
+                long id = Long.parseLong(negative ? "-" + digits : digits);
+                if (id > 0) {
+                    TLRPC.User u = mc.getUser(id);
+                    if (u != null) {
+                        List<FoundChat> hit = new ArrayList<>();
+                        hit.add(new FoundChat(u.id, UserObject.getUserName(u),
+                                u.username != null ? u.username : "", false, false));
+                        return hit;
+                    }
+                } else if (id < 0) {
+                    TLRPC.Chat c = mc.getChat(-id);
+                    if (c != null) {
+                        List<FoundChat> hit = new ArrayList<>();
+                        hit.add(new FoundChat(id, c.title != null ? c.title : "",
+                                c.username != null ? c.username : "", ChatObject.isChannelAndNotMegaGroup(c), !ChatObject.isChannelAndNotMegaGroup(c)));
+                        return hit;
+                    }
+                }
+            } catch (Throwable ignore) {}
+        } catch (Throwable ignore) {}
+        // Phone/id-looking but unknown: definitive miss, never fuzzy.
+        return new ArrayList<>();
+    }
+
+    /** Query-side normalization, computed once per search (not per candidate). */
+    private static class QueryNorm {
+        String qLower = "";
+        String qStem = "";
+        String normQ = "";
+        String normStemQ = "";
+        String colQ = "";
+        String enQ = "";
+    }
+
+    private static QueryNorm normQuery(String rawQ) {
+        QueryNorm n = new QueryNorm();
+        if (rawQ == null || rawQ.trim().isEmpty()) return n;
+        try {
+            n.qLower = rawQ.trim().toLowerCase(java.util.Locale.ROOT);
+            n.qStem = stripGrammaticalEnding(n.qLower);
+            n.normQ = normalizeText(rawQ);
+            n.normStemQ = normalizeText(n.qStem);
+            n.colQ = collapseRepeats(n.normQ);
+            n.enQ = transliterateUaToEn(n.qLower);
+        } catch (Throwable ignore) {}
+        return n;
+    }
+
     public static int calculateMatchScore(String rawQ, String name, String username, String first, String last) {
         if (rawQ == null || rawQ.trim().isEmpty()) return 0;
-        String qLower = rawQ.trim().toLowerCase(java.util.Locale.ROOT);
-        String qStem = stripGrammaticalEnding(qLower);
-        String normQ = normalizeText(rawQ);
-        String normStemQ = normalizeText(qStem);
-        String colQ = collapseRepeats(normQ);
-        String enQ = transliterateUaToEn(qLower);
+        return calculateMatchScoreFast(normQuery(rawQ), name, username, first, last);
+    }
+
+    private static int calculateMatchScoreFast(QueryNorm n, String name, String username, String first, String last) {
+        String qLower = n.qLower;
+        String qStem = n.qStem;
+        String normQ = n.normQ;
+        String normStemQ = n.normStemQ;
+        String colQ = n.colQ;
+        String enQ = n.enQ;
 
         int best = 0;
         String[] targets = new String[]{username, name, first, last};
@@ -1403,6 +1496,12 @@ public class MiogramCompanionToolbox {
         return error != null && error.text != null && error.text.contains("PEER_ID_INVALID");
     }
 
+    /** Actions with side effects: never auto-pick a fuzzy match for these. */
+    private static boolean isSensitiveAction(String forAction) {
+        return "send_message".equals(forAction) || "clear_chat".equals(forAction)
+                || "delete_chat".equals(forAction);
+    }
+
     public static String peerUnreachableText() {
         return MiogramLocale.get("Не можу звернутись до цього чату напряму (немає доступу або кешу). Відкрий його в додатку один раз або дай точний @username — і повторю.",
                 "Не могу обратиться к этому чату напрямую (нет доступа или кэша). Открой его в приложении один раз или дай точный @username — и повторю.",
@@ -1478,6 +1577,29 @@ public class MiogramCompanionToolbox {
             return new ChatResolution(0, null, MiogramLocale.get("Не вдалося знайти жодного чату за запитом «", "Не удалось найти ни одного чата по запросу «", "Could not find any chat for query \"") + query + MiogramLocale.get("». Перевір правильність написання імені чи юзернейму.", "». Проверь правильность написания имени или юзернейма.", "\". Check the name or username spelling."));
         }
         if (results.size() == 1) {
+            FoundChat only = results.get(0);
+            // Sending/clearing to a lone fuzzy match is how messages land on
+            // strangers: demand an exact (100) match, otherwise ask.
+            if (isSensitiveAction(forAction)
+                    && calculateMatchScore(query, only.name, only.username, null, null) < 100) {
+                JSONObject resumeParams = null;
+                try {
+                    if (forAction != null && p != null) resumeParams = new JSONObject(p.toString());
+                } catch (Throwable ignore) {}
+                setPendingPick(account, new PendingPick(results, query, forAction, resumeParams, null, 0, 50));
+                StringBuilder confirm = new StringBuilder(MiogramLocale.get(
+                        "Знайшла схожого, але не точного збігу для «", "Нашла похожего, но не точного совпадения для «", "Found a similar but not exact match for \""));
+                confirm.append(query).append("»: ").append(only.name);
+                if (only.username != null && !only.username.isEmpty()) {
+                    confirm.append(" (@").append(only.username).append(")");
+                }
+                confirm.append(" [id: ").append(only.dialogId).append("].\n");
+                confirm.append(MiogramLocale.get(
+                        "Це та людина? Відповіси номером щоб підтвердити, або уточни ім'я/номер.",
+                        "Это тот человек? Ответь номером чтобы подтвердить, или уточни имя/номер.",
+                        "Is this the right person? Reply with the number to confirm, or clarify the name/number."));
+                return new ChatResolution(0, null, confirm.toString());
+            }
             clearPendingPick(account);
             return new ChatResolution(results.get(0).dialogId, results.get(0), null);
         }
@@ -1485,7 +1607,8 @@ public class MiogramCompanionToolbox {
         // Smart friend selection: If top match is strong (exact match or dominates second match)
         int scoreTop = calculateMatchScore(query, results.get(0).name, results.get(0).username, null, null);
         int scoreSecond = calculateMatchScore(query, results.get(1).name, results.get(1).username, null, null);
-        if (scoreTop >= 88 && (scoreTop == 100 || (scoreTop - scoreSecond) >= 12)) {
+        // Sensitive actions never auto-pick a fuzzy winner — exact only.
+        if (scoreTop >= 88 && (scoreTop == 100 || (!isSensitiveAction(forAction) && (scoreTop - scoreSecond) >= 12))) {
             clearPendingPick(account);
             return new ChatResolution(results.get(0).dialogId, results.get(0), null);
         }
@@ -2426,7 +2549,7 @@ public class MiogramCompanionToolbox {
                                         "✦ **Lua plugin created!**\n"
                                         + "📁 Name: `" + result.name + ".lua`\n"
                                         + "⚡ **Status:** " + (installed ? "Saved to modules." : "Not saved.") + " "
-                                        + "No Lua engine on device, so only declared text filters apply."
+                                        + "No Lua engine on device: wired live (" + app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().getLastLuaInstallReport() + ")."
                                 );
                                 callback.run(msg);
                             } else {

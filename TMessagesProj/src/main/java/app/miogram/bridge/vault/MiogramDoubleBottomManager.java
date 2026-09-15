@@ -111,6 +111,10 @@ public class MiogramDoubleBottomManager {
     }
 
     public static Set<Long> getAllowedDialogIds(int account) {
+        Set<Long> cached = getCachedAllowed(account);
+        if (cached != null) {
+            return new HashSet<>(cached);
+        }
         Set<String> stringSet = getPrefs().getStringSet(PREF_ALLOWED_PREFIX + account, null);
         Set<Long> result = new HashSet<>();
         if (stringSet != null) {
@@ -120,7 +124,27 @@ public class MiogramDoubleBottomManager {
                 } catch (Exception ignore) {}
             }
         }
-        return result;
+        putCachedAllowed(account, result);
+        return new HashSet<>(result);
+    }
+
+    // --- In-memory cache: isChatAllowed runs per dialog on every list build,
+    // so StringSet prefs parsing must not repeat thousands of times per second.
+    private static final java.util.Map<Integer, Set<Long>> allowedCache = new java.util.HashMap<>();
+    private static final java.util.Map<Integer, Boolean> allowedKnownCache = new java.util.HashMap<>();
+
+    private static synchronized Set<Long> getCachedAllowed(int account) {
+        return allowedCache.get(account);
+    }
+
+    private static synchronized void putCachedAllowed(int account, Set<Long> ids) {
+        allowedCache.put(account, new HashSet<>(ids));
+        allowedKnownCache.put(account, !ids.isEmpty());
+    }
+
+    private static synchronized void invalidateAllowedCache() {
+        allowedCache.clear();
+        allowedKnownCache.clear();
     }
 
     public static void setAllowedDialogIds(int account, Collection<Long> ids) {
@@ -133,11 +157,32 @@ public class MiogramDoubleBottomManager {
             }
         }
         getPrefs().edit().putStringSet(PREF_ALLOWED_PREFIX + account, stringSet).apply();
+        invalidateAllowedCache();
     }
 
     public static boolean hasAllowedDialogs(int account) {
-        Set<String> set = getPrefs().getStringSet(PREF_ALLOWED_PREFIX + account, null);
-        return set != null && !set.isEmpty();
+        Boolean known;
+        synchronized (MiogramDoubleBottomManager.class) {
+            known = allowedKnownCache.get(account);
+        }
+        if (known != null) return known;
+        // Warm the cache as a side effect.
+        getAllowedDialogIds(account);
+        synchronized (MiogramDoubleBottomManager.class) {
+            known = allowedKnownCache.get(account);
+        }
+        return known != null && known;
+    }
+
+    /** Allocation-free membership test for per-dialog filtering. */
+    private static boolean isDialogAllowedCached(int account, long dialogId) {
+        Set<Long> cached = getCachedAllowed(account);
+        if (cached == null) {
+            // Parse once, reuse for the rest of the list build.
+            getAllowedDialogIds(account);
+            cached = getCachedAllowed(account);
+        }
+        return cached != null && cached.contains(dialogId);
     }
 
     /** True if at least one activated account has protected chats configured. */
@@ -182,14 +227,14 @@ public class MiogramDoubleBottomManager {
                 if (!hasAllowedDialogs(account)) {
                     return true;
                 }
-                return getAllowedDialogIds(account).contains(dialogId);
+                return isDialogAllowedCached(account, dialogId);
             }
             return false;
         }
         if (!hasAllowedDialogs(account)) {
             return true;
         }
-        return getAllowedDialogIds(account).contains(dialogId);
+        return isDialogAllowedCached(account, dialogId);
     }
 
     public static int checkPasscode(String pin) {
@@ -259,6 +304,7 @@ public class MiogramDoubleBottomManager {
 
     public static void clearAll() {
         getPrefs().edit().clear().apply();
+        invalidateAllowedCache();
         isDuressActive = false;
         SharedConfig.passcodeHash = "";
         SharedConfig.appLocked = false;

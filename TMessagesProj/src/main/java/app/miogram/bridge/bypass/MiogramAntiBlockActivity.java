@@ -415,6 +415,11 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
         showDialog(builder.create());
     }
 
+    @Override
+    protected BaseListAdapter createAdapter(Context context) {
+        return new ListAdapter(context);
+    }
+
     private class ListAdapter extends BaseListAdapter {
 
         public ListAdapter(Context context) {

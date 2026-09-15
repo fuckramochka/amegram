@@ -933,13 +933,22 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                     File attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
                     if (attachFile == null || !attachFile.exists()) {
                         FileLoader.getInstance(currentAccount).loadFile(doc, null, 0, 0);
-                        // Bounded wait: 60s per chunk. The shared globalQueue must
-                        // never be parked for minutes by one slow download.
+                        // Bounded wait: 25s per chunk, then one retry. Small files
+                        // must never hang the queue for a minute on a stalled DC.
                         int waitedMs = 0;
-                        while ((attachFile == null || !attachFile.exists()) && waitedMs < 60000) {
+                        while ((attachFile == null || !attachFile.exists()) && waitedMs < 25000) {
                             Thread.sleep(500);
                             waitedMs += 500;
                             attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
+                        }
+                        if (attachFile == null || !attachFile.exists()) {
+                            FileLoader.getInstance(currentAccount).loadFile(doc, null, 0, 0);
+                            waitedMs = 0;
+                            while ((attachFile == null || !attachFile.exists()) && waitedMs < 25000) {
+                                Thread.sleep(500);
+                                waitedMs += 500;
+                                attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
+                            }
                         }
                     }
                     if (attachFile != null && attachFile.exists()) {

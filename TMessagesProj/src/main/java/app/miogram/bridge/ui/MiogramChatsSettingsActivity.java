@@ -12,6 +12,7 @@ import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
 
@@ -49,6 +50,12 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
     private int stickerShapeRow;
     private int channelBottomButtonRow;
     private int stickersInfoRow;
+
+    private int headerHubRow;
+    private int multichatRow;
+    private int cloudVaultRow;
+    private int translatorRow;
+    private int localizerRow;
 
     @Override
     protected String getActionBarTitle() {
@@ -89,11 +96,25 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
         stickerShapeRow = addRow();
         channelBottomButtonRow = addRow();
         stickersInfoRow = addRow();
+
+        headerHubRow = addRow();
+        multichatRow = addRow();
+        cloudVaultRow = addRow();
+        translatorRow = addRow();
+        localizerRow = addRow();
     }
 
     @Override
     public void onItemClick(View view, int position, float x, float y) {
-        if (position == cameraTypeRow) {
+        if (position == multichatRow) {
+            presentFragment(new app.miogram.bridge.multichat.MiogramSplitChatActivity(0, 0));
+        } else if (position == cloudVaultRow) {
+            presentFragment(new app.miogram.bridge.cloudvault.MiogramCloudVaultActivity());
+        } else if (position == translatorRow) {
+            presentFragment(new tw.nekomimi.nekogram.settings.NekoTranslatorSettingsActivity());
+        } else if (position == localizerRow) {
+            presentFragment(new app.miogram.bridge.localizer.MiogramLocalizerActivity());
+        } else if (position == cameraTypeRow) {
             showCameraTypeDialog();
         } else if (position == cameraMirrorRow) {
             boolean v = !ChatsConfig.cameraMirrorMode.Bool();
@@ -231,7 +252,7 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == headerCameraRow || position == headerChatActionsRow || position == headerStickersRow) {
+            if (position == headerCameraRow || position == headerChatActionsRow || position == headerStickersRow || position == headerHubRow) {
                 return TYPE_HEADER;
             } else if (position == cameraMirrorRow || position == cameraWideAngleRow
                     || position == cameraStabilizationRow || position == cameraFpsRow
@@ -241,6 +262,8 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
                 return TYPE_CHECK;
             } else if (position == cameraInfoRow || position == chatActionsInfoRow || position == stickersInfoRow) {
                 return TYPE_INFO_PRIVACY;
+            } else if (position == multichatRow || position == cloudVaultRow || position == translatorRow || position == localizerRow) {
+                return TYPE_TEXT;
             }
             return TYPE_SETTINGS;
         }
@@ -256,6 +279,8 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Дії з повідомленнями та чатом", "Действия с сообщениями и чатом", "Message Actions & Gestures"));
                     } else if (position == headerStickersRow) {
                         cell.setText(MiogramLocale.get("Стікери та кнопки дій", "Стикеры и кнопки действий", "Stickers & Action Buttons"));
+                    } else if (position == headerHubRow) {
+                        cell.setText(MiogramLocale.get("Сховище, мультичат і мова", "Хранилище, мультичат и язык", "Vault, Multichat & Language"));
                     }
                     break;
                 }
@@ -317,6 +342,35 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
                         int b = ChatsConfig.bottomButton.Int();
                         String val = b == 0 ? MiogramLocale.get("Приховати", "Скрыть", "Hide") : (b == 2 ? MiogramLocale.get("Коментарі", "Комментарии", "Comments") : "Mute");
                         cell.setTextAndValue(MiogramLocale.get("Нижня кнопка в каналах", "Нижняя кнопка в каналах", "Channel Bottom Button"), val, false);
+                    }
+                    break;
+                }
+                case TYPE_TEXT: {
+                    TextCell cell = (TextCell) holder.itemView;
+                    if (position == multichatRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Мультичат (Split Screen)", "Мультичат (Split Screen)", "Multichat (Split Screen)"),
+                                R.drawable.msg_openin,
+                                true
+                        );
+                    } else if (position == cloudVaultRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Miogram Cloud Vault", "Miogram Cloud Vault", "Miogram Cloud Vault"),
+                                R.drawable.msg_saved,
+                                true
+                        );
+                    } else if (position == translatorRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Вбудований перекладач", "Встроенный переводчик", "Built-in Translator"),
+                                R.drawable.msg2_language,
+                                true
+                        );
+                    } else if (position == localizerRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Локалізатор застосунку", "Локализатор приложения", "App Localizer"),
+                                R.drawable.msg_language,
+                                false
+                        );
                     }
                     break;
                 }

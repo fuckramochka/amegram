@@ -365,6 +365,7 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         installCrashReportFilter();
         app.miogram.bridge.perf.MiogramPerformanceOptimizer.init(this);
         app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().init();
+        app.miogram.bridge.modapi.MioApi.ensureTools();
 
         // AndroidUtilities must be initialized before FileLog
         final String helloWorld = AndroidUtilities.getHelloWorld();
@@ -443,13 +444,29 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
 
     private static void startPushServiceInternal() {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
-        boolean enabled = preferences.getBoolean("pushService", true);
-        boolean connectionEnabled = preferences.getBoolean("pushConnection", true);
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (UserConfig.getInstance(a).isClientActivated()) {
-                ConnectionsManager.getInstance(a).setPushConnectionEnabled(connectionEnabled);
-            }
+        // Upstream decision tree (FCM-first): remote push or Play-services
+        // presence means the local keep-alive service must stay OFF — FCM
+        // delivers background pushes; forcing the local service on breaks that.
+        final int pushServiceType = NaConfig.INSTANCE.getPushServiceType().Int();
+        final boolean remotePush = pushServiceType != 0
+                && (pushServiceType == 2 || PushListenerController.getProvider().hasServices());
+        boolean enabled;
+        if (remotePush) {
+            enabled = false;
+        } else if (preferences.contains("pushService")) {
+            enabled = preferences.getBoolean("pushService", true);
+        } else if (PushListenerController.getProvider().hasServices()) {
+            propagatePushConnection(preferences);
+            return;
+        } else {
+            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("pushService", enabled);
+            editor.putBoolean("pushConnection", enabled);
+            editor.apply();
+            ConnectionsManager.getInstance(UserConfig.selectedAccount).setPushConnectionEnabled(enabled);
         }
+        propagatePushConnection(preferences);
         if (enabled) {
             AndroidUtilities.runOnUIThread(() -> {
                 try {
@@ -479,6 +496,20 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
                 alarm.cancel(pendingIntent);
             }
         });
+    }
+
+    /** Push-connection flag fan-out to every activated account. */
+    private static void propagatePushConnection(SharedPreferences preferences) {
+        try {
+            boolean connectionEnabled = preferences.getBoolean("pushConnection", true);
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                try {
+                    if (UserConfig.getInstance(a).isClientActivated()) {
+                        ConnectionsManager.getInstance(a).setPushConnectionEnabled(connectionEnabled);
+                    }
+                } catch (Throwable ignore) {}
+            }
+        } catch (Throwable ignore) {}
     }
 
     @Override

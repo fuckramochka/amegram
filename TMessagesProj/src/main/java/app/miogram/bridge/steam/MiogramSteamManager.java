@@ -100,6 +100,8 @@ public class MiogramSteamManager {
     private static final String PREFS_NAME = "miogram_steam_prefs";
     private static final String KEY_SELF_STEAM_ID = "self_steam_id";
     private static final String KEY_BROADCAST_ENABLED = "self_steam_broadcast_enabled";
+    private static final String KEY_WATCH_IDS = "steam_watch_ids";
+    private static final String KEY_WATCH_STATE_PREFIX = "steam_watch_state_";
 
     private final LongSparseArray<SteamProfile> profileCache = new LongSparseArray<>();
     private final LongSparseArray<Long> lastFetchTime = new LongSparseArray<>();
@@ -493,8 +495,211 @@ public class MiogramSteamManager {
         });
     }
 
-    public void openGame(Context context, String gameId) {
-        if (context == null || TextUtils.isEmpty(gameId)) return;
+    // =========================================================================
+    // Friends watchlist: track arbitrary SteamIDs, notify on transitions.
+    // Steam Web API needs a key for friend lists/invites, so invites go
+    // through the Steam client (addFriend deep link) while presence is
+    // polled keylessly from community XML — same source as self presence.
+    // =========================================================================
+
+    public java.util.List<String> getWatchedIds() {
+        try {
+            java.util.Set<String> set = getPrefs().getStringSet(KEY_WATCH_IDS, null);
+            if (set == null || set.isEmpty()) return new java.util.ArrayList<>();
+            java.util.ArrayList<String> out = new java.util.ArrayList<>(set);
+            java.util.Collections.sort(out);
+            return out;
+        } catch (Throwable t) {
+            return new java.util.ArrayList<>();
+        }
+    }
+
+    public void addWatchedId(String steamId) {
+        if (TextUtils.isEmpty(steamId)) return;
+        try {
+            String clean = steamId.trim();
+            java.util.Set<String> set = new java.util.HashSet<>();
+            java.util.Set<String> cur = getPrefs().getStringSet(KEY_WATCH_IDS, null);
+            if (cur != null) set.addAll(cur);
+            set.add(clean);
+            getPrefs().edit().putStringSet(KEY_WATCH_IDS, set).apply();
+        } catch (Throwable ignore) {}
+    }
+
+    public void removeWatchedId(String steamId) {
+        if (TextUtils.isEmpty(steamId)) return;
+        try {
+            java.util.Set<String> cur = getPrefs().getStringSet(KEY_WATCH_IDS, null);
+            if (cur == null) return;
+            java.util.Set<String> set = new java.util.HashSet<>(cur);
+            set.remove(steamId.trim());
+            getPrefs().edit().putStringSet(KEY_WATCH_IDS, set).apply();
+            getPrefs().edit().remove(KEY_WATCH_STATE_PREFIX + steamId.trim()).apply();
+        } catch (Throwable ignore) {}
+    }
+
+    public static class WatchEvent {
+        public final String steamId;
+        public final String name;
+        /** "game", "online" or "offline". */
+        public final String kind;
+        public final String gameName;
+
+        public WatchEvent(String steamId, String name, String kind, String gameName) {
+            this.steamId = steamId;
+            this.name = name;
+            this.kind = kind;
+            this.gameName = gameName;
+        }
+    }
+
+    public interface WatchCallback {
+        void onDone(java.util.List<SteamProfile> profiles, java.util.List<WatchEvent> events);
+    }
+
+    /** Resolves every watched id sequentially, detects transitions, notifies. */
+    public void refreshWatched(WatchCallback callback) {
+        java.util.List<String> ids = getWatchedIds();
+        if (ids.isEmpty()) {
+            if (callback != null) {
+                AndroidUtilities.runOnUIThread(() -> callback.onDone(
+                        new java.util.ArrayList<>(), new java.util.ArrayList<>()));
+            }
+            return;
+        }
+        java.util.List<SteamProfile> profiles = new java.util.ArrayList<>();
+        java.util.List<WatchEvent> events = new java.util.ArrayList<>();
+        refreshWatchedNext(ids, 0, profiles, events, callback);
+    }
+
+    private void refreshWatchedNext(java.util.List<String> ids, int index,
+                                    java.util.List<SteamProfile> profiles,
+                                    java.util.List<WatchEvent> events,
+                                    WatchCallback callback) {
+        if (index >= ids.size()) {
+            if (callback != null) {
+                AndroidUtilities.runOnUIThread(() -> callback.onDone(profiles, events));
+            }
+            return;
+        }
+        String id = ids.get(index);
+        // resolvePublicSteam may fire twice for one id (stale cache echo +
+        // fresh network). Advance the chain once; merge echoes silently.
+        final boolean[] settled = new boolean[1];
+        resolvePublicSteam(id, profile -> {
+            try {
+                if (profile != null && !TextUtils.isEmpty(profile.steamId)) {
+                    mergeWatchProfile(profiles, profile);
+                    if (!settled[0]) {
+                        settled[0] = true;
+                        WatchEvent ev = detectWatchTransition(profile);
+                        if (ev != null) {
+                            events.add(ev);
+                            postWatchNotification(ev);
+                        }
+                        // Newest-first for the sheet.
+                        java.util.Collections.sort(profiles, (a, b) -> {
+                            int ga = (a.isLiveGame() && !TextUtils.isEmpty(a.gameName)) ? 0 : 1;
+                            int gb = (b.isLiveGame() && !TextUtils.isEmpty(b.gameName)) ? 0 : 1;
+                            if (ga != gb) return Integer.compare(ga, gb);
+                            String na = a.personaName != null ? a.personaName : "";
+                            String nb = b.personaName != null ? b.personaName : "";
+                            return na.compareToIgnoreCase(nb);
+                        });
+                    }
+                } else if (!settled[0]) {
+                    settled[0] = true;
+                } else {
+                    return;
+                }
+            } catch (Throwable ignore) {}
+            refreshWatchedNext(ids, index + 1, profiles, events, callback);
+        });
+    }
+
+    private void mergeWatchProfile(java.util.List<SteamProfile> profiles, SteamProfile p) {
+        try {
+            for (int i = 0; i < profiles.size(); i++) {
+                SteamProfile cur = profiles.get(i);
+                if (cur != null && p.steamId.equals(cur.steamId)) {
+                    profiles.set(i, p);
+                    return;
+                }
+            }
+            profiles.add(p);
+        } catch (Throwable ignore) {}
+    }
+
+    private WatchEvent detectWatchTransition(SteamProfile p) {
+        try {
+            boolean inGame = p.isLiveGame() && !TextUtils.isEmpty(p.gameName);
+            boolean online = !TextUtils.isEmpty(p.stateMessage)
+                    && !p.stateMessage.toLowerCase(java.util.Locale.ROOT).contains("offline")
+                    && !p.stateMessage.toLowerCase(java.util.Locale.ROOT).contains("офлайн")
+                    && !p.stateMessage.toLowerCase(java.util.Locale.ROOT).contains("оффлайн");
+            String cur = (online ? "on" : "off") + "|" + (inGame ? p.gameName : "");
+            String prev = getPrefs().getString(KEY_WATCH_STATE_PREFIX + p.steamId, null);
+            getPrefs().edit().putString(KEY_WATCH_STATE_PREFIX + p.steamId, cur).apply();
+            if (prev == null || prev.equals(cur)) return null; // first sight or no change
+            String prevGame = prev.contains("|") ? prev.substring(prev.indexOf('|') + 1) : "";
+            if (inGame && !p.gameName.equals(prevGame)) {
+                return new WatchEvent(p.steamId, p.personaName, "game", p.gameName);
+            }
+            boolean wasOn = prev.startsWith("on");
+            if (online && !wasOn) {
+                return new WatchEvent(p.steamId, p.personaName, "online", "");
+            }
+            if (!online && wasOn) {
+                return new WatchEvent(p.steamId, p.personaName, "offline", "");
+            }
+        } catch (Throwable ignore) {}
+        return null;
+    }
+
+    private void postWatchNotification(WatchEvent ev) {
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx == null || android.os.Build.VERSION.SDK_INT < 26) return;
+            android.app.NotificationManager nm = (android.app.NotificationManager)
+                    ctx.getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+            String channelId = "miogram_steam_watch";
+            try {
+                android.app.NotificationChannel ch = new android.app.NotificationChannel(
+                        channelId,
+                        app.miogram.bridge.MiogramLocale.get("Друзі Steam", "Друзья Steam", "Steam friends"),
+                        android.app.NotificationManager.IMPORTANCE_DEFAULT);
+                nm.createNotificationChannel(ch);
+            } catch (Throwable ignore) {}
+            String title;
+            String text = "";
+            if ("game".equals(ev.kind)) {
+                title = ev.name + MiogramLocale.get(" запустив гру", " запустил игру", " started playing");
+                text = ev.gameName != null ? ev.gameName : "";
+            } else if ("online".equals(ev.kind)) {
+                title = ev.name + MiogramLocale.get(" у мережі Steam", " в сети Steam", " is online on Steam");
+            } else {
+                title = ev.name + MiogramLocale.get(" вийшов зі Steam", " вышел из Steam", " went offline on Steam");
+            }
+            android.content.Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+            android.app.PendingIntent pi = null;
+            try {
+                pi = android.app.PendingIntent.getActivity(ctx, (int) (System.currentTimeMillis() & 0x7fffffff),
+                        launch != null ? launch : new android.content.Intent(),
+                        android.app.PendingIntent.FLAG_UPDATE_CURRENT | android.app.PendingIntent.FLAG_IMMUTABLE);
+            } catch (Throwable ignore) {}
+            androidx.core.app.NotificationCompat.Builder b =
+                    new androidx.core.app.NotificationCompat.Builder(ctx, channelId)
+                            .setSmallIcon(org.telegram.messenger.R.drawable.baseline_videogame_asset_16)
+                            .setContentTitle(title)
+                            .setAutoCancel(true);
+            if (!TextUtils.isEmpty(text)) b.setContentText(text);
+            if (pi != null) b.setContentIntent(pi);
+            nm.notify("miogram_steam_" + ev.steamId, 7201, b.build());
+        } catch (Throwable ignore) {}
+    }
+
+    public void openGame(Context context, String gameId) {        if (context == null || TextUtils.isEmpty(gameId)) return;
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("steam://run/" + gameId));
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);

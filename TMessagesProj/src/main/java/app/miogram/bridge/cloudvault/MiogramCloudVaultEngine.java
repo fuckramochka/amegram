@@ -725,7 +725,7 @@ public class MiogramCloudVaultEngine {
     }
 
     private static final int SYNC_PAGE_LIMIT = 100;
-    private static final int SYNC_MAX_HISTORY_PAGES = 10;
+    private static final int SYNC_MAX_HISTORY_PAGES = 3;
     private static final int SYNC_MAX_SEARCH_PAGES = 5;
 
     public static void syncVaultFiles(int currentAccount, long vaultChatId, SyncCallback callback) {
@@ -745,9 +745,10 @@ public class MiogramCloudVaultEngine {
             }
             return;
         }
-        // Page through history (newest -> oldest) so vaults with >100 messages
-        // don't look empty; then supplement with manifest search per page.
-        syncHistoryPage(currentAccount, peer, 0, 0, callback, vaultChatId);
+        // Search first: manifests live anywhere in the chat (Saved Messages vaults
+        // hold thousands of personal messages). History supplements recent parts.
+        // Orphan parts are buffered until their manifest arrives via search.
+        syncSearchPage(currentAccount, peer, 0, 0, callback, vaultChatId);
     }
 
     private static void syncHistoryPage(int currentAccount, TLRPC.InputPeer peer, int offsetId, int page, SyncCallback callback, long vaultChatId) {
@@ -777,7 +778,10 @@ public class MiogramCloudVaultEngine {
                 final int nextPage = page + 1;
                 syncHistoryPage(currentAccount, peer, off, nextPage, callback, vaultChatId);
             } else {
-                syncSearchPage(currentAccount, peer, 0, 0, callback, vaultChatId);
+                AndroidUtilities.runOnUIThread(() -> {
+                    saveCache(currentAccount);
+                    if (callback != null) callback.onSyncComplete(getFilesForTopic(0));
+                });
             }
         });
     }
@@ -810,10 +814,9 @@ public class MiogramCloudVaultEngine {
                 final int nextPage = page + 1;
                 syncSearchPage(currentAccount, peer, off, nextPage, callback, vaultChatId);
             } else {
-                AndroidUtilities.runOnUIThread(() -> {
-                    saveCache(currentAccount);
-                    if (callback != null) callback.onSyncComplete(getFilesForTopic(0));
-                });
+                // Supplement with the newest history: recent parts + manifests,
+                // then flush. Orphans buffered earlier resolve here.
+                syncHistoryPage(currentAccount, peer, 0, 0, callback, vaultChatId);
             }
         });
     }

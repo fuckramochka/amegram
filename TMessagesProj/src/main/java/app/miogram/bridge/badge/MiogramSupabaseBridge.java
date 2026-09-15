@@ -182,7 +182,7 @@ public class MiogramSupabaseBridge {
         init();
         synchronized (badgeCache) {
             BadgeRecord record = badgeCache.get(userId);
-            return record != null && record.isActive;
+            return record != null && record.isActive && isAuthoritative(record);
         }
     }
 
@@ -196,6 +196,10 @@ public class MiogramSupabaseBridge {
             if (record == null && userId == MiogramBadgeManager.FOUNDER_USER_ID) {
                 record = createDefaultFounderRecord();
                 badgeCache.put(userId, record);
+            }
+            if (record != null && !isAuthoritative(record)
+                    && userId != MiogramBadgeManager.FOUNDER_USER_ID) {
+                return null;
             }
             return record;
         }
@@ -227,6 +231,28 @@ public class MiogramSupabaseBridge {
                 : MiogramLocale.get("Отримано через хмарну синхронізацію спільноти", "Получено через облачную синхронизацию сообщества", "Granted via community cloud sync");
     }
 
+    /** A row counts as an issued badge only with staff verification or founder grant. */
+    public static boolean isAuthoritative(BadgeRecord record) {
+        if (record == null) return false;
+        return record.verified || record.grantorId == MiogramBadgeManager.FOUNDER_USER_ID;
+    }
+
+    /** userId must belong to one of MY activated accounts (no cross-granting). */
+    private static boolean isOwnAccount(long userId) {
+        if (userId == 0) return false;
+        try {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                try {
+                    if (UserConfig.getInstance(a).isClientActivated()
+                            && UserConfig.getInstance(a).getClientUserId() == userId) {
+                        return true;
+                    }
+                } catch (Throwable ignore) {}
+            }
+        } catch (Throwable ignore) {}
+        return false;
+    }
+
     /** True when a row claims founder status (title/reason/id) without staff verification. */
     private static boolean looksLikeFounderClaim(long userId, String title, String reason) {
         if (userId == MiogramBadgeManager.FOUNDER_USER_ID) return true;
@@ -238,6 +264,8 @@ public class MiogramSupabaseBridge {
     }
 
     public static void setSyncEnabledForAccount(Context context, long userId, boolean enabled) {
+        // Badges are issued by the founder only: never touch foreign rows.
+        if (!isOwnAccount(userId)) return;
         getPrefs(context).edit()
                 .putBoolean(KEY_OPTIN_COMPLETED, true)
                 .putBoolean(KEY_SYNC_ENABLED + userId, enabled)
@@ -263,6 +291,8 @@ public class MiogramSupabaseBridge {
     }
 
     public static void setSelectedBadgeForAccount(Context context, long userId, MiogramBadgeType type) {
+        // Badges are issued by the founder only: never touch foreign rows.
+        if (!isOwnAccount(userId)) return;
         if (type == null) type = MiogramBadgeType.ORIGINAL;
         getPrefs(context).edit()
                 .putString(KEY_SELECTED_BADGE + userId, type.getId())
@@ -938,6 +968,17 @@ public class MiogramSupabaseBridge {
      */
     public static void grantBadgeToUser(long targetUserId, String badgeId, String title, String reason, Runnable onComplete) {
         if (targetUserId <= 0) return;
+        // Hard gate: only the founder device can grant. The grant sheet checks
+        // too, but this stops direct calls from non-founder accounts cold.
+        try {
+            long me = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+            if (me != MiogramBadgeManager.FOUNDER_USER_ID) {
+                if (onComplete != null) AndroidUtilities.runOnUIThread(onComplete);
+                return;
+            }
+        } catch (Throwable ignore) {
+            return;
+        }
         final String fBadge = badgeId != null ? badgeId : "original";
         final String fTitle = title != null ? title : fallbackTitle(false);
         final String fReason = reason != null ? reason : fallbackReason(false);
@@ -1011,6 +1052,15 @@ public class MiogramSupabaseBridge {
 
     public static void revokeBadge(long targetUserId, Runnable onComplete) {
         if (targetUserId <= 0) return;
+        try {
+            long me = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+            if (me != MiogramBadgeManager.FOUNDER_USER_ID) {
+                if (onComplete != null) AndroidUtilities.runOnUIThread(onComplete);
+                return;
+            }
+        } catch (Throwable ignore) {
+            return;
+        }
         synchronized (badgeCache) {
             badgeCache.remove(targetUserId);
         }

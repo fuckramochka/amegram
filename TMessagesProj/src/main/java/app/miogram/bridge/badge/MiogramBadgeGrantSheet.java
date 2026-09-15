@@ -31,12 +31,12 @@ import app.miogram.bridge.customui.MiogramHaptic;
  */
 public class MiogramBadgeGrantSheet extends BottomSheet {
 
+    /** Granting is founder-only. Previously badge holders passed too — that
+     *  was the hole: after the mass-mint bug everyone held a badge. */
     public static boolean canGrantBadges() {
         try {
             long clientUserId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
-            return clientUserId == MiogramBadgeManager.FOUNDER_USER_ID
-                    || MiogramSupabaseBridge.hasCloudBadge(clientUserId)
-                    || BuildVars.DEBUG_VERSION;
+            return clientUserId == MiogramBadgeManager.FOUNDER_USER_ID;
         } catch (Throwable ignored) {
             return false;
         }

@@ -412,7 +412,8 @@ public class MiogramMediaDownloader {
     private static final Pattern DIRECT_MEDIA_PATTERN =
             Pattern.compile("(?i)\\.(mp4|mov|webm|mkv|jpg|jpeg|png|webp)(\\?|#|$)");
 
-    private static boolean isDirectMediaUrl(String url) {
+    /** Mod-API surface: direct-file detection. */
+    public static boolean isDirectMediaUrl(String url) {
         if (TextUtils.isEmpty(url)) return false;
         try {
             String path = new URL(url.split("\\s")[0]).getPath();
@@ -491,7 +492,8 @@ public class MiogramMediaDownloader {
      * Expands short links (vt./vm./lite.tiktok.com, bit.ly, t.co, ...) by
      * following up to 5 redirects manually. Returns final URL or null.
      */
-    private static String resolveRedirects(String urlStr) {
+    /** Mod-API surface: manual short-link expansion. Returns final URL or null. */
+    public static String resolveRedirects(String urlStr) {
         try {
             String current = urlStr.split("\\s")[0];
             for (int i = 0; i < 5; i++) {
@@ -521,7 +523,8 @@ public class MiogramMediaDownloader {
         }
     }
 
-    private static String httpGet(String urlStr) {
+    /** Mod-API surface: plain HTTP GET (JSON/text), null on failure. */
+    public static String httpGet(String urlStr) {
         try {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -549,7 +552,8 @@ public class MiogramMediaDownloader {
         return null;
     }
 
-    private static String httpPostJson(String urlStr, String jsonBody) {
+    /** Mod-API surface: JSON POST, response string or null. */
+    public static String httpPostJson(String urlStr, String jsonBody) {
         try {
             URL url = new URL(urlStr);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -590,7 +594,8 @@ public class MiogramMediaDownloader {
         return null;
     }
 
-    private static void downloadFileWithProgress(String fileUrl, File destFile, ProgressListener listener) throws Exception {
+    /** Mod-API surface: raw file fetch with byte progress (may run on any thread). */
+    public static void downloadFileWithProgress(String fileUrl, File destFile, ProgressListener listener) throws Exception {
         URL url = new URL(fileUrl);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setConnectTimeout(12000);

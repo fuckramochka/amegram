@@ -44,6 +44,9 @@ import tw.nekomimi.nekogram.NekoConfig;
  */
 public class MiogramCompanionToolbox {
 
+    /** Latest music search hits per account, for send_music by number. */
+    private static final java.util.HashMap<Integer, java.util.ArrayList<app.miogram.bridge.music.MiogramMusicTrack>> lastMusicResults = new java.util.HashMap<>();
+
     public static class ActionRequest {
         public final String name;
         public final JSONObject params;
@@ -2108,6 +2111,119 @@ public class MiogramCompanionToolbox {
                             }
                         });
                     }));
+                    return;
+                }
+                case "find_music": {
+                    String query = p.optString("query", "");
+                    if (query.isEmpty()) query = p.optString("text", "");
+                    if (query.isEmpty()) {
+                        callback.run(MiogramLocale.get("Скажи що шукати: назву треку або виконавця.", "Скажи что искать: название трека или исполнителя.", "Tell me what to search: track title or artist."));
+                        return;
+                    }
+                    final String fQuery = query;
+                    final boolean[] done = new boolean[1];
+                    app.miogram.bridge.music.MiogramMusicSearchEngine.searchAll(fQuery, account,
+                            new app.miogram.bridge.music.MiogramMusicSearchEngine.SearchCallback() {
+                                @Override
+                                public void onResults(java.util.List<app.miogram.bridge.music.MiogramMusicTrack> tracks, boolean isFinal) {
+                                    if (!isFinal || done[0]) return;
+                                    done[0] = true;
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        if (tracks == null || tracks.isEmpty()) {
+                                            callback.run(MiogramLocale.get("Нічого не знайшла за запитом «", "Ничего не нашла по запросу «", "Found nothing for \"") + fQuery + "».");
+                                            return;
+                                        }
+                                        java.util.ArrayList<app.miogram.bridge.music.MiogramMusicTrack> top =
+                                                new java.util.ArrayList<>(tracks.subList(0, Math.min(8, tracks.size())));
+                                        synchronized (lastMusicResults) {
+                                            lastMusicResults.put(account, top);
+                                        }
+                                        StringBuilder sb = new StringBuilder(MiogramLocale.get("Знайшла музику за запитом «", "Нашла музыку по запросу «", "Found music for \"") + fQuery + "»:\n");
+                                        for (int i = 0; i < top.size(); i++) {
+                                            app.miogram.bridge.music.MiogramMusicTrack t = top.get(i);
+                                            sb.append(i + 1).append(". ").append(t.getDisplayTitle())
+                                                    .append(" — ").append(t.getDisplayArtist())
+                                                    .append(" (").append(t.source != null ? t.source.label : "?")
+                                                    .append(", ").append(t.getFormattedDuration()).append(")\n");
+                                        }
+                                        sb.append(MiogramLocale.get("Скажи номер — надішлю в чат.", "Скажи номер — отправлю в чат.", "Tell me the number — I'll send it to the chat."));
+                                        callback.run(sb.toString().trim());
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    if (done[0]) return;
+                                    done[0] = true;
+                                    AndroidUtilities.runOnUIThread(() -> callback.run(
+                                            MiogramLocale.get("Пошук музики не вдався: ", "Поиск музыки не удался: ", "Music search failed: ")
+                                                    + (error != null ? error : "")));
+                                }
+                            });
+                    return;
+                }
+                case "send_music": {
+                    ChatResolution res = resolveChatTarget(account, p, "send_music");
+                    if (res.errorMessage != null) {
+                        callback.run(res.errorMessage);
+                        return;
+                    }
+                    if (resolveInputPeer(account, res.dialogId) == null) {
+                        callback.run(peerUnreachableText());
+                        return;
+                    }
+                    int index = p.optInt("index", p.optInt("track", 1)) - 1;
+                    app.miogram.bridge.music.MiogramMusicTrack track = null;
+                    synchronized (lastMusicResults) {
+                        java.util.ArrayList<app.miogram.bridge.music.MiogramMusicTrack> top = lastMusicResults.get(account);
+                        if (top != null && index >= 0 && index < top.size()) track = top.get(index);
+                    }
+                    if (track == null) {
+                        callback.run(MiogramLocale.get("Спочатку знайди трек через find_music, потім скажи номер.", "Сначала найди трек через find_music, потом скажи номер.", "First find a track via find_music, then tell me the number."));
+                        return;
+                    }
+                    final app.miogram.bridge.music.MiogramMusicTrack fTrack = track;
+                    final String targetName = res.foundChat != null ? res.foundChat.getReference() : MiogramLocale.get("чат", "чат", "chat");
+                    if (fTrack.telegramMessage != null) {
+                        ArrayList<MessageObject> forwardList = new ArrayList<>();
+                        forwardList.add(fTrack.telegramMessage);
+                        SendMessagesHelper.getInstance(account).sendMessage(forwardList, res.dialogId, true, true, true, 0, 0L);
+                        callback.run(MiogramLocale.get("Надіслала трек «", "Отправила трек «", "Sent track \"") + fTrack.getDisplayTitle() + "» " + targetName + ".");
+                        return;
+                    }
+                    callback.run(MiogramLocale.get("Качаю «", "Качаю «", "Downloading \"") + fTrack.getDisplayTitle() + "»…");
+                    app.miogram.bridge.music.MiogramMusicSearchEngine.fastInstallTrack(
+                            org.telegram.messenger.ApplicationLoader.applicationContext, fTrack, account,
+                            new app.miogram.bridge.music.MiogramMusicSearchEngine.InstallCallback() {
+                                @Override
+                                public void onProgress(float progress) {
+                                }
+
+                                @Override
+                                public void onSuccess(java.io.File localFile) {
+                                    AndroidUtilities.runOnUIThread(() -> {
+                                        try {
+                                            SendMessagesHelper.prepareSendingDocument(
+                                                    org.telegram.messenger.AccountInstance.getInstance(account),
+                                                    localFile.getAbsolutePath(),
+                                                    localFile.getAbsolutePath(),
+                                                    null, null, "audio/mpeg",
+                                                    res.dialogId, null, null, null, null, null,
+                                                    true, 0, null, null, false);
+                                            callback.run(MiogramLocale.get("Надіслала трек «", "Отправила трек «", "Sent track \"") + fTrack.getDisplayTitle() + "» " + targetName + ".");
+                                        } catch (Throwable t) {
+                                            callback.run(MiogramLocale.get("Не вийшло надіслати трек.", "Не вышло отправить трек.", "Could not send the track."));
+                                        }
+                                    });
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    AndroidUtilities.runOnUIThread(() -> callback.run(
+                                            MiogramLocale.get("Не вдалося завантажити трек: ", "Не удалось скачать трек: ", "Could not download the track: ")
+                                                    + (error != null ? error : "")));
+                                }
+                            });
                     return;
                 }
                 case "read_unread_summary": {

@@ -1914,6 +1914,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int miogram_split_screen = 4402;
     private final static int miogram_add_to_kanban = 4403;
     private final static int miogram_chat_ai = 4404;
+    private final static int miogram_mini_window = 4405;
 
     private ActionBarMenuItem actionModeOtherItem; // NekoX
 
@@ -4443,6 +4444,8 @@ public class ChatActivity extends BaseFragment implements
                     presentFragment(new app.miogram.bridge.kanban.MiogramKanbanActivity());
                 } else if (id == miogram_split_screen) {
                     presentFragment(new app.miogram.bridge.multichat.MiogramSplitChatActivity(dialog_id, 0));
+                } else if (id == miogram_mini_window) {
+                    app.miogram.bridge.mini.MiogramMiniChat.openInMiniWindow(getParentActivity(), currentAccount, getDialogId());
                 } else if (id == to_the_beginning) {
                     scrollToMessageId(1, 0, false, 0, true, 0);
                 } else if (id == to_the_message){
@@ -5237,6 +5240,11 @@ public class ChatActivity extends BaseFragment implements
 
             // 2.14 Split Screen (Multi-Chat)
             chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_split_screen, R.drawable.msg_fave, app.miogram.bridge.MiogramLocale.get("Розділити екран (Мультичат)", "Разделить экран (Мультичат)", "Split Screen (Multi-Chat)")));
+
+            // 2.14b Mini window (Android bubble, API 29+)
+            if (app.miogram.bridge.mini.MiogramMiniChat.isSupported()) {
+                chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_mini_window, R.drawable.msg_expand, app.miogram.bridge.MiogramLocale.get("Відкрити в міні-вікні", "Открыть в мини-окне", "Open in mini window")));
+            }
 
             // 2.15 Navigation & History Utilities
             boolean addedSettings = false;
@@ -9865,6 +9873,8 @@ public class ChatActivity extends BaseFragment implements
 
         onBottomItemsVisibilityChanged();
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
+        // Luna title bar in XP mode (no-op for every other preset).
+        app.miogram.bridge.ui.xp.MiogramXpDecor.styleActionBar(actionBar);
         if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
             contentView.setBackgroundColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_CHAT_BG);
             if (actionBar != null) {

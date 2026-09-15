@@ -5411,6 +5411,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled()) {
             subfolderBar = new app.miogram.bridge.folders.MiogramSubfolderBar(context, resourceProvider, this);
             contentView.addView(subfolderBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP, 0, 0, 0, 0));
+            // Discord rail replaces all pill navigation.
+            if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
+                subfolderBar.setVisibility(View.GONE);
+            }
         }
 
         if (fragmentSearchField != null) {
@@ -6872,7 +6876,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             totalOffset += filtersTabHeight;
         }
 
-        if (subfolderBar != null && subfolderBar.hasPills()) {
+        if (subfolderBar != null && subfolderBar.hasPills()
+                && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
             float subAlpha = (1f - searchAnimationProgress) * (filterTabsView != null ? filterTabsView.getAlpha() : 1f);
             subfolderBar.setAlpha(subAlpha);
             subfolderBar.setVisibility(subAlpha > 0.01f ? View.VISIBLE : View.GONE);
@@ -13555,13 +13560,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         }
 
+        // Luna title bar in XP mode (no-op for every other preset).
+        app.miogram.bridge.ui.xp.MiogramXpDecor.styleActionBar(actionBar);
+
         if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
-            actionBar.setVisibility(View.GONE);
-            if (filterTabsView != null) {
+            actionBar.setVisibility(View.GONE);            if (filterTabsView != null) {
                 filterTabsView.setVisibility(View.GONE);
             }
             if (dialogStoriesCell != null) {
                 dialogStoriesCell.setVisibility(View.GONE);
+            }
+            // Miogram quick-filter pills duplicate the rail navigation in Discord mode.
+            if (subfolderBar != null) {
+                subfolderBar.setVisibility(View.GONE);
             }
             fragmentView.setBackgroundColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_CHANNELS_BG);
 
@@ -13598,12 +13609,27 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     if (filterTabsView != null) {
                         filterTabsView.selectTabWithId(0, 1.0f);
                     }
+                    app.miogram.bridge.folders.MiogramSubfolderEngine.resetActiveSubfolder(currentAccount);
+                    onSubfolderChanged();
+                    app.miogram.bridge.ui.discord.MiogramDiscordLayout.updateChannelHeaderTitle(channelHeader,
+                            app.miogram.bridge.ui.discord.MiogramDiscordLayout.channelPaneTitle(getContext()));
+                } else if (selectedId == app.miogram.bridge.ui.discord.MiogramDiscordLayout.RAIL_DMS) {
+                    // DM pseudo-server: All-chats tab, personal chats only.
+                    if (filterTabsView != null) {
+                        filterTabsView.selectTabWithId(0, 1.0f);
+                    }
+                    app.miogram.bridge.folders.MiogramSubfolderEngine.setActiveChildFilterId(currentAccount, 0);
+                    app.miogram.bridge.folders.MiogramSubfolderEngine.setActiveSubfolderType(currentAccount,
+                            app.miogram.bridge.folders.MiogramSubfolderEngine.TYPE_PERSONAL);
+                    onSubfolderChanged();
                     app.miogram.bridge.ui.discord.MiogramDiscordLayout.updateChannelHeaderTitle(channelHeader,
                             app.miogram.bridge.ui.discord.MiogramDiscordLayout.channelPaneTitle(getContext()));
                 } else if (selectedId > 0) {
                     if (filterTabsView != null) {
                         filterTabsView.selectTabWithId(selectedId, 1.0f);
                     }
+                    app.miogram.bridge.folders.MiogramSubfolderEngine.resetActiveSubfolder(currentAccount);
+                    onSubfolderChanged();
                     app.miogram.bridge.ui.discord.MiogramDiscordLayout.updateChannelHeaderTitle(channelHeader,
                             app.miogram.bridge.ui.discord.MiogramDiscordLayout.channelPaneTitle(getContext()));
                 } else {
@@ -13664,6 +13690,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (userFooter != null) {
                 userFooter.setTag("miogram_custom_layout");
                 ((ContentView) fragmentView).addView(userFooter, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 52, Gravity.BOTTOM | Gravity.LEFT, 72, 0, 0, 0));
+            }
+
+            // Restore persisted DM pseudo-server across restarts (rail highlights
+            // it from prefs, but the type filter itself lives only in memory).
+            if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.getSelectedRailId()
+                    == app.miogram.bridge.ui.discord.MiogramDiscordLayout.RAIL_DMS) {
+                if (filterTabsView != null) {
+                    filterTabsView.selectTabWithId(0, 1.0f);
+                }
+                app.miogram.bridge.folders.MiogramSubfolderEngine.setActiveChildFilterId(currentAccount, 0);
+                app.miogram.bridge.folders.MiogramSubfolderEngine.setActiveSubfolderType(currentAccount,
+                        app.miogram.bridge.folders.MiogramSubfolderEngine.TYPE_PERSONAL);
+                onSubfolderChanged();
             }
         } else if (app.miogram.bridge.ui.minimal.MiogramMinimalRail.isActive(getContext())) {
             // Minimalist preset: slim theme-adaptive left rail (Chats / Saved /
@@ -13766,7 +13805,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 // dialogs list padding below always matches exactly.
                 app.miogram.bridge.ui.ios.MiogramIosLargeHeaderView iosHeader = new app.miogram.bridge.ui.ios.MiogramIosLargeHeaderView(
                         getContext(),
-                        LocaleController.getString(R.string.Chats),
+                        app.miogram.bridge.MiogramLocale.get("Чати", "Чаты", "Chats"),
                         new app.miogram.bridge.ui.ios.MiogramIosLargeHeaderView.OnHeaderActionListener() {
                             @Override
                             public void onEditClick() {
@@ -13800,17 +13839,22 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     });
                 }
 
-                View iosTabBar = app.miogram.bridge.ui.ios.MiogramIosLayout.createIosTabBar(getContext(), 2, tabIndex -> {
-                    if (tabIndex == 0) {
-                        presentFragment(new ContactsActivity(new Bundle()));
-                    } else if (tabIndex == 1) {
-                        presentFragment(new CallLogActivity());
-                    } else if (tabIndex == 3) {
-                        presentFragment(new app.miogram.bridge.settings.MiogramSettingsActivity());
-                    } else {
-                        scrollToTop(true, true);
-                    }
-                });
+                // iOS tab bar replaces MainTabs navigation — but only when the
+                // MainTabs bar is actually hidden, otherwise the two stack up.
+                View iosTabBar = null;
+                if (org.telegram.ui.MainTabsLayout.isBottomNavigationHidden()) {
+                    iosTabBar = app.miogram.bridge.ui.ios.MiogramIosLayout.createIosTabBar(getContext(), 2, tabIndex -> {
+                        if (tabIndex == 0) {
+                            presentFragment(new ContactsActivity(new Bundle()));
+                        } else if (tabIndex == 1) {
+                            presentFragment(new CallLogActivity());
+                        } else if (tabIndex == 3) {
+                            presentFragment(new app.miogram.bridge.settings.MiogramSettingsActivity());
+                        } else {
+                            scrollToTop(true, true);
+                        }
+                    });
+                }
                 if (iosTabBar != null) {
                     iosTabBar.setTag("miogram_custom_layout");
                     ((ContentView) fragmentView).addView(iosTabBar, LayoutHelper.createFrame(

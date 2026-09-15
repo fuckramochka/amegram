@@ -78,6 +78,7 @@ public class MiogramCompanionPersona {
         sb.append("21. `chat_info(chat_query|chat_id)` - Type, title, @username, member count, unread count.\n");
         sb.append("22. `player_control(action)` - play|pause|toggle|next|prev music player.\n");
         sb.append("23. `player_now()` - What is playing in Miogram player.\n");
+        sb.append("23b. `find_music(query)` - Search tracks (Telegram cloud, Deezer, iTunes). Then `send_music(chat_query, index)` sends the picked track.\n");
         sb.append("24. `contacts_list(limit)` - Numbered contact list.\n");
         sb.append("25. `read_unread_summary()` - Read and summarize all unread messages and notifications across active chats.\n");
         sb.append("26. `remember_fact(key, value)` - Memorize a preference, habit, or fact about P-chan in long-term memory.\n");

@@ -180,6 +180,7 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
             }
         });
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
+        app.miogram.bridge.ui.xp.MiogramXpDecor.styleActionBar(actionBar);
         if (AndroidUtilities.isTablet()) {
             actionBar.setOccupyStatusBar(false);
         }

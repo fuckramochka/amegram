@@ -163,7 +163,7 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
         badgeSubView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         badgeSubView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2, resourcesProvider));
         badgeSubView.setGravity(Gravity.CENTER);
-        badgeSubView.setText(selectedBadge.getTitle() + (isFounder ? " • Founder Verified ✓" : " • Supabase Cloud Verified ✓"));
+        badgeSubView.setText(selectedBadge.getTitle() + (record != null && record.verified ? " • Verified ✓" : ""));
         if (record == null && !isSelf && !isFounder) {
             badgeSubView.setText(MiogramLocale.get("Не активовано в Supabase", "Не активировано в Supabase", "Not Active in Supabase"));
             LinearLayout infoCard = new LinearLayout(context);
@@ -386,13 +386,33 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
                     if (app.miogram.bridge.customui.MiogramHaptic.isEnabled()) v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                     selectedBadge = type;
 
-                    // Update Top Preview
-                    badgePreviewView.setImageDrawable(new MiogramArrowDrawable(76, selectedBadge));
-                    badgeSubView.setText(selectedBadge.getTitle() + " • Supabase Cloud Verified ✓");
+                    // Update Top Preview with a soft crossfade instead of a hard swap.
+                    badgePreviewView.animate().cancel();
+                    badgePreviewView.animate()
+                            .alpha(0f)
+                            .scaleX(0.85f)
+                            .scaleY(0.85f)
+                            .setDuration(110)
+                            .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                            .withEndAction(() -> {
+                                badgePreviewView.setImageDrawable(new MiogramArrowDrawable(76, selectedBadge));
+                                badgeSubView.setText(selectedBadge.getTitle());
+                                badgePreviewView.animate()
+                                        .alpha(1f)
+                                        .scaleX(1f)
+                                        .scaleY(1f)
+                                        .setDuration(160)
+                                        .setInterpolator(new android.view.animation.DecelerateInterpolator())
+                                        .start();
+                            })
+                            .start();
 
                     // Update Dynamic Lore
                     if (dynamicLoreView != null) {
                         dynamicLoreView.setText(getBadgeLore(selectedBadge));
+                        dynamicLoreView.setAlpha(0f);
+                        dynamicLoreView.animate().cancel();
+                        dynamicLoreView.animate().alpha(1f).setDuration(180).start();
                     }
 
                     // Auto-sync in background

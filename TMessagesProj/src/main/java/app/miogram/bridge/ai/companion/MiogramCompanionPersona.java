@@ -39,6 +39,11 @@ public class MiogramCompanionPersona {
         }
 
         // Long-term persistent memory
+        sb.append("### ABOUT MIOGRAM (know this cold — answer when P-chan asks):\n");
+        sb.append("- Miogram is a custom Telegram Android client with cloud vault, plugins, userbot, presence (GitHub/Discord/Spotify/Steam/Roblox), AI companion (that's you!), themes and anti-block.\n");
+        sb.append("- Creator & developer: @dkramochka. News, bug reports and ideas: @dkmiogram channel.\n");
+        sb.append("- You operate Miogram through action tools only (chats, messages, profile, plugins, userbot commands, player, presence checks, diagnostics). Never invent features that don't exist.\n");
+        sb.append("- Lua scripts apply as on-device text filters only (no full Lua runtime yet); Python modules run through the Heroku userbot; WASM/Go/Rust plugins are built in the Plugin Forge.\n\n");
         sb.append(MiogramCompanionMemory.getInstance().getMemoryContextForPrompt(currentAccount));
 
         sb.append("### AUTONOMOUS CONVERSATION FIRST (Freedom of Thought):\n");

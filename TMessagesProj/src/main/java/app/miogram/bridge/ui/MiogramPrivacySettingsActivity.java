@@ -42,6 +42,7 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
     private int headerGeneralPrivacyRow;
     private int hidePhoneRow;
     private int allowScreenshotRow;
+    private int telemetryRow;
     private int generalPrivacyInfoRow;
 
     @Override
@@ -73,6 +74,7 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         headerGeneralPrivacyRow = addRow();
         hidePhoneRow = addRow();
         allowScreenshotRow = addRow();
+        telemetryRow = addRow();
         generalPrivacyInfoRow = addRow();
     }
 
@@ -115,6 +117,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             boolean v = !NekoConfig.ignoreContentRestrictions.Bool();
             NekoConfig.ignoreContentRestrictions.setConfigBool(v);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
+        } else if (position == telemetryRow) {
+            boolean nextState = !app.miogram.bridge.badge.MiogramSupabaseBridge.isTelemetryEnabled();
+            app.miogram.bridge.badge.MiogramSupabaseBridge.setTelemetryEnabled(nextState);
+            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(nextState);
         }
     }
 
@@ -131,7 +137,7 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                 return TYPE_HEADER;
             } else if (position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
                     || position == saveDeletedMessagesRow || position == saveDeletedMediaRow
-                    || position == hidePhoneRow || position == allowScreenshotRow) {
+                    || position == hidePhoneRow || position == allowScreenshotRow || position == telemetryRow) {
                 return TYPE_CHECK;
             } else if (position == vaultManageRow || position == ghostVaultRow) {
                 return TYPE_TEXT;
@@ -174,6 +180,8 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(MiogramLocale.get("Приховати номер телефону в меню та налаштуваннях", "Скрыть номер телефона в меню и настройках", "Hide phone number in menu & settings"), NekoConfig.hidePhone.Bool(), true);
                     } else if (position == allowScreenshotRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Дозволити знімки екрана та копіювання в обмежених чатах", "Разрешить снимки экрана и копирование в ограниченных чатах", "Allow screenshots in protected content chats"), NekoConfig.ignoreContentRestrictions.Bool(), false);
+                    } else if (position == telemetryRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Хмарна синхронізація та аналітика", "Облачная синхронизация и аналитика", "Cloud Sync & Analytics"), app.miogram.bridge.badge.MiogramSupabaseBridge.isTelemetryEnabled(), false);
                     }
                     break;
                 }

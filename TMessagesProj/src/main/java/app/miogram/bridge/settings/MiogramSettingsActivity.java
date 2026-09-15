@@ -51,7 +51,6 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int cloudVaultRow;
     private int privacyRow;
     private int antiBlockRow;
-    private int telemetryRow;
     private int translatorRow;
     private int localizerRow;
 
@@ -71,6 +70,11 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int pushRow;
     private int generalRow;
     private int updaterRow;
+
+    // 6. About
+    private int headerAboutRow;
+    private int aboutRow;
+    private int donateRow;
 
     @Override
     protected String getActionBarTitle() {
@@ -97,7 +101,6 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         cloudVaultRow = addRow();
         privacyRow = addRow();
         antiBlockRow = addRow();
-        telemetryRow = addRow();
         translatorRow = addRow();
         localizerRow = addRow();
 
@@ -117,6 +120,11 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         pushRow = addRow();
         generalRow = addRow();
         updaterRow = addRow();
+
+        // 6. About
+        headerAboutRow = addRow();
+        aboutRow = addRow();
+        donateRow = addRow();
     }
 
     @Override
@@ -170,16 +178,16 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
             if (listView != null && listView.getAdapter() != null) {
                 AndroidUtilities.runOnUIThread(() -> listView.getAdapter().notifyDataSetChanged(), 1500);
             }
-        } else if (position == telemetryRow) {
-            boolean nextState = !MiogramSupabaseBridge.isTelemetryEnabled();
-            MiogramSupabaseBridge.setTelemetryEnabled(nextState);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(nextState);
-            }
         } else if (position == generalRow) {
             presentFragment(new app.exteraless.settings.OpenExteraGeneralActivity());
         } else if (position == updaterRow) {
             MiogramUpdater.checkAndShowUpdate(this, true);
+        } else if (position == aboutRow) {
+            presentFragment(new MiogramAboutActivity());
+        } else if (position == donateRow) {
+            android.widget.Toast.makeText(getParentActivity() != null ? getParentActivity() : getContext(),
+                    MiogramLocale.get("Підтримка розробки тимчасово недоступна", "Поддержка разработки временно недоступна", "Donations are temporarily unavailable"),
+                    android.widget.Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -197,10 +205,8 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         @Override
         public int getItemViewType(int position) {
             if (position == headerCustomizationRow || position == headerChatsPrivacyRow ||
-                    position == headerAiRow || position == headerUserbotRow || position == headerSystemRow) {
+                    position == headerAiRow || position == headerUserbotRow || position == headerSystemRow || position == headerAboutRow) {
                 return TYPE_HEADER;
-            } else if (position == telemetryRow) {
-                return TYPE_CHECK;
             }
             return TYPE_TEXT;
         }
@@ -208,17 +214,6 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, boolean partial) {
             switch (holder.getItemViewType()) {
-                case TYPE_CHECK: {
-                    TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == telemetryRow) {
-                        cell.setTextAndCheck(
-                                MiogramLocale.get("Хмарна синхронізація та аналітика", "Облачная синхронизация и аналитика", "Cloud Sync & Analytics"),
-                                MiogramSupabaseBridge.isTelemetryEnabled(),
-                                true
-                        );
-                    }
-                    break;
-                }
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == headerCustomizationRow) {
@@ -231,6 +226,8 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Heroku Юзербот та автоматизація", "Heroku Юзербот и автоматизация", "Heroku Userbot & Automation"));
                     } else if (position == headerSystemRow) {
                         cell.setText(MiogramLocale.get("Система, плагіни та екосистема", "Система, плагины и экосистема", "System, Plugins & Ecosystem"));
+                    } else if (position == headerAboutRow) {
+                        cell.setText(MiogramLocale.get("Про застосунок", "О приложении", "About"));
                     }
                     break;
                 }
@@ -388,6 +385,20 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Перевірити оновлення", "Проверить обновления", "Check for Updates"),
                                 R.drawable.msg_download_solar,
+                                true
+                        );
+                    }
+                    // Section 6
+                    else if (position == aboutRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Про Miogram", "О Miogram", "About Miogram"),
+                                R.drawable.msg_info,
+                                true
+                        );
+                    } else if (position == donateRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Підтримати розробку", "Поддержать разработку", "Support development"),
+                                R.drawable.msg_gift_premium,
                                 false
                         );
                     }

@@ -229,14 +229,14 @@ public class MiogramPluginForgeActivity extends BaseFragment {
         fallbackRow.setOrientation(LinearLayout.HORIZONTAL);
         fallbackRow.setVisibility(View.GONE);
 
-        importWasmBtn = makeButton(context, MiogramLocale.get("📥 Імпорт plugin.wasm", "📥 Импорт plugin.wasm", "📥 Import plugin.wasm"), false);
+        importWasmBtn = makeButton(context, MiogramLocale.get("Імпорт plugin.wasm", "Импорт plugin.wasm", "Import plugin.wasm"), false);
         importWasmBtn.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
             onPickWasm();
         });
         fallbackRow.addView(importWasmBtn, LayoutHelper.createLinear(0, 44, 1.0f, 0, 0, 6, 0));
 
-        exportZipBtn = makeButton(context, MiogramLocale.get("📤 Експорт ZIP", "📤 Экспорт ZIP", "📤 Export ZIP"), false);
+        exportZipBtn = makeButton(context, MiogramLocale.get("Експорт ZIP", "Экспорт ZIP", "Export ZIP"), false);
         exportZipBtn.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
             onExportZip();

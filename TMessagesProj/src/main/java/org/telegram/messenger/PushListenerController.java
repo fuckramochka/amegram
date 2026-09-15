@@ -119,6 +119,10 @@ public class PushListenerController {
                 String loc_key = null;
                 String jsonString = null;
                 try {
+                    if (TextUtils.isEmpty(data)) {
+                        onDecryptError(countDownLatch);
+                        return;
+                    }
                     byte[] bytes = Base64.decode(data, Base64.URL_SAFE);
                     NativeByteBuffer buffer = new NativeByteBuffer(bytes.length);
                     buffer.writeBytes(bytes);

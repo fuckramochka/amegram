@@ -18,6 +18,8 @@ import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ChatActivity;
 import org.telegram.ui.Components.MessagePreviewView;
 
+import xyz.nextalone.nagram.NaConfig;
+
 import java.util.ArrayList;
 
 public class MessagePreviewParams {
@@ -200,13 +202,14 @@ public class MessagePreviewParams {
         this.isSecret = secret;
         this.noforwards = secret || noforwards;
         this.monoforum = monoforum;
+        this.hideForwardSendersName = NaConfig.INSTANCE.getShowNoQuoteForward().Bool();
     }
 
     public MessagePreviewParams(boolean secret, boolean noforwards, boolean monoforum, boolean hideForwardSendersName, boolean hideCaption) {
         this.isSecret = secret;
         this.noforwards = secret || noforwards;
         this.monoforum = monoforum;
-        this.hideForwardSendersName = hideForwardSendersName;
+        this.hideForwardSendersName = hideForwardSendersName || NaConfig.INSTANCE.getShowNoQuoteForward().Bool();
         this.hideCaption = hideCaption;
     }
 

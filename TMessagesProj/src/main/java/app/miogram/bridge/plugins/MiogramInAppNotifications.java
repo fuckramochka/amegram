@@ -117,11 +117,11 @@ public class MiogramInAppNotifications implements NotificationCenter.Notificatio
 
             CharSequence messageText = msg.messageText;
             if (TextUtils.isEmpty(messageText)) {
-                if (msg.isVideo()) messageText = app.miogram.bridge.MiogramLocale.get("📹 Відеоповідомлення", "📹 Видеосообщение", "📹 Video message");
-                else if (msg.isVoice()) messageText = app.miogram.bridge.MiogramLocale.get("🎙️ Голосове повідомлення", "🎙️ Голосовое сообщение", "🎙️ Voice message");
-                else if (msg.isRoundVideo()) messageText = app.miogram.bridge.MiogramLocale.get("⭕ Відеоповідомлення (кружечок)", "⭕ Видеосообщение (кружок)", "⭕ Round video message");
-                else if (msg.isPhoto()) messageText = app.miogram.bridge.MiogramLocale.get("🖼️ Фотографія", "🖼️ Фотография", "🖼️ Photo");
-                else if (msg.isSticker()) messageText = app.miogram.bridge.MiogramLocale.get("✨ Стікер", "✨ Стикер", "✨ Sticker");
+                if (msg.isVideo()) messageText = app.miogram.bridge.MiogramLocale.get("Відеоповідомлення", "Видеосообщение", "Video message");
+                else if (msg.isVoice()) messageText = app.miogram.bridge.MiogramLocale.get("Голосове повідомлення", "Голосовое сообщение", "Voice message");
+                else if (msg.isRoundVideo()) messageText = app.miogram.bridge.MiogramLocale.get("Відеоповідомлення (кружечок)", "Видеосообщение (кружок)", "Round video message");
+                else if (msg.isPhoto()) messageText = app.miogram.bridge.MiogramLocale.get("Фотографія", "Фотография", "Photo");
+                else if (msg.isSticker()) messageText = app.miogram.bridge.MiogramLocale.get("Стікер", "Стикер", "Sticker");
                 else messageText = app.miogram.bridge.MiogramLocale.get("Повідомлення", "Сообщение", "Message");
             }
 

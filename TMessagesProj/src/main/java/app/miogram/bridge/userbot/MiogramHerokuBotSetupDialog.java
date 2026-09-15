@@ -73,7 +73,7 @@ public class MiogramHerokuBotSetupDialog extends BottomSheet {
 
         // Header Title
         TextView titleView = new TextView(context);
-        titleView.setText("🪐 " + MiogramLocale.get("Налаштування Heroku Bot API", "Настройка Heroku Bot API", "Heroku Bot API Setup"));
+        titleView.setText(MiogramLocale.get("Налаштування Heroku Bot API", "Настройка Heroku Bot API", "Heroku Bot API Setup"));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 19);
         titleView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         titleView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
@@ -105,7 +105,7 @@ public class MiogramHerokuBotSetupDialog extends BottomSheet {
         content.addView(inputCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
         TextView tokenLabel = new TextView(context);
-        tokenLabel.setText("🔑 " + MiogramLocale.get("Bot API Токен:", "Bot API Токен:", "Bot API Token:"));
+        tokenLabel.setText(MiogramLocale.get("Bot API Токен:", "Bot API Токен:", "Bot API Token:"));
         tokenLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
         tokenLabel.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         tokenLabel.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
@@ -155,7 +155,7 @@ public class MiogramHerokuBotSetupDialog extends BottomSheet {
 
         // Section: BotFather Step-by-Step Assistant
         TextView guideHeader = new TextView(context);
-        guideHeader.setText("🤖 " + MiogramLocale.get("Немає бота? Створіть за 1 хвилину через @BotFather:", "Нет бота? Создайте за 1 минуту через @BotFather:", "No bot? Create in 1 min via @BotFather:"));
+        guideHeader.setText(MiogramLocale.get("Немає бота? Створіть за 1 хвилину через @BotFather:", "Нет бота? Создайте за 1 минуту через @BotFather:", "No bot? Create in 1 min via @BotFather:"));
         guideHeader.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         guideHeader.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
         guideHeader.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
@@ -224,7 +224,7 @@ public class MiogramHerokuBotSetupDialog extends BottomSheet {
 
     private void copyCommand(Context context, String copyText, String label) {
         AndroidUtilities.addToClipboard(copyText);
-        Toast.makeText(context, "📋 " + MiogramLocale.get("Скопійовано: ", "Скопировано: ", "Copied: ") + label, Toast.LENGTH_SHORT).show();
+        Toast.makeText(context, MiogramLocale.get("Скопійовано: ", "Скопировано: ", "Copied: ") + label, Toast.LENGTH_SHORT).show();
     }
 
     private void openBotFatherChat(Context context) {
@@ -255,23 +255,22 @@ public class MiogramHerokuBotSetupDialog extends BottomSheet {
         if (TextUtils.isEmpty(token)) {
             statusText.setVisibility(View.VISIBLE);
             statusText.setTextColor(0xFFE53935);
-            statusText.setText("⚠️ " + MiogramLocale.get("Введіть токен бота!", "Введите токен бота!", "Enter bot token!"));
+            statusText.setText(MiogramLocale.get("Введіть токен бота!", "Введите токен бота!", "Enter bot token!"));
             return;
         }
 
         isVerifying = true;
-        verifyBtnText.setText(MiogramLocale.get("Перевірка...", "Проверка...", "Verifying..."));
-        statusText.setVisibility(View.VISIBLE);
-        statusText.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
-        statusText.setText("⏳ " + MiogramLocale.get("З'єднання з Telegram Bot API...", "Соединение с Telegram Bot API...", "Connecting to Telegram Bot API..."));
+        verifyBtnText.setText(MiogramLocale.get("Перевірка токена...", "Проверка токена...", "Verifying token..."));
+        statusText.setVisibility(View.GONE);
 
-        MiogramHerokuManager.getInstance().verifyBotToken(token, (success, username, name, id, canJoinGroups, supportsInline, error) -> {
+        MiogramHerokuManager.getInstance().verifyAndSetBotToken(token, (success, username, name, supportsInline, error) -> {
             isVerifying = false;
+            statusText.setVisibility(View.VISIBLE);
             verifyBtnText.setText(MiogramLocale.get("Перевірити та зберегти токен", "Проверить и сохранить токен", "Verify & Save Token"));
 
             if (success) {
                 statusText.setTextColor(0xFF43A047);
-                String msg = "✅ " + MiogramLocale.get("Успішно підключено!", "Успешно подключено!", "Connected successfully!") +
+                String msg = MiogramLocale.get("Успішно підключено!", "Успешно подключено!", "Connected successfully!") +
                         " @" + username + " (" + name + ")" +
                         (supportsInline ? " [Inline: OK]" : (" [Inline: " + MiogramLocale.get("Не активовано", "Не активировано", "Not activated") + "]"));
                 statusText.setText(msg);
@@ -285,7 +284,7 @@ public class MiogramHerokuBotSetupDialog extends BottomSheet {
                 AndroidUtilities.runOnUIThread(this::dismiss, 1200);
             } else {
                 statusText.setTextColor(0xFFE53935);
-                statusText.setText("❌ " + (error != null ? error : MiogramLocale.get("Невірний токен", "Неверный токен", "Invalid token")));
+                statusText.setText(error != null ? error : MiogramLocale.get("Невірний токен", "Неверный токен", "Invalid token"));
             }
         });
     }

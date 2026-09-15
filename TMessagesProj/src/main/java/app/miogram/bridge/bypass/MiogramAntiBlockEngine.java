@@ -45,8 +45,8 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
     private static final String PREFS_NAME = "miogram_bypass";
 
     // TSPU throttling detection thresholds
-    public static final long DEFAULT_DETECTION_TIMEOUT_MS = 20000L; // 20 seconds stuck connecting directly
-    private static final long PROXY_STUCK_TIMEOUT_MS = 10000L; // 10 seconds stuck connecting to proxy
+    public static final long DEFAULT_DETECTION_TIMEOUT_MS = 7000L; // 7 seconds stuck connecting directly
+    private static final long PROXY_STUCK_TIMEOUT_MS = 6000L; // 6 seconds stuck connecting to proxy
     private static final long MAX_ACCEPTABLE_PING_MS = 2500L;
 
     // Direct Telegram DC probes for deep diagnostic check
@@ -291,6 +291,27 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
                 443,
                 "eeef7017f26c9ecb71ed8d760999294318786170692e6f7a6f6e2e7275",
                 "xapi.ozon.ru",
+                false
+        ));
+
+        // 4. Gosuslugi & VK National Whitelist SNI
+        builtInServers.add(new BypassServer(
+                "builtin_gu_1",
+                "Держпослуги РФ (gosuslugi.ru)",
+                "gu.lovely.lat",
+                443,
+                "ee0000112233445566778899aabbccddeeff676f7375736c7567692e7275",
+                "gosuslugi.ru",
+                false
+        ));
+
+        builtInServers.add(new BypassServer(
+                "builtin_vk_1",
+                "ВКонтакті РФ (vk.com)",
+                "vk.lovely.lat",
+                443,
+                "ee0000112233445566778899aabbccddeeff766b2e636f6d",
+                "vk.com",
                 false
         ));
     }

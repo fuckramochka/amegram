@@ -4208,13 +4208,12 @@ public class NotificationsController extends BaseController implements Notificat
                 lastMessageObject = pushMessages.get(0);
             }
             SharedPreferences preferences = getAccountInstance().getNotificationsSettings();
-            int dismissDate = preferences.getInt("dismissDate", 0);
+            long dialog_id = lastMessageObject.getDialogId();
+            int dismissDate = preferences.getInt("dismissDate" + dialog_id, 0);
             if (!lastMessageObject.isStoryPush && (lastMessageObject.messageOwner.date <= dismissDate && NaConfig.INSTANCE.getPushServiceType().Int() != 3)) {
                 dismissNotification();
                 return;
             }
-
-            long dialog_id = lastMessageObject.getDialogId();
             long topicId = MessageObject.getTopicId(currentAccount, lastMessageObject.messageOwner, getMessagesController().isForum(lastMessageObject));
             boolean story = lastMessageObject.isStoryPush;
 
@@ -4635,6 +4634,7 @@ public class NotificationsController extends BaseController implements Notificat
             try {
                 Intent dismissIntent = new Intent(ApplicationLoader.applicationContext, NotificationDismissReceiver.class);
                 dismissIntent.putExtra("messageDate", lastMessageObject.messageOwner.date);
+                dismissIntent.putExtra("dialogId", dialog_id);
                 dismissIntent.putExtra("currentAccount", currentAccount);
                 if (lastMessageObject.isStoryPush) {
                     dismissIntent.putExtra("story", true);

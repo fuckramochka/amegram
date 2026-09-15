@@ -69,7 +69,7 @@ public class MiogramSystemDialogsManager {
             if (kanbanChat == null) {
                 kanbanChat = new TLRPC.TL_channel();
                 kanbanChat.id = -DIALOG_ID_KANBAN;
-                kanbanChat.title = MiogramLocale.get("Канбан-нотатки 📋", "Канбан-заметки 📋", "Kanban Notes 📋");
+                kanbanChat.title = MiogramLocale.get("Канбан-нотатки", "Канбан-заметки", "Kanban Notes");
                 kanbanChat.broadcast = false;
                 kanbanChat.creator = true;
             }
@@ -124,9 +124,9 @@ public class MiogramSystemDialogsManager {
                 msg.id = 2;
                 msg.date = (int) (System.currentTimeMillis() / 1000);
                 msg.message = MiogramLocale.get(
-                        "Ваша персональна дошка завдань та швидких заміток 📋",
-                        "Ваша персональная доска задач и быстрых заметок 📋",
-                        "Your personal task board and quick notes 📋"
+                        "Ваша персональна дошка завдань та швидких заміток",
+                        "Ваша персональная доска задач и быстрых заметок",
+                        "Your personal task board and quick notes"
                 );
                 msg.peer_id = new TLRPC.TL_peerChannel();
                 msg.peer_id.channel_id = -DIALOG_ID_KANBAN;

@@ -565,6 +565,7 @@ public class MiogramSteamManager {
         ed.putString("self_game_icon", p.gameIconUrl);
         ed.putString("self_game_hours", p.gameHours2Weeks);
         ed.putBoolean("self_is_in_game", p.isInGame);
+        ed.putLong("self_game_updated", System.currentTimeMillis());
         ed.apply();
     }
 
@@ -577,11 +578,19 @@ public class MiogramSteamManager {
         self.steamId = steamId;
         self.personaName = p.getString("self_persona_name", "");
         self.avatarUrl = p.getString("self_avatar_url", "");
-        self.gameId = p.getString("self_game_id", "");
-        self.gameName = p.getString("self_game_name", "");
-        self.gameIconUrl = p.getString("self_game_icon", "");
-        self.gameHours2Weeks = p.getString("self_game_hours", "");
-        self.isInGame = p.getBoolean("self_is_in_game", false);
+        long lastUpdated = p.getLong("self_game_updated", 0);
+        boolean inGame = p.getBoolean("self_is_in_game", false);
+        // Expire cached in-game status after 15 minutes
+        if (inGame && (System.currentTimeMillis() - lastUpdated > 15 * 60 * 1000L)) {
+            inGame = false;
+        }
+        self.isInGame = inGame;
+        if (inGame) {
+            self.gameId = p.getString("self_game_id", "");
+            self.gameName = p.getString("self_game_name", "");
+            self.gameIconUrl = p.getString("self_game_icon", "");
+            self.gameHours2Weeks = p.getString("self_game_hours", "");
+        }
 
         long myId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
         if (myId != 0) {

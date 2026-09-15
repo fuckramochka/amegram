@@ -433,7 +433,9 @@ public class MiogramPresenceCard extends FrameLayout {
 
         if (activeService == SERVICE_STEAM) {
             accentColor = 0xFF66C0F4;
-            title = "STEAM GAMING";
+            boolean inGame = steamProfile != null && steamProfile.isLiveGame();
+            title = inGame ? MiogramLocale.get("STEAM • У ГРІ", "STEAM • В ИГРЕ", "STEAM • IN-GAME")
+                    : MiogramLocale.get("STEAM ПРОФІЛЬ", "STEAM ПРОФИЛЬ", "STEAM PROFILE");
         } else if (activeService == SERVICE_GITHUB) {
             accentColor = 0xFFFFFFFF;
             title = "GITHUB PROFILE";
@@ -684,26 +686,13 @@ public class MiogramPresenceCard extends FrameLayout {
                 } else {
                     artwork.setImageResource(R.drawable.baseline_videogame_asset_16);
                 }
-            } else if (hasMostPlayed) {
-                title.setText(Emoji.replaceEmoji(p.mostPlayedGame, title.getPaint().getFontMetricsInt(), false));
-                String favSubtitle = !TextUtils.isEmpty(p.mostPlayedHours)
-                        ? (MiogramLocale.get("Улюблена гра • ", "Любимая игра • ", "Favorite game • ") + p.mostPlayedHours + " " + MiogramLocale.get("год", "ч", "hrs"))
-                        : MiogramLocale.get("Улюблена гра", "Любимая игра", "Favorite game");
-                subtitle.setText(favSubtitle);
-
-                String capsuleUrl = !TextUtils.isEmpty(p.mostPlayedGameId)
-                        ? "https://cdn.cloudflare.steamstatic.com/steam/apps/" + p.mostPlayedGameId + "/capsule_184x69.jpg"
-                        : null;
-                if (!TextUtils.isEmpty(capsuleUrl)) {
-                    artwork.setImage(ImageLocation.getForPath(capsuleUrl), "184_69", null, 0, null);
-                } else if (!TextUtils.isEmpty(p.avatarUrl)) {
-                    artwork.setImage(ImageLocation.getForPath(p.avatarUrl), "100_100", null, 0, null);
-                } else {
-                    artwork.setImageResource(R.drawable.baseline_videogame_asset_16);
-                }
             } else {
-                title.setText(p.personaName);
-                subtitle.setText(!TextUtils.isEmpty(p.stateMessage) ? p.stateMessage : MiogramLocale.get("Зараз не у грі", "Сейчас не в игре", "Not in game"));
+                title.setText(!TextUtils.isEmpty(p.personaName) ? p.personaName : "Steam");
+                String status = !TextUtils.isEmpty(p.stateMessage) ? p.stateMessage : MiogramLocale.get("Не у грі", "Не в игре", "Not in game");
+                if (hasMostPlayed) {
+                    status += " • " + MiogramLocale.get("Улюблена: ", "Любимая: ", "Favorite: ") + p.mostPlayedGame;
+                }
+                subtitle.setText(status);
                 if (!TextUtils.isEmpty(p.avatarUrl)) {
                     artwork.setImage(ImageLocation.getForPath(p.avatarUrl), "100_100", null, 0, null);
                 } else {
@@ -721,12 +710,11 @@ public class MiogramPresenceCard extends FrameLayout {
         actions.setOrientation(LinearLayout.HORIZONTAL);
         root.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        String launchGameId = hasGame ? p.gameId : (hasMostPlayed ? p.mostPlayedGameId : null);
-        if (!TextUtils.isEmpty(launchGameId)) {
+        if (hasGame && !TextUtils.isEmpty(p.gameId)) {
             TextView btnPlay = createButton(context, MiogramLocale.get("Зайти в гру", "Зайти в игру", "Launch Game"), 0xFF5C7E10, 0xFFFFFFFF);
             btnPlay.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
-                MiogramSteamManager.getInstance().openGame(context, launchGameId);
+                MiogramSteamManager.getInstance().openGame(context, p.gameId);
             });
             actions.addView(btnPlay, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
         }

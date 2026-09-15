@@ -63,7 +63,7 @@ public class MiogramHerokuActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return "🪐 " + MiogramLocale.get("Heroku Юзербот", "Heroku Юзербот", "Heroku Userbot");
+        return MiogramLocale.get("Heroku Юзербот", "Heroku Юзербот", "Heroku Userbot");
     }
 
     @Override
@@ -131,11 +131,11 @@ public class MiogramHerokuActivity extends BaseNekoSettingsActivity {
             if (type == TYPE_HEADER) {
                 HeaderCell cell = (HeaderCell) holder.itemView;
                 if (position == headerMainRow) {
-                    cell.setText(MiogramLocale.get("Загальні налаштування 🪐", "Общие настройки 🪐", "General Settings 🪐"));
+                    cell.setText(MiogramLocale.get("Загальні налаштування", "Общие настройки", "General Settings"));
                 } else if (position == headerModulesRow) {
-                    cell.setText(MiogramLocale.get("Модулі юзербота 📦", "Модули юзербота 📦", "Userbot Modules 📦"));
+                    cell.setText(MiogramLocale.get("Модулі юзербота", "Модули юзербота", "Userbot Modules"));
                 } else if (position == headerActionsRow) {
-                    cell.setText(MiogramLocale.get("Діагностика та команди ⚡", "Диагностика и команды ⚡", "Diagnostics & Commands ⚡"));
+                    cell.setText(MiogramLocale.get("Діагностика та команди", "Диагностика и команды", "Diagnostics & Commands"));
                 }
             } else if (type == TYPE_CHECK) {
                 TextCheckCell cell = (TextCheckCell) holder.itemView;

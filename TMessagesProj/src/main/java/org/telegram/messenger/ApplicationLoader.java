@@ -443,23 +443,12 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
 
     private static void startPushServiceInternal() {
         SharedPreferences preferences = MessagesController.getNotificationsSettings(UserConfig.selectedAccount);
-        final int pushServiceType = NaConfig.INSTANCE.getPushServiceType().Int();
-        final boolean remotePush = pushServiceType != 0
-                && (pushServiceType == 2 || PushListenerController.getProvider().hasServices());
-        boolean enabled;
-        if (remotePush) {
-            enabled = false;
-        } else if (preferences.contains("pushService")) {
-            enabled = preferences.getBoolean("pushService", true);
-        } else if (PushListenerController.getProvider().hasServices()) {
-            return;
-        } else {
-            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
-            SharedPreferences.Editor editor = preferences.edit();
-            editor.putBoolean("pushService", enabled);
-            editor.putBoolean("pushConnection", enabled);
-            editor.apply();
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).setPushConnectionEnabled(enabled);
+        boolean enabled = preferences.getBoolean("pushService", true);
+        boolean connectionEnabled = preferences.getBoolean("pushConnection", true);
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated()) {
+                ConnectionsManager.getInstance(a).setPushConnectionEnabled(connectionEnabled);
+            }
         }
         if (enabled) {
             AndroidUtilities.runOnUIThread(() -> {

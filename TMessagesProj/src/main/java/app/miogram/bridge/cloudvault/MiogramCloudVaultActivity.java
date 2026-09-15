@@ -135,7 +135,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
-        actionBar.setTitle(MiogramLocale.get("Хмарне сховище ☁️", "Облачное хранилище ☁️", "Cloud Vault ☁️"));
+        actionBar.setTitle(MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud Vault"));
         updateSubtitle();
 
         ActionBarMenu menu = actionBar.createMenu();
@@ -275,7 +275,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         onboardingLayout.addView(iconView, LayoutHelper.createLinear(88, 88, Gravity.CENTER, 0, 0, 0, 16));
 
         TextView title = new TextView(context);
-        title.setText(MiogramLocale.get("Miogram Zero-Knowledge Vault ☁️", "Miogram Zero-Knowledge Vault ☁️", "Miogram Zero-Knowledge Vault ☁️"));
+        title.setText(MiogramLocale.get("Miogram Zero-Knowledge Vault", "Miogram Zero-Knowledge Vault", "Miogram Zero-Knowledge Vault"));
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -285,51 +285,66 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         TextView desc = new TextView(context);
         desc.setText(MiogramLocale.get(
                 "Безлімітне приватне хмарне сховище без локальних слідів:\n\n"
-                        + "🔒 Повний Zero-Knowledge: жоден файл чи список не зберігаються на пристрої.\n"
-                        + "🔑 Тільки ключ AES-256-GCM зберігається локально. Все інше розшифровується на льоту в RAM.\n"
-                        + "📦 Файли будь-якого розміру автоматично ріжуться на чанки в Telegram.\n"
-                        + "👁️ Звичайні клієнти Telegram бачать лише зашифровані бінарні дані.",
+                        + "• Повний Zero-Knowledge: жоден файл чи список не зберігаються на пристрої.\n"
+                        + "• Тільки ключ AES-256-GCM зберігається локально. Все інше розшифровується в RAM.\n"
+                        + "• Файли будь-якого розміру автоматично ріжуться на чанки в Telegram.\n"
+                        + "• Звичайні клієнти Telegram бачать лише зашифровані бінарні дані.",
                 "Безлимитное приватное облачное хранилище без локальных следов:\n\n"
-                        + "🔒 Полный Zero-Knowledge: ни один файл и список не сохраняются на устройстве.\n"
-                        + "🔑 Только ключ AES-256-GCM хранится локально. Всё остальное расшифровывается на лету в RAM.\n"
-                        + "📦 Файлы любого размера автоматически нарезаются на чанки в Telegram.\n"
-                        + "👁️ Обычные клиенты Telegram видят лишь зашифрованные бинарные данные.",
+                        + "• Полный Zero-Knowledge: ни один файл и список не сохраняются на устройстве.\n"
+                        + "• Только ключ AES-256-GCM хранится локально. Всё остальное расшифровывается в RAM.\n"
+                        + "• Файлы любого размера автоматически нарезаются на чанки в Telegram.\n"
+                        + "• Обычные клиенты Telegram видят лишь зашифрованные бинарные данные.",
                 "Unlimited zero-knowledge cloud vault with zero local storage footprint:\n\n"
-                        + "🔒 True Zero-Knowledge: no files or file lists are stored on this device.\n"
-                        + "🔑 Only your AES-256-GCM key lives locally. Everything else decrypts in RAM.\n"
-                        + "📦 Files of any size automatically chunked and stored in Telegram.\n"
-                        + "👁️ Standard Telegram clients only see raw opaque ciphertext."
+                        + "• True Zero-Knowledge: no files or file lists are stored on this device.\n"
+                        + "• Only your AES-256-GCM key lives locally. Everything else decrypts in RAM.\n"
+                        + "• Files of any size automatically chunked and stored in Telegram.\n"
+                        + "• Standard Telegram clients only see raw opaque ciphertext."
         ));
         desc.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         desc.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         desc.setGravity(Gravity.CENTER);
         desc.setLineSpacing(AndroidUtilities.dp(3), 1.15f);
-        onboardingLayout.addView(desc, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 28));
+        onboardingLayout.addView(desc, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 24));
 
-        // Create Vault Button
+        // 1-Tap Use Saved Messages Button
+        TextView savedBtn = new TextView(context);
+        savedBtn.setText(MiogramLocale.get("Підключити «Збережене» (1 тап)", "Подключить «Избранное» (1 тап)", "Use Saved Messages (1 Tap)"));
+        savedBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        savedBtn.setTypeface(AndroidUtilities.bold());
+        savedBtn.setTextColor(Color.WHITE);
+        savedBtn.setGravity(Gravity.CENTER);
+
+        GradientDrawable savedBtnBg = new GradientDrawable();
+        savedBtnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        savedBtnBg.setCornerRadius(AndroidUtilities.dp(12));
+        savedBtn.setBackground(savedBtnBg);
+        savedBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(14), AndroidUtilities.dp(20), AndroidUtilities.dp(14));
+        savedBtn.setOnClickListener(v -> useSavedMessagesAsVault());
+        onboardingLayout.addView(savedBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 10));
+
+        // Create Supergroup Button
         TextView createBtn = new TextView(context);
-        createBtn.setText(MiogramLocale.get("Створити сховище в 1 клік", "Создать хранилище в 1 клик", "Create Vault in 1 Tap"));
-        createBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        createBtn.setText(MiogramLocale.get("Створити окрему супергрупу", "Создать отдельную супергруппу", "Create Dedicated Supergroup"));
+        createBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         createBtn.setTypeface(AndroidUtilities.bold());
-        createBtn.setTextColor(Color.WHITE);
+        createBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         createBtn.setGravity(Gravity.CENTER);
 
-        GradientDrawable btnBg = new GradientDrawable();
-        btnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        btnBg.setCornerRadius(AndroidUtilities.dp(12));
-        createBtn.setBackground(btnBg);
-        createBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(14), AndroidUtilities.dp(20), AndroidUtilities.dp(14));
-
+        GradientDrawable createBtnBg = new GradientDrawable();
+        createBtnBg.setStroke(AndroidUtilities.dp(1), Theme.getColor(Theme.key_featuredStickers_addButton));
+        createBtnBg.setCornerRadius(AndroidUtilities.dp(12));
+        createBtn.setBackground(createBtnBg);
+        createBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(12));
         createBtn.setOnClickListener(v -> createVaultAutomatically());
-        onboardingLayout.addView(createBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 12));
+        onboardingLayout.addView(createBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 10));
 
         // Link existing chat button
         TextView linkBtn = new TextView(context);
-        linkBtn.setText(MiogramLocale.get("Прив'язати існуючу супергрупу", "Привязать существующую супергруппу", "Link Existing Supergroup"));
-        linkBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        linkBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        linkBtn.setText(MiogramLocale.get("Прив'язати існуючу групу", "Привязать существующую группу", "Link Existing Group"));
+        linkBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f);
+        linkBtn.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         linkBtn.setGravity(Gravity.CENTER);
-        linkBtn.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(10), AndroidUtilities.dp(16), AndroidUtilities.dp(10));
+        linkBtn.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(8), AndroidUtilities.dp(16), AndroidUtilities.dp(8));
         linkBtn.setOnClickListener(v -> showLinkExistingDialog());
         onboardingLayout.addView(linkBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
@@ -363,14 +378,14 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         titleRow.addView(cloudIco, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
 
         storageTitleText = new TextView(context);
-        storageTitleText.setText(MiogramLocale.get("Miogram Cloud Vault ☁️", "Miogram Cloud Vault ☁️", "Miogram Cloud Vault ☁️"));
+        storageTitleText.setText(MiogramLocale.get("Miogram Cloud Vault", "Miogram Cloud Vault", "Miogram Cloud Vault"));
         storageTitleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         storageTitleText.setTypeface(AndroidUtilities.bold());
         storageTitleText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleRow.addView(storageTitleText, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
 
         TextView secBadge = new TextView(context);
-        secBadge.setText("🔒 Zero-Knowledge");
+        secBadge.setText("Zero-Knowledge");
         secBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         secBadge.setTypeface(AndroidUtilities.bold());
         secBadge.setTextColor(0xFF10B981);
@@ -1085,18 +1100,24 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 "Выберите способ облачного хранилища:\n\n• «Избранное» (Saved Messages) — работает мгновенно, без ограничений прав и лимитов Telegram.\n• Форум-супергруппа — отдельная приватная группа с темами-папками.",
                 "Choose your vault storage method:\n\n• Saved Messages — works instantly, 100% private, without channel creation limits.\n• Forum Supergroup — separate private group with folder topics."
         ));
-        builder.setPositiveButton(MiogramLocale.get("⚡ «Збережене»", "⚡ «Избранное»", "⚡ Saved Messages"), (d, w) -> {
-            long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
-            MiogramCloudVaultEngine.setVaultChatId(currentAccount, clientUserId);
-            Toast.makeText(getParentActivity(), MiogramLocale.get("Сховище підключено до «Збереженого»!", "Хранилище подключено к «Избранному»!", "Vault connected to Saved Messages!"), Toast.LENGTH_SHORT).show();
-            updateVaultVisibility();
-            loadTopicsFromTelegram();
-            filterAndReloadFiles();
-            syncFromCloud();
-        });
-        builder.setNeutralButton(MiogramLocale.get("📁 Форум", "📁 Форум", "📁 Forum"), (d, w) -> createVaultAutomatically());
+        builder.setPositiveButton(MiogramLocale.get("«Збережене»", "«Избранное»", "Saved Messages"), (d, w) -> useSavedMessagesAsVault());
+        builder.setNeutralButton(MiogramLocale.get("Форум-група", "Форум-група", "Forum Group"), (d, w) -> createVaultAutomatically());
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         showDialog(builder.create());
+    }
+
+    private void useSavedMessagesAsVault() {
+        long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
+        if (clientUserId == 0) return;
+        MiogramCloudVaultEngine.setVaultChatId(currentAccount, clientUserId);
+        if (getParentActivity() != null) {
+            Toast.makeText(getParentActivity(), MiogramLocale.get("Сховище підключено до «Збережене»!", "Хранилище подключено к «Избранное»!", "Vault connected to Saved Messages!"), Toast.LENGTH_SHORT).show();
+        }
+        updateVaultVisibility();
+        updateSubtitle();
+        loadTopicsFromTelegram();
+        filterAndReloadFiles();
+        syncFromCloud();
     }
 
     private void createVaultAutomatically() {
@@ -1123,11 +1144,10 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 // Telegram account limits or restrictions prevent channel creation -> fallback to Saved Messages seamlessly
                 long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                 MiogramCloudVaultEngine.setVaultChatId(currentAccount, clientUserId);
-                Toast.makeText(getParentActivity(), MiogramLocale.get("Ліміт створення каналів. Хмару автоматично підключено до «Збереженого»!", "Лимит создания каналов. Хранилище подключено к «Избранному»!", "Telegram channel limit reached. Connected to Saved Messages!"), Toast.LENGTH_LONG).show();
+                Toast.makeText(getParentActivity(), MiogramLocale.get("Підключено до «Збережене» як сховище за замовчуванням!", "Подключено к «Избранное» как хранилище по умолчанию!", "Connected to Saved Messages as default storage!"), Toast.LENGTH_LONG).show();
                 updateVaultVisibility();
                 loadTopicsFromTelegram();
                 filterAndReloadFiles();
-                syncFromCloud();
             }
         });
     }
@@ -1176,13 +1196,13 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(MiogramLocale.get("Майстер-ключ AES-256", "Мастер-ключ AES-256", "AES-256 Master Key"));
         builder.setMessage(MiogramLocale.get(
-                "🔒 Zero-Knowledge Архітектура:\n"
+                "Zero-Knowledge Архітектура:\n"
                         + "Це єдиний елемент даних, що зберігається локально на вашому пристрої. Жодні файли чи списки не записуються на диск.\n\n"
                         + "Збережіть цей 256-бітний ключ, щоб мати доступ до файлів з інших пристроїв:\n\n" + hex,
-                "🔒 Zero-Knowledge Архитектура:\n"
+                "Zero-Knowledge Архитектура:\n"
                         + "Это единственный элемент данных, хранящийся локально на вашем устройстве. Никакие файлы и списки не сохраняются на диск.\n\n"
                         + "Сохраните этот 256-битный ключ для доступа к файлам с других устройств:\n\n" + hex,
-                "🔒 Zero-Knowledge Architecture:\n"
+                "Zero-Knowledge Architecture:\n"
                         + "This key is the only piece of data stored locally on your device. No files or lists are persisted to disk.\n\n"
                         + "Back up this 256-bit key to access your files from other devices:\n\n" + hex
         ));

@@ -5395,7 +5395,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                         if (message != null) {
                             profileActivity.getSendMessagesHelper().sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, true, 0, 0, null, false));
                         }
-                        profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, id == forward_noquote, false, true, 0, 0);
+                        profileActivity.getSendMessagesHelper().sendMessage(fmessages, did, id == forward_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool(), false, true, 0, 0);
                     }
                     fragment1.finishFragment();
                     UndoView undoView = null;
@@ -5412,7 +5412,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 } else {
                     long did = dids.get(0).dialogId;
                     Bundle args1 = new Bundle();
-                    if (id == forward_noquote) {
+                    if (id == forward_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool()) {
                         args1.putBoolean("forward_noquote", true);
                     }
                     args1.putBoolean("scrollToTopOnResume", true);

@@ -170,9 +170,9 @@ public class MiogramSteamSheet extends BottomSheet {
         statusHintView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
         statusHintView.setTextColor(0xAAFFFFFF);
         statusHintView.setText(MiogramLocale.get(
-                "💡 Профіль Steam має бути відкритим (Public) у налаштуваннях приватності Steam.",
-                "💡 Профиль Steam должен быть открытым (Public) в настройках приватности Steam.",
-                "💡 Your Steam Profile & Game Details must be set to Public in Steam Privacy Settings."
+                "Профіль Steam має бути відкритим (Public) у налаштуваннях приватності Steam.",
+                "Профиль Steam должен быть открытым (Public) в настройках приватности Steam.",
+                "Your Steam Profile & Game Details must be set to Public in Steam Privacy Settings."
         ));
         inputCard.addView(statusHintView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
 

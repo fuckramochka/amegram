@@ -317,13 +317,13 @@ public class MiogramSpotifySheet extends BottomSheet {
         statusIndicator.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
         statusIndicator.setTypeface(AndroidUtilities.bold());
         if (isPlaying) {
-            statusIndicator.setText(MiogramLocale.get("🟢 ЗАРАЗ ГРАЄ В SPOTIFY", "🟢 СЕЙЧАС ИГРАЕТ В SPOTIFY", "🟢 NOW PLAYING IN SPOTIFY"));
+            statusIndicator.setText(MiogramLocale.get("ЗАРАЗ ГРАЄ В SPOTIFY", "СЕЙЧАС ИГРАЕТ В SPOTIFY", "NOW PLAYING IN SPOTIFY"));
             statusIndicator.setTextColor(SPOTIFY_GREEN);
         } else if (hasTrack) {
-            statusIndicator.setText(MiogramLocale.get("⏸ ПРИЗУПИНЕНО В SPOTIFY", "⏸ ПРИОСТАНОВЛЕНО В SPOTIFY", "⏸ PAUSED IN SPOTIFY"));
+            statusIndicator.setText(MiogramLocale.get("ПРИЗУПИНЕНО В SPOTIFY", "ПРИОСТАНОВЛЕНО В SPOTIFY", "PAUSED IN SPOTIFY"));
             statusIndicator.setTextColor(0xFF8FB0C6);
         } else {
-            statusIndicator.setText(MiogramLocale.get("⚪ SPOTIFY НЕ ТРАНСЛЮЄ МУЗИКУ", "⚪ SPOTIFY НЕ ТРАНСЛИРУЕТ МУЗЫКУ", "⚪ NO ACTIVE SPOTIFY BROADCAST"));
+            statusIndicator.setText(MiogramLocale.get("SPOTIFY НЕ ТРАНСЛЮЄ МУЗИКУ", "SPOTIFY НЕ ТРАНСЛИРУЕТ МУЗЫКУ", "NO ACTIVE SPOTIFY BROADCAST"));
             statusIndicator.setTextColor(subTextColor);
         }
         statusCard.addView(statusIndicator, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));

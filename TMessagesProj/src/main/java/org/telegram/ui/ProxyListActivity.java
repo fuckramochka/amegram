@@ -974,7 +974,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                         textCell.setText(getString(R.string.AddProxy), true);
                     } else if (position == miogramAntiBlockRow) {
                         textCell.setTextAndValue(
-                                app.miogram.bridge.MiogramLocale.get("⚡ Обхід блокувань Miogram (Fake-TLS)", "⚡ Обход блокировок Miogram (Fake-TLS)", "⚡ Miogram Anti-Block (Fake-TLS)"),
+                                app.miogram.bridge.MiogramLocale.get("Обхід блокувань Miogram (Fake-TLS)", "Обход блокировок Miogram (Fake-TLS)", "Miogram Anti-Block (Fake-TLS)"),
                                 app.miogram.bridge.MiogramLocale.get("docs.yandex.ru", "docs.yandex.ru", "docs.yandex.ru"),
                                 deleteAllRow != -1
                         );

@@ -5364,7 +5364,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     }
 
                     if (isChannel && msgs.size() <= 1) {
-                        showForward(msgs, id == gallery_menu_send_noquote);
+                        showForward(msgs, id == gallery_menu_send_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool());
                     } else if (msgs.size() > 1) {
                         boolean photos = true;
                         for (int i = 0; i < msgs.size(); ++i) {
@@ -5381,10 +5381,10 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 .setNegativeButton((photos ? getString("ThisPhoto", R.string.ThisPhoto) : getString("ThisMedia", R.string.ThisMedia)), (di, a) -> {
                                     ArrayList<MessageObject> singleMessage = new ArrayList<>(1);
                                     singleMessage.add(currentMessageObject);
-                                    showForward(singleMessage, id == gallery_menu_send_noquote);
+                                    showForward(singleMessage, id == gallery_menu_send_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool());
                                 })
                                 .setPositiveButton(photos ? LocaleController.formatPluralString("AllNPhotos", msgs.size()) : LocaleController.formatPluralString("AllNMedia", msgs.size()), (di, a) -> {
-                                    showForward(msgs, id == gallery_menu_send_noquote);
+                                    showForward(msgs, id == gallery_menu_send_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool());
                                 })
                                 .setNeutralButton(getString("Cancel", R.string.Cancel), (di, a) -> {
                                     di.dismiss();
@@ -5416,7 +5416,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                     if (message != null) {
                                         SendMessagesHelper.getInstance(currentAccount).sendMessage(SendMessagesHelper.SendMessageParams.of(message.toString(), did, null, null, null, true, null, null, null, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0, null, false));
                                     }
-                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, id == gallery_menu_send_noquote, false, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0);
+                                    SendMessagesHelper.getInstance(currentAccount).sendMessage(fmessages, did, id == gallery_menu_send_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool(), false, !NaConfig.INSTANCE.getSilentMessageByDefault().Bool(), 0, 0);
                                 }
                                 fragment1.finishFragment();
                                 if (parentChatActivityFinal != null) {
@@ -5433,7 +5433,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                                 MessagesStorage.TopicKey topicKey = dids.get(0);
                                 long did = topicKey.dialogId;
                                 Bundle args1 = new Bundle();
-                                if (id == gallery_menu_send_noquote) {
+                                if (id == gallery_menu_send_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool()) {
                                     args1.putBoolean("forward_noquote", true);
                                 }
                                 args1.putBoolean("scrollToTopOnResume", true);

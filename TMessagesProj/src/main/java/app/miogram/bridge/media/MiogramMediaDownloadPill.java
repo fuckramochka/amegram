@@ -219,11 +219,11 @@ public class MiogramMediaDownloadPill extends FrameLayout {
         if (accentColor == 0) accentColor = 0xFF3390EC;
 
         if (info.isLikelySlideshow) {
-            titleView.setText(MiogramLocale.get("Надіслати як альбом + аудіо 📸", "Отправить как альбом + аудио 📸", "Send as photo album + audio 📸"));
+            titleView.setText(MiogramLocale.get("Надіслати як альбом + аудіо", "Отправить как альбом + аудио", "Send as photo album + audio"));
             subtitleView.setText(info.platformName + MiogramLocale.get(" • Всі фото та оригінальний звук", " • Все фото и оригинальный звук", " • Photos & sound"));
             badgeIcon.setImageResource(R.drawable.msg_photos);
         } else {
-            titleView.setText(MiogramLocale.get("Надіслати як відео 🎬", "Отправить как видео 🎬", "Send as video 🎬"));
+            titleView.setText(MiogramLocale.get("Надіслати як відео", "Отправить как видео", "Send as video"));
             subtitleView.setText(info.platformName + MiogramLocale.get(" • Без водяного знаку у високій якості", " • Без водяного знака в высоком качестве", " • HD no-watermark"));
             badgeIcon.setImageResource(R.drawable.msg_video);
         }

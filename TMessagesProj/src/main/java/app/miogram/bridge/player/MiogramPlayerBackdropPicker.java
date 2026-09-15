@@ -152,7 +152,7 @@ public class MiogramPlayerBackdropPicker extends BaseFragment {
         });
         col.addView(clearBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 0, 0, 0, 8));
 
-        applyBtn = makeButton(context, MiogramLocale.get("Застосувати ✨", "Применить ✨", "Apply ✨"), false);
+        applyBtn = makeButton(context, MiogramLocale.get("Застосувати", "Применить", "Apply"), false);
         applyBtn.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
             if (stagedValid && MiogramPlayerPrefs.isCustomMediaValid(stagedPath)) {

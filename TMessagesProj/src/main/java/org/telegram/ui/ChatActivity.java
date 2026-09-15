@@ -3099,7 +3099,7 @@ public class ChatActivity extends BaseFragment implements
         migrated_to = arguments.getInt("migrated_to", 0);
         scrollToTopOnResume = arguments.getBoolean("scrollToTopOnResume", false);
         needRemovePreviousSameChatActivity = arguments.getBoolean("need_remove_previous_same_chat_activity", true);
-        noForwardQuote = arguments.getBoolean("forward_noquote", false);
+        noForwardQuote = arguments.getBoolean("forward_noquote", NaConfig.INSTANCE.getShowNoQuoteForward().Bool());
         noForwardCaption = arguments.getBoolean("forward_nocaption", false);
         justCreatedChat = arguments.getBoolean("just_created_chat", false);
         wallpaperRandomSeed = Utilities.random.nextLong();
@@ -4268,7 +4268,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                     createDeleteMessagesAlert(null, null);
                 } else if (id == forward) {
-                    noForwardQuote = id == nkbtn_forward_noquote;
+                    noForwardQuote = id == nkbtn_forward_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool();
                     noForwardCaption = id == nkbtn_forward_nocaption;
                     if (messagePreviewParams != null) {
                         messagePreviewParams.setHideForwardSendersName(noForwardQuote);
@@ -4335,7 +4335,7 @@ public class ChatActivity extends BaseFragment implements
                     if (BulletinFactory.canShowBulletin(ChatActivity.this)) {
                         BulletinFactory.of(ChatActivity.this).createSimpleBulletin(
                                 R.drawable.msg_saved,
-                                app.miogram.bridge.MiogramLocale.get("Додано в Канбан-нотатки 📋", "Добавлено в Канбан-заметки 📋", "Added to Kanban Notes 📋")
+                                app.miogram.bridge.MiogramLocale.get("Додано в Канбан-нотатки", "Добавлено в Канбан-заметки", "Added to Kanban Notes")
                         ).show();
                     }
                 } else if (id == save_to) {
@@ -5091,7 +5091,7 @@ public class ChatActivity extends BaseFragment implements
 
             // ==================== 2. SECONDARY (MORE) ITEMS ====================
             // 2.1 Back Button at the top of the secondary menu
-            chatMenuBackItem = headerItem.lazilyAddSubItem(chat_menu_back_to_primary, R.drawable.ic_ab_back, null, app.miogram.bridge.MiogramLocale.get("⬅ Назад", "⬅ Назад", "⬅ Back"), false, false);
+            chatMenuBackItem = headerItem.lazilyAddSubItem(chat_menu_back_to_primary, R.drawable.ic_ab_back, null, app.miogram.bridge.MiogramLocale.get("Назад", "Назад", "Back"), false, false);
             ActionBarMenuItem.Item secondaryBackGap = headerItem.lazilyAddColoredGap();
             chatMenuSecondaryItems.add(secondaryBackGap);
 
@@ -5232,7 +5232,7 @@ public class ChatActivity extends BaseFragment implements
             // 2.13 Add Shortcut & Kanban Board
             if (currentUser != null && currentUser.self && getDialogId() != UserObject.VERIFY) {
                 chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(add_shortcut, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut)));
-                chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_open_kanban, R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Канбан-дошка 📋", "Канбан-доска 📋", "Kanban Board 📋")));
+                chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_open_kanban, R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Канбан-дошка", "Канбан-доска", "Kanban Board")));
             }
 
             // 2.14 Split Screen (Multi-Chat)
@@ -8987,7 +8987,7 @@ public class ChatActivity extends BaseFragment implements
             });
         }
         actionsButtonsLayout.setForwardButtonOnClickListener(v -> {
-            noForwardQuote = false;
+            noForwardQuote = NaConfig.INSTANCE.getShowNoQuoteForward().Bool();
             noForwardCaption = false;
             openForward(false);
         });
@@ -9382,6 +9382,12 @@ public class ChatActivity extends BaseFragment implements
         bottomChannelButtonsLayout.getContainer().addView(bottomOverlayChatText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0));
         bottomOverlayChatText.setOnClickListener(view -> {
             if (getParentActivity() == null || pullingDownOffset != 0) {
+                return;
+            }
+            // Admin reopen for a closed forum thread.
+            if (isThreadChat() && forumTopic != null && forumTopic.closed
+                    && currentChat != null && ChatObject.canManageTopic(currentAccount, currentChat, forumTopic)) {
+                getMessagesController().getTopicsController().toggleCloseTopic(currentChat.id, forumTopic.id, false);
                 return;
             }
             if (chatMode == MODE_SAVED) {
@@ -11375,7 +11381,7 @@ public class ChatActivity extends BaseFragment implements
         actionModeOtherItem.addSubItem(nkbtn_unpin, R.drawable.msg_unpin, LocaleController.getString(R.string.UnpinMessage));
         if (!noforward) {
             actionModeOtherItem.addSubItem(nkbtn_savemessage, R.drawable.menu_saved, LocaleController.getString(R.string.AddToSavedMessages));
-            actionModeOtherItem.addSubItem(miogram_add_to_kanban, R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Додати в Канбан 📋", "Добавить в Канбан 📋", "Add to Kanban 📋"));
+            actionModeOtherItem.addSubItem(miogram_add_to_kanban, R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Додати в Канбан", "Добавить в Канбан", "Add to Kanban"));
             if (canSendMessages) actionModeOtherItem.addSubItem(nkbtn_repeat, R.drawable.msg_repeat, LocaleController.getString(R.string.Repeat));
         }
         if (canSendMessages) {
@@ -29778,6 +29784,11 @@ public class ChatActivity extends BaseFragment implements
                         lock.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayText), PorterDuff.Mode.MULTIPLY));
                         bottomOverlayChatText.setTextInfo(lock, LocaleController.getString(R.string.TopicClosedByAdmin));
                         bottomOverlayChatText.setEnabled(false);
+                    } else {
+                        // Admin in a closed thread: explicit reopen button instead of
+                        // a stale leftover (it used to blink and vanish here).
+                        bottomOverlayChatText.setText(LocaleController.getString(R.string.RestartTopic), true);
+                        bottomOverlayChatText.setEnabled(true);
                     }
                     showBottomOverlayProgress(false, false);
                 }
@@ -33026,7 +33037,7 @@ public class ChatActivity extends BaseFragment implements
 
             // Miogram Cloud Vault: Save to Cloud option
             if (message != null && (message.messageOwner != null && message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) || message.getDocument() != null || message.isPhoto() || message.isVideo() || message.isMusic() || message.isVoice() || message.isRoundVideo())) {
-                items.add(app.miogram.bridge.MiogramLocale.get("Зберегти в хмару ☁️", "Сохранить в облако ☁️", "Save to Cloud Vault ☁️"));
+                items.add(app.miogram.bridge.MiogramLocale.get("Зберегти в хмару", "Сохранить в облако", "Save to Cloud Vault"));
                 options.add(OPTION_SAVE_TO_VAULT);
                 icons.add(R.drawable.cloud);
             }
@@ -33035,7 +33046,7 @@ public class ChatActivity extends BaseFragment implements
             if (message != null && message.getDocument() != null) {
                 String dName = FileLoader.getDocumentFileName(message.getDocument());
                 if (dName != null && dName.toLowerCase(java.util.Locale.ROOT).endsWith(".py")) {
-                    items.add("🪐 " + app.miogram.bridge.MiogramLocale.get("Встановити в Heroku Userbot", "Установить в Heroku Userbot", "Install to Heroku Userbot"));
+                    items.add(app.miogram.bridge.MiogramLocale.get("Встановити в Heroku Userbot", "Установить в Heroku Userbot", "Install to Heroku Userbot"));
                     options.add(OPTION_INSTALL_USERBOT_MODULE);
                     icons.add(R.drawable.msg_settings_old);
                 }
@@ -35679,7 +35690,7 @@ public class ChatActivity extends BaseFragment implements
                     selectedObjectGroup = null;
                     return;
                 }
-                noForwardQuote = false;
+                noForwardQuote = NaConfig.INSTANCE.getShowNoQuoteForward().Bool();
                 noForwardCaption = false;
                 if (messagePreviewParams != null) {
                     messagePreviewParams.setHideForwardSendersName(noForwardQuote);
@@ -36904,7 +36915,7 @@ public class ChatActivity extends BaseFragment implements
             if (ok) {
                 BulletinFactory.of(ChatActivity.this).createSimpleBulletin(
                         R.drawable.msg_settings_old,
-                        app.miogram.bridge.MiogramLocale.get("🪐 Модуль " + fileName + " встановлено в Heroku Userbot!", "🪐 Модуль " + fileName + " установлен в Heroku Userbot!", "🪐 Module " + fileName + " installed to Heroku Userbot!")
+                        app.miogram.bridge.MiogramLocale.get("Модуль " + fileName + " встановлено в Heroku Userbot!", "Модуль " + fileName + " установлен в Heroku Userbot!", "Module " + fileName + " installed to Heroku Userbot!")
                 ).show();
             } else {
                 BulletinFactory.of(ChatActivity.this).createErrorBulletin(
@@ -38608,7 +38619,7 @@ public class ChatActivity extends BaseFragment implements
                     }
                     final int guid2 = ++commentMessagesLoadingGuid;
                     commentMessagesRequestId = getConnectionsManager().sendRequest(getReplies, (response2, error2) -> {
-                        AndroidUtilities.runOnUIThread(() -> doOnIdle(() -> {
+                        AndroidUtilities.runOnUIThread(() -> {
                             if (guid2 != commentMessagesLoadingGuid) {
                                 return;
                             }
@@ -38626,14 +38637,14 @@ public class ChatActivity extends BaseFragment implements
                                 savedNoHistory = true;
                             }
                             processLoadedDiscussionMessage(savedNoDiscussion, savedDiscussionMessage, savedNoHistory, savedHistory, maxReadId1, fallbackMessage, req, chat, highlightMsgId, originalMessage);
-                        }));
+                        });
                     });
                 } else {
                     savedNoHistory = true;
                     processLoadedDiscussionMessage(savedNoDiscussion, savedDiscussionMessage, savedNoHistory, savedHistory, maxReadId1, fallbackMessage, req, chat, highlightMsgId, originalMessage);
                 }
             };
-            AndroidUtilities.runOnUIThread(() -> doOnIdle(runnable));
+            AndroidUtilities.runOnUIThread(runnable);
         });
         getConnectionsManager().bindRequestToGuid(commentRequestId, classGuid);
     }
@@ -48005,7 +48016,7 @@ public class ChatActivity extends BaseFragment implements
         // from ActionBar & Header ( without text_* )
         // should hide shit action bar after done
         if (id == nkbtn_forward_noquote || id == nkbtn_forward_nocaption) {
-            noForwardQuote = id == nkbtn_forward_noquote;
+            noForwardQuote = id == nkbtn_forward_noquote || NaConfig.INSTANCE.getShowNoQuoteForward().Bool();
             noForwardCaption = id == nkbtn_forward_nocaption;
             if (messagePreviewParams != null) {
                 messagePreviewParams.setHideForwardSendersName(noForwardQuote);
@@ -48191,21 +48202,14 @@ public class ChatActivity extends BaseFragment implements
                 break;
             }
             case nkbtn_forward_noquote: {
-                MessageObject targetMsg = selectedObject;
-                if (targetMsg == null) {
-                    for (int a = 0; a < 2; a++) {
-                        if (selectedMessagesIds[a] != null && selectedMessagesIds[a].size() > 0 && messagesDict[a] != null) {
-                            targetMsg = messagesDict[a].get(selectedMessagesIds[a].keyAt(0));
-                            if (targetMsg != null) break;
-                        }
-                    }
+                noForwardQuote = true;
+                noForwardCaption = false;
+                if (messagePreviewParams != null) {
+                    messagePreviewParams.setHideForwardSendersName(noForwardQuote);
+                    messagePreviewParams.hideCaption = noForwardCaption;
                 }
-                if (targetMsg != null) {
-                    showFieldPanelForReply(targetMsg);
-                    hideActionMode();
-                    clearSelectionMode();
-                    break;
-                }
+                forwardingMessage = selectedObject;
+                forwardingMessageGroup = selectedObjectGroup;
                 openForward(false);
                 break;
             }
@@ -50847,7 +50851,7 @@ public class ChatActivity extends BaseFragment implements
                     } else if (!selectedObject.isVideo() && selectedObject.getDocument() != null && !selectedObject.isVoiceOnce() && !selectedObject.isRoundOnce()) {
                         String docName = FileLoader.getDocumentFileName(selectedObject.getDocument());
                         if (docName != null && docName.toLowerCase(java.util.Locale.ROOT).endsWith(".py")) {
-                            items.add("🪐 " + app.miogram.bridge.MiogramLocale.get("Встановити в Heroku Userbot", "Установить в Heroku Userbot", "Install to Heroku Userbot"));
+                            items.add(app.miogram.bridge.MiogramLocale.get("Встановити в Heroku Userbot", "Установить в Heroku Userbot", "Install to Heroku Userbot"));
                             options.add(OPTION_INSTALL_USERBOT_MODULE);
                             icons.add(R.drawable.msg_settings_old);
                         }

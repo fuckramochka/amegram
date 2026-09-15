@@ -180,7 +180,7 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
             String steamId = sm.getLinkedSteamId();
             String warn = sm.getStaleWarning();
             desc.setText(MiogramLocale.get("Прив'язаний ID: ", "Привязанный ID: ", "Linked ID: ") + steamId
-                    + (warn != null ? " • ⚠ " + warn : ""));
+                    + (warn != null ? " • " + warn : ""));
         } else {
             desc.setText(MiogramLocale.get("Трансляція ігор, статистика та статус", "Трансляция игр, статистика и статус", "Live game broadcasts, stats & status"));
         }
@@ -369,7 +369,7 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
         desc.setSingleLine(true);
         desc.setEllipsize(TextUtils.TruncateAt.END);
         if (spm.isPlaying()) {
-            desc.setText("🟢 " + spm.getCurrentTrack() + " — " + spm.getCurrentArtist());
+            desc.setText(spm.getCurrentTrack() + " — " + spm.getCurrentArtist());
         } else if (!TextUtils.isEmpty(linkedUser)) {
             desc.setText("@" + linkedUser + " • " + MiogramLocale.get("Акаунт підключено", "Аккаунт подключен", "Account linked"));
         } else if (spm.isBridgeEnabled()) {

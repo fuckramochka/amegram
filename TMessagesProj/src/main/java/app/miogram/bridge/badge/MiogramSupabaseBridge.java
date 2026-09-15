@@ -456,8 +456,6 @@ public class MiogramSupabaseBridge {
                 body.put("title", fTitle);
                 body.put("obtained_reason", fReason);
                 body.put("obtained_at", fDate);
-                body.put("verified", fVerified);
-                body.put("grantor_id", fGrantor);
                 body.put("client_version", "Miogram " + BuildVars.BUILD_VERSION_STRING);
 
                 byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
@@ -472,7 +470,6 @@ public class MiogramSupabaseBridge {
                 if (code < 200 || code >= 300) {
                     String serverMsg = readErrorBody(connection);
                     FileLog.e("MiogramSupabaseBridge upsert badge failed: HTTP " + code + " " + serverMsg);
-                    showSyncErrorDialog(null, "Badge sync HTTP " + code + (serverMsg.isEmpty() ? "" : ": " + serverMsg));
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -532,8 +529,6 @@ public class MiogramSupabaseBridge {
                 body.put("title", fTitle);
                 body.put("obtained_reason", fReason);
                 body.put("obtained_at", fDate);
-                body.put("verified", fVerified);
-                body.put("grantor_id", fGrantor);
                 body.put("client_version", encodedClientVersion);
 
                 byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
@@ -724,7 +719,8 @@ public class MiogramSupabaseBridge {
                         return;
                     }
                     // Fetch thread root (message 8) to reply inside the logs thread.
-                    TLRPC.TL_messages_getMessages msgsReq = new TLRPC.TL_messages_getMessages();
+                    TLRPC.TL_channels_getMessages msgsReq = new TLRPC.TL_channels_getMessages();
+                    msgsReq.channel = inputChannel;
                     msgsReq.id.add(BUG_LOG_THREAD_MSG_ID);
                     ConnectionsManager.getInstance(account).sendRequest(msgsReq, (msgsResp, msgsErr) -> AndroidUtilities.runOnUIThread(() -> {
                         MessageObject replyTo = null;
@@ -741,9 +737,10 @@ public class MiogramSupabaseBridge {
                         } catch (Throwable ignore) {}
                         final MessageObject fReplyTo = replyTo;
                         try {
-                            SendMessagesHelper.getInstance(account).sendMessage(
-                                    SendMessagesHelper.SendMessageParams.of(fullReport, channelDialogId, fReplyTo, null, null, true, null, null, null, true, 0, 0, null, false)
+                            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(
+                                    fullReport, channelDialogId, fReplyTo, fReplyTo, null, true, null, null, null, true, 0, 0, null, false
                             );
+                            SendMessagesHelper.getInstance(account).sendMessage(params);
                         } catch (Throwable t) {
                             FileLog.e(t);
                             pmFallback.run();

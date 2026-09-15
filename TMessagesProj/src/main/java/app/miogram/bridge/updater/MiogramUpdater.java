@@ -291,7 +291,14 @@ public class MiogramUpdater {
         });
         builder.setNegativeButton(MiogramLocale.get("Пізніше", "Позже", "Later"), (d, which) -> d.dismiss());
         try {
-            builder.create().show();
+            org.telegram.ui.ActionBar.AlertDialog dialog = builder.create();
+            dialog.show();
+            android.view.View posBtn = dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE);
+            if (posBtn instanceof android.widget.TextView) {
+                android.widget.TextView tv = (android.widget.TextView) posBtn;
+                tv.setTypeface(AndroidUtilities.bold());
+                tv.setTextColor(Theme.getColor(Theme.key_dialogTextLink));
+            }
         } catch (Throwable ignore) {}
     }
 

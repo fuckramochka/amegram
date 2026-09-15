@@ -68,7 +68,7 @@ public class MiogramSourceSelectAlert extends BottomSheet {
                 "Genius",
                 MiogramLocale.get("YouTube (опис ролика)", "YouTube (описание ролика)", "YouTube (Description)"),
                 MiogramLocale.get("ШІ зі звуку", "ИИ со слуха", "AI by ear"),
-                MiogramLocale.get("✨ ШІ по словах", "✨ ИИ по словам", "✨ AI word-timed")
+                MiogramLocale.get("ШІ по словах", "ИИ по словам", "AI word-timed")
         };
 
         radioButtons = new RadioButton[sources.length];
@@ -212,7 +212,7 @@ public class MiogramSourceSelectAlert extends BottomSheet {
             case MiogramLyricsEngine.SOURCE_AI:
                 return MiogramLocale.get("ШІ зі звуку", "ИИ со слуха", "AI by ear");
             case MiogramLyricsEngine.SOURCE_AI_WORD:
-                return MiogramLocale.get("✨ ШІ по словах", "✨ ИИ по словам", "✨ AI word-timed");
+                return MiogramLocale.get("ШІ по словах", "ИИ по словам", "AI word-timed");
             case MiogramLyricsEngine.SOURCE_AUTO:
             default:
                 return MiogramLocale.get("Автоматично", "Автоматически", "Automatic");

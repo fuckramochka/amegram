@@ -73,7 +73,7 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
 
         // 2. Title & Subtitle
         TextView titleView = new TextView(context);
-        titleView.setText(MiogramLocale.get("Кастомізація плеєра ✏️", "Кастомизация плеера ✏️", "Player Customization ✏️"));
+        titleView.setText(MiogramLocale.get("Кастомізація плеєра", "Кастомизация плеера", "Player Customization"));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(textColor);
@@ -426,7 +426,7 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
 
         // Done Button
         TextView doneBtn = new TextView(context);
-        doneBtn.setText(MiogramLocale.get("Готово ✨", "Готово ✨", "Done ✨"));
+        doneBtn.setText(MiogramLocale.get("Готово", "Готово", "Done"));
         doneBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         doneBtn.setTextColor(0xFFFFFFFF);
         doneBtn.setTypeface(AndroidUtilities.bold());

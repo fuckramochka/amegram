@@ -1350,22 +1350,36 @@ public class MiogramCompanionToolbox {
         try {
             MessagesController mc = MessagesController.getInstance(account);
             if (mc == null) return null;
-            if (dialogId > 0) {
-                if (dialogId == UserConfig.getInstance(account).getClientUserId()) {
-                    return new TLRPC.TL_inputPeerSelf();
-                }
-                TLRPC.User u = mc.getUser(dialogId);
-                if (u == null || u.access_hash == 0) return null;
-                TLRPC.TL_inputPeerUser peer = new TLRPC.TL_inputPeerUser();
-                peer.user_id = dialogId;
-                peer.access_hash = u.access_hash;
-                return peer;
-            } else {
-                TLRPC.Chat c = mc.getChat(-dialogId);
-                if (c == null) return null;
-                if (org.telegram.messenger.ChatObject.isChannel(c) && c.access_hash == 0) return null;
-                return MessagesController.getInputPeer(c);
+            if (dialogId == UserConfig.getInstance(account).getClientUserId()) {
+                return new TLRPC.TL_inputPeerSelf();
             }
+            TLRPC.InputPeer inputPeer = mc.getInputPeer(dialogId);
+            if (inputPeer != null && !(inputPeer instanceof TLRPC.TL_inputPeerEmpty)) {
+                if (inputPeer instanceof TLRPC.TL_inputPeerUser) {
+                    if (((TLRPC.TL_inputPeerUser) inputPeer).access_hash != 0) return inputPeer;
+                } else if (inputPeer instanceof TLRPC.TL_inputPeerChannel) {
+                    if (((TLRPC.TL_inputPeerChannel) inputPeer).access_hash != 0) return inputPeer;
+                } else {
+                    return inputPeer;
+                }
+            }
+            MessagesStorage ms = MessagesStorage.getInstance(account);
+            if (ms != null) {
+                if (dialogId > 0) {
+                    TLRPC.User u = ms.getUserSync(dialogId);
+                    if (u != null && u.access_hash != 0) {
+                        mc.putUser(u, true);
+                        return mc.getInputPeer(dialogId);
+                    }
+                } else {
+                    TLRPC.Chat c = ms.getChatSync(-dialogId);
+                    if (c != null) {
+                        mc.putChat(c, true);
+                        return mc.getInputPeer(dialogId);
+                    }
+                }
+            }
+            return inputPeer;
         } catch (Throwable ignore) {
             return null;
         }
@@ -1947,7 +1961,18 @@ public class MiogramCompanionToolbox {
                             }
                             callback.run(sb.toString());
                         } else {
-                            callback.run(MiogramLocale.get("Не вдалося завантажити повідомлення: ", "Не удалось загрузить сообщения: ", "Failed to load messages: ") + (error != null ? error.text : MiogramLocale.get("помилка запиту", "ошибка запроса", "request error")));
+                            MessagesController mc = MessagesController.getInstance(account);
+                            MessageObject topMsg = mc != null ? mc.dialogMessage.get(res.dialogId) : null;
+                            if (topMsg != null && topMsg.messageOwner != null) {
+                                String chatTitle = fc != null ? fc.getReference() : String.valueOf(res.dialogId);
+                                String text = topMsg.messageText != null ? topMsg.messageText.toString() : "";
+                                callback.run(MiogramLocale.get("Останнє повідомлення з кешу «", "Последнее сообщение из кэша «", "Latest cached message from \"")
+                                        + chatTitle + "»:\n• " + text);
+                            } else {
+                                callback.run(MiogramLocale.get("Не вдалося завантажити повідомлення: ", "Не удалось загрузить сообщения: ", "Failed to load messages: ")
+                                        + (error != null ? error.text : MiogramLocale.get("помилка запиту", "ошибка запроса", "request error")) + ". "
+                                        + MiogramLocale.get("Відкрий цей чат у списку діалогів, щоб оновити кеш.", "Открой этот чат в списке диалогов, чтобы обновить кэш.", "Open this chat in the dialog list to refresh cache."));
+                            }
                         }
                     }));
                     return;

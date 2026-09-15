@@ -263,7 +263,7 @@ public class MiogramHerokuBotSetupDialog extends BottomSheet {
         verifyBtnText.setText(MiogramLocale.get("Перевірка токена...", "Проверка токена...", "Verifying token..."));
         statusText.setVisibility(View.GONE);
 
-        MiogramHerokuManager.getInstance().verifyAndSetBotToken(token, (success, username, name, supportsInline, error) -> {
+        MiogramHerokuManager.getInstance().verifyBotToken(token, (success, username, name, id, canJoinGroups, supportsInline, error) -> {
             isVerifying = false;
             statusText.setVisibility(View.VISIBLE);
             verifyBtnText.setText(MiogramLocale.get("Перевірити та зберегти токен", "Проверить и сохранить токен", "Verify & Save Token"));

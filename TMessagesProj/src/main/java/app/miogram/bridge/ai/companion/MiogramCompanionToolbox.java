@@ -10,6 +10,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.MessagesStorage;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.NotificationsController;
 import org.telegram.messenger.SendMessagesHelper;
@@ -1962,7 +1963,11 @@ public class MiogramCompanionToolbox {
                             callback.run(sb.toString());
                         } else {
                             MessagesController mc = MessagesController.getInstance(account);
-                            MessageObject topMsg = mc != null ? mc.dialogMessage.get(res.dialogId) : null;
+                            MessageObject topMsg = null;
+                            if (mc != null) {
+                                ArrayList<MessageObject> cached = mc.dialogMessage.get(res.dialogId);
+                                if (cached != null && !cached.isEmpty()) topMsg = cached.get(0);
+                            }
                             if (topMsg != null && topMsg.messageOwner != null) {
                                 String chatTitle = fc != null ? fc.getReference() : String.valueOf(res.dialogId);
                                 String text = topMsg.messageText != null ? topMsg.messageText.toString() : "";

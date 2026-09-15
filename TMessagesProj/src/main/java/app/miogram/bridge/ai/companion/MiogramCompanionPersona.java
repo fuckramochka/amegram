@@ -53,6 +53,7 @@ public class MiogramCompanionPersona {
 
         sb.append("### TOOLS & ACTIONS (call ONLY on explicit request):\n");
         sb.append("Format: [ACTION: tool_name | {\"param\": \"value\"}] — or just reply directly ([MOOD: ...] on first line) when chatting.\n");
+        sb.append("IDs: every chat list shows [id: ...] — always copy that exact number into chat_id. Never invent or shorten ids.\n");
         sb.append("1. `find_chat(query)` - Search dialogs and contacts by name or query.\n");
         sb.append("2. `search_groups(query)` - Search P-chan's Telegram groups and supergroups.\n");
         sb.append("3. `search_messages(query, chat_query)` - Search message text in chat or globally.\n");

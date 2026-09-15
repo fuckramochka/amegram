@@ -1380,10 +1380,24 @@ public class MiogramCompanionToolbox {
                     }
                 }
             }
-            return inputPeer;
+            // Never hand out an unusable peer: callers treat null as "unreachable"
+            // and show a friendly hint instead of raw PEER_ID_INVALID.
+            return isUsablePeer(inputPeer) ? inputPeer : null;
         } catch (Throwable ignore) {
             return null;
         }
+    }
+
+    private static boolean isUsablePeer(TLRPC.InputPeer peer) {
+        if (peer == null || peer instanceof TLRPC.TL_inputPeerEmpty) return false;
+        if (peer instanceof TLRPC.TL_inputPeerUser && ((TLRPC.TL_inputPeerUser) peer).access_hash == 0) return false;
+        if (peer instanceof TLRPC.TL_inputPeerChannel && ((TLRPC.TL_inputPeerChannel) peer).access_hash == 0) return false;
+        return true;
+    }
+
+    /** Raw server code must never reach P-chan — map it to the friendly hint. */
+    private static boolean isPeerIdInvalid(TLRPC.TL_error error) {
+        return error != null && error.text != null && error.text.contains("PEER_ID_INVALID");
     }
 
     public static String peerUnreachableText() {
@@ -1774,7 +1788,11 @@ public class MiogramCompanionToolbox {
                                     callback.run(sb.toString());
                                 }
                             } else {
-                                callback.run(MiogramLocale.get("Помилка пошуку в чаті: ", "Ошибка поиска в чате: ", "Chat search error: ") + (error != null ? error.text : MiogramLocale.get("невідома помилка", "неизвестная ошибка", "unknown error")));
+                                if (isPeerIdInvalid(error)) {
+                                    callback.run(peerUnreachableText());
+                                } else {
+                                    callback.run(MiogramLocale.get("Помилка пошуку в чаті: ", "Ошибка поиска в чате: ", "Chat search error: ") + (error != null ? error.text : MiogramLocale.get("невідома помилка", "неизвестная ошибка", "unknown error")));
+                                }
                             }
                         }));
                         return;
@@ -1973,6 +1991,8 @@ public class MiogramCompanionToolbox {
                                 String text = topMsg.messageText != null ? topMsg.messageText.toString() : "";
                                 callback.run(MiogramLocale.get("Останнє повідомлення з кешу «", "Последнее сообщение из кэша «", "Latest cached message from \"")
                                         + chatTitle + "»:\n• " + text);
+                            } else if (isPeerIdInvalid(error)) {
+                                callback.run(peerUnreachableText());
                             } else {
                                 callback.run(MiogramLocale.get("Не вдалося завантажити повідомлення: ", "Не удалось загрузить сообщения: ", "Failed to load messages: ")
                                         + (error != null ? error.text : MiogramLocale.get("помилка запиту", "ошибка запроса", "request error")) + ". "

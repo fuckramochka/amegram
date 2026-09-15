@@ -147,10 +147,18 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
     @Override
     public void didReceivedNotification(int id, int account, Object... args) {
         if (id == NotificationCenter.proxySettingsChanged || id == NotificationCenter.didUpdateConnectionState || id == NotificationCenter.proxyCheckDone) {
-            if (listView != null && listView.getAdapter() != null) {
-                updateRows();
-                listView.getAdapter().notifyDataSetChanged();
-            }
+            if (listView == null || listView.getAdapter() == null) return;
+            // Connection state broadcasts arrive on the main thread and can hit us
+            // mid-layout/scroll -> notifyDataSetChanged() would throw IllegalStateException.
+            // Post to the next frame so RecyclerView finishes computing layout first.
+            listView.post(() -> {
+                if (listView == null || listView.getAdapter() == null) return;
+                if (getParentActivity() == null) return;
+                try {
+                    updateRows();
+                    listView.getAdapter().notifyDataSetChanged();
+                } catch (Throwable ignore) {}
+            });
         }
     }
 

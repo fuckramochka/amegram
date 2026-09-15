@@ -6,6 +6,7 @@ import android.content.SharedPreferences;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
 import java.nio.charset.StandardCharsets;
@@ -137,6 +138,38 @@ public class MiogramDoubleBottomManager {
     public static boolean hasAllowedDialogs(int account) {
         Set<String> set = getPrefs().getStringSet(PREF_ALLOWED_PREFIX + account, null);
         return set != null && !set.isEmpty();
+    }
+
+    /** True if at least one activated account has protected chats configured. */
+    public static boolean hasAnyAllowedDialogs() {
+        try {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                try {
+                    if (UserConfig.getInstance(a).isClientActivated() && hasAllowedDialogs(a)) {
+                        return true;
+                    }
+                } catch (Throwable ignore) {}
+            }
+        } catch (Throwable ignore) {}
+        return false;
+    }
+
+    /**
+     * Accounts invisible in the switcher while duress is active.
+     * With a decoy: everything except the decoy. Without a decoy:
+     * accounts with no protected chats (pure main-storage accounts),
+     * but only when at least one account is actually configured —
+     * otherwise the switcher would go (confusingly) empty.
+     */
+    public static boolean isAccountHiddenInDuress(int account) {
+        if (!isDuressActive) {
+            return false;
+        }
+        int decoy = getDecoyAccount();
+        if (decoy >= 0) {
+            return account != decoy;
+        }
+        return hasAnyAllowedDialogs() && !hasAllowedDialogs(account);
     }
 
     public static boolean isChatAllowed(int account, long dialogId) {

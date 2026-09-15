@@ -60,6 +60,8 @@ public final class PluginsConstants {
     public static final String PLUGIN_EXT_PY = ".py";
     public static final String PLUGIN_EXT_ELYX = ".elyx";
     public static final String PLUGIN_EXT_EAF = ".eaf";
+    /** Lua-скрипты кузни/Аме: выполняются как текстовые фильтры юзербота, в списке видны всегда. */
+    public static final String PLUGIN_EXT_LUA = ".lua";
 
     /** Версия нашего Python SDK. Своя линейка, к 1.4.5.0 из exteraGram отношения не имеет. */
     /**

@@ -486,6 +486,16 @@ public class MiogramSupabaseBridge {
         });
     }
 
+    /**
+     * Pushes presence snapshot without touching badge identity.
+     *
+     * Badge columns (badge_id/title/reason/active) are owned exclusively by
+     * explicit opt-in ({@link #setSyncEnabledForAccount}) and founder grants
+     * ({@link #grantBadgeToUser}). Older builds upserted the whole row here,
+     * which reset real badges to "original" on every fresh start (empty cache
+     * race) and minted active badge rows for users who never opted in.
+     * PATCH touches only client_version: no row creation, no clobbering.
+     */
     public static void syncPresenceToCloud(long userId, app.miogram.bridge.presence.MiogramCloudPresence presence, Runnable onComplete) {
         if (userId <= 0 || presence == null) {
             if (onComplete != null) onComplete.run();
@@ -494,41 +504,23 @@ public class MiogramSupabaseBridge {
 
         app.miogram.bridge.presence.MiogramCloudPresence.putPresence(userId, presence);
 
-        final BadgeRecord record;
-        synchronized (badgeCache) {
-            record = badgeCache.get(userId);
-        }
-        final String fBadge = record != null ? record.badgeIdString : "original";
-        final String fTitle = record != null && record.title != null ? record.title : fallbackTitle(userId == MiogramBadgeManager.FOUNDER_USER_ID);
-        final String fReason = record != null && record.obtainedReason != null ? record.obtainedReason : fallbackReason(userId == MiogramBadgeManager.FOUNDER_USER_ID);
-        final String fDate = normalizeCloudDate(record != null ? record.obtainedAt : null);
-        final boolean fActive = record != null ? record.isActive : true;
-        final boolean fVerified = record != null && record.verified;
-        final long fGrantor = record != null ? record.grantorId : 0;
         final String encodedClientVersion = app.miogram.bridge.presence.MiogramCloudPresence.encodeClientVersion(presence);
 
         Utilities.globalQueue.postRunnable(() -> {
             HttpURLConnection connection = null;
             try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?on_conflict=user_id";
+                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + userId;
                 URL url = new URL(endpoint);
                 connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
+                connection.setRequestMethod("PATCH");
                 connection.setDoOutput(true);
                 connection.setConnectTimeout(8000);
                 connection.setReadTimeout(8000);
                 connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
                 connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Prefer", "resolution=merge-duplicates");
 
                 JSONObject body = new JSONObject();
-                body.put("user_id", userId);
-                body.put("badge_id", fBadge);
-                body.put("is_active", fActive);
-                body.put("title", fTitle);
-                body.put("obtained_reason", fReason);
-                body.put("obtained_at", fDate);
                 body.put("client_version", encodedClientVersion);
 
                 byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);

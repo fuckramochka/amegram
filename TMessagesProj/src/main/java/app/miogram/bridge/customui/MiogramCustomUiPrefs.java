@@ -579,7 +579,7 @@ public class MiogramCustomUiPrefs {
         setInt(KEY_AVATAR_RING_WIDTH, width);
     }
     public static boolean isAvatarRingPulse() {
-        return getBool(KEY_AVATAR_RING_PULSE, true);
+        return getBool(KEY_AVATAR_RING_PULSE, false);
     }
     public static void setAvatarRingPulse(boolean pulse) {
         setBool(KEY_AVATAR_RING_PULSE, pulse);
@@ -665,7 +665,7 @@ public class MiogramCustomUiPrefs {
     // 5. BANNER (HEADER)
     // =========================================================================
     public static boolean isBannerEnabled() {
-        return getBool(KEY_BANNER_ENABLED, true);
+        return getBool(KEY_BANNER_ENABLED, false);
     }
     public static void setBannerEnabled(boolean enabled) {
         setBool(KEY_BANNER_ENABLED, enabled);
@@ -707,7 +707,7 @@ public class MiogramCustomUiPrefs {
         setInt(KEY_BANNER_BLEND_RADIUS, radius);
     }
     public static boolean isShowEmoji() {
-        return getBool(KEY_SHOW_EMOJI, true);
+        return getBool(KEY_SHOW_EMOJI, false);
     }
     public static void setShowEmoji(boolean show) {
         setBool(KEY_SHOW_EMOJI, show);
@@ -863,7 +863,7 @@ public class MiogramCustomUiPrefs {
         setInt(KEY_THOUGHT_SHADOW_DY, dy);
     }
     public static boolean isThoughtFontCopy() {
-        return getBool(KEY_THOUGHT_FONT_COPY, true);
+        return getBool(KEY_THOUGHT_FONT_COPY, false);
     }
     public static void setThoughtFontCopy(boolean copy) {
         setBool(KEY_THOUGHT_FONT_COPY, copy);
@@ -952,7 +952,7 @@ public class MiogramCustomUiPrefs {
     }
 
     public static boolean isHideDialogMuteIcon() {
-        return getBool(KEY_HIDE_DIALOG_MUTE_ICON, true);
+        return getBool(KEY_HIDE_DIALOG_MUTE_ICON, false);
     }
 
     public static void setHideDialogMuteIcon(boolean hide) {
@@ -999,7 +999,7 @@ public class MiogramCustomUiPrefs {
     }
 
     public static boolean isHapticEnabled() {
-        return getBool(KEY_UI_HAPTIC, true);
+        return getBool(KEY_UI_HAPTIC, false);
     }
     public static void setHapticEnabled(boolean enabled) {
         setBool(KEY_UI_HAPTIC, enabled);

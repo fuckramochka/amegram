@@ -85,9 +85,9 @@ public class GraySectionCell extends FrameLayout implements Theme.Colorable {
 
     public void updateColors() {
         if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
-            setBackgroundColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_CHANNELS_BG);
-            textView.setTextColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_TEXT_MUTED);
-            rightTextView.setTextColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_TEXT_MUTED);
+            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            rightTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             textView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 12);
             textView.setAllCaps(true);
         } else {

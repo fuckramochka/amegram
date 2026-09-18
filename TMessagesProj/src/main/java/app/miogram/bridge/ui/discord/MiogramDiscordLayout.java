@@ -68,23 +68,9 @@ public class MiogramDiscordLayout {
     public static final int UI_MODE_TELEGRAM = 0;
     public static final int UI_MODE_DISCORD = 1;
 
-    // Discord palette (official desktop values)
-    public static final int COLOR_RAIL_BG = 0xFF1E1F22;
-    public static final int COLOR_CHANNELS_BG = 0xFF2B2D31;
-    public static final int COLOR_CHAT_BG = 0xFF313338;
-    public static final int COLOR_BLURPLE = 0xFF5865F2;
-    public static final int COLOR_BLURPLE_DARK = 0xFF4752C4;
-    public static final int COLOR_TEXT_PRIMARY = 0xFFDBDEE1;
-    public static final int COLOR_TEXT_MUTED = 0xFF949BA4;
-    public static final int COLOR_ONLINE_GREEN = 0xFF23A55A;
-    public static final int COLOR_BADGE_RED = 0xFFF23F43;
-    public static final int COLOR_HEADER_BG = 0xFF2B2D31;
-    public static final int COLOR_FOOTER_BG = 0xFF232428;
-    public static final int COLOR_CHANNEL_ACTIVE = 0xFF404249;
-    public static final int COLOR_SEPARATOR = 0xFF35363C;
-    public static final int COLOR_INPUT_BG = 0xFF383A40;
-    public static final int COLOR_ADD_BG = 0xFF313338;
-    public static final int COLOR_ADD_GLYPH = 0xFF23A55A;
+    // Layout roles resolve colors from the active theme (Theme.getColor).
+    // Presets change layout/size/shape; colors belong to the theme.
+    // (Former hardcoded Discord-desktop palette removed per that rule.)
 
     /** Layout contract shared with DialogsActivity — do not change without updating it. */
     public static final int RAIL_WIDTH_DP = 72;
@@ -206,7 +192,7 @@ public class MiogramDiscordLayout {
      * @param cy center Y of the row
      */
     public static void drawChannelIcon(Canvas canvas, float x, float cy, boolean unread, boolean selected) {
-        channelIconPaint.setColor(unread || selected ? 0xFFFFFFFF : COLOR_TEXT_MUTED);
+        channelIconPaint.setColor(unread || selected ? 0xFFFFFFFF : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         channelIconPaint.setStrokeWidth(AndroidUtilities.dp(2f));
         float size = AndroidUtilities.dp(9);
         // Two slanted verticals + two horizontals = Discord "#" glyph.
@@ -238,7 +224,7 @@ public class MiogramDiscordLayout {
     public static View createDiscordServerRail(Context context, OnServerSelectedListener listener) {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
-        root.setBackgroundColor(COLOR_RAIL_BG);
+        root.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         root.setLayoutParams(new ViewGroup.LayoutParams(AndroidUtilities.dp(RAIL_WIDTH_DP), ViewGroup.LayoutParams.MATCH_PARENT));
         // Keep the rail clear of the status bar instead of drawing icons under it.
         root.setPadding(0, Math.max(0, AndroidUtilities.statusBarHeight - AndroidUtilities.dp(4)), 0, AndroidUtilities.dp(8));
@@ -294,7 +280,7 @@ public class MiogramDiscordLayout {
         root.addView(aiItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(56), 0, 2, 0, 2));
 
         View sep = new View(context);
-        sep.setBackgroundColor(COLOR_SEPARATOR);
+        sep.setBackgroundColor(Theme.getColor(Theme.key_divider));
         root.addView(sep, LayoutHelper.createLinear(32, 2, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 6));
 
         // 2. Folders as "servers"
@@ -398,7 +384,7 @@ public class MiogramDiscordLayout {
         avatarBox.addView(userAvatar, LayoutHelper.createFrame(42, 42, Gravity.CENTER));
 
         View onlineDot = new View(context);
-        onlineDot.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(7), COLOR_ONLINE_GREEN));
+        onlineDot.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(7), Theme.getColor(Theme.key_chats_onlineCircle)));
         avatarBox.addView(onlineDot, LayoutHelper.createFrame(14, 14, Gravity.CENTER, 15, 15, 0, 0));
 
         avatarBox.setOnClickListener(v -> {
@@ -441,16 +427,16 @@ public class MiogramDiscordLayout {
     public static View createDiscordUserFooter(Context context) {
         LinearLayout wrapper = new LinearLayout(context);
         wrapper.setOrientation(LinearLayout.VERTICAL);
-        wrapper.setBackgroundColor(COLOR_FOOTER_BG);
+        wrapper.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         View topLine = new View(context);
-        topLine.setBackgroundColor(0xFF1E1F22);
+        topLine.setBackgroundColor(Theme.getColor(Theme.key_divider));
         wrapper.addView(topLine, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1));
 
         LinearLayout bar = new LinearLayout(context);
         bar.setOrientation(LinearLayout.HORIZONTAL);
         bar.setGravity(Gravity.CENTER_VERTICAL);
-        bar.setBackgroundColor(COLOR_FOOTER_BG);
+        bar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         bar.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(7), AndroidUtilities.dp(8), AndroidUtilities.dp(7));
         wrapper.addView(bar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, FOOTER_HEIGHT_DP - 1));
 
@@ -473,7 +459,7 @@ public class MiogramDiscordLayout {
         boolean muted = getPrefs().getBoolean(KEY_MIC_MUTED, false);
         boolean deafened = getPrefs().getBoolean(KEY_DEAFENED, false);
         dot.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6),
-                deafened ? COLOR_BADGE_RED : COLOR_ONLINE_GREEN));
+                deafened ? Theme.getColor(Theme.key_chats_unreadCounter) : Theme.getColor(Theme.key_chats_onlineCircle)));
         avatarBox.addView(dot, LayoutHelper.createFrame(11, 11, Gravity.CENTER, 11, 11, 0, 0));
         bar.addView(avatarBox, LayoutHelper.createLinear(36, 36, Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
 
@@ -487,14 +473,14 @@ public class MiogramDiscordLayout {
         nameView.setText(firstName);
         nameView.setTextSize(13);
         nameView.setTypeface(AndroidUtilities.bold());
-        nameView.setTextColor(COLOR_TEXT_PRIMARY);
+        nameView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         nameView.setSingleLine(true);
         nameView.setEllipsize(TextUtils.TruncateAt.END);
         textGroup.addView(nameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextView tagView = new TextView(context);
         tagView.setTextSize(11);
-        tagView.setTextColor(COLOR_TEXT_MUTED);
+        tagView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         tagView.setSingleLine(true);
         tagView.setEllipsize(TextUtils.TruncateAt.END);
         textGroup.addView(tagView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -515,7 +501,7 @@ public class MiogramDiscordLayout {
                 status = MiogramLocale.get("Онлайн", "Онлайн", "Online");
             }
             tagView.setText(status);
-            dot.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), d ? COLOR_BADGE_RED : COLOR_ONLINE_GREEN));
+            dot.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(6), d ? Theme.getColor(Theme.key_chats_unreadCounter) : Theme.getColor(Theme.key_chats_onlineCircle)));
         };
         refreshStatus.run();
 
@@ -631,12 +617,12 @@ public class MiogramDiscordLayout {
     public static View createDiscordChannelHeader(Context context, String title, Runnable onSearchClick) {
         LinearLayout wrapper = new LinearLayout(context);
         wrapper.setOrientation(LinearLayout.VERTICAL);
-        wrapper.setBackgroundColor(COLOR_HEADER_BG);
+        wrapper.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(LinearLayout.HORIZONTAL);
         header.setGravity(Gravity.CENTER_VERTICAL);
-        header.setBackgroundColor(COLOR_HEADER_BG);
+        header.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
         header.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         wrapper.addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, HEADER_HEIGHT_DP - 1));
 
@@ -646,7 +632,7 @@ public class MiogramDiscordLayout {
         TextView titleView = new TextView(context);
         titleView.setTag(TAG_HEADER_TITLE);
         titleView.setText(title != null && !title.isEmpty() ? title : MiogramLocale.get("Повідомлення", "Сообщения", "Messages"));
-        titleView.setTextColor(COLOR_TEXT_PRIMARY);
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         titleView.setTextSize(15);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setSingleLine(true);
@@ -664,7 +650,7 @@ public class MiogramDiscordLayout {
 
         android.widget.ImageView aiBtn = new android.widget.ImageView(context);
         aiBtn.setImageResource(org.telegram.messenger.R.drawable.baseline_stars_24);
-        aiBtn.setColorFilter(0xFFFF2A85);
+        aiBtn.setColorFilter(Theme.getColor(Theme.key_dialogTextLink));
         aiBtn.setScaleType(android.widget.ImageView.ScaleType.CENTER_INSIDE);
         aiBtn.setBackground(Theme.createSelectorDrawable(0x22FFFFFF, Theme.RIPPLE_MASK_CIRCLE_20DP));
         aiBtn.setContentDescription(MiogramLocale.get("ШІ Супутник (Ame / KAngel)", "ИИ Спутник (Ame / KAngel)", "AI Companion (Ame / KAngel)"));
@@ -681,7 +667,7 @@ public class MiogramDiscordLayout {
         header.addView(aiBtn, LayoutHelper.createLinear(34, 34, Gravity.CENTER_VERTICAL, 4, 0, 0, 0));
 
         View divider = new View(context);
-        divider.setBackgroundColor(0xFF1E1F22);
+        divider.setBackgroundColor(Theme.getColor(Theme.key_divider));
         wrapper.addView(divider, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1));
 
         return wrapper;
@@ -693,7 +679,7 @@ public class MiogramDiscordLayout {
 
         public HashGlyphView(Context context) {
             super(context);
-            paint.setColor(COLOR_TEXT_MUTED);
+            paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(AndroidUtilities.dp(2f));
             paint.setStrokeCap(Paint.Cap.ROUND);
@@ -762,16 +748,16 @@ public class MiogramDiscordLayout {
             avatarView.setRoundRadius(AndroidUtilities.dp(RADIUS_IDLE_DP));
             iconBox.addView(avatarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            letterBgIdle = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), COLOR_CHANNELS_BG);
-            letterBgActive = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_ACTIVE_DP), COLOR_BLURPLE);
-            homeBgIdle = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), COLOR_BLURPLE);
-            homeBgActive = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_ACTIVE_DP), COLOR_BLURPLE);
-            addBg = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), COLOR_ADD_BG);
+            letterBgIdle = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), Theme.getColor(Theme.key_windowBackgroundGray));
+            letterBgActive = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_ACTIVE_DP), Theme.getColor(Theme.key_dialogTextLink));
+            homeBgIdle = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), Theme.getColor(Theme.key_dialogTextLink));
+            homeBgActive = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_ACTIVE_DP), Theme.getColor(Theme.key_dialogTextLink));
+            addBg = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), Theme.getColor(Theme.key_windowBackgroundGray));
 
             letterBadge = new TextView(context);
             letterBadge.setTextSize(15);
             letterBadge.setTypeface(AndroidUtilities.bold());
-            letterBadge.setTextColor(COLOR_TEXT_PRIMARY);
+            letterBadge.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             letterBadge.setGravity(Gravity.CENTER);
             letterBadge.setBackground(letterBgIdle);
             iconBox.addView(letterBadge, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -791,7 +777,7 @@ public class MiogramDiscordLayout {
             countBadge.setTypeface(AndroidUtilities.bold());
             countBadge.setTextColor(0xFFFFFFFF);
             countBadge.setGravity(Gravity.CENTER);
-            countBadge.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), COLOR_BADGE_RED));
+            countBadge.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), Theme.getColor(Theme.key_chats_unreadCounter)));
             countBadge.setMinWidth(AndroidUtilities.dp(18));
             countBadge.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(1), AndroidUtilities.dp(5), AndroidUtilities.dp(1));
             countBadge.setSingleLine(true);
@@ -826,8 +812,8 @@ public class MiogramDiscordLayout {
             letterBadge.setText("★AI");
             letterBadge.setTextSize(13);
             letterBadge.setTextColor(0xFFFFFFFF);
-            letterBgIdle = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), 0xFFFF2A85);
-            letterBgActive = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_ACTIVE_DP), 0xFFFF2A85);
+            letterBgIdle = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_IDLE_DP), Theme.getColor(Theme.key_dialogTextLink));
+            letterBgActive = Theme.createRoundRectDrawable(AndroidUtilities.dp(RADIUS_ACTIVE_DP), Theme.getColor(Theme.key_dialogTextLink));
             letterBadge.setBackground(letterBgIdle);
             setContentDescription(MiogramLocale.get("ШІ Супутник (Ame / KAngel)", "ИИ Спутник (Ame / KAngel)", "AI Companion (Ame / KAngel)"));
         }
@@ -942,7 +928,7 @@ public class MiogramDiscordLayout {
             }
             if (letterBadge.getVisibility() == VISIBLE) {
                 letterBadge.setBackground(selected ? letterBgActive : letterBgIdle);
-                letterBadge.setTextColor(selected ? 0xFFFFFFFF : COLOR_TEXT_PRIMARY);
+                letterBadge.setTextColor(selected ? 0xFFFFFFFF : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             }
             if (homeGlyph.getVisibility() == VISIBLE) {
                 homeGlyph.setBackground(selected ? homeBgActive : homeBgIdle);
@@ -987,7 +973,7 @@ public class MiogramDiscordLayout {
 
         public AddGlyphView(Context context) {
             super(context);
-            paint.setColor(COLOR_ADD_GLYPH);
+            paint.setColor(Theme.getColor(Theme.key_chats_onlineCircle));
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeCap(Paint.Cap.ROUND);
         }
@@ -1028,7 +1014,7 @@ public class MiogramDiscordLayout {
             super.onDraw(canvas);
             float cx = getWidth() / 2f;
             float cy = getHeight() / 2f - AndroidUtilities.dp(1);
-            int color = muted ? COLOR_BADGE_RED : COLOR_TEXT_MUTED;
+            int color = muted ? Theme.getColor(Theme.key_chats_unreadCounter) : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
             paint.setColor(color);
             paint.setStyle(Paint.Style.FILL);
 
@@ -1077,7 +1063,7 @@ public class MiogramDiscordLayout {
             super.onDraw(canvas);
             float cx = getWidth() / 2f;
             float cy = getHeight() / 2f - AndroidUtilities.dp(1);
-            int color = deafened ? COLOR_BADGE_RED : COLOR_TEXT_MUTED;
+            int color = deafened ? Theme.getColor(Theme.key_chats_unreadCounter) : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText);
             paint.setColor(color);
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(AndroidUtilities.dp(1.8f));
@@ -1106,7 +1092,7 @@ public class MiogramDiscordLayout {
 
         public SettingsGearView(Context context) {
             super(context);
-            paint.setColor(COLOR_TEXT_MUTED);
+            paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(AndroidUtilities.dp(1.8f));
             paint.setStrokeCap(Paint.Cap.ROUND);
@@ -1137,7 +1123,7 @@ public class MiogramDiscordLayout {
 
         public SearchGlyphView(Context context) {
             super(context);
-            paint.setColor(COLOR_TEXT_MUTED);
+            paint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(AndroidUtilities.dp(2));
             paint.setStrokeCap(Paint.Cap.ROUND);

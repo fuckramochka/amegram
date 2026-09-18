@@ -3953,9 +3953,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext()) && getIsPinned() && !drawArchive
                 && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()
                 && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isUiDialogCards()) {
-            canvas.drawColor(Theme.isCurrentThemeDark()
-                    ? app.miogram.bridge.ui.ios.MiogramIosTheme.CHAT_LIST_PINNED_BG_DARK
-                    : app.miogram.bridge.ui.ios.MiogramIosTheme.CHAT_LIST_PINNED_BG_LIGHT);
+            canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
         }
 
         if (drawArchive && (currentDialogFolderId != 0 || isTopic && forumTopic != null && forumTopic.id == 1) && archivedChatsDrawable != null && archivedChatsDrawable.outProgress == 0.0f && translationX == 0.0f) {

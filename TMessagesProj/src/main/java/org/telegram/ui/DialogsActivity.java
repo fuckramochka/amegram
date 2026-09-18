@@ -13563,7 +13563,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (dialogStoriesCell != null) {
                 dialogStoriesCell.setVisibility(View.GONE);
             }
-            fragmentView.setBackgroundColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_CHANNELS_BG);
+            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
 
             // Channel pane header under the status bar; search icon focuses the idle search field.
             View channelHeader = app.miogram.bridge.ui.discord.MiogramDiscordLayout.createDiscordChannelHeader(
@@ -13633,7 +13633,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     abLp.leftMargin = dp(72);
                     actionBar.setLayoutParams(abLp);
                 }
-                actionBar.setBackgroundColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_HEADER_BG);
+                actionBar.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
             }
 
             int discordTopInset = AndroidUtilities.statusBarHeight + dp(48);

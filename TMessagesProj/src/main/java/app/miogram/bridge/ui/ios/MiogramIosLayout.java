@@ -43,27 +43,9 @@ import app.miogram.bridge.divine.MiogramDivineEngine;
  */
 public class MiogramIosLayout {
 
-    // Apple iOS System Palette
-    public static final int COLOR_IOS_BLUE = 0xFF007AFF;
-    public static final int COLOR_IOS_BLUE_DARK = 0xFF0A84FF;
-    public static final int COLOR_IOS_GREEN = 0xFF34C759;
-    public static final int COLOR_IOS_RED = 0xFFFF3B30;
-    public static final int COLOR_IOS_ORANGE = 0xFFFF9500;
-    public static final int COLOR_IOS_GRAY = 0xFF8E8E93;
-    public static final int COLOR_IOS_GRAY_LIGHT = 0xFFAEAEB2;
-    public static final int COLOR_IOS_SEARCH_BG_LIGHT = 0x1F767680;
-    public static final int COLOR_IOS_SEARCH_BG_DARK = 0x3D767680;
-    public static final int COLOR_IOS_BG_LIGHT = 0xFFF2F2F7;
-    public static final int COLOR_IOS_BG_DARK = 0xFF000000;
-    public static final int COLOR_IOS_CARD_LIGHT = 0xFFFFFFFF;
-    public static final int COLOR_IOS_CARD_DARK = 0xFF1C1C1E;
-    public static final int COLOR_IOS_NAV_BAR_LIGHT = 0xE6F9F9F9;
-    public static final int COLOR_IOS_NAV_BAR_DARK = 0xE6161618;
-    public static final int COLOR_IOS_SEPARATOR_LIGHT = 0x333C3C43;
-    public static final int COLOR_IOS_SEPARATOR_DARK = 0x4D545458;
-    public static final int COLOR_IOS_BUBBLE_IN_LIGHT = 0xFFE9E9EB;
-    public static final int COLOR_IOS_BUBBLE_IN_DARK = 0xFF262628;
-    public static final int COLOR_IOS_BUBBLE_OUT = 0xFF007AFF;
+    // NOTE: no hardcoded palette here on purpose. The iOS preset defines
+    // geometry (paths, metrics, radii); every color resolves from the
+    // active theme, see MiogramIosTheme getters.
 
     private static final Paint bubblePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final Paint separatorPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -142,7 +124,7 @@ public class MiogramIosLayout {
     public static View createIosLargeTitleHeader(Context context, String title, View.OnClickListener onEditClick, View.OnClickListener onComposeClick, View.OnClickListener onSearchClick) {
         LinearLayout header = new LinearLayout(context);
         header.setOrientation(LinearLayout.VERTICAL);
-        header.setBackgroundColor(Theme.isCurrentThemeDark() ? COLOR_IOS_NAV_BAR_DARK : COLOR_IOS_NAV_BAR_LIGHT);
+        header.setBackgroundColor(Theme.getColor(Theme.key_actionBarDefault));
         header.setPadding(AndroidUtilities.dp(16), AndroidUtilities.statusBarHeight + AndroidUtilities.dp(8), AndroidUtilities.dp(16), AndroidUtilities.dp(8));
 
         // Top Row: "Edit" on left, "Compose" on right
@@ -150,14 +132,14 @@ public class MiogramIosLayout {
 
         TextView editBtn = new TextView(context);
         editBtn.setText(MiogramLocale.get("Ред.", "Изм.", "Edit"));
-        editBtn.setTextColor(COLOR_IOS_BLUE);
+        editBtn.setTextColor(Theme.getColor(Theme.key_dialogTextLink));
         editBtn.setTextSize(17);
         if (onEditClick != null) editBtn.setOnClickListener(onEditClick);
         topRow.addView(editBtn, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.CENTER_VERTICAL));
 
         ImageView composeBtn = new ImageView(context);
         composeBtn.setImageResource(R.drawable.msg_edit);
-        composeBtn.setColorFilter(COLOR_IOS_BLUE);
+        composeBtn.setColorFilter(Theme.getColor(Theme.key_dialogTextLink));
         if (onComposeClick != null) composeBtn.setOnClickListener(onComposeClick);
         topRow.addView(composeBtn, LayoutHelper.createFrame(24, 24, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
 
@@ -168,7 +150,7 @@ public class MiogramIosLayout {
         largeTitle.setText(title != null ? title : MiogramLocale.get("Чати", "Чаты", "Chats"));
         largeTitle.setTextSize(32);
         largeTitle.setTypeface(AndroidUtilities.bold());
-        largeTitle.setTextColor(Theme.isCurrentThemeDark() ? Color.WHITE : Color.BLACK);
+        largeTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         largeTitle.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
         header.addView(largeTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -184,7 +166,7 @@ public class MiogramIosLayout {
      */
     public static View createIosSearchBar(Context context, View.OnClickListener onSearchClick) {
         FrameLayout searchBox = new FrameLayout(context);
-        searchBox.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), Theme.isCurrentThemeDark() ? COLOR_IOS_SEARCH_BG_DARK : COLOR_IOS_SEARCH_BG_LIGHT));
+        searchBox.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), Theme.getColor(Theme.key_windowBackgroundGray)));
         searchBox.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
 
         LinearLayout inner = new LinearLayout(context);
@@ -193,12 +175,12 @@ public class MiogramIosLayout {
 
         ImageView searchIcon = new ImageView(context);
         searchIcon.setImageResource(R.drawable.msg_search);
-        searchIcon.setColorFilter(COLOR_IOS_GRAY);
+        searchIcon.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         inner.addView(searchIcon, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL));
 
         TextView hint = new TextView(context);
         hint.setText(" " + MiogramLocale.get("Пошук повідомлень або людей", "Поиск сообщений или людей", "Search for messages or users"));
-        hint.setTextColor(COLOR_IOS_GRAY);
+        hint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         hint.setTextSize(14);
         inner.addView(hint, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
 
@@ -275,10 +257,10 @@ public class MiogramIosLayout {
                     TextView badge = new TextView(context);
                     badge.setText(totalUnread > 99 ? "99+" : String.valueOf(totalUnread));
                     badge.setTextSize(10f);
-                    badge.setTextColor(Theme.isCurrentThemeDark() ? MiogramIosTheme.TAB_BAR_BADGE_TEXT_DARK : MiogramIosTheme.TAB_BAR_BADGE_TEXT_LIGHT);
+                    badge.setTextColor(Theme.getColor(Theme.key_chats_unreadCounterText));
                     badge.setTypeface(AndroidUtilities.bold());
                     badge.setGravity(Gravity.CENTER);
-                    int badgeBg = Theme.isCurrentThemeDark() ? MiogramIosTheme.TAB_BAR_BADGE_BG_DARK : MiogramIosTheme.TAB_BAR_BADGE_BG_LIGHT;
+                    int badgeBg = Theme.getColor(Theme.key_chats_unreadCounter);
                     badge.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), badgeBg));
                     badge.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), 0);
                     FrameLayout.LayoutParams badgeLp = new FrameLayout.LayoutParams(

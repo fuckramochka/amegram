@@ -138,7 +138,7 @@ public class ProfileActionsView extends View {
         ameStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         ameStrokePaint.setStyle(Paint.Style.STROKE);
         ameStrokePaint.setStrokeWidth(dpf2(1.2f));
-        ameStrokePaint.setColor(app.miogram.bridge.ui.ame.MiogramAmeAesthetic.COLOR_AME_BUTTON_STROKE);
+        ameStrokePaint.setColor(Theme.getColor(Theme.key_dialogTextLink));
 
         xpadding = dpf2(14);
         ypadding = dpf2(12);
@@ -317,11 +317,8 @@ public class ProfileActionsView extends View {
                     int newAlpha = (int) (action.getAlpha() * alphaFraction1 * wasAlpha);
                     paint.setAlpha((int) (newAlpha * (radialGradient != null ? 0.1f : 1f)));
 
-                    if (app.miogram.bridge.ui.ame.MiogramAmeAesthetic.isAmeEnabled(null)) {
-                        boolean isPressed = action.bounce != null && action.bounce.isPressed();
-                        paint.setColor(isPressed ? app.miogram.bridge.ui.ame.MiogramAmeAesthetic.COLOR_AME_BUTTON_PRESSED : app.miogram.bridge.ui.ame.MiogramAmeAesthetic.COLOR_AME_BUTTON_GLASS);
-                    }
-
+                    // Ame preset changes button shape (see getRoundRadius), not
+                    // colors: fill comes from the active theme.
                     if (SharedConfig.shadowsInSections && isButtonColorLight() && parentExpanded < 0.5f) {
                         paint.setShadowLayer(dpf2(1.5f), 0, 0, Theme.multAlpha(Color.BLACK & 0x20FFFFFF, (newAlpha / 255f * (radialGradient != null ? 0.1f : 1f))));
                     } else {
@@ -338,8 +335,7 @@ public class ProfileActionsView extends View {
                         shaderPaint.setAlpha(wasAlpha2);
                     }
                     if (app.miogram.bridge.ui.ame.MiogramAmeAesthetic.isAmeEnabled(null) && ameStrokePaint != null) {
-                        boolean isPressed = action.bounce != null && action.bounce.isPressed();
-                        ameStrokePaint.setColor(isPressed ? app.miogram.bridge.ui.ame.MiogramAmeAesthetic.COLOR_AME_PINK : app.miogram.bridge.ui.ame.MiogramAmeAesthetic.COLOR_AME_BUTTON_STROKE);
+                        ameStrokePaint.setColor(Theme.getColor(Theme.key_dialogTextLink));
                         ameStrokePaint.setAlpha((int) (action.getAlpha() * alphaFraction1 * 255));
                         canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, ameStrokePaint);
                     }

@@ -9884,7 +9884,7 @@ public class ChatActivity extends BaseFragment implements
         onBottomItemsVisibilityChanged();
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
-            contentView.setBackgroundColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_CHAT_BG);
+            contentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
             if (actionBar != null) {
                 actionBar.setBackButtonImage(R.drawable.ic_ab_back);
             }

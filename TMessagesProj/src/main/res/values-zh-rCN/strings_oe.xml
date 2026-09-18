@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="OpenExteraInfo">移植自 exteraGram 的功能</string>
+    <string name="OpenExteraInfo">移植自 Miogram 的功能</string>
     <string name="OpenExteraChats">聊天</string>
     <string name="AddCommaAfterMention">提及后添加逗号</string>
     <string name="OpenExteraCategories">分类</string>
@@ -18,7 +18,7 @@
     <string name="QrWifiPasswordCopied">密码已复制</string>
     <string name="QrWifiUnknownNetwork">二维码中没有网络名称</string>
     <string name="QrLoginHint">此二维码用于登录账号。请改用「设置 → 设备 → 关联桌面设备」，该界面会校验二维码并保护你的账号。</string>
-    <string name="OpenExteraPreferences">exteraless 设置</string>
+    <string name="OpenExteraPreferences">Miogram 设置</string>
     <string name="OpenExteraDesignSection">设计</string>
     <string name="OpenExteraDesigner">图标与设计</string>
     <string name="OpenExteraDesignStudio">设计工作室</string>

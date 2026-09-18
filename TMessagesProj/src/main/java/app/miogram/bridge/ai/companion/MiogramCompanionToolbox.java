@@ -44,9 +44,6 @@ import tw.nekomimi.nekogram.NekoConfig;
  */
 public class MiogramCompanionToolbox {
 
-    /** Latest music search hits per account, for send_music by number. */
-    private static final java.util.HashMap<Integer, java.util.ArrayList<app.miogram.bridge.music.MiogramMusicTrack>> lastMusicResults = new java.util.HashMap<>();
-
     public static class ActionRequest {
         public final String name;
         public final JSONObject params;
@@ -908,16 +905,6 @@ public class MiogramCompanionToolbox {
         if (q.isEmpty()) return matches;
 
         MessagesController mc = MessagesController.getInstance(account);
-
-        // 0. Phone numbers and numeric ids NEVER go fuzzy: an exact phone/id
-        // hit returns immediately, a miss returns empty (no random stranger).
-        List<FoundChat> direct = resolveByPhoneOrId(mc, q);
-        if (direct != null) {
-            return direct;
-        }
-
-        // Query-side normalization, computed ONCE (not per candidate).
-        QueryNorm qn = normQuery(rawQuery);
         Map<Long, ScoredFoundChat> dedup = new HashMap<>();
 
         // 1. Scan Dialogs
@@ -938,7 +925,7 @@ public class MiogramCompanionToolbox {
                     if (u != null) {
                         String fullName = UserObject.getUserName(u);
                         String uname = u.username != null ? u.username : "";
-                        int score = calculateMatchScoreFast(qn, fullName, uname, u.first_name, u.last_name);
+                        int score = calculateMatchScore(q, fullName, uname, u.first_name, u.last_name);
                         if (score >= 55) {
                             dedup.put(did, new ScoredFoundChat(new FoundChat(did, fullName, uname, false, false), score));
                         }
@@ -950,7 +937,7 @@ public class MiogramCompanionToolbox {
                         String uname = c.username != null ? c.username : "";
                         boolean isChannel = ChatObject.isChannelAndNotMegaGroup(c);
                         boolean isGroup = !isChannel;
-                        int score = calculateMatchScoreFast(qn, title, uname, null, null);
+                        int score = calculateMatchScore(q, title, uname, null, null);
                         if (score >= 55) {
                             dedup.put(did, new ScoredFoundChat(new FoundChat(did, title, uname, isChannel, isGroup), score));
                         }
@@ -970,7 +957,7 @@ public class MiogramCompanionToolbox {
                 if (u != null) {
                     String fullName = UserObject.getUserName(u);
                     String uname = u.username != null ? u.username : "";
-                    int score = calculateMatchScoreFast(qn, fullName, uname, u.first_name, u.last_name);
+                    int score = calculateMatchScore(q, fullName, uname, u.first_name, u.last_name);
                     if (score >= 55) {
                         ScoredFoundChat existing = dedup.get(uid);
                         if (existing == null || score > existing.score) {
@@ -987,7 +974,7 @@ public class MiogramCompanionToolbox {
                 if (u == null || u.id == 0 || u.id == UserConfig.getInstance(account).getClientUserId()) continue;
                 String fullName = UserObject.getUserName(u);
                 String uname = u.username != null ? u.username : "";
-                int score = calculateMatchScoreFast(qn, fullName, uname, u.first_name, u.last_name);
+                int score = calculateMatchScore(q, fullName, uname, u.first_name, u.last_name);
                 if (score >= 55) {
                     ScoredFoundChat existing = dedup.get(u.id);
                     if (existing == null || score > existing.score) {
@@ -1006,7 +993,7 @@ public class MiogramCompanionToolbox {
                 String uname = c.username != null ? c.username : "";
                 boolean isChannel = ChatObject.isChannelAndNotMegaGroup(c);
                 boolean isGroup = !isChannel;
-                int score = calculateMatchScoreFast(qn, title, uname, null, null);
+                int score = calculateMatchScore(q, title, uname, null, null);
                 if (score >= 55) {
                     ScoredFoundChat existing = dedup.get(did);
                     if (existing == null || score > existing.score) {
@@ -1052,97 +1039,14 @@ public class MiogramCompanionToolbox {
         return matches;
     }
 
-    /**
-     * Exact phone / numeric-id resolution. Returns a singleton hit, an empty
-     * list on definitive miss, or null when the query is not phone/id-like
-     * (caller proceeds to fuzzy matching).
-     */
-    private static List<FoundChat> resolveByPhoneOrId(MessagesController mc, String q) {
-        if (mc == null) return null;
-        String digits = q.replaceAll("[^0-9]", "");
-        if (digits.length() < 5 || digits.length() > 20 || !q.matches(".*\\d.*")) {
-            return null;
-        }
-        boolean negative = q.trim().startsWith("-");
-        try {
-            // 1. Phone match (contacts + all known users).
-            if (digits.length() >= 7 && digits.length() <= 15) {
-                try {
-                    for (TLRPC.User u : mc.getUsers().values()) {
-                        if (u == null || u.id == 0) continue;
-                        String uphone = u.phone != null ? u.phone.replaceAll("[^0-9]", "") : "";
-                        if (uphone.length() >= 7 && (uphone.equals(digits)
-                                || uphone.endsWith(digits) || digits.endsWith(uphone))) {
-                            List<FoundChat> hit = new ArrayList<>();
-                            hit.add(new FoundChat(u.id, UserObject.getUserName(u),
-                                    u.username != null ? u.username : "", false, false));
-                            return hit;
-                        }
-                    }
-                } catch (Throwable ignore) {}
-            }
-            // 2. Raw Telegram id.
-            try {
-                long id = Long.parseLong(negative ? "-" + digits : digits);
-                if (id > 0) {
-                    TLRPC.User u = mc.getUser(id);
-                    if (u != null) {
-                        List<FoundChat> hit = new ArrayList<>();
-                        hit.add(new FoundChat(u.id, UserObject.getUserName(u),
-                                u.username != null ? u.username : "", false, false));
-                        return hit;
-                    }
-                } else if (id < 0) {
-                    TLRPC.Chat c = mc.getChat(-id);
-                    if (c != null) {
-                        List<FoundChat> hit = new ArrayList<>();
-                        hit.add(new FoundChat(id, c.title != null ? c.title : "",
-                                c.username != null ? c.username : "", ChatObject.isChannelAndNotMegaGroup(c), !ChatObject.isChannelAndNotMegaGroup(c)));
-                        return hit;
-                    }
-                }
-            } catch (Throwable ignore) {}
-        } catch (Throwable ignore) {}
-        // Phone/id-looking but unknown: definitive miss, never fuzzy.
-        return new ArrayList<>();
-    }
-
-    /** Query-side normalization, computed once per search (not per candidate). */
-    private static class QueryNorm {
-        String qLower = "";
-        String qStem = "";
-        String normQ = "";
-        String normStemQ = "";
-        String colQ = "";
-        String enQ = "";
-    }
-
-    private static QueryNorm normQuery(String rawQ) {
-        QueryNorm n = new QueryNorm();
-        if (rawQ == null || rawQ.trim().isEmpty()) return n;
-        try {
-            n.qLower = rawQ.trim().toLowerCase(java.util.Locale.ROOT);
-            n.qStem = stripGrammaticalEnding(n.qLower);
-            n.normQ = normalizeText(rawQ);
-            n.normStemQ = normalizeText(n.qStem);
-            n.colQ = collapseRepeats(n.normQ);
-            n.enQ = transliterateUaToEn(n.qLower);
-        } catch (Throwable ignore) {}
-        return n;
-    }
-
     public static int calculateMatchScore(String rawQ, String name, String username, String first, String last) {
         if (rawQ == null || rawQ.trim().isEmpty()) return 0;
-        return calculateMatchScoreFast(normQuery(rawQ), name, username, first, last);
-    }
-
-    private static int calculateMatchScoreFast(QueryNorm n, String name, String username, String first, String last) {
-        String qLower = n.qLower;
-        String qStem = n.qStem;
-        String normQ = n.normQ;
-        String normStemQ = n.normStemQ;
-        String colQ = n.colQ;
-        String enQ = n.enQ;
+        String qLower = rawQ.trim().toLowerCase(java.util.Locale.ROOT);
+        String qStem = stripGrammaticalEnding(qLower);
+        String normQ = normalizeText(rawQ);
+        String normStemQ = normalizeText(qStem);
+        String colQ = collapseRepeats(normQ);
+        String enQ = transliterateUaToEn(qLower);
 
         int best = 0;
         String[] targets = new String[]{username, name, first, last};
@@ -1476,30 +1380,10 @@ public class MiogramCompanionToolbox {
                     }
                 }
             }
-            // Never hand out an unusable peer: callers treat null as "unreachable"
-            // and show a friendly hint instead of raw PEER_ID_INVALID.
-            return isUsablePeer(inputPeer) ? inputPeer : null;
+            return inputPeer;
         } catch (Throwable ignore) {
             return null;
         }
-    }
-
-    private static boolean isUsablePeer(TLRPC.InputPeer peer) {
-        if (peer == null || peer instanceof TLRPC.TL_inputPeerEmpty) return false;
-        if (peer instanceof TLRPC.TL_inputPeerUser && ((TLRPC.TL_inputPeerUser) peer).access_hash == 0) return false;
-        if (peer instanceof TLRPC.TL_inputPeerChannel && ((TLRPC.TL_inputPeerChannel) peer).access_hash == 0) return false;
-        return true;
-    }
-
-    /** Raw server code must never reach P-chan — map it to the friendly hint. */
-    private static boolean isPeerIdInvalid(TLRPC.TL_error error) {
-        return error != null && error.text != null && error.text.contains("PEER_ID_INVALID");
-    }
-
-    /** Actions with side effects: never auto-pick a fuzzy match for these. */
-    private static boolean isSensitiveAction(String forAction) {
-        return "send_message".equals(forAction) || "clear_chat".equals(forAction)
-                || "delete_chat".equals(forAction);
     }
 
     public static String peerUnreachableText() {
@@ -1577,29 +1461,6 @@ public class MiogramCompanionToolbox {
             return new ChatResolution(0, null, MiogramLocale.get("Не вдалося знайти жодного чату за запитом «", "Не удалось найти ни одного чата по запросу «", "Could not find any chat for query \"") + query + MiogramLocale.get("». Перевір правильність написання імені чи юзернейму.", "». Проверь правильность написания имени или юзернейма.", "\". Check the name or username spelling."));
         }
         if (results.size() == 1) {
-            FoundChat only = results.get(0);
-            // Sending/clearing to a lone fuzzy match is how messages land on
-            // strangers: demand an exact (100) match, otherwise ask.
-            if (isSensitiveAction(forAction)
-                    && calculateMatchScore(query, only.name, only.username, null, null) < 100) {
-                JSONObject resumeParams = null;
-                try {
-                    if (forAction != null && p != null) resumeParams = new JSONObject(p.toString());
-                } catch (Throwable ignore) {}
-                setPendingPick(account, new PendingPick(results, query, forAction, resumeParams, null, 0, 50));
-                StringBuilder confirm = new StringBuilder(MiogramLocale.get(
-                        "Знайшла схожого, але не точного збігу для «", "Нашла похожего, но не точного совпадения для «", "Found a similar but not exact match for \""));
-                confirm.append(query).append("»: ").append(only.name);
-                if (only.username != null && !only.username.isEmpty()) {
-                    confirm.append(" (@").append(only.username).append(")");
-                }
-                confirm.append(" [id: ").append(only.dialogId).append("].\n");
-                confirm.append(MiogramLocale.get(
-                        "Це та людина? Відповіси номером щоб підтвердити, або уточни ім'я/номер.",
-                        "Это тот человек? Ответь номером чтобы подтвердить, или уточни имя/номер.",
-                        "Is this the right person? Reply with the number to confirm, or clarify the name/number."));
-                return new ChatResolution(0, null, confirm.toString());
-            }
             clearPendingPick(account);
             return new ChatResolution(results.get(0).dialogId, results.get(0), null);
         }
@@ -1607,8 +1468,7 @@ public class MiogramCompanionToolbox {
         // Smart friend selection: If top match is strong (exact match or dominates second match)
         int scoreTop = calculateMatchScore(query, results.get(0).name, results.get(0).username, null, null);
         int scoreSecond = calculateMatchScore(query, results.get(1).name, results.get(1).username, null, null);
-        // Sensitive actions never auto-pick a fuzzy winner — exact only.
-        if (scoreTop >= 88 && (scoreTop == 100 || (!isSensitiveAction(forAction) && (scoreTop - scoreSecond) >= 12))) {
+        if (scoreTop >= 88 && (scoreTop == 100 || (scoreTop - scoreSecond) >= 12)) {
             clearPendingPick(account);
             return new ChatResolution(results.get(0).dialogId, results.get(0), null);
         }
@@ -1914,11 +1774,7 @@ public class MiogramCompanionToolbox {
                                     callback.run(sb.toString());
                                 }
                             } else {
-                                if (isPeerIdInvalid(error)) {
-                                    callback.run(peerUnreachableText());
-                                } else {
-                                    callback.run(MiogramLocale.get("Помилка пошуку в чаті: ", "Ошибка поиска в чате: ", "Chat search error: ") + (error != null ? error.text : MiogramLocale.get("невідома помилка", "неизвестная ошибка", "unknown error")));
-                                }
+                                callback.run(MiogramLocale.get("Помилка пошуку в чаті: ", "Ошибка поиска в чате: ", "Chat search error: ") + (error != null ? error.text : MiogramLocale.get("невідома помилка", "неизвестная ошибка", "unknown error")));
                             }
                         }));
                         return;
@@ -2107,18 +1963,12 @@ public class MiogramCompanionToolbox {
                             callback.run(sb.toString());
                         } else {
                             MessagesController mc = MessagesController.getInstance(account);
-                            MessageObject topMsg = null;
-                            if (mc != null) {
-                                ArrayList<MessageObject> cached = mc.dialogMessage.get(res.dialogId);
-                                if (cached != null && !cached.isEmpty()) topMsg = cached.get(0);
-                            }
+                            MessageObject topMsg = mc != null ? mc.dialogMessage.get(res.dialogId) : null;
                             if (topMsg != null && topMsg.messageOwner != null) {
                                 String chatTitle = fc != null ? fc.getReference() : String.valueOf(res.dialogId);
                                 String text = topMsg.messageText != null ? topMsg.messageText.toString() : "";
                                 callback.run(MiogramLocale.get("Останнє повідомлення з кешу «", "Последнее сообщение из кэша «", "Latest cached message from \"")
                                         + chatTitle + "»:\n• " + text);
-                            } else if (isPeerIdInvalid(error)) {
-                                callback.run(peerUnreachableText());
                             } else {
                                 callback.run(MiogramLocale.get("Не вдалося завантажити повідомлення: ", "Не удалось загрузить сообщения: ", "Failed to load messages: ")
                                         + (error != null ? error.text : MiogramLocale.get("помилка запиту", "ошибка запроса", "request error")) + ". "
@@ -2126,227 +1976,6 @@ public class MiogramCompanionToolbox {
                             }
                         }
                     }));
-                    return;
-                }
-                case "view_photo": {
-                    ChatResolution res = resolveChatTarget(account, p, "view_photo");
-                    if (res.errorMessage != null) {
-                        callback.run(res.errorMessage);
-                        return;
-                    }
-                    String question = p.optString("question", "");
-                    if (question.isEmpty()) question = p.optString("text", "");
-                    final String fQuestion = question;
-                    TLRPC.TL_messages_getHistory req = new TLRPC.TL_messages_getHistory();
-                    req.peer = resolveInputPeer(account, res.dialogId);
-                    if (req.peer == null) {
-                        callback.run(peerUnreachableText());
-                        return;
-                    }
-                    req.limit = 20;
-                    final FoundChat fc = res.foundChat;
-                    ConnectionsManager.getInstance(account).sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
-                        if (isPeerIdInvalid(error)) {
-                            callback.run(peerUnreachableText());
-                            return;
-                        }
-                        if (!(response instanceof TLRPC.messages_Messages)) {
-                            callback.run(MiogramLocale.get("Не вдалося відкрити фото: ", "Не удалось открыть фото: ", "Could not open the photo: ")
-                                    + (error != null ? error.text : MiogramLocale.get("помилка запиту", "ошибка запроса", "request error")));
-                            return;
-                        }
-                        TLRPC.messages_Messages msgRes = (TLRPC.messages_Messages) response;
-                        TLRPC.Message photoMsg = null;
-                        for (int i = 0; i < msgRes.messages.size(); i++) {
-                            TLRPC.Message m = msgRes.messages.get(i);
-                            if (m == null || m instanceof TLRPC.TL_messageEmpty) continue;
-                            MessageObject mo = new MessageObject(account, m, false, false);
-                            if (mo.isPhoto() && !mo.isSponsored()) {
-                                photoMsg = m;
-                                break;
-                            }
-                        }
-                        if (photoMsg == null) {
-                            String chatTitle = fc != null ? fc.getReference() : String.valueOf(res.dialogId);
-                            callback.run(MiogramLocale.get("В останніх 20 повідомленнях «", "В последних 20 сообщениях «", "No photos in the last 20 messages of \"") + chatTitle + "».");
-                            return;
-                        }
-                        final TLRPC.Message fPhotoMsg = photoMsg;
-                        Utilities.globalQueue.postRunnable(() -> {
-                            try {
-                                if (!(fPhotoMsg.media instanceof TLRPC.TL_messageMediaPhoto)) {
-                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("Це не звичайне фото.", "Это не обычное фото.", "That is not a regular photo.")));
-                                    return;
-                                }
-                                TLRPC.Photo photo = ((TLRPC.TL_messageMediaPhoto) fPhotoMsg.media).photo;
-                                if (photo == null || photo.sizes == null || photo.sizes.isEmpty()) {
-                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("У фото немає даних.", "У фото нет данных.", "The photo has no data.")));
-                                    return;
-                                }
-                                org.telegram.messenger.FileLoader fl = org.telegram.messenger.FileLoader.getInstance(account);
-                                TLRPC.PhotoSize size = org.telegram.messenger.FileLoader.getClosestPhotoSizeWithSize(photo.sizes, 1280);
-                                if (size == null) {
-                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("У фото немає даних.", "У фото нет данных.", "The photo has no data.")));
-                                    return;
-                                }
-                                java.io.File img = null;
-                                if (size instanceof TLRPC.TL_photoCachedSize) {
-                                    byte[] bytes = ((TLRPC.TL_photoCachedSize) size).bytes;
-                                    if (bytes != null && bytes.length > 0) {
-                                        java.io.File cacheDir = fl.getDirectory(org.telegram.messenger.FileLoader.MEDIA_DIR_CACHE);
-                                        img = new java.io.File(cacheDir, "ai_view_" + fPhotoMsg.id + ".jpg");
-                                        java.io.FileOutputStream out = new java.io.FileOutputStream(img);
-                                        out.write(bytes);
-                                        out.close();
-                                    }
-                                } else {
-                                    if (photo.dc_id != 0 && size.location != null) {
-                                        size.location.dc_id = photo.dc_id;
-                                        size.location.file_reference = photo.file_reference;
-                                    }
-                                    img = fl.getPathToAttach(size, true);
-                                    if (img == null || !img.exists() || img.length() == 0) {
-                                        org.telegram.messenger.ImageLocation loc = org.telegram.messenger.ImageLocation.getForPhoto(size, photo);
-                                        fl.loadFile(loc, fPhotoMsg, "jpg", 0, 0);
-                                        int waited = 0;
-                                        while (waited < 30000) {
-                                            Thread.sleep(500);
-                                            waited += 500;
-                                            img = fl.getPathToAttach(size, true);
-                                            if (img != null && img.exists() && img.length() > 0) break;
-                                        }
-                                    }
-                                }
-                                final java.io.File fImg = img;
-                                if (fImg == null || !fImg.exists() || fImg.length() == 0) {
-                                    AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("Фото ще завантажується — попроси ще раз за хвилину.", "Фото ещё загружается — попроси ещё раз через минуту.", "The photo is still downloading — ask again in a minute.")));
-                                    return;
-                                }
-                                MiogramAiService.describeImage(fImg, "image/jpeg", fQuestion, (text, err) -> AndroidUtilities.runOnUIThread(() -> {
-                                    if (text != null) {
-                                        callback.run(MiogramLocale.get("Дивлюсь на фото: ", "Смотрю на фото: ", "Looking at the photo: ") + text);
-                                    } else {
-                                        callback.run(MiogramLocale.get("Не змогла роздивитися фото: ", "Не смогла разглядеть фото: ", "Could not view the photo: ") + (err != null ? err : ""));
-                                    }
-                                }));
-                            } catch (Throwable t) {
-                                AndroidUtilities.runOnUIThread(() -> callback.run(MiogramLocale.get("Не змогла відкрити фото.", "Не смогла открыть фото.", "Could not open the photo.")));
-                            }
-                        });
-                    }));
-                    return;
-                }
-                case "find_music": {
-                    String query = p.optString("query", "");
-                    if (query.isEmpty()) query = p.optString("text", "");
-                    if (query.isEmpty()) {
-                        callback.run(MiogramLocale.get("Скажи що шукати: назву треку або виконавця.", "Скажи что искать: название трека или исполнителя.", "Tell me what to search: track title or artist."));
-                        return;
-                    }
-                    final String fQuery = query;
-                    final boolean[] done = new boolean[1];
-                    app.miogram.bridge.music.MiogramMusicSearchEngine.searchAll(fQuery, account,
-                            new app.miogram.bridge.music.MiogramMusicSearchEngine.SearchCallback() {
-                                @Override
-                                public void onResults(java.util.List<app.miogram.bridge.music.MiogramMusicTrack> tracks, boolean isFinal) {
-                                    if (!isFinal || done[0]) return;
-                                    done[0] = true;
-                                    AndroidUtilities.runOnUIThread(() -> {
-                                        if (tracks == null || tracks.isEmpty()) {
-                                            callback.run(MiogramLocale.get("Нічого не знайшла за запитом «", "Ничего не нашла по запросу «", "Found nothing for \"") + fQuery + "».");
-                                            return;
-                                        }
-                                        java.util.ArrayList<app.miogram.bridge.music.MiogramMusicTrack> top =
-                                                new java.util.ArrayList<>(tracks.subList(0, Math.min(8, tracks.size())));
-                                        synchronized (lastMusicResults) {
-                                            lastMusicResults.put(account, top);
-                                        }
-                                        StringBuilder sb = new StringBuilder(MiogramLocale.get("Знайшла музику за запитом «", "Нашла музыку по запросу «", "Found music for \"") + fQuery + "»:\n");
-                                        for (int i = 0; i < top.size(); i++) {
-                                            app.miogram.bridge.music.MiogramMusicTrack t = top.get(i);
-                                            sb.append(i + 1).append(". ").append(t.getDisplayTitle())
-                                                    .append(" — ").append(t.getDisplayArtist())
-                                                    .append(" (").append(t.source != null ? t.source.label : "?")
-                                                    .append(", ").append(t.getFormattedDuration()).append(")\n");
-                                        }
-                                        sb.append(MiogramLocale.get("Скажи номер — надішлю в чат.", "Скажи номер — отправлю в чат.", "Tell me the number — I'll send it to the chat."));
-                                        callback.run(sb.toString().trim());
-                                    });
-                                }
-
-                                @Override
-                                public void onError(String error) {
-                                    if (done[0]) return;
-                                    done[0] = true;
-                                    AndroidUtilities.runOnUIThread(() -> callback.run(
-                                            MiogramLocale.get("Пошук музики не вдався: ", "Поиск музыки не удался: ", "Music search failed: ")
-                                                    + (error != null ? error : "")));
-                                }
-                            });
-                    return;
-                }
-                case "send_music": {
-                    ChatResolution res = resolveChatTarget(account, p, "send_music");
-                    if (res.errorMessage != null) {
-                        callback.run(res.errorMessage);
-                        return;
-                    }
-                    if (resolveInputPeer(account, res.dialogId) == null) {
-                        callback.run(peerUnreachableText());
-                        return;
-                    }
-                    int index = p.optInt("index", p.optInt("track", 1)) - 1;
-                    app.miogram.bridge.music.MiogramMusicTrack track = null;
-                    synchronized (lastMusicResults) {
-                        java.util.ArrayList<app.miogram.bridge.music.MiogramMusicTrack> top = lastMusicResults.get(account);
-                        if (top != null && index >= 0 && index < top.size()) track = top.get(index);
-                    }
-                    if (track == null) {
-                        callback.run(MiogramLocale.get("Спочатку знайди трек через find_music, потім скажи номер.", "Сначала найди трек через find_music, потом скажи номер.", "First find a track via find_music, then tell me the number."));
-                        return;
-                    }
-                    final app.miogram.bridge.music.MiogramMusicTrack fTrack = track;
-                    final String targetName = res.foundChat != null ? res.foundChat.getReference() : MiogramLocale.get("чат", "чат", "chat");
-                    if (fTrack.telegramMessage != null) {
-                        ArrayList<MessageObject> forwardList = new ArrayList<>();
-                        forwardList.add(fTrack.telegramMessage);
-                        SendMessagesHelper.getInstance(account).sendMessage(forwardList, res.dialogId, true, true, true, 0, 0L);
-                        callback.run(MiogramLocale.get("Надіслала трек «", "Отправила трек «", "Sent track \"") + fTrack.getDisplayTitle() + "» " + targetName + ".");
-                        return;
-                    }
-                    callback.run(MiogramLocale.get("Качаю «", "Качаю «", "Downloading \"") + fTrack.getDisplayTitle() + "»…");
-                    app.miogram.bridge.music.MiogramMusicSearchEngine.fastInstallTrack(
-                            org.telegram.messenger.ApplicationLoader.applicationContext, fTrack, account,
-                            new app.miogram.bridge.music.MiogramMusicSearchEngine.InstallCallback() {
-                                @Override
-                                public void onProgress(float progress) {
-                                }
-
-                                @Override
-                                public void onSuccess(java.io.File localFile) {
-                                    AndroidUtilities.runOnUIThread(() -> {
-                                        try {
-                                            SendMessagesHelper.prepareSendingDocument(
-                                                    org.telegram.messenger.AccountInstance.getInstance(account),
-                                                    localFile.getAbsolutePath(),
-                                                    localFile.getAbsolutePath(),
-                                                    null, null, "audio/mpeg",
-                                                    res.dialogId, null, null, null, null, null,
-                                                    true, 0, null, null, false);
-                                            callback.run(MiogramLocale.get("Надіслала трек «", "Отправила трек «", "Sent track \"") + fTrack.getDisplayTitle() + "» " + targetName + ".");
-                                        } catch (Throwable t) {
-                                            callback.run(MiogramLocale.get("Не вийшло надіслати трек.", "Не вышло отправить трек.", "Could not send the track."));
-                                        }
-                                    });
-                                }
-
-                                @Override
-                                public void onError(String error) {
-                                    AndroidUtilities.runOnUIThread(() -> callback.run(
-                                            MiogramLocale.get("Не вдалося завантажити трек: ", "Не удалось скачать трек: ", "Could not download the track: ")
-                                                    + (error != null ? error : "")));
-                                }
-                            });
                     return;
                 }
                 case "read_unread_summary": {
@@ -2549,7 +2178,7 @@ public class MiogramCompanionToolbox {
                                         "✦ **Lua plugin created!**\n"
                                         + "📁 Name: `" + result.name + ".lua`\n"
                                         + "⚡ **Status:** " + (installed ? "Saved to modules." : "Not saved.") + " "
-                                        + "No Lua engine on device: wired live (" + app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().getLastLuaInstallReport() + ")."
+                                        + "No Lua engine on device, so only declared text filters apply."
                                 );
                                 callback.run(msg);
                             } else {
@@ -2582,7 +2211,7 @@ public class MiogramCompanionToolbox {
                 case "list_plugins": {
                     Map<String, app.exteraless.plugins.Plugin> map = PluginsController.getInstance().plugins;
                     if (map == null || map.isEmpty()) {
-                        callback.run(MiogramLocale.get("У Miogram наразі немає встановлених плагінів MioHook/exteraGram.", "В Miogram сейчас нет установленных плагинов MioHook/exteraGram.", "No MioHook/exteraGram plugins currently installed in Miogram."));
+                        callback.run(MiogramLocale.get("У Miogram наразі немає встановлених плагінів Mio.", "В Miogram сейчас нет установленных плагинов Mio.", "No Mio plugins currently installed in Miogram."));
                     } else {
                         StringBuilder sb = new StringBuilder(MiogramLocale.get("📦 Список встановлених плагінів:\n", "📦 Список установленных плагинов:\n", "📦 List of installed plugins:\n"));
                         int idx = 1;

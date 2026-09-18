@@ -240,4 +240,104 @@ create policy "Allow public update steam profiles"
 
 create index if not exists idx_miogram_steam_lookup on public.miogram_steam (user_id);
 
+-- ==========================================================
+-- MIGRATION 2026-09-18: founder-only badge identity
+-- Run this whole file in the Supabase SQL editor (idempotent).
+--
+-- Threat model: the anon key ships inside the public APK, so ANY old
+-- client (or curl) could POST/DELETE miogram_badges: mint badges for
+-- self/others, rewrite citations, revoke anyone (except founder row).
+-- After this migration:
+--   * anon keeps SELECT (reads) and UPDATE of presence-only columns
+--     (client_version, last_seen_at) => presence keeps working keyless.
+--   * anon INSERT and DELETE are gone => old clients fail closed:
+--     self-mint POST -> 403, citation PATCH -> 403, revoke DELETE -> 403.
+--   * badge identity changes ONLY via the RPCs below, which check
+--     the grant secret. The secret ships in NEW builds only, so old
+--     builds physically cannot grant/revoke/edit badges.
+--   * new clients must use PATCH (not upsert) for presence and the
+--     RPCs for grant/revoke (client code already updated).
+--
+-- SETUP: replace MIO-GRANT-mxxFB90ocCzVW9Fh8-AKiko5mANKNO5T below with your own secret and put
+-- the SAME value into MiogramSupabaseBridge.GRANT_SECRET in app code.
+-- ==========================================================
+
+-- 1. Drop permissive write policies on badge identity.
+drop policy if exists "Allow public insert or upsert" on public.miogram_badges;
+drop policy if exists "Allow public update" on public.miogram_badges;
+
+-- 2. Presence-only update stays available to anon (RLS row gate).
+drop policy if exists "Allow anon presence update" on public.miogram_badges;
+create policy "Allow anon presence update"
+    on public.miogram_badges
+    for update
+    using (true)
+    with check (true);
+
+-- 3. Column-level grants: anon touches presence columns only.
+--    (RLS evaluates first; column grants then reject identity writes.)
+revoke all on public.miogram_badges from anon;
+grant select on public.miogram_badges to anon;
+grant update (client_version, last_seen_at) on public.miogram_badges to anon;
+
+-- 4. Founder-only grant/revoke RPCs (SECURITY DEFINER bypasses RLS;
+--    the shared secret is the gate).
+create or replace function public.miogram_grant_badge(
+    p_secret text, p_target bigint, p_badge_id text, p_title text, p_reason text
+)
+returns jsonb language plpgsql security definer as $$
+begin
+    if p_secret is distinct from 'MIO-GRANT-mxxFB90ocCzVW9Fh8-AKiko5mANKNO5T' then
+        raise exception 'forbidden';
+    end if;
+    if p_target is null or p_target <= 0 then
+        raise exception 'bad target';
+    end if;
+    if p_badge_id is null
+        or p_badge_id not in ('original','pink','cyan','dark','angel','devil','rainbow','outline','glitch','premium') then
+        raise exception 'bad badge';
+    end if;
+    insert into public.miogram_badges(
+        user_id, badge_id, title, obtained_reason, obtained_at,
+        is_active, verified, grantor_id, client_version
+    )
+    values (
+        p_target, p_badge_id,
+        left(coalesce(nullif(p_title, ''), 'Miogram Community ໒꒱'), 120),
+        left(coalesce(nullif(p_reason, ''), 'Granted by Miogram Founder'), 500),
+        timezone('utc'::text, now()),
+        true, true, public.miogram_founder_id(), 'Miogram grant'
+    )
+    on conflict (user_id) do update set
+        badge_id = excluded.badge_id,
+        title = excluded.title,
+        obtained_reason = excluded.obtained_reason,
+        is_active = true,
+        verified = true,
+        grantor_id = public.miogram_founder_id(),
+        updated_at = timezone('utc'::text, now());
+    return jsonb_build_object('ok', true);
+end;
+$$;
+
+create or replace function public.miogram_revoke_badge(p_secret text, p_target bigint)
+returns jsonb language plpgsql security definer as $$
+begin
+    if p_secret is distinct from 'MIO-GRANT-mxxFB90ocCzVW9Fh8-AKiko5mANKNO5T' then
+        raise exception 'forbidden';
+    end if;
+    if p_target is null or p_target <= 0 then
+        raise exception 'bad target';
+    end if;
+    if p_target = public.miogram_founder_id() then
+        raise exception 'founder row is immutable';
+    end if;
+    delete from public.miogram_badges where user_id = p_target;
+    return jsonb_build_object('ok', true);
+end;
+$$;
+
+grant execute on function public.miogram_grant_badge(text, bigint, text, text, text) to anon, authenticated;
+grant execute on function public.miogram_revoke_badge(text, bigint) to anon, authenticated;
+
 

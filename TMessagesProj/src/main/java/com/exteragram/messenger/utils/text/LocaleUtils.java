@@ -198,7 +198,7 @@ public abstract class LocaleUtils {
         try {
             return ApplicationLoader.applicationContext.getString(R.string.OpenExtera);
         } catch (Exception e) {
-            return "exteraless";
+            return "Miogram";
         }
     }
 

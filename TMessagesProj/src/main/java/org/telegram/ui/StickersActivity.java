@@ -1005,7 +1005,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
                 Utilities.globalQueue.postRunnable(() -> {
                     JsonObject exportObj = StickersUtil.exportStickers(stickerSetList);
-                    File cacheFile = new File(AndroidUtilities.getCacheDir(), new Date().toLocaleString() + ".nekox-stickers.json");
+                    File cacheFile = new File(AndroidUtilities.getCacheDir(), new Date().toLocaleString() + ".mio-stickers.json");
 
                     StringWriter stringWriter = new StringWriter();
                     JsonWriter jsonWriter = new JsonWriter(stringWriter);
@@ -1235,7 +1235,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
             Uri uri = data.getData();
             if (uri != null) {
                 File cacheDir = AndroidUtilities.getCacheDir();
-                String tempFile = UUID.randomUUID().toString().replace("-", "") + ".nekox-stickers.json";
+                String tempFile = UUID.randomUUID().toString().replace("-", "") + ".mio-stickers.json";
                 File file = new File(cacheDir.getPath(), tempFile);
                 try {
                     final InputStream inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);
@@ -1354,7 +1354,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         Utilities.globalQueue.postRunnable(() -> {
             Activity ctx = getParentActivity();
             JsonObject exportObj = StickersUtil.exportStickers(currentAccount, exportSets, exportArchived);
-            File cacheFile = new File(AndroidUtilities.getCacheDir(), new Date().toLocaleString() + ".nekox-stickers.json");
+            File cacheFile = new File(AndroidUtilities.getCacheDir(), new Date().toLocaleString() + ".mio-stickers.json");
 
             StringWriter stringWriter = new StringWriter();
             JsonWriter jsonWriter = new JsonWriter(stringWriter);

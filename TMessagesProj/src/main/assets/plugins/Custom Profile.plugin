@@ -63,8 +63,27 @@ _BUILD_SHA = "1a8e5fb6576c90a9b53c8e61a729d302f436d2b730a3dfc8d5569617930f70a5"
 
 class CustomProfileBannerPlugin(BasePlugin):
 
+    # LSPlant (Aliuhook 1.1.4) hook dispatch is broken on Android 16 (API 36+):
+    # hooked dispatchDraw/onCreateViewHolder crash the whole process with NPE
+    # inside XposedBridge.invokeMethod. Loading the native core there can only
+    # crash chats and profiles, so stay unloaded and say so in settings.
+    _HOOKS_BROKEN_SDK = 36
+
+    @staticmethod
+    def _sdk_int():
+        try:
+            from java import jclass
+            return int(jclass("android.os.Build$VERSION").SDK_INT)
+        except Exception:
+            return 0
+
     def on_plugin_load(self):
         self._core = None
+        self._disabled_reason = None
+        if self._sdk_int() >= self._HOOKS_BROKEN_SDK:
+            self._disabled_reason = "android16"
+            self.log("[cpb] ядро отключено: хуки LSPlant падают на Android 16 (API 36+)")
+            return
         try:
             self._core = self._load_core()
         except Exception as e:
@@ -525,12 +544,20 @@ class CustomProfileBannerPlugin(BasePlugin):
         # есть своя ссылка, которую клиент даёт скопировать.
         core = getattr(self, "_core", None)
         if core is None:
-            rows = [
-                self._row(Header, text="Custom Profile"),
-                self._row(Text, text=self._t(
-                    "Ядро плагина не загрузилось — переустановите плагин.",
-                    "The plugin core did not load — reinstall the plugin.")),
-            ]
+            if getattr(self, "_disabled_reason", None) == "android16":
+                rows = [
+                    self._row(Header, text="Custom Profile"),
+                    self._row(Text, text=self._t(
+                        "Ядро оформления отключено на Android 16: его хуки валят чаты. Вернётся с совместимым ядром.",
+                        "The decoration core is disabled on Android 16: its hooks crash chats. It will return with a compatible core.")),
+                ]
+            else:
+                rows = [
+                    self._row(Header, text="Custom Profile"),
+                    self._row(Text, text=self._t(
+                        "Ядро плагина не загрузилось — переустановите плагин.",
+                        "The plugin core did not load — reinstall the plugin.")),
+                ]
             return [row for row in rows if row is not None]
         rows = [
             self._lang_row(),

@@ -9358,11 +9358,6 @@ public class Theme {
         if (key == Theme.key_chat_messageLinkIn || key == Theme.key_chat_messageLinkOut) return 0xFF0000EE;
         if (key == Theme.key_switchTrack) return 0xFFD4D0C8;
         if (key == Theme.key_switchTrackChecked) return 0xFF228B22;
-        if (key == Theme.key_listSelector) return 0x33316AC5;
-        if (key == Theme.key_chat_wallpaper) return 0xFF9CC3F5;
-        if (key == Theme.key_chat_wallpaper_gradient_to1) return 0xFF7DB3F0;
-        if (key == Theme.key_chat_wallpaper_gradient_to2) return 0xFFB8D6FB;
-        if (key == Theme.key_chat_wallpaper_gradient_to3) return 0xFFD8E8FC;
         return 0;
     }
 

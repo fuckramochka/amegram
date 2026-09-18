@@ -62,12 +62,10 @@ public final class MiogramMinimalRail {
         int ripple = Theme.getColor(Theme.key_listSelector);
 
         // Chats (we are here — always the active one in the dialog list).
-        FrameLayout chatsBox = makeButton(context, R.drawable.msg_list_solar,
+        root.addView(makeButton(context, R.drawable.msg_list_solar,
                 MiogramLocale.get("Чати", "Чаты", "Chats"), accent, ripple, v -> {
                     haptic(v);
-                });
-        attachUnreadBadge(context, chatsBox);
-        root.addView(chatsBox, LayoutHelper.createLinear(52, 52, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 4));
+                }), LayoutHelper.createLinear(52, 52, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 4));
 
         // Saved Messages.
         root.addView(makeButton(context, R.drawable.baseline_bookmark_24,
@@ -89,7 +87,7 @@ public final class MiogramMinimalRail {
         return root;
     }
 
-    private static FrameLayout makeButton(Context context, int iconRes, String desc, int tint, int ripple, View.OnClickListener l) {
+    private static View makeButton(Context context, int iconRes, String desc, int tint, int ripple, View.OnClickListener l) {
         FrameLayout box = new FrameLayout(context);
         ImageView icon = new ImageView(context);
         icon.setImageResource(iconRes);
@@ -101,27 +99,6 @@ public final class MiogramMinimalRail {
         box.addView(icon, LayoutHelper.createFrame(44, 44, Gravity.CENTER));
         box.setContentDescription(desc);
         return box;
-    }
-
-    /** Red unread counter pinned to the Chats button. */
-    private static void attachUnreadBadge(Context context, FrameLayout box) {
-        int totalUnread = 0;
-        try {
-            totalUnread = org.telegram.messenger.NotificationsController
-                    .getInstance(UserConfig.selectedAccount).getTotalUnreadCount();
-        } catch (Throwable ignore) {}
-        if (totalUnread <= 0) return;
-        android.widget.TextView badge = new android.widget.TextView(context);
-        badge.setText(totalUnread > 99 ? "99+" : String.valueOf(totalUnread));
-        badge.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 10);
-        badge.setTypeface(AndroidUtilities.bold());
-        badge.setTextColor(0xFFFFFFFF);
-        badge.setGravity(Gravity.CENTER);
-        badge.setMinWidth(AndroidUtilities.dp(18));
-        badge.setPadding(AndroidUtilities.dp(5), 0, AndroidUtilities.dp(5), 0);
-        badge.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), 0xFFF23F43));
-        badge.setSingleLine(true);
-        box.addView(badge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 18, Gravity.TOP | Gravity.RIGHT, 0, 2, 2, 0));
     }
 
     private static View makeAvatarButton(Context context, int ripple) {

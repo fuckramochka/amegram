@@ -562,132 +562,15 @@ public class MiogramCloudVaultEngine {
         return memoryFiles.size();
     }
 
-    private static File getIndexCacheFile(int currentAccount) {
-        try {
-            File dir = new File(ApplicationLoader.applicationContext.getFilesDir(), "vault");
-            if (!dir.exists()) dir.mkdirs();
-            return new File(dir, "vault_index_" + currentAccount + ".json");
-        } catch (Throwable t) {
-            return null;
-        }
-    }
-
-    /** Persists known manifests (metadata only, no file bytes) so the vault
-     *  survives restarts/updates and renders instantly before network sync. */
     public static void saveCache(int currentAccount) {
-        // Drop legacy prefs blob, if any.
+        // Zero local storage: purge any legacy cached index from disk
         try {
             getPrefs().edit().remove(KEY_CACHE_INDEX + currentAccount).apply();
         } catch (Throwable ignored) {}
-        try {
-            File f = getIndexCacheFile(currentAccount);
-            if (f == null) return;
-            JSONArray arr = new JSONArray();
-            for (MiogramCloudVaultFile file : memoryFiles.values()) {
-                if (file == null || TextUtils.isEmpty(file.fileId)) continue;
-                arr.put(file.toJson());
-            }
-            JSONObject root = new JSONObject();
-            root.put("v", 1);
-            root.put("chatId", getVaultChatId(currentAccount));
-            root.put("files", arr);
-            java.io.FileWriter w = new java.io.FileWriter(f, false);
-            w.write(root.toString());
-            w.close();
-        } catch (Throwable ignored) {}
     }
 
-    /** Full-vault backup: chat link + master key + all manifests (no file bytes). */
-    public static JSONObject exportBackupJson(int currentAccount) {
-        JSONObject root = new JSONObject();
-        try {
-            root.put("v", 1);
-            root.put("app", "miogram-vault-backup");
-            root.put("chatId", getVaultChatId(currentAccount));
-            root.put("masterKeyHex", getMasterKeyHex());
-            JSONArray arr = new JSONArray();
-            for (MiogramCloudVaultFile f : memoryFiles.values()) {
-                if (f == null || TextUtils.isEmpty(f.fileId)) continue;
-                arr.put(f.toJson());
-            }
-            root.put("files", arr);
-        } catch (Throwable ignore) {}
-        return root;
-    }
-
-    /** Writes the backup into Downloads/Miogram Vault, returns the file or null. */
-    public static File writeBackupFile(int currentAccount) {
-        try {
-            JSONObject root = exportBackupJson(currentAccount);
-            File downloadsDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Miogram Vault");
-            if (!downloadsDir.exists()) downloadsDir.mkdirs();
-            String stamp = new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(new java.util.Date());
-            File out = new File(downloadsDir, "miogram-vault-backup-" + stamp + ".json");
-            java.io.FileWriter w = new java.io.FileWriter(out, false);
-            w.write(root.toString());
-            w.close();
-            try {
-                MediaScannerConnection.scanFile(ApplicationLoader.applicationContext,
-                        new String[]{out.getAbsolutePath()}, null, null);
-            } catch (Throwable ignore) {}
-            return out;
-        } catch (Throwable t) {
-            FileLog.e(t);
-            return null;
-        }
-    }
-
-    /**
-     * Restores chat link + master key + manifests from a backup.
-     * @return imported file count, -1 on invalid input.
-     */
-    public static int importBackupJson(int currentAccount, String jsonStr) {
-        if (TextUtils.isEmpty(jsonStr)) return -1;
-        try {
-            JSONObject root = new JSONObject(jsonStr);
-            JSONArray arr = root.optJSONArray("files");
-            if (arr == null) return -1;
-            String keyHex = root.optString("masterKeyHex", "");
-            if (keyHex.length() == 64) setMasterKeyHex(keyHex);
-            long chatId = root.optLong("chatId", 0);
-            if (chatId != 0) setVaultChatId(currentAccount, chatId);
-            int count = 0;
-            for (int i = 0; i < arr.length(); i++) {
-                try {
-                    MiogramCloudVaultFile f = MiogramCloudVaultFile.fromJson(arr.getJSONObject(i));
-                    if (f != null && !TextUtils.isEmpty(f.fileId)) {
-                        memoryFiles.put(f.fileId, f);
-                        count++;
-                    }
-                } catch (Throwable ignore) {}
-            }
-            saveCache(currentAccount);
-            return count;
-        } catch (Throwable t) {
-            return -1;
-        }
-    }
     public static void loadCache(int currentAccount) {
-        try {
-            File f = getIndexCacheFile(currentAccount);
-            if (f == null || !f.exists()) return;
-            java.io.FileInputStream in = new java.io.FileInputStream(f);
-            byte[] buf = new byte[(int) Math.min(f.length(), 8L * 1024L * 1024L)];
-            int read = in.read(buf);
-            in.close();
-            if (read <= 0) return;
-            JSONObject root = new JSONObject(new String(buf, 0, read, StandardCharsets.UTF_8));
-            JSONArray arr = root.optJSONArray("files");
-            if (arr == null) return;
-            for (int i = 0; i < arr.length(); i++) {
-                try {
-                    MiogramCloudVaultFile file = MiogramCloudVaultFile.fromJson(arr.getJSONObject(i));
-                    if (file != null && !TextUtils.isEmpty(file.fileId) && !memoryFiles.containsKey(file.fileId)) {
-                        memoryFiles.put(file.fileId, file);
-                    }
-                } catch (Throwable ignore) {}
-            }
-        } catch (Throwable ignored) {}
+        // Zero local storage: file manifests are resolved strictly on-the-fly from Telegram Cloud
     }
 
     public static void clearMemoryFiles() {
@@ -724,10 +607,6 @@ public class MiogramCloudVaultEngine {
         } catch (Throwable ignored) {}
     }
 
-    private static final int SYNC_PAGE_LIMIT = 100;
-    private static final int SYNC_MAX_HISTORY_PAGES = 3;
-    private static final int SYNC_MAX_SEARCH_PAGES = 5;
-
     public static void syncVaultFiles(int currentAccount, long vaultChatId, SyncCallback callback) {
         loadCache(currentAccount);
         if (vaultChatId == 0) {
@@ -735,89 +614,31 @@ public class MiogramCloudVaultEngine {
             return;
         }
 
-        final long dialogId = getVaultDialogId(currentAccount, vaultChatId);
-        final TLRPC.InputPeer peer;
-        try {
-            peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
-        } catch (Throwable t) {
-            if (callback != null) {
-                AndroidUtilities.runOnUIThread(() -> callback.onSyncComplete(getFilesForTopic(0)));
-            }
-            return;
-        }
-        // Search first: manifests live anywhere in the chat (Saved Messages vaults
-        // hold thousands of personal messages). History supplements recent parts.
-        // Orphan parts are buffered until their manifest arrives via search.
-        syncSearchPage(currentAccount, peer, 0, 0, callback, vaultChatId);
-    }
-
-    private static void syncHistoryPage(int currentAccount, TLRPC.InputPeer peer, int offsetId, int page, SyncCallback callback, long vaultChatId) {
+        long dialogId = getVaultDialogId(currentAccount, vaultChatId);
         TLRPC.TL_messages_getHistory reqHistory = new TLRPC.TL_messages_getHistory();
-        reqHistory.peer = peer;
-        reqHistory.limit = SYNC_PAGE_LIMIT;
-        reqHistory.offset_id = offsetId;
-        reqHistory.add_offset = 0;
+        reqHistory.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+        reqHistory.limit = 100;
 
         ConnectionsManager.getInstance(currentAccount).sendRequest(reqHistory, (respHistory, errHistory) -> {
-            int nextOffset = offsetId;
-            int received = 0;
             if (respHistory instanceof TLRPC.messages_Messages) {
-                ArrayList<TLRPC.Message> msgs = ((TLRPC.messages_Messages) respHistory).messages;
-                if (msgs != null && !msgs.isEmpty()) {
-                    processSyncMessages(currentAccount, msgs);
-                    received = msgs.size();
-                    int minId = Integer.MAX_VALUE;
-                    for (TLRPC.Message m : msgs) {
-                        if (m != null && m.id < minId) minId = m.id;
-                    }
-                    if (minId != Integer.MAX_VALUE) nextOffset = minId;
-                }
+                processSyncMessages(currentAccount, ((TLRPC.messages_Messages) respHistory).messages);
             }
-            if (received >= SYNC_PAGE_LIMIT && page + 1 < SYNC_MAX_HISTORY_PAGES) {
-                final int off = nextOffset;
-                final int nextPage = page + 1;
-                syncHistoryPage(currentAccount, peer, off, nextPage, callback, vaultChatId);
-            } else {
+
+            // Also search across all forum topics for #MVLT manifests
+            TLRPC.TL_messages_search reqSearch = new TLRPC.TL_messages_search();
+            reqSearch.peer = MessagesController.getInstance(currentAccount).getInputPeer(dialogId);
+            reqSearch.q = MANIFEST_PREFIX;
+            reqSearch.filter = new TLRPC.TL_inputMessagesFilterEmpty();
+            reqSearch.limit = 100;
+            ConnectionsManager.getInstance(currentAccount).sendRequest(reqSearch, (respSearch, errSearch) -> {
+                if (respSearch instanceof TLRPC.messages_Messages) {
+                    processSyncMessages(currentAccount, ((TLRPC.messages_Messages) respSearch).messages);
+                }
                 AndroidUtilities.runOnUIThread(() -> {
                     saveCache(currentAccount);
                     if (callback != null) callback.onSyncComplete(getFilesForTopic(0));
                 });
-            }
-        });
-    }
-
-    private static void syncSearchPage(int currentAccount, TLRPC.InputPeer peer, int offsetId, int page, SyncCallback callback, long vaultChatId) {
-        // Also search across all forum topics for #MVLT manifests
-        TLRPC.TL_messages_search reqSearch = new TLRPC.TL_messages_search();
-        reqSearch.peer = peer;
-        reqSearch.q = MANIFEST_PREFIX;
-        reqSearch.filter = new TLRPC.TL_inputMessagesFilterEmpty();
-        reqSearch.limit = SYNC_PAGE_LIMIT;
-        reqSearch.offset_id = offsetId;
-        ConnectionsManager.getInstance(currentAccount).sendRequest(reqSearch, (respSearch, errSearch) -> {
-            int nextOffset = offsetId;
-            int received = 0;
-            if (respSearch instanceof TLRPC.messages_Messages) {
-                ArrayList<TLRPC.Message> msgs = ((TLRPC.messages_Messages) respSearch).messages;
-                if (msgs != null && !msgs.isEmpty()) {
-                    processSyncMessages(currentAccount, msgs);
-                    received = msgs.size();
-                    int minId = Integer.MAX_VALUE;
-                    for (TLRPC.Message m : msgs) {
-                        if (m != null && m.id < minId) minId = m.id;
-                    }
-                    if (minId != Integer.MAX_VALUE) nextOffset = minId;
-                }
-            }
-            if (received >= SYNC_PAGE_LIMIT && page + 1 < SYNC_MAX_SEARCH_PAGES) {
-                final int off = nextOffset;
-                final int nextPage = page + 1;
-                syncSearchPage(currentAccount, peer, off, nextPage, callback, vaultChatId);
-            } else {
-                // Supplement with the newest history: recent parts + manifests,
-                // then flush. Orphans buffered earlier resolve here.
-                syncHistoryPage(currentAccount, peer, 0, 0, callback, vaultChatId);
-            }
+            });
         });
     }
 

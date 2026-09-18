@@ -1914,7 +1914,6 @@ public class ChatActivity extends BaseFragment implements
     private final static int miogram_split_screen = 4402;
     private final static int miogram_add_to_kanban = 4403;
     private final static int miogram_chat_ai = 4404;
-    private final static int miogram_mini_window = 4405;
 
     private ActionBarMenuItem actionModeOtherItem; // NekoX
 
@@ -2161,9 +2160,17 @@ public class ChatActivity extends BaseFragment implements
             }
             if (doubleTapAction == DoubleTap.DOUBLE_TAP_ACTION_SEND_REACTIONS || doubleTapAction == DoubleTap.DOUBLE_TAP_ACTION_SHOW_REACTIONS) {
                 String reactionStringSetting = getMediaDataController().getDoubleTapReaction();
-                TLRPC.TL_availableReaction reaction = getMediaDataController().getReactionsMap().get(reactionStringSetting);
+                TLRPC.TL_availableReaction reaction = reactionStringSetting != null ? getMediaDataController().getReactionsMap().get(reactionStringSetting) : null;
                 if (reaction == null && (reactionStringSetting == null || !reactionStringSetting.startsWith("animated_"))) {
-                    return false;
+                    // Saved quick reaction vanished from the map (data clear / not loaded yet):
+                    // fall back to the first available reaction instead of a dead gesture.
+                    if (!getMediaDataController().getReactionsList().isEmpty()) {
+                        reactionStringSetting = getMediaDataController().getReactionsList().get(0).reaction;
+                        reaction = getMediaDataController().getReactionsMap().get(reactionStringSetting);
+                    }
+                    if (reaction == null) {
+                        return false;
+                    }
                 }
                 boolean available = dialog_id >= 0;
                 if (!available && chatInfo != null) {
@@ -2257,8 +2264,14 @@ public class ChatActivity extends BaseFragment implements
                 }
                 if (!(currentChat == null || ChatObject.isChannelAndNotMegaGroup(currentChat) || ChatObject.canUserDoAction(currentChat, ChatObject.ACTION_SEND_REACTIONS))) {
                 return;
-            }ReactionsEffectOverlay.removeCurrent(false);
+            }                ReactionsEffectOverlay.removeCurrent(false);
                 String reactionString = getMediaDataController().getDoubleTapReaction();
+                if (reactionString == null) {
+                    if (getMediaDataController().getReactionsList().isEmpty()) {
+                        return;
+                    }
+                    reactionString = getMediaDataController().getReactionsList().get(0).reaction;
+                }
                 if (reactionString.startsWith("animated_")) {
                     boolean available = dialog_id >= 0;
                     if (!available && chatInfo != null) {
@@ -2270,6 +2283,10 @@ public class ChatActivity extends BaseFragment implements
                     selectReaction(view, messageObject, null, null, x, y, ReactionsLayoutInBubble.VisibleReaction.fromEmojicon(reactionString), true, false, false, false);
                 } else {
                     TLRPC.TL_availableReaction reaction = getMediaDataController().getReactionsMap().get(reactionString);
+                    if (reaction == null && !getMediaDataController().getReactionsList().isEmpty()) {
+                        reactionString = getMediaDataController().getReactionsList().get(0).reaction;
+                        reaction = getMediaDataController().getReactionsMap().get(reactionString);
+                    }
                     if (reaction == null || messageObject.isSponsored()) {
                         return;
                     }
@@ -4444,8 +4461,6 @@ public class ChatActivity extends BaseFragment implements
                     presentFragment(new app.miogram.bridge.kanban.MiogramKanbanActivity());
                 } else if (id == miogram_split_screen) {
                     presentFragment(new app.miogram.bridge.multichat.MiogramSplitChatActivity(dialog_id, 0));
-                } else if (id == miogram_mini_window) {
-                    app.miogram.bridge.mini.MiogramMiniChat.openInMiniWindow(getParentActivity(), currentAccount, getDialogId());
                 } else if (id == to_the_beginning) {
                     scrollToMessageId(1, 0, false, 0, true, 0);
                 } else if (id == to_the_message){
@@ -5240,11 +5255,6 @@ public class ChatActivity extends BaseFragment implements
 
             // 2.14 Split Screen (Multi-Chat)
             chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_split_screen, R.drawable.msg_fave, app.miogram.bridge.MiogramLocale.get("Розділити екран (Мультичат)", "Разделить экран (Мультичат)", "Split Screen (Multi-Chat)")));
-
-            // 2.14b Mini window (Android bubble, API 29+)
-            if (app.miogram.bridge.mini.MiogramMiniChat.isSupported()) {
-                chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(miogram_mini_window, R.drawable.msg_expand, app.miogram.bridge.MiogramLocale.get("Відкрити в міні-вікні", "Открыть в мини-окне", "Open in mini window")));
-            }
 
             // 2.15 Navigation & History Utilities
             boolean addedSettings = false;
@@ -9873,8 +9883,6 @@ public class ChatActivity extends BaseFragment implements
 
         onBottomItemsVisibilityChanged();
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
-        // Luna title bar in XP mode (no-op for every other preset).
-        app.miogram.bridge.ui.xp.MiogramXpDecor.styleActionBar(actionBar);
         if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
             contentView.setBackgroundColor(app.miogram.bridge.ui.discord.MiogramDiscordLayout.COLOR_CHAT_BG);
             if (actionBar != null) {
@@ -20333,6 +20341,19 @@ public class ChatActivity extends BaseFragment implements
     private static final int MESSAGE_TYPE_NEKOX_SETTINGS_JSON = 23;
     private static final int MESSAGE_TYPE_FONT = 100;
 
+    /** New .mio-* names with legacy .nekox-* fallback. */
+    private static boolean isMioSettingsBackupName(String name) {
+        if (name == null) return false;
+        String lower = name.toLowerCase();
+        return lower.endsWith(".mio-settings.json") || lower.endsWith(".nekox-settings.json");
+    }
+
+    private static boolean isMioStickersBackupName(String name) {
+        if (name == null) return false;
+        String lower = name.toLowerCase();
+        return lower.endsWith(".mio-stickers.json") || lower.endsWith(".nekox-stickers.json");
+    }
+
     private int getMessageType(MessageObject messageObject) {
         if (messageObject == null) {
             return MESSAGE_TYPE_INVALID;
@@ -20396,9 +20417,9 @@ public class ChatActivity extends BaseFragment implements
                                         return MESSAGE_TYPE_THEME;
                                     } else if (mime.endsWith("/xml")) {
                                         return MESSAGE_TYPE_XML;
-                                    } else if ((messageObject.getDocumentName().toLowerCase().endsWith(".nekox-stickers.json"))) {
+                                    } else if (isMioStickersBackupName(messageObject.getDocumentName())) {
                                         return MESSAGE_TYPE_NEKOX_STICKERS_JSON;
-                                    } else if ((messageObject.getDocumentName().toLowerCase().endsWith(".nekox-settings.json"))) {
+                                    } else if (isMioSettingsBackupName(messageObject.getDocumentName())) {
                                         return MESSAGE_TYPE_NEKOX_SETTINGS_JSON;
                                     } else if (!messageObject.isNewGif() && mime.endsWith("/mp4") || mime.endsWith("/png") || mime.endsWith("/jpg") || mime.endsWith("/jpeg")) {
                                         return MESSAGE_TYPE_IMAGE_OR_VIDEO;
@@ -35870,7 +35891,7 @@ public class ChatActivity extends BaseFragment implements
                             builder.setOnPreDismissListener(di -> dimBehindView(false));
                             showDialog(builder.create());
                         }
-                    } else if (locFile.getName().toLowerCase().endsWith(".nekox-stickers.json") || fileName.endsWith(".nekox-stickers.json")) {
+                    } else if (isMioStickersBackupName(locFile.getName()) || isMioStickersBackupName(fileName)) {
                         File finalLocFile = locFile;
                         AlertUtil.showConfirm(getParentActivity(),
                                 getString(R.string.ImportStickersList),
@@ -35879,11 +35900,11 @@ public class ChatActivity extends BaseFragment implements
                                     presentFragment(new StickersActivity(finalLocFile));
                                 }
                         );
-                    } else if (locFile.getName().toLowerCase().endsWith(".nekox-settings.json") || fileName.endsWith(".nekox-settings.json")) {
+                    } else if (isMioSettingsBackupName(locFile.getName()) || isMioSettingsBackupName(fileName)) {
                         File finalLocFile = locFile;
                         SettingsBackupHelper.importSettings(getParentActivity(), finalLocFile);
-                    } else if (locFile.getName().toLowerCase().endsWith(app.exteraless.backup.EtgBackup.EXTENSION)
-                            || fileName.endsWith(app.exteraless.backup.EtgBackup.EXTENSION)) {
+                    } else if (app.exteraless.backup.EtgBackup.matchesName(locFile.getName())
+                            || app.exteraless.backup.EtgBackup.matchesName(fileName)) {
                         app.exteraless.backup.EtgBackupUi.confirmImport(this, locFile);
                     } else if (getMessageType(selectedObject) == MESSAGE_TYPE_FONT) {
                         AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
@@ -45123,17 +45144,17 @@ public class ChatActivity extends BaseFragment implements
                     } else {
                         scrollToPositionOnRecreate = -1;
                     }
-                } else if (message.getDocumentName().toLowerCase().endsWith(".nekox-stickers.json")) {
+                } else if (isMioStickersBackupName(message.getDocumentName())) {
                     File finalLocFile = locFile;
                     AlertUtil.showConfirm(getParentActivity(),
                             getString(R.string.ImportStickersList),
                             R.drawable.msg_sticker, getString(R.string.Import), false, () -> {
                                 presentFragment(new StickersActivity(finalLocFile));
                             });
-                } else if (message.getDocumentName().toLowerCase().endsWith(".nekox-settings.json")) {
+                } else if (isMioSettingsBackupName(message.getDocumentName())) {
                     File finalLocFile = locFile;
                     SettingsBackupHelper.importSettings(getParentActivity(), finalLocFile);
-                } else if (message.getDocumentName().toLowerCase().endsWith(app.exteraless.backup.EtgBackup.EXTENSION)) {
+                } else if (app.exteraless.backup.EtgBackup.matchesName(message.getDocumentName())) {
                     app.exteraless.backup.EtgBackupUi.confirmImport(ChatActivity.this, locFile);
                 } else {
                     // exteraless plugins: файл плагина ставится, а не открывается

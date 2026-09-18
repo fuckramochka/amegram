@@ -65,7 +65,7 @@ public final class MiogramMiopluginWatcher {
     private static final String KEY_TREE_URI = "tree_uri";
     private static final String KEY_IMPORTED = "imported_keys";
 
-    private static final String[] SCAN_EXT = {".py", ".wasm", ".so", ".mioplugin", ".plugin", ".elyx", ".eaf", ".lua"};
+    private static final String[] SCAN_EXT = {".py", ".wasm", ".so", ".mioplugin", ".plugin", ".elyx", ".eaf"};
 
     public interface ScanCallback {
         void onDone(int imported, List<String> names, String error);

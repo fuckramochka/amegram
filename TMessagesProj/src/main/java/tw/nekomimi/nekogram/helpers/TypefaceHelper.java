@@ -152,6 +152,11 @@ public class TypefaceHelper {
 
     public static SpannableStringBuilder getTitleText(int currentAccount) {
         String title = NaConfig.INSTANCE.getCustomTitle().String();
+        // One-time rebrand migration: legacy fork names -> Miogram.
+        if ("exteraless".equals(title) || "Nagram X".equals(title) || "NagramX".equals(title)) {
+            title = "Miogram";
+            NaConfig.INSTANCE.getCustomTitle().setConfigString(title);
+        }
         if (NaConfig.INSTANCE.getCustomTitleUserName().Bool()) {
             TLRPC.User self = UserConfig.getInstance(currentAccount).getCurrentUser();
             if (self != null && self.first_name != null) {

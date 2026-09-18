@@ -36,14 +36,11 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
     private int headerHistoryRow;
     private int saveDeletedMessagesRow;
     private int saveDeletedMediaRow;
-    private int ghostVaultRow;
     private int historyInfoRow;
 
     private int headerGeneralPrivacyRow;
     private int hidePhoneRow;
     private int allowScreenshotRow;
-    private int telemetryRow;
-    private int antiBlockRow;
     private int generalPrivacyInfoRow;
 
     @Override
@@ -68,15 +65,11 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         headerHistoryRow = addRow();
         saveDeletedMessagesRow = addRow();
         saveDeletedMediaRow = addRow();
-        // Visible only when BOTH anti-delete toggles are ON.
-        ghostVaultRow = app.miogram.bridge.privacy.MiogramGhostKeeper.isGhostKeepEnabled() ? addRow() : -1;
         historyInfoRow = addRow();
 
         headerGeneralPrivacyRow = addRow();
         hidePhoneRow = addRow();
         allowScreenshotRow = addRow();
-        telemetryRow = addRow();
-        antiBlockRow = addRow();
         generalPrivacyInfoRow = addRow();
     }
 
@@ -100,16 +93,11 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             boolean v = !NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool();
             NaConfig.INSTANCE.getEnableSaveDeletedMessages().setConfigBool(v);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
-            updateRows();
-            listAdapter.notifyDataSetChanged();
+            listAdapter.notifyItemChanged(saveDeletedMediaRow);
         } else if (position == saveDeletedMediaRow) {
             boolean v = !NaConfig.INSTANCE.getMessageSavingSaveMedia().Bool();
             NaConfig.INSTANCE.getMessageSavingSaveMedia().setConfigBool(v);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
-            updateRows();
-            listAdapter.notifyDataSetChanged();
-        } else if (position == ghostVaultRow) {
-            presentFragment(new app.miogram.bridge.cloudvault.MiogramCloudVaultActivity());
         } else if (position == hidePhoneRow) {
             boolean v = !NekoConfig.hidePhone.Bool();
             NekoConfig.hidePhone.setConfigBool(v);
@@ -119,12 +107,6 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             boolean v = !NekoConfig.ignoreContentRestrictions.Bool();
             NekoConfig.ignoreContentRestrictions.setConfigBool(v);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
-        } else if (position == telemetryRow) {
-            boolean nextState = !app.miogram.bridge.badge.MiogramSupabaseBridge.isTelemetryEnabled();
-            app.miogram.bridge.badge.MiogramSupabaseBridge.setTelemetryEnabled(nextState);
-            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(nextState);
-        } else if (position == antiBlockRow) {
-            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
         }
     }
 
@@ -141,10 +123,8 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                 return TYPE_HEADER;
             } else if (position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
                     || position == saveDeletedMessagesRow || position == saveDeletedMediaRow
-                    || position == hidePhoneRow || position == allowScreenshotRow || position == telemetryRow) {
+                    || position == hidePhoneRow || position == allowScreenshotRow) {
                 return TYPE_CHECK;
-            } else if (position == vaultManageRow || position == ghostVaultRow || position == antiBlockRow) {
-                return TYPE_TEXT;
             } else if (position == vaultInfoRow || position == ghostInfoRow
                     || position == historyInfoRow || position == generalPrivacyInfoRow) {
                 return TYPE_INFO_PRIVACY;
@@ -184,8 +164,6 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(MiogramLocale.get("Приховати номер телефону в меню та налаштуваннях", "Скрыть номер телефона в меню и настройках", "Hide phone number in menu & settings"), NekoConfig.hidePhone.Bool(), true);
                     } else if (position == allowScreenshotRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Дозволити знімки екрана та копіювання в обмежених чатах", "Разрешить снимки экрана и копирование в ограниченных чатах", "Allow screenshots in protected content chats"), NekoConfig.ignoreContentRestrictions.Bool(), false);
-                    } else if (position == telemetryRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Хмарна синхронізація та аналітика", "Облачная синхронизация и аналитика", "Cloud Sync & Analytics"), app.miogram.bridge.badge.MiogramSupabaseBridge.isTelemetryEnabled(), false);
                     }
                     break;
                 }
@@ -193,22 +171,6 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                     TextCell cell = (TextCell) holder.itemView;
                     if (position == vaultManageRow) {
                         cell.setTextAndIcon(MiogramLocale.get("Налаштування прихованих акаунтів та кодів", "Настройки скрытых аккаунтов и кодов", "Hidden accounts & Passcodes setup"), R.drawable.msg_permissions, false);
-                    } else if (position == ghostVaultRow) {
-                        cell.setTextAndIcon(MiogramLocale.get("Збережені самознищувані", "Сохранённые самоуничтожающиеся", "Kept view-once media"), R.drawable.msg_saved, false);
-                    } else if (position == antiBlockRow) {
-                        boolean active = app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().isBypassActive();
-                        boolean auto = app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().isAutoBypassEnabled();
-                        String val = active
-                                ? MiogramLocale.get("Захищено (Fake-TLS)", "Защищено (Fake-TLS)", "Protected (Fake-TLS)")
-                                : (auto
-                                        ? MiogramLocale.get("Розумний авто-обхід", "Умный авто-обход", "Smart Auto-Bypass")
-                                        : MiogramLocale.get("Вимкнено (пряме)", "Отключено (прямое)", "Disabled (direct)"));
-                        cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Обхід блокувань (Анти-ТСПУ)", "Обход блокировок (Анти-ТСПУ)", "Anti-Censorship & Bypass"),
-                                val,
-                                R.drawable.msg_bot,
-                                false
-                        );
                     }
                     break;
                 }

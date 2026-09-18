@@ -6,7 +6,6 @@ import android.content.SharedPreferences;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
-import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
 import java.nio.charset.StandardCharsets;
@@ -111,10 +110,6 @@ public class MiogramDoubleBottomManager {
     }
 
     public static Set<Long> getAllowedDialogIds(int account) {
-        Set<Long> cached = getCachedAllowed(account);
-        if (cached != null) {
-            return new HashSet<>(cached);
-        }
         Set<String> stringSet = getPrefs().getStringSet(PREF_ALLOWED_PREFIX + account, null);
         Set<Long> result = new HashSet<>();
         if (stringSet != null) {
@@ -124,27 +119,7 @@ public class MiogramDoubleBottomManager {
                 } catch (Exception ignore) {}
             }
         }
-        putCachedAllowed(account, result);
-        return new HashSet<>(result);
-    }
-
-    // --- In-memory cache: isChatAllowed runs per dialog on every list build,
-    // so StringSet prefs parsing must not repeat thousands of times per second.
-    private static final java.util.Map<Integer, Set<Long>> allowedCache = new java.util.HashMap<>();
-    private static final java.util.Map<Integer, Boolean> allowedKnownCache = new java.util.HashMap<>();
-
-    private static synchronized Set<Long> getCachedAllowed(int account) {
-        return allowedCache.get(account);
-    }
-
-    private static synchronized void putCachedAllowed(int account, Set<Long> ids) {
-        allowedCache.put(account, new HashSet<>(ids));
-        allowedKnownCache.put(account, !ids.isEmpty());
-    }
-
-    private static synchronized void invalidateAllowedCache() {
-        allowedCache.clear();
-        allowedKnownCache.clear();
+        return result;
     }
 
     public static void setAllowedDialogIds(int account, Collection<Long> ids) {
@@ -157,64 +132,11 @@ public class MiogramDoubleBottomManager {
             }
         }
         getPrefs().edit().putStringSet(PREF_ALLOWED_PREFIX + account, stringSet).apply();
-        invalidateAllowedCache();
     }
 
     public static boolean hasAllowedDialogs(int account) {
-        Boolean known;
-        synchronized (MiogramDoubleBottomManager.class) {
-            known = allowedKnownCache.get(account);
-        }
-        if (known != null) return known;
-        // Warm the cache as a side effect.
-        getAllowedDialogIds(account);
-        synchronized (MiogramDoubleBottomManager.class) {
-            known = allowedKnownCache.get(account);
-        }
-        return known != null && known;
-    }
-
-    /** Allocation-free membership test for per-dialog filtering. */
-    private static boolean isDialogAllowedCached(int account, long dialogId) {
-        Set<Long> cached = getCachedAllowed(account);
-        if (cached == null) {
-            // Parse once, reuse for the rest of the list build.
-            getAllowedDialogIds(account);
-            cached = getCachedAllowed(account);
-        }
-        return cached != null && cached.contains(dialogId);
-    }
-
-    /** True if at least one activated account has protected chats configured. */
-    public static boolean hasAnyAllowedDialogs() {
-        try {
-            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                try {
-                    if (UserConfig.getInstance(a).isClientActivated() && hasAllowedDialogs(a)) {
-                        return true;
-                    }
-                } catch (Throwable ignore) {}
-            }
-        } catch (Throwable ignore) {}
-        return false;
-    }
-
-    /**
-     * Accounts invisible in the switcher while duress is active.
-     * With a decoy: everything except the decoy. Without a decoy:
-     * accounts with no protected chats (pure main-storage accounts),
-     * but only when at least one account is actually configured —
-     * otherwise the switcher would go (confusingly) empty.
-     */
-    public static boolean isAccountHiddenInDuress(int account) {
-        if (!isDuressActive) {
-            return false;
-        }
-        int decoy = getDecoyAccount();
-        if (decoy >= 0) {
-            return account != decoy;
-        }
-        return hasAnyAllowedDialogs() && !hasAllowedDialogs(account);
+        Set<String> set = getPrefs().getStringSet(PREF_ALLOWED_PREFIX + account, null);
+        return set != null && !set.isEmpty();
     }
 
     public static boolean isChatAllowed(int account, long dialogId) {
@@ -227,14 +149,14 @@ public class MiogramDoubleBottomManager {
                 if (!hasAllowedDialogs(account)) {
                     return true;
                 }
-                return isDialogAllowedCached(account, dialogId);
+                return getAllowedDialogIds(account).contains(dialogId);
             }
             return false;
         }
         if (!hasAllowedDialogs(account)) {
             return true;
         }
-        return isDialogAllowedCached(account, dialogId);
+        return getAllowedDialogIds(account).contains(dialogId);
     }
 
     public static int checkPasscode(String pin) {
@@ -304,7 +226,6 @@ public class MiogramDoubleBottomManager {
 
     public static void clearAll() {
         getPrefs().edit().clear().apply();
-        invalidateAllowedCache();
         isDuressActive = false;
         SharedConfig.passcodeHash = "";
         SharedConfig.appLocked = false;

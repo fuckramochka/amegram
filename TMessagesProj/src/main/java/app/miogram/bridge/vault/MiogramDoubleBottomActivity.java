@@ -388,9 +388,9 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
                         ));
                     } else if (position == accountInfoRow) {
                         cell.setText(MiogramLocale.get(
-                                "Оберіть, який акаунт показувати під час перевірки. Додаток непомітно перемкнеться на нього при вводі аварійного коду. Без аварійного акаунта акаунти без захищених чатів зникають зі списку перемикання в тривожному режимі.",
-                                "Выберите, какой аккаунт показывать при проверке. Приложение незаметно переключится на него при вводе аварийного кода. Без аварийного аккаунта аккаунты без защищённых чатов исчезают из переключателя в тревожном режиме.",
-                                "Select which account to display under duress. The app silently switches to it when emergency PIN is entered. Without a decoy, accounts with no protected chats disappear from the switcher in duress mode."
+                                "Оберіть, який акаунт показувати під час перевірки. Додаток непомітно перемкнеться на нього при вводі аварійного коду.",
+                                "Выберите, какой аккаунт показывать при проверке. Приложение незаметно переключится на него при вводе аварийного кода.",
+                                "Select which account to display under duress. The app silently switches to it when emergency PIN is entered."
                         ));
                     } else if (position == chatsInfoRow) {
                         cell.setText(MiogramLocale.get(

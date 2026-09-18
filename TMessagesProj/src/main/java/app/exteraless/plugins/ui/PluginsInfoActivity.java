@@ -52,7 +52,7 @@ public class PluginsInfoActivity extends BaseFragment {
     private static final int ID_TRUSTED = 8;
     private static final int ID_UNSAFE_MODE = 9;
 
-    private static final String DOCS_URL = "https://plugins.exteragram.app";
+    private static final String DOCS_URL = "https://github.com/fuckramochka/miogram";
     private static final String TRUSTED_URL = "https://t.me/addlist/pPhOtEq00KhjYTc6";
 
     private UniversalRecyclerView listView;

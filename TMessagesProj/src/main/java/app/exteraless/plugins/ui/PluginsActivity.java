@@ -166,7 +166,7 @@ public class PluginsActivity extends BaseFragment {
         String[] titles = {
             app.miogram.bridge.MiogramLocale.get("Всі", "Все", "All"),
             "Miogram WASM",
-            "ExteraGram Python (.py)",
+            "Mio Python (.py)",
             app.miogram.bridge.MiogramLocale.get("Каталог ໒꒱", "Каталог ໒꒱", "Catalog ໒꒱")
         };
         int[] filters = {FILTER_ALL, FILTER_MIOGRAM, FILTER_EXTERA, FILTER_CATALOG};

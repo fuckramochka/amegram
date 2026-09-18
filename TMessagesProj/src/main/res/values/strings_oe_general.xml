@@ -62,24 +62,24 @@
     <!-- Settings Management -->
     <string name="OEGeneralExportEtgSettings">Export</string>
     <string name="OEGeneralImportEtgSettings">Import</string>
-    <string name="OEGeneralEtgSettingsInfo">exteraGram exchanges settings through .extera files. Only settings that both apps have are transferred; the rest is left as is.</string>
+    <string name="OEGeneralEtgSettingsInfo">Miogram exchanges settings through .mio files. Only settings that both apps have are transferred; the rest is left as is.</string>
     <string name="OEGeneralImportEtgConfirm">%1$d settings from this file will replace the current ones.</string>
-    <string name="OEGeneralImportEtgEmpty">No exteraGram settings found in this file.</string>
+    <string name="OEGeneralImportEtgEmpty">No Miogram settings found in this file.</string>
     <string name="OEGeneralImportEtgDone">Settings imported: %1$d</string>
     <string name="OEGeneralResetSettings">Reset Settings</string>
-    <string name="OEGeneralResetSettingsInfo">All exteraless settings will be reset to their default values.</string>
-    <string name="OEGeneralResetSettingsDone">exteraless preferences have been reset.</string>
+    <string name="OEGeneralResetSettingsInfo">All Miogram settings will be reset to their default values.</string>
+    <string name="OEGeneralResetSettingsDone">Miogram preferences have been reset.</string>
     <string name="OEGeneralDeleteAccount">Delete Account</string>
     <string name="DeepLFormalityDefault">Tone: as it comes</string>
     <string name="DeepLFormalityInformal">Tone: informal</string>
     <string name="DeepLFormalityFormal">Tone: formal</string>
-    <string name="OEGeneralNagramHeader">NagramX</string>
-    <string name="OEGeneralNagramSettings">NagramX settings</string>
-    <string name="OEGeneralNagramSettingsInfo">Adds a row to the main settings list that opens the settings of NagramX — the fork exteraless is built on. Only the ones exteraless has no screen of its own for are worth looking at there.</string>
-    <string name="OEGeneralAyuMoments">AyuMoments quick access</string>
-    <string name="OEGeneralAyuMomentsHideTitle">Hide AyuMoments?</string>
+    <string name="OEGeneralNagramHeader">Mio Mod</string>
+    <string name="OEGeneralNagramSettings">Mio Mod settings</string>
+    <string name="OEGeneralNagramSettingsInfo">Adds a row to the main settings list that opens the Mio Mod settings. Only the ones Miogram has no screen of its own for are worth looking at there.</string>
+    <string name="OEGeneralAyuMoments">Mio Moments quick access</string>
+    <string name="OEGeneralAyuMomentsHideTitle">Hide Mio Moments?</string>
     <string name="OEGeneralAyuMomentsHideMessage">The settings will disappear from this screen. The features themselves keep running until you turn them off.</string>
-    <string name="OEGeneralAyuMomentsDisableAll">Turn off all AyuMoments features</string>
+    <string name="OEGeneralAyuMomentsDisableAll">Turn off all Mio Moments features</string>
     <string name="OEGeneralAyuMomentsWipe">Delete the saved messages database</string>
     <string name="OEGeneralLastFm">Last.fm</string>
     <string name="OEGeneralLastFmHint">username</string>
@@ -109,5 +109,5 @@
     <string name="OEGeneralMapProvider">Map provider</string>
     <string name="OEGeneralMapPreview">Location previews</string>
     <string name="OEGeneralMapDriftingFix">Fix map drifting</string>
-    <string name="OECrashTitle">exteraless crashed</string>
+    <string name="OECrashTitle">Miogram crashed</string>
 </resources>

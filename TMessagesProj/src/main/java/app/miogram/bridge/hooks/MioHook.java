@@ -64,12 +64,6 @@ public final class MioHook {
         /** Vetoable. Return false to hide a dialog row (duress-style filters). */
         DIALOG_VISIBILITY,
         /**
-         * Media fetch lifecycle (mod-API downloads, chat downloads, TT clips):
-         * phases "started" / "progress" / "completed" / "failed". Never vetoable,
-         * observers must be fast (progress fires ~12x/sec).
-         */
-        MEDIA_DOWNLOAD,
-        /**
          * Fired when a named UI container is created (tags: "main_tabs", ...).
          * Lets plugins inject views WITHOUT hacking fragmentView (the old
          * Discord-rail way that caused zombie UI).
@@ -158,27 +152,6 @@ public final class MioHook {
     public interface UiContainerListener {
         /** Called on the UI thread right after the container is constructed. */
         void onUiContainerAttached(String tag, android.view.ViewGroup container);
-    }
-
-    /** Media download lifecycle event (mod-API, chat and TT downloads). */
-    public static final class DownloadEvent {
-        public final String phase; // started | progress | completed | failed
-        public final String url;
-        public final String filePath; // set on completed
-        public final int percent; // 0..100 on progress
-        public final String error; // set on failed
-
-        public DownloadEvent(String phase, String url, String filePath, int percent, String error) {
-            this.phase = phase;
-            this.url = url;
-            this.filePath = filePath;
-            this.percent = percent;
-            this.error = error;
-        }
-    }
-
-    public interface DownloadListener {
-        void onDownload(DownloadEvent event);
     }
 
     // ==================================================================
@@ -334,10 +307,6 @@ public final class MioHook {
 
     public static Handle onUiContainer(Object owner, String name, int priority, UiContainerListener l) {
         return add(Point.UI_CONTAINER, l, owner, name, priority);
-    }
-
-    public static Handle onDownload(Object owner, String name, int priority, DownloadListener l) {
-        return add(Point.MEDIA_DOWNLOAD, l, owner, name, priority);
     }
 
     // ==================================================================
@@ -578,27 +547,6 @@ public final class MioHook {
             }
         } finally {
             noteTime(Point.UI_CONTAINER, t0);
-        }
-    }
-
-    /** Media download lifecycle for mod-API, chat and TT downloads. */
-    public static void dispatchDownload(String phase, String url, String filePath, int percent, String error) {
-        Entry[] arr = snapshots.get(Point.MEDIA_DOWNLOAD);
-        if (arr == null || arr.length == 0) return;
-        long t0 = System.nanoTime();
-        noteStart(Point.MEDIA_DOWNLOAD);
-        try {
-            DownloadEvent event = new DownloadEvent(phase, url, filePath, percent, error);
-            for (Entry e : arr) {
-                if (!e.enabled) continue;
-                try {
-                    ((DownloadListener) e.listener).onDownload(event);
-                } catch (Throwable t) {
-                    failed(e, Point.MEDIA_DOWNLOAD, t);
-                }
-            }
-        } finally {
-            noteTime(Point.MEDIA_DOWNLOAD, t0);
         }
     }
 

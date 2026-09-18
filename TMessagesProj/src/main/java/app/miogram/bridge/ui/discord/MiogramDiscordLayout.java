@@ -51,7 +51,6 @@ import app.miogram.bridge.settings.MiogramSettingsActivity;
  *
  * <p>Semantics of rail selection ids handed to {@link OnServerSelectedListener}:
  *   {@link #RAIL_HOME} (-1)  -> All chats (default folder, id 0)
- *   {@link #RAIL_DMS}        -> Personal chats only (DM pseudo-server)
  *   positive                 -> folder id (a "server")
  *   negative                 -> hashed rail id of a group chat opened as a server
  *   (use {@link #resolveDialogId(int)} to get the real 64-bit dialog id back).
@@ -65,12 +64,6 @@ public class MiogramDiscordLayout {
     private static final String KEY_DEAFENED = "discord_deafened";
 
     public static final int RAIL_HOME = -1;
-    /**
-     * Pseudo-server: personal chats only (DMs). Positive on purpose — chat
-     * hashes from {@link #railIdForDialog(long)} are always negative and real
-     * folder ids stay small, so this can never collide with either.
-     */
-    public static final int RAIL_DMS = 424243;
 
     public static final int UI_MODE_TELEGRAM = 0;
     public static final int UI_MODE_DISCORD = 1;
@@ -197,14 +190,11 @@ public class MiogramDiscordLayout {
 
     private static final Paint channelIconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private static final Paint unreadPillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private static final Paint branchSpinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     static {
         channelIconPaint.setStyle(Paint.Style.STROKE);
         channelIconPaint.setStrokeCap(Paint.Cap.ROUND);
         unreadPillPaint.setStyle(Paint.Style.FILL);
-        branchSpinePaint.setStyle(Paint.Style.STROKE);
-        branchSpinePaint.setStrokeCap(Paint.Cap.ROUND);
     }
 
     public static void drawChannelIcon(Canvas canvas, float x, float cy, boolean unread) {
@@ -216,16 +206,6 @@ public class MiogramDiscordLayout {
      * @param cy center Y of the row
      */
     public static void drawChannelIcon(Canvas canvas, float x, float cy, boolean unread, boolean selected) {
-        // Branch spine: vertical line through the full row height + elbow stub
-        // into the "#" glyph. cy is always rowHeight / 2, so 2*cy is the height.
-        // Adjacent channel rows connect into one continuous Discord thread line.
-        branchSpinePaint.setColor(unread || selected ? 0xFFB5BAC1 : COLOR_SEPARATOR);
-        branchSpinePaint.setStrokeWidth(AndroidUtilities.dp(2f));
-        float spineX = AndroidUtilities.dp(12);
-        float rowH = cy * 2f;
-        canvas.drawLine(spineX, 0, spineX, rowH, branchSpinePaint);
-        canvas.drawLine(spineX, cy, x - AndroidUtilities.dp(11), cy, branchSpinePaint);
-
         channelIconPaint.setColor(unread || selected ? 0xFFFFFFFF : COLOR_TEXT_MUTED);
         channelIconPaint.setStrokeWidth(AndroidUtilities.dp(2f));
         float size = AndroidUtilities.dp(9);
@@ -298,25 +278,6 @@ public class MiogramDiscordLayout {
         });
         root.addView(homeItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(56), 0, 4, 0, 2));
 
-        // 1b. Direct Messages pseudo-server (personal chats only).
-        if (app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled()) {
-            RailItemView dmItem = new RailItemView(context, false);
-            dmItem.setDmAction();
-            dmItem.setBadge(dmUnread);
-            dmItem.setHasUnread(dmUnread > 0);
-            dmItem.setSelectedVisual(selectedId == RAIL_DMS);
-            dmItem.setContentDescription(MiogramLocale.get("Особисті повідомлення", "Личные сообщения", "Direct Messages")
-                    + (dmUnread > 0 ? ", " + dmUnread + " unread" : ""));
-            if (selectedId == RAIL_DMS) selectedRailItem[0] = dmItem;
-            dmItem.setOnClickListener(v -> {
-                haptic(v);
-                setSelectedRailId(RAIL_DMS);
-                selectRailItem(selectedRailItem, dmItem);
-                if (listener != null) listener.onServerSelected(RAIL_DMS);
-            });
-            root.addView(dmItem, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(56), 0, 2, 0, 2));
-        }
-
         // AI Companion Server Icon (Ame / K-Angel)
         RailItemView aiItem = new RailItemView(context, false);
         aiItem.setAiAction();
@@ -353,29 +314,20 @@ public class MiogramDiscordLayout {
                 if (filter == null || filter.id == 0) continue; // 0 = All chats = home button
                 final int filterId = filter.id;
 
-                // Full folder membership (dialogs), not just pinned (alwaysShow).
-                ArrayList<Long> memberIds = new ArrayList<>();
-                if (filter.dialogs != null) {
-                    for (int k = 0; k < filter.dialogs.size(); k++) {
-                        TLRPC.Dialog dd = filter.dialogs.get(k);
-                        if (dd != null) memberIds.add(dd.id);
-                    }
-                }
-                if (memberIds.isEmpty() && filter.alwaysShow != null) {
-                    memberIds.addAll(filter.alwaysShow);
-                }
                 int folderUnread = 0;
-                for (int k = 0; k < memberIds.size() && folderUnread < 999; k++) {
-                    TLRPC.Dialog d = dialogById.get(memberIds.get(k));
-                    if (d != null) folderUnread += d.unread_count;
+                if (filter.alwaysShow != null) {
+                    for (int k = 0; k < filter.alwaysShow.size() && folderUnread < 999; k++) {
+                        TLRPC.Dialog d = dialogById.get(filter.alwaysShow.get(k));
+                        if (d != null) folderUnread += d.unread_count;
+                    }
                 }
 
                 RailItemView item = new RailItemView(context, false);
                 TLRPC.Chat chat = null;
                 TLRPC.User user = null;
-                if (!memberIds.isEmpty()) {
-                    for (int k = 0; k < memberIds.size(); k++) {
-                        long did = memberIds.get(k);
+                if (filter.alwaysShow != null && !filter.alwaysShow.isEmpty()) {
+                    for (int k = 0; k < filter.alwaysShow.size(); k++) {
+                        long did = filter.alwaysShow.get(k);
                         if (did < 0) {
                             chat = MessagesController.getInstance(currentAccount).getChat(-did);
                             if (chat != null) break;
@@ -624,9 +576,6 @@ public class MiogramDiscordLayout {
     /** Resolves the active "server" title: selected folder name or DMs default. */
     public static String channelPaneTitle(Context context) {
         int selected = getSelectedRailId();
-        if (selected == RAIL_DMS) {
-            return MiogramLocale.get("Особисті", "Личные", "Direct Messages");
-        }
         if (selected != RAIL_HOME) {
             ArrayList<MessagesController.DialogFilter> filters = null;
             try {
@@ -780,7 +729,6 @@ public class MiogramDiscordLayout {
         private final TextView letterBadge;
         private final HomeGlyphView homeGlyph;
         private final AddGlyphView addGlyph;
-        private final DmGlyphView dmGlyph;
         private final TextView countBadge;
 
         // Cached backgrounds — creating a drawable per animation frame was the
@@ -833,11 +781,6 @@ public class MiogramDiscordLayout {
             homeGlyph.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(13), AndroidUtilities.dp(13), AndroidUtilities.dp(13));
             iconBox.addView(homeGlyph, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            dmGlyph = new DmGlyphView(context);
-            dmGlyph.setBackground(homeBgIdle);
-            dmGlyph.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(13), AndroidUtilities.dp(13), AndroidUtilities.dp(13));
-            iconBox.addView(dmGlyph, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
             addGlyph = new AddGlyphView(context);
             addGlyph.setBackground(addBg);
             addGlyph.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
@@ -857,7 +800,6 @@ public class MiogramDiscordLayout {
             avatarView.setVisibility(GONE);
             letterBadge.setVisibility(GONE);
             homeGlyph.setVisibility(GONE);
-            dmGlyph.setVisibility(GONE);
             addGlyph.setVisibility(GONE);
             countBadge.setVisibility(GONE);
 
@@ -876,16 +818,10 @@ public class MiogramDiscordLayout {
             setContentDescription(MiogramLocale.get("Створити папку", "Создать папку", "Create a folder"));
         }
 
-        public void setDmAction() {
-            dmGlyph.setVisibility(VISIBLE);
-            setContentDescription(MiogramLocale.get("Особисті повідомлення", "Личные сообщения", "Direct Messages"));
-        }
-
         public void setAiAction() {
             avatarView.setVisibility(GONE);
             letterBadge.setVisibility(VISIBLE);
             homeGlyph.setVisibility(GONE);
-            dmGlyph.setVisibility(GONE);
             addGlyph.setVisibility(GONE);
             letterBadge.setText("★AI");
             letterBadge.setTextSize(13);
@@ -1011,40 +947,6 @@ public class MiogramDiscordLayout {
             if (homeGlyph.getVisibility() == VISIBLE) {
                 homeGlyph.setBackground(selected ? homeBgActive : homeBgIdle);
             }
-            if (dmGlyph.getVisibility() == VISIBLE) {
-                dmGlyph.setBackground(selected ? homeBgActive : homeBgIdle);
-            }
-        }
-    }
-
-    /** Discord DM glyph (filled chat bubble with a tail). */
-    private static class DmGlyphView extends View {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final RectF bubble = new RectF();
-        private final Path tail = new Path();
-
-        public DmGlyphView(Context context) {
-            super(context);
-            paint.setColor(0xFFFFFFFF);
-            paint.setStyle(Paint.Style.FILL);
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            float w = getWidth() - getPaddingLeft() - getPaddingRight();
-            float h = getHeight() - getPaddingTop() - getPaddingBottom();
-            float ox = getPaddingLeft();
-            float oy = getPaddingTop();
-            float r = Math.min(w, h) * 0.24f;
-            bubble.set(ox + w * 0.12f, oy + h * 0.16f, ox + w * 0.88f, oy + h * 0.70f);
-            canvas.drawRoundRect(bubble, r, r, paint);
-            tail.reset();
-            tail.moveTo(ox + w * 0.30f, oy + h * 0.68f);
-            tail.lineTo(ox + w * 0.24f, oy + h * 0.90f);
-            tail.lineTo(ox + w * 0.46f, oy + h * 0.70f);
-            tail.close();
-            canvas.drawPath(tail, paint);
         }
     }
 

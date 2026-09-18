@@ -103,13 +103,13 @@ public final class EtgBackupUi {
         fragment.showDialog(builder.create());
     }
 
-    /** Тап по документу в чате: если это .extera, предлагаем импорт и забираем обработку себе. */
+    /** Тап по документу в чате: если это .mio (или legacy .extera), предлагаем импорт и забираем обработку себе. */
     public static boolean handleFileTap(BaseFragment fragment, File file, String documentName) {
         if (file == null && documentName == null) {
             return false;
         }
-        boolean matches = (file != null && file.getName().toLowerCase().endsWith(EtgBackup.EXTENSION))
-                || (documentName != null && documentName.toLowerCase().endsWith(EtgBackup.EXTENSION));
+        boolean matches = (file != null && EtgBackup.matchesName(file.getName()))
+                || (documentName != null && EtgBackup.matchesName(documentName));
         return matches && confirmImport(fragment, file);
     }
 }

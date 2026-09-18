@@ -7,8 +7,8 @@
     <string name="MiogramPluginsNoRuntime">WASM-плагіни (рантайм відсутній у збірці)</string>
     <string name="MiogramVisualsTitle">Рідке скло (AGSL)</string>
     <string name="MiogramToggleExtera">Можливості Miogram</string>
-    <string name="MiogramToggleNagram">Налаштування Nagram</string>
-    <string name="MiogramToggleAyu">Швидкий доступ AyuMoments</string>
+    <string name="MiogramToggleNagram">Налаштування Mio</string>
+    <string name="MiogramToggleAyu">Швидкий доступ Mio Moments</string>
     <string name="MiogramKeyDialogTitle">Ключ Gemini API</string>
     <string name="MiogramPingTest">Зберегти та пінгнути</string>
     <string name="MiogramPingNoKey">Спочатку введіть ключ</string>

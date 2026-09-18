@@ -250,13 +250,6 @@ public class MiogramLocalizerActivity extends BaseFragment {
         }
     }
 
-    /** Applies overrides to the live UI immediately (like switching language). */
-    private void applyOverridesLive() {
-        try {
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
-        } catch (Throwable ignore) {}
-    }
-
     private void openEditDialog(MiogramLocalizerEngine.StringEntry entry) {
         Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
         if (ctx == null) return;
@@ -306,7 +299,6 @@ public class MiogramLocalizerActivity extends BaseFragment {
                 entry.customValue = newVal;
             }
             filterEntries();
-            applyOverridesLive();
             Toast.makeText(ctx, MiogramLocale.get("Рядок збережено!", "Строка сохранена!", "String updated!"), Toast.LENGTH_SHORT).show();
         });
 
@@ -315,7 +307,6 @@ public class MiogramLocalizerActivity extends BaseFragment {
                 MiogramLocalizerEngine.removeOverride(entry.key);
                 entry.customValue = null;
                 filterEntries();
-                applyOverridesLive();
                 Toast.makeText(ctx, MiogramLocale.get("Повернуто до оригіналу", "Сброшено к оригиналу", "Reset to original"), Toast.LENGTH_SHORT).show();
             });
         }
@@ -352,7 +343,6 @@ public class MiogramLocalizerActivity extends BaseFragment {
             String text = input.getText().toString().trim();
             int count = MiogramLocalizerEngine.importFromJson(text);
             loadAllData();
-            applyOverridesLive();
             Toast.makeText(ctx, MiogramLocale.get("Імпортовано рядків: " + count, "Импортировано строк: " + count, "Imported strings: " + count), Toast.LENGTH_LONG).show();
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
@@ -369,7 +359,6 @@ public class MiogramLocalizerActivity extends BaseFragment {
         builder.setPositiveButton(MiogramLocale.get("Скинути", "Сбросить", "Reset"), (dialog, which) -> {
             MiogramLocalizerEngine.clearAll();
             loadAllData();
-            applyOverridesLive();
             Toast.makeText(ctx, MiogramLocale.get("Усі рядки скинуто до оригіналу", "Все строки сброшены к оригиналу", "All strings reset"), Toast.LENGTH_SHORT).show();
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);

@@ -170,10 +170,10 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
         } else if (position == otherRow) {
             presentFragment(new OpenExteraOtherActivity());
         } else if (position == channelRow) {
-            getMessagesController().openByUserName("exteraless", this, 1);
+            getMessagesController().openByUserName("dkmiogram", this, 1);
         } else if (position == sourceRow) {
             org.telegram.messenger.browser.Browser.openUrl(getParentActivity(),
-                    "https://github.com/exteraless/exteraless");
+                    "https://github.com/fuckramochka/miogram");
         } else if (position == designerRow) {
             getMessagesController().openByUserName("the8055u", this, 1);
         } else if (position == designStudioRow) {
@@ -228,7 +228,7 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(getString(R.string.OpenExteraOther), R.drawable.msg_fave, false);
                     } else if (position == channelRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.ProfileChannel),
-                                "@exteraless", R.drawable.msg_channel, true);
+                                "@dkmiogram", R.drawable.msg_channel, true);
                     } else if (position == sourceRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.OpenExteraSource),
                                 "GitHub", R.drawable.msg_language, false);

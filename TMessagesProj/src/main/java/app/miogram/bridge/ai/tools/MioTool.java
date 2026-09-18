@@ -45,23 +45,13 @@ public final class MioTool {
         public final String promptDoc;
         public final boolean sensitive;
         public final Handler handler;
-        /** Mod-API grouping (media, chat, ai, system...). */
-        public final String category;
-        /** Minimum {@link app.miogram.bridge.modapi.MioApi#MIO_API_VERSION} required. */
-        public final int sinceApi;
 
         public Def(String name, String title, String promptDoc, boolean sensitive, Handler handler) {
-            this(name, title, promptDoc, sensitive, handler, "misc", 1);
-        }
-
-        public Def(String name, String title, String promptDoc, boolean sensitive, Handler handler, String category, int sinceApi) {
             this.name = name != null ? name.toLowerCase(Locale.US) : "?";
             this.title = title != null ? title : this.name;
             this.promptDoc = promptDoc != null ? promptDoc : "";
             this.sensitive = sensitive;
             this.handler = handler;
-            this.category = category != null ? category : "misc";
-            this.sinceApi = sinceApi;
         }
     }
 
@@ -79,24 +69,6 @@ public final class MioTool {
 
     public static List<Def> all() {
         return new ArrayList<>(REGISTRY.values());
-    }
-
-    /** Removes a tool (mod unload). Returns true when something was removed. */
-    public static boolean unregister(String name) {
-        if (name == null) return false;
-        return REGISTRY.remove(name.toLowerCase(Locale.US)) != null;
-    }
-
-    /** Tools of one mod-API category, sorted by name. */
-    public static List<Def> allByCategory(String category) {
-        ArrayList<Def> out = new ArrayList<>();
-        for (Def d : REGISTRY.values()) {
-            if (d != null && (category == null || category.equals(d.category))) {
-                out.add(d);
-            }
-        }
-        java.util.Collections.sort(out, (a, b) -> a.name.compareTo(b.name));
-        return out;
     }
 
     // ==================================================================

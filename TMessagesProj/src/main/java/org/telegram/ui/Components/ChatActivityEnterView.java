@@ -7839,74 +7839,19 @@ public class ChatActivityEnterView extends FrameLayout implements
      * input ⋮ menu (morphed attach button).
      */
     private void downloadVideoFromInput(String mediaUrl) {
-        final android.widget.ProgressBar[] progressBar = new android.widget.ProgressBar[1];
-        final android.widget.TextView[] statusView = new android.widget.TextView[1];
-        final org.telegram.ui.ActionBar.AlertDialog[] progressDialog = new org.telegram.ui.ActionBar.AlertDialog[1];
-        try {
-            android.content.Context ctx = getContext();
-            android.widget.LinearLayout layout = new android.widget.LinearLayout(ctx);
-            layout.setOrientation(android.widget.LinearLayout.VERTICAL);
-            int pad = AndroidUtilities.dp(20);
-            layout.setPadding(pad, AndroidUtilities.dp(16), pad, AndroidUtilities.dp(8));
-
-            android.widget.TextView title = new android.widget.TextView(ctx);
-            title.setText(app.miogram.bridge.MiogramLocale.get("Завантаження відео", "Загрузка видео", "Downloading video"));
-            title.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 16);
-            title.setTypeface(AndroidUtilities.bold());
-            title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-            layout.addView(title);
-
-            android.widget.ProgressBar bar = new android.widget.ProgressBar(ctx, null, android.R.attr.progressBarStyleHorizontal);
-            bar.setMax(100);
-            bar.setProgress(0);
-            android.widget.LinearLayout.LayoutParams barLp = new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-            barLp.topMargin = AndroidUtilities.dp(12);
-            layout.addView(bar, barLp);
-            progressBar[0] = bar;
-
-            android.widget.TextView status = new android.widget.TextView(ctx);
-            status.setText(app.miogram.bridge.MiogramLocale.get("Починаємо…", "Начинаем…", "Starting…"));
-            status.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 13);
-            status.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
-            android.widget.LinearLayout.LayoutParams stLp = new android.widget.LinearLayout.LayoutParams(
-                    android.widget.LinearLayout.LayoutParams.MATCH_PARENT, android.widget.LinearLayout.LayoutParams.WRAP_CONTENT);
-            stLp.topMargin = AndroidUtilities.dp(8);
-            layout.addView(status, stLp);
-            statusView[0] = status;
-
-            org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
-            builder.setView(layout);
-            builder.setNegativeButton(app.miogram.bridge.MiogramLocale.get("Сховати", "Скрыть", "Hide"), (d, w) -> d.dismiss());
-            progressDialog[0] = builder.create();
-            progressDialog[0].setCanceledOnTouchOutside(false);
-            progressDialog[0].show();
-        } catch (Throwable ignore) {}
-        final Runnable dismissProgress = () -> {
-            try {
-                if (progressDialog[0] != null) {
-                    progressDialog[0].dismiss();
-                    progressDialog[0] = null;
-                }
-            } catch (Throwable ignore) {}
-        };
+        Toast.makeText(getContext(), app.miogram.bridge.MiogramLocale.get("Завантаження відео…", "Загрузка видео…", "Downloading video…"), Toast.LENGTH_SHORT).show();
         app.miogram.bridge.media.MiogramMediaDownloader.downloadAndSend(
                 getContext(),
                 currentAccount,
                 dialog_id,
                 replyingMessageObject,
                 mediaUrl,
-                (percent, statusText) -> AndroidUtilities.runOnUIThread(() -> {
-                    try {
-                        if (progressBar[0] != null) progressBar[0].setProgress(Math.max(0, Math.min(100, percent)));
-                        if (statusView[0] != null && statusText != null) statusView[0].setText(statusText);
-                    } catch (Throwable ignore) {}
-                }),
+                (percent, statusText) -> {
+                },
                 new app.miogram.bridge.media.MiogramMediaDownloader.CompletionCallback() {
                     @Override
                     public void onSuccess(String message) {
                         AndroidUtilities.runOnUIThread(() -> {
-                            dismissProgress.run();
                             if (messageEditText == null) return;
                             CharSequence cur = messageEditText.getText();
                             if (!TextUtils.isEmpty(cur)) {
@@ -7919,7 +7864,6 @@ public class ChatActivityEnterView extends FrameLayout implements
                     @Override
                     public void onError(String errorText) {
                         AndroidUtilities.runOnUIThread(() -> {
-                            dismissProgress.run();
                             if (parentFragment == null || parentFragment.getParentActivity() == null) return;
                             Toast.makeText(getContext(), app.miogram.bridge.MiogramLocale.get("Не вийшло: ", "Не вышло: ", "Failed: ") + errorText, Toast.LENGTH_LONG).show();
                         });

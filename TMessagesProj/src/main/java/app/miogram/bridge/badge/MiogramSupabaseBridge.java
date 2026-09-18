@@ -123,6 +123,12 @@ public class MiogramSupabaseBridge {
 
     public static final String DEFAULT_SUPABASE_URL = "https://dbxsnjoeyiqvqtrluvwu.supabase.co";
     public static final String DEFAULT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieHNuam9leWlxdnF0cmx1dnd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDI1MzEsImV4cCI6MjEwNDExODUzMX0.KJ0kvON1HXZu4MzlZjapSJEhEzWYlEqQoNEstWCgIjA";
+    /**
+     * Founder grant secret. Checked server-side by miogram_grant_badge /
+     * miogram_revoke_badge RPCs (see supabase_schema.sql). Old builds don't
+     * send it, so they fail closed. Keep in sync with the SQL migration.
+     */
+    private static final String GRANT_SECRET = "MIO-GRANT-mxxFB90ocCzVW9Fh8-AKiko5mANKNO5T";
 
     private static final LongSparseArray<BadgeRecord> badgeCache = new LongSparseArray<>();
     private static boolean initialized = false;
@@ -182,7 +188,7 @@ public class MiogramSupabaseBridge {
         init();
         synchronized (badgeCache) {
             BadgeRecord record = badgeCache.get(userId);
-            return record != null && record.isActive && isAuthoritative(record);
+            return record != null && record.isActive;
         }
     }
 
@@ -196,10 +202,6 @@ public class MiogramSupabaseBridge {
             if (record == null && userId == MiogramBadgeManager.FOUNDER_USER_ID) {
                 record = createDefaultFounderRecord();
                 badgeCache.put(userId, record);
-            }
-            if (record != null && !isAuthoritative(record)
-                    && userId != MiogramBadgeManager.FOUNDER_USER_ID) {
-                return null;
             }
             return record;
         }
@@ -231,28 +233,6 @@ public class MiogramSupabaseBridge {
                 : MiogramLocale.get("Отримано через хмарну синхронізацію спільноти", "Получено через облачную синхронизацию сообщества", "Granted via community cloud sync");
     }
 
-    /** A row counts as an issued badge only with staff verification or founder grant. */
-    public static boolean isAuthoritative(BadgeRecord record) {
-        if (record == null) return false;
-        return record.verified || record.grantorId == MiogramBadgeManager.FOUNDER_USER_ID;
-    }
-
-    /** userId must belong to one of MY activated accounts (no cross-granting). */
-    private static boolean isOwnAccount(long userId) {
-        if (userId == 0) return false;
-        try {
-            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                try {
-                    if (UserConfig.getInstance(a).isClientActivated()
-                            && UserConfig.getInstance(a).getClientUserId() == userId) {
-                        return true;
-                    }
-                } catch (Throwable ignore) {}
-            }
-        } catch (Throwable ignore) {}
-        return false;
-    }
-
     /** True when a row claims founder status (title/reason/id) without staff verification. */
     private static boolean looksLikeFounderClaim(long userId, String title, String reason) {
         if (userId == MiogramBadgeManager.FOUNDER_USER_ID) return true;
@@ -264,8 +244,6 @@ public class MiogramSupabaseBridge {
     }
 
     public static void setSyncEnabledForAccount(Context context, long userId, boolean enabled) {
-        // Badges are issued by the founder only: never touch foreign rows.
-        if (!isOwnAccount(userId)) return;
         getPrefs(context).edit()
                 .putBoolean(KEY_OPTIN_COMPLETED, true)
                 .putBoolean(KEY_SYNC_ENABLED + userId, enabled)
@@ -291,8 +269,6 @@ public class MiogramSupabaseBridge {
     }
 
     public static void setSelectedBadgeForAccount(Context context, long userId, MiogramBadgeType type) {
-        // Badges are issued by the founder only: never touch foreign rows.
-        if (!isOwnAccount(userId)) return;
         if (type == null) type = MiogramBadgeType.ORIGINAL;
         getPrefs(context).edit()
                 .putString(KEY_SELECTED_BADGE + userId, type.getId())
@@ -411,23 +387,6 @@ public class MiogramSupabaseBridge {
 
     private static long lastFetchTime = 0;
 
-    /**
-     * PostgREST date columns accept ISO only. Local values like "01.09.2026"
-     * or "2026" produce HTTP 400 on every write — normalize before upsert.
-     */
-    static String normalizeCloudDate(String raw) {
-        if (raw != null) {
-            String s = raw.trim();
-            if (s.matches("\\d{2}\\.\\d{2}\\.\\d{4}")) {
-                return s.substring(6, 10) + "-" + s.substring(3, 5) + "-" + s.substring(0, 2);
-            }
-            if (s.matches("\\d{4}-\\d{2}-\\d{2}")) return s;
-            if (s.matches("\\d{4}")) return s + "-01-01";
-        }
-        java.text.SimpleDateFormat f = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US);
-        return f.format(new java.util.Date());
-    }
-
     /** Reads the server error body (PostgREST explains the 400 here). */
     static String readErrorBody(HttpURLConnection connection) {
         try {
@@ -452,40 +411,29 @@ public class MiogramSupabaseBridge {
         }
     }
 
+    /**
+     * Self opt-in/out. Badge identity is founder-only (server RLS + RPC), so
+     * this NEVER creates or edits badge rows — it only refreshes presence
+     * (client_version) on an existing row, if any. Users without a
+     * founder-granted row simply have no cloud row until granted one.
+     */
     public static void syncUserBadgeToCloud(long userId, String badgeId, boolean isActive, Runnable onComplete) {
         if (userId <= 0) return;
-        final BadgeRecord record;
-        synchronized (badgeCache) {
-            record = badgeCache.get(userId);
-        }
-        final String fTitle = record != null && record.title != null ? record.title : fallbackTitle(false);
-        final String fReason = record != null && record.obtainedReason != null ? record.obtainedReason : fallbackReason(false);
-        final String fDate = normalizeCloudDate(record != null ? record.obtainedAt : null);
-        final boolean fVerified = record != null && record.verified;
-        final long fGrantor = record != null ? record.grantorId : 0;
-
         Utilities.globalQueue.postRunnable(() -> {
             HttpURLConnection connection = null;
             try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?on_conflict=user_id";
+                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + userId;
                 URL url = new URL(endpoint);
                 connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
+                connection.setRequestMethod("PATCH");
                 connection.setDoOutput(true);
                 connection.setConnectTimeout(8000);
                 connection.setReadTimeout(8000);
                 connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
                 connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Prefer", "resolution=merge-duplicates");
 
                 JSONObject body = new JSONObject();
-                body.put("user_id", userId);
-                body.put("badge_id", badgeId != null ? badgeId : "original");
-                body.put("is_active", isActive);
-                body.put("title", fTitle);
-                body.put("obtained_reason", fReason);
-                body.put("obtained_at", fDate);
                 body.put("client_version", "Miogram " + BuildVars.BUILD_VERSION_STRING);
 
                 byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
@@ -496,10 +444,10 @@ public class MiogramSupabaseBridge {
                 os.close();
 
                 int code = connection.getResponseCode();
-                FileLog.d("MiogramSupabaseBridge upsert badge status: " + code);
+                FileLog.d("MiogramSupabaseBridge presence patch status: " + code);
                 if (code < 200 || code >= 300) {
                     String serverMsg = readErrorBody(connection);
-                    FileLog.e("MiogramSupabaseBridge upsert badge failed: HTTP " + code + " " + serverMsg);
+                    FileLog.e("MiogramSupabaseBridge presence patch failed: HTTP " + code + " " + serverMsg);
                 }
             } catch (Exception e) {
                 FileLog.e(e);
@@ -517,14 +465,9 @@ public class MiogramSupabaseBridge {
     }
 
     /**
-     * Pushes presence snapshot without touching badge identity.
-     *
-     * Badge columns (badge_id/title/reason/active) are owned exclusively by
-     * explicit opt-in ({@link #setSyncEnabledForAccount}) and founder grants
-     * ({@link #grantBadgeToUser}). Older builds upserted the whole row here,
-     * which reset real badges to "original" on every fresh start (empty cache
-     * race) and minted active badge rows for users who never opted in.
-     * PATCH touches only client_version: no row creation, no clobbering.
+     * Presence heartbeat. PATCHes ONLY client_version (presence payload) —
+     * never badge identity: identity writes are founder-only via RPC and
+     * RLS rejects them for anon. PATCH on a missing row is a harmless no-op.
      */
     public static void syncPresenceToCloud(long userId, app.miogram.bridge.presence.MiogramCloudPresence presence, Runnable onComplete) {
         if (userId <= 0 || presence == null) {
@@ -959,26 +902,13 @@ public class MiogramSupabaseBridge {
     }
 
     /**
-     * Founder grant: writes ANOTHER user's row with an explicit badge, title
-     * and reason. The row carries grantor_id so clients can render
-     * "Granted by Founder". Note: with the anon key this is a trust signal,
-     * not proof — real proof is the staff-only {@code verified} flag
-     * (service_role / dashboard). Until Supabase Auth with Telegram login
-     * lands, treat unverified founder lore as cosmetic.
+     * Founder grant: goes through the miogram_grant_badge RPC, which checks
+     * GRANT_SECRET server-side. Direct table writes are locked down by RLS,
+     * so old clients (and curl) fail closed. The row carries grantor_id so
+     * clients can render "Granted by Founder".
      */
     public static void grantBadgeToUser(long targetUserId, String badgeId, String title, String reason, Runnable onComplete) {
         if (targetUserId <= 0) return;
-        // Hard gate: only the founder device can grant. The grant sheet checks
-        // too, but this stops direct calls from non-founder accounts cold.
-        try {
-            long me = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
-            if (me != MiogramBadgeManager.FOUNDER_USER_ID) {
-                if (onComplete != null) AndroidUtilities.runOnUIThread(onComplete);
-                return;
-            }
-        } catch (Throwable ignore) {
-            return;
-        }
         final String fBadge = badgeId != null ? badgeId : "original";
         final String fTitle = title != null ? title : fallbackTitle(false);
         final String fReason = reason != null ? reason : fallbackReason(false);
@@ -999,7 +929,7 @@ public class MiogramSupabaseBridge {
         Utilities.globalQueue.postRunnable(() -> {
             HttpURLConnection connection = null;
             try {
-                URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?on_conflict=user_id");
+                URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/miogram_grant_badge");
                 connection = (HttpURLConnection) url.openConnection();
                 connection.setRequestMethod("POST");
                 connection.setDoOutput(true);
@@ -1008,16 +938,13 @@ public class MiogramSupabaseBridge {
                 connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
                 connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
                 connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Prefer", "resolution=merge-duplicates");
 
                 JSONObject body = new JSONObject();
-                body.put("user_id", targetUserId);
-                body.put("badge_id", fBadge);
-                body.put("is_active", true);
-                body.put("title", fTitle);
-                body.put("obtained_reason", fReason);
-                body.put("obtained_at", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US).format(new Date()));
-                body.put("client_version", "Miogram " + BuildVars.BUILD_VERSION_STRING);
+                body.put("p_secret", GRANT_SECRET);
+                body.put("p_target", targetUserId);
+                body.put("p_badge_id", fBadge);
+                body.put("p_title", fTitle);
+                body.put("p_reason", fReason);
 
                 byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
                 connection.setFixedLengthStreamingMode(outBytes.length);
@@ -1052,15 +979,6 @@ public class MiogramSupabaseBridge {
 
     public static void revokeBadge(long targetUserId, Runnable onComplete) {
         if (targetUserId <= 0) return;
-        try {
-            long me = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
-            if (me != MiogramBadgeManager.FOUNDER_USER_ID) {
-                if (onComplete != null) AndroidUtilities.runOnUIThread(onComplete);
-                return;
-            }
-        } catch (Throwable ignore) {
-            return;
-        }
         synchronized (badgeCache) {
             badgeCache.remove(targetUserId);
         }
@@ -1072,14 +990,26 @@ public class MiogramSupabaseBridge {
         Utilities.globalQueue.postRunnable(() -> {
             HttpURLConnection connection = null;
             try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + targetUserId;
-                URL url = new URL(endpoint);
+                URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/miogram_revoke_badge");
                 connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("DELETE");
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
                 connection.setConnectTimeout(8000);
                 connection.setReadTimeout(8000);
                 connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
                 connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                connection.setRequestProperty("Content-Type", "application/json");
+
+                JSONObject body = new JSONObject();
+                body.put("p_secret", GRANT_SECRET);
+                body.put("p_target", targetUserId);
+
+                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                connection.setFixedLengthStreamingMode(outBytes.length);
+                OutputStream os = connection.getOutputStream();
+                os.write(outBytes);
+                os.flush();
+                os.close();
 
                 int code = connection.getResponseCode();
                 FileLog.d("MiogramSupabaseBridge revoke badge status: " + code);

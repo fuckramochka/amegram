@@ -14749,11 +14749,6 @@ public class MessagesController extends BaseController implements NotificationCe
         if (mid == 0 || ttl < 0) {
             return;
         }
-        // Miogram ghost keeper: view-once media is reported as viewed (and dies
-        // for the peer) — keep our cached copy into the Cloud Vault first.
-        try {
-            app.miogram.bridge.privacy.MiogramGhostKeeper.keepViewedTtlMedia(currentAccount, dialogId, mid);
-        } catch (Throwable ignore) {}
         if (DialogObject.isChatDialog(dialogId) && inputChannel == null) {
             inputChannel = getInputChannel(dialogId);
             if (inputChannel == null) {

@@ -387,8 +387,7 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
             String name = f.getName().toLowerCase();
             boolean isWasm = name.endsWith(".wasm") || name.endsWith(".so") || name.endsWith(".mioplugin");
             if (!isWasm && !name.endsWith(PluginsConstants.PLUGIN_EXT_PY) && !name.endsWith(PluginsConstants.PLUGIN_EXT)
-                    && !name.endsWith(PluginsConstants.PLUGIN_EXT_ELYX) && !name.endsWith(PluginsConstants.PLUGIN_EXT_EAF)
-                    && !name.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
+                    && !name.endsWith(PluginsConstants.PLUGIN_EXT_ELYX) && !name.endsWith(PluginsConstants.PLUGIN_EXT_EAF)) {
                 continue;
             }
             Plugin fresh = readPluginMetadata(f);
@@ -438,21 +437,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
     private Plugin readPluginMetadata(File f) {
         if (f == null) return null;
         String lowerName = f.getName().toLowerCase();
-        if (lowerName.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-            // Lua-скрипты кузни/Аме: без Lua-рантайма работают как текстовые
-            // фильтры юзербота (см. MiogramHerokuManager.installLuaPlugin),
-            // поэтому метаданные синтетические — движок им не нужен.
-            Plugin p = new Plugin();
-            p.id = f.getName().replace(".", "_");
-            p.name = f.getName().replace(".lua", "").replace("_", " ");
-            p.path = f.getAbsolutePath();
-            p.version = "1.0 (Lua text filter)";
-            p.author = "@Miogram";
-            p.description = "Lua script: text filters only (no Lua runtime on device).";
-            p.icon = "msg_notifications";
-            p.enabled = true;
-            return p;
-        }
         if (lowerName.endsWith(".wasm") || lowerName.endsWith(".so") || lowerName.endsWith(".mioplugin")) {
             Plugin p = new Plugin();
             p.id = f.getName().replace(".", "_");
@@ -662,10 +646,7 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
     private boolean loadPluginInternal(Plugin p) {
         if (p == null || p.path == null) return false;
         String name = p.path.toLowerCase();
-        if (name.endsWith(".wasm") || name.endsWith(".so") || name.endsWith(".mioplugin")
-                || name.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-            // WASM/so работают нативно, Lua — текстовыми фильтрами юзербота:
-            // движок им не нужен, считаем загруженными.
+        if (name.endsWith(".wasm") || name.endsWith(".so") || name.endsWith(".mioplugin")) {
             p.loaded = true;
             p.loadError = null;
             p.hasSettings = true;

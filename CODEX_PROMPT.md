@@ -58,7 +58,7 @@ TMessagesProj/
 │       │   ├── ios/MiogramIosLayout.java       <-- Cupertino iOS mode (Large titles, inset cards)
 │       │   ├── discord/MiogramDiscordLayout.java <-- Discord rail mode (guild column, squircles)
 │       │   ├── ame/MiogramAmeAesthetic.java    <-- Cyber-pastel / Ame vaporwave aesthetic
-│       │   ├── MiogramGlassEffect.java            <-- Glassmorphism / blur shader backdrops (live impl)
+│       │   ├── MiogramGlassmorphism.java       <-- Glassmorphism / blur shader backdrops
 │       │   └── player/MiogramBassVisualizer.java <-- Audio frequency/bass visualizer
 │       ├── badge/                             <-- Profile badges (Supabase cloud + local)
 │       ├── feed/                              <-- Smart Feed & AI Channel Digests
@@ -114,6 +114,7 @@ TMessagesProj/
   - `MiogramIosLayout.java`: iOS Cupertino mode with large collapsible headers, SF-styled inset grouped cards, squircle continuous curve avatars, and iOS search bar.
   - `MiogramDiscordLayout.java`: Discord rail mode with a left column for servers/folders, animated morphing squircles (24dp to 16dp), pill indicators, and mute/deafen bars.
   - `MiogramAmeAesthetic.java`: Ame-chan cyber-pastel / vaporwave aesthetic (neon pink, cyan, lavender, halo rings).
+  - `MiogramGlassmorphism.java`: Liquid glass blurs and gradient strokes.
 
 ---
 

@@ -99,12 +99,6 @@
 
     <uses-sdk tools:overrideLibrary="com.google.mlkit.vision.segmentation.subject, com.nothing.thirdparty"/>
 
-    <!-- Mod-API bridge: same-signer mods hold it automatically, everyone else
-         needs the explicit user opt-in (Miogram Settings -> System). -->
-    <permission
-        android:name="app.miogram.bridge.modapi.permission.MIO_BRIDGE"
-        android:protectionLevel="signature" />
-
     <queries>
         <package android:name="com.google.android.apps.maps"/>
         <intent>
@@ -465,13 +459,10 @@
             android:name="app.miogram.bridge.ui.MiogramDecoyActivity"
             android:excludeFromRecents="true"
             android:exported="false"/>
-        <service
-            android:name="app.miogram.bridge.modapi.MioBridgeService"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="app.miogram.bridge.modapi.BIND_BRIDGE" />
-            </intent-filter>
-        </service>
+        <activity
+            android:name="app.miogram.bridge.ui.MiogramVaultSetupActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize"/>
         <activity
             android:name="org.telegram.ui.ShareActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"

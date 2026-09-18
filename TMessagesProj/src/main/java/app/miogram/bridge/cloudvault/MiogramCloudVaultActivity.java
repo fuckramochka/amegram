@@ -87,8 +87,6 @@ public class MiogramCloudVaultActivity extends BaseFragment {
     private static final int SUBMENU_SYNC = 102;
     private static final int SUBMENU_KEY = 103;
     private static final int SUBMENU_UNLINK = 104;
-    private static final int SUBMENU_EXPORT_BACKUP = 105;
-    private static final int SUBMENU_IMPORT_BACKUP = 106;
 
     public static final int VIEW_TYPE_LIST = 0;
     public static final int VIEW_TYPE_GRID = 1;
@@ -167,8 +165,6 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         otherItem.addSubItem(SUBMENU_CHAT, R.drawable.msg_channel, MiogramLocale.get("Відкрити форум у чаті", "Открыть форум в чате", "Open Forum in Chat"));
         otherItem.addSubItem(SUBMENU_SYNC, R.drawable.msg_retry, MiogramLocale.get("Синхронізувати з хмарою", "Синхронизировать с облаком", "Sync with Cloud"));
         otherItem.addSubItem(SUBMENU_KEY, R.drawable.msg_secret, MiogramLocale.get("Ключ шифрування (AES-256)", "Ключ шифрования (AES-256)", "Encryption Key (AES-256)"));
-        otherItem.addSubItem(SUBMENU_EXPORT_BACKUP, R.drawable.msg_saved, MiogramLocale.get("Бекап сховища (поділитися)", "Бэкап хранилища (поделиться)", "Backup vault (share)"));
-        otherItem.addSubItem(SUBMENU_IMPORT_BACKUP, R.drawable.cloud, MiogramLocale.get("Відновити з бекапа", "Восстановить из бэкапа", "Restore from backup"));
         otherItem.addSubItem(SUBMENU_UNLINK, R.drawable.msg_delete, MiogramLocale.get("Відв'язати супергрупу", "Отвязать супергруппу", "Unlink Vault Chat"));
 
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
@@ -184,10 +180,6 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                     syncFromCloud();
                 } else if (id == SUBMENU_KEY) {
                     showMasterKeyDialog();
-                } else if (id == SUBMENU_EXPORT_BACKUP) {
-                    exportAndShareBackup();
-                } else if (id == SUBMENU_IMPORT_BACKUP) {
-                    showImportBackupDialog();
                 } else if (id == SUBMENU_UNLINK) {
                     showUnlinkDialog();
                 }
@@ -933,22 +925,13 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                     File attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
                     if (attachFile == null || !attachFile.exists()) {
                         FileLoader.getInstance(currentAccount).loadFile(doc, null, 0, 0);
-                        // Bounded wait: 25s per chunk, then one retry. Small files
-                        // must never hang the queue for a minute on a stalled DC.
+                        // Bounded wait: 60s per chunk. The shared globalQueue must
+                        // never be parked for minutes by one slow download.
                         int waitedMs = 0;
-                        while ((attachFile == null || !attachFile.exists()) && waitedMs < 25000) {
+                        while ((attachFile == null || !attachFile.exists()) && waitedMs < 60000) {
                             Thread.sleep(500);
                             waitedMs += 500;
                             attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
-                        }
-                        if (attachFile == null || !attachFile.exists()) {
-                            FileLoader.getInstance(currentAccount).loadFile(doc, null, 0, 0);
-                            waitedMs = 0;
-                            while ((attachFile == null || !attachFile.exists()) && waitedMs < 25000) {
-                                Thread.sleep(500);
-                                waitedMs += 500;
-                                attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
-                            }
                         }
                     }
                     if (attachFile != null && attachFile.exists()) {
@@ -1258,70 +1241,6 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             } else {
                 Toast.makeText(getParentActivity(), MiogramLocale.get("Ключ — рівно 64 hex-символи (0-9, a-f)!", "Ключ — ровно 64 hex-символа (0-9, a-f)!", "Key must be exactly 64 hex chars (0-9, a-f)!"), Toast.LENGTH_SHORT).show();
             }
-        });
-        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-        showDialog(builder.create());
-    }
-
-    /** Full-vault backup: saves JSON (chat link + key + manifests) and opens the share sheet. */
-    private void exportAndShareBackup() {
-        if (getParentActivity() == null) return;
-        Utilities.globalQueue.postRunnable(() -> {
-            File backup = MiogramCloudVaultEngine.writeBackupFile(currentAccount);
-            AndroidUtilities.runOnUIThread(() -> {
-                if (getParentActivity() == null) return;
-                if (backup == null || !backup.exists()) {
-                    Toast.makeText(getParentActivity(), MiogramLocale.get("Не вдалося створити бекап", "Не удалось создать бэкап", "Backup failed"), Toast.LENGTH_SHORT).show();
-                    return;
-                }
-                try {
-                    android.net.Uri uri = androidx.core.content.FileProvider.getUriForFile(
-                            ApplicationLoader.applicationContext,
-                            ApplicationLoader.getApplicationId() + ".provider",
-                            backup
-                    );
-                    android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_SEND);
-                    intent.setType("application/json");
-                    intent.putExtra(android.content.Intent.EXTRA_STREAM, uri);
-                    intent.addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                    getParentActivity().startActivity(android.content.Intent.createChooser(intent,
-                            MiogramLocale.get("Поділитися бекапом сховища", "Поделиться бэкапом хранилища", "Share vault backup")));
-                } catch (Throwable t) {
-                    FileLog.e(t);
-                    Toast.makeText(getParentActivity(), MiogramLocale.get("Бекап збережено: ", "Бэкап сохранён: ", "Backup saved: ") + backup.getAbsolutePath(), Toast.LENGTH_LONG).show();
-                }
-            });
-        });
-    }
-
-    /** Restores chat link + key + manifests from pasted backup JSON. */
-    private void showImportBackupDialog() {
-        if (getParentActivity() == null) return;
-        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-        builder.setTitle(MiogramLocale.get("Відновити з бекапа", "Восстановить из бэкапа", "Restore from backup"));
-        builder.setMessage(MiogramLocale.get("Вставте JSON бекапа сховища (містить ключ шифрування — нікому не показуйте):", "Вставьте JSON бэкапа хранилища (содержит ключ шифрования — никому не показывайте):", "Paste the vault backup JSON (contains the encryption key — keep it secret):"));
-
-        final EditText input = new EditText(getParentActivity());
-        input.setMinLines(4);
-        input.setGravity(android.view.Gravity.TOP);
-        FrameLayout container = new FrameLayout(getParentActivity());
-        container.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(8), AndroidUtilities.dp(20), AndroidUtilities.dp(8));
-        container.addView(input, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        builder.setView(container);
-
-        builder.setPositiveButton(MiogramLocale.get("Відновити", "Восстановить", "Restore"), (d, w) -> {
-            String json = input.getText().toString().trim();
-            int count = MiogramCloudVaultEngine.importBackupJson(currentAccount, json);
-            if (count < 0) {
-                Toast.makeText(getParentActivity(), MiogramLocale.get("Невірний бекап", "Неверный бэкап", "Invalid backup"), Toast.LENGTH_SHORT).show();
-                return;
-            }
-            Toast.makeText(getParentActivity(), MiogramLocale.get("Відновлено файлів: " + count, "Восстановлено файлов: " + count, "Restored files: " + count), Toast.LENGTH_SHORT).show();
-            updateVaultVisibility();
-            updateSubtitle();
-            loadTopicsFromTelegram();
-            filterAndReloadFiles();
-            syncFromCloud();
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         showDialog(builder.create());

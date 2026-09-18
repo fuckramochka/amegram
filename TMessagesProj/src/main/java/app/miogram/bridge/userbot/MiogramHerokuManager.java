@@ -252,7 +252,7 @@ public class MiogramHerokuManager {
             try {
                 scanExternalModules();
             } catch (Throwable t) {
-                FileLog.e("MiogramHeroku background module scan failed", t);
+                android.util.Log.e("MiogramHeroku", "background module scan failed", t);
             }
         });
     }
@@ -394,13 +394,6 @@ public class MiogramHerokuManager {
         }
     }
 
-    /** Human-readable report of the last Lua install (wired commands/filters). */
-    private volatile String lastLuaReport = "";
-
-    public String getLastLuaInstallReport() {
-        return lastLuaReport != null ? lastLuaReport : "";
-    }
-
     public boolean installLuaPlugin(String name, String code) {
         if (TextUtils.isEmpty(code)) return false;
         try {
@@ -413,154 +406,22 @@ public class MiogramHerokuManager {
                 fos.write(code.getBytes(StandardCharsets.UTF_8));
                 fos.flush();
             }
-            UserbotModuleInfo luaMod = new UserbotModuleInfo(safeName.replace(".lua", ""), "Lua Plugin (" + safeName + ")", "1.0.0", "Lua", false);
-
-            // No Lua runtime on device: wire what the contract guarantees.
-            // 1) Static on_command replies -> real commands.
-            java.util.List<String> wiredCommands = wireLuaCommands(luaMod, code);
-            // 2) Plain-literal gsub rules (+ legacy dot idiom) -> text filter.
-            final java.util.List<String[]> gsubs = extractLuaGsubs(code);
-            final boolean legacyDot = code.contains("dot") || code.contains("%1.");
-            if (!gsubs.isEmpty() || legacyDot) {
+            if (code.contains("on_send_message") || code.contains("dot") || code.contains("%1.")) {
                 registerTextFilter(safeName, text -> {
                     if (text == null || text.startsWith(getPrefix())) return text;
-                    String out = text;
-                    for (String[] pair : gsubs) {
-                        try {
-                            if (!TextUtils.isEmpty(pair[0])) out = out.replace(pair[0], pair[1]);
-                        } catch (Throwable ignore) {}
+                    if (code.contains("dot") || safeName.contains("dot") || code.contains("%1.")) {
+                        return text.replaceAll("(\\p{L}+)(?!\\.)", "$1.");
                     }
-                    if (legacyDot) {
-                        out = out.replaceAll("(\\p{L}+)(?!\\.)", "$1.");
-                    }
-                    return out;
+                    return text;
                 });
             }
+            UserbotModuleInfo luaMod = new UserbotModuleInfo(safeName.replace(".lua", ""), "Lua Plugin (" + safeName + ")", "1.0.0", "Lua", false);
             modules.put(luaMod.name, luaMod);
-
-            StringBuilder rep = new StringBuilder();
-            if (!wiredCommands.isEmpty()) {
-                rep.append("commands: ").append(TextUtils.join(", ", wiredCommands));
-            }
-            if (!gsubs.isEmpty() || legacyDot) {
-                if (rep.length() > 0) rep.append("; ");
-                rep.append("text filters: ").append(gsubs.size() + (legacyDot ? 1 : 0));
-            }
-            if (rep.length() == 0) rep.append("saved, no executable patterns found");
-            lastLuaReport = rep.toString();
             return true;
         } catch (Throwable t) {
             FileLog.e(t);
             return false;
         }
-    }
-
-    /**
-     * Mini-executor for the Lua contract's static replies:
-     * {@code if cmd == "name" then return "text" [.. args .. "more"] end}.
-     * Dynamic logic is skipped (no runtime) — only literal replies wire up.
-     */
-    private java.util.List<String> wireLuaCommands(UserbotModuleInfo mod, String code) {
-        java.util.List<String> wired = new java.util.ArrayList<>();
-        if (TextUtils.isEmpty(code)) return wired;
-        try {
-            java.util.regex.Pattern p = java.util.regex.Pattern.compile(
-                    "if\\s+cmd\\s*==\\s*[\"']([A-Za-z0-9_]+)[\"']\\s*then\\s*return\\s+(.+?)\\s*(?:\\bend\\b|$)",
-                    java.util.regex.Pattern.DOTALL);
-            java.util.regex.Matcher m = p.matcher(code);
-            while (m.find()) {
-                final String cmd = m.group(1).toLowerCase(java.util.Locale.ROOT);
-                final String template = evalLuaConcat(m.group(2));
-                if (TextUtils.isEmpty(cmd) || template == null) continue;
-                if (commandHandlers.containsKey(cmd) && !mod.commands.contains(cmd)) {
-                    // Never shadow built-ins (ping/help/info/...) with script text.
-                    continue;
-                }
-                registerCommand(mod, cmd, ctx -> {
-                    String out = template.replace("{args}", ctx.rawArgs != null ? ctx.rawArgs : "");
-                    ctx.answer(out);
-                });
-                if (!wired.contains(cmd)) wired.add(cmd);
-            }
-        } catch (Throwable t) {
-            FileLog.e(t);
-        }
-        return wired;
-    }
-
-    /**
-     * Evaluates a Lua {@code ..} chain of string literals plus bare
-     * {@code args}/{@code cmd}. Returns null when anything dynamic appears.
-     * {args} marks where the user's arguments go at runtime.
-     */
-    private String evalLuaConcat(String expr) {
-        if (TextUtils.isEmpty(expr)) return null;
-        try {
-            String[] parts = expr.split("\\.\\.");
-            StringBuilder sb = new StringBuilder();
-            for (String raw : parts) {
-                String tok = raw.trim();
-                if (tok.startsWith("\"") || tok.startsWith("'")) {
-                    String lit = unescapeLuaString(tok);
-                    if (lit == null) return null;
-                    sb.append(lit);
-                } else if (tok.equals("args")) {
-                    sb.append("{args}");
-                } else if (tok.equals("cmd")) {
-                    // Command name itself — drop, reply stays static.
-                } else {
-                    return null;
-                }
-            }
-            return sb.toString();
-        } catch (Throwable ignore) {
-            return null;
-        }
-    }
-
-    private String unescapeLuaString(String tok) {
-        if (tok == null || tok.length() < 2) return null;
-        char q = tok.charAt(0);
-        if ((q != '"' && q != '\'') || tok.charAt(tok.length() - 1) != q) return null;
-        String inner = tok.substring(1, tok.length() - 1);
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < inner.length(); i++) {
-            char c = inner.charAt(i);
-            if (c == '\\' && i + 1 < inner.length()) {
-                char n = inner.charAt(++i);
-                if (n == 'n') sb.append('\n');
-                else if (n == 't') sb.append('\t');
-                else sb.append(n);
-            } else {
-                sb.append(c);
-            }
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Plain-literal gsub rules only: {@code text:gsub("a", "b")} or
-     * {@code string.gsub(text, "a", "b")}. Patterns with Lua magic chars
-     * ({@code ^$()%.[]*+-?}) are skipped — they are not Java regex.
-     */
-    private java.util.List<String[]> extractLuaGsubs(String code) {
-        java.util.List<String[]> out = new java.util.ArrayList<>();
-        if (TextUtils.isEmpty(code)) return out;
-        try {
-            java.util.regex.Pattern p = java.util.regex.Pattern.compile(
-                    "(?::gsub|gsub)\\(\\s*(?:text\\s*,\\s*)?[\"']((?:[^\"'\\\\]|\\\\.)*)[\"']\\s*,\\s*[\"']((?:[^\"'\\\\]|\\\\.)*)[\"']\\s*\\)");
-            java.util.regex.Matcher m = p.matcher(code);
-            while (m.find()) {
-                String from = unescapeLuaString("\"" + m.group(1) + "\"");
-                String to = unescapeLuaString("\"" + m.group(2) + "\"");
-                if (from == null || to == null || from.isEmpty()) continue;
-                if (from.matches(".*[\\^\\$\\(\\)%\\.\\[\\]\\*\\+\\-\\?].*")) continue;
-                out.add(new String[]{from, to});
-            }
-        } catch (Throwable t) {
-            FileLog.e(t);
-        }
-        return out;
     }
 
     public boolean isUserbotCommand(String text) {

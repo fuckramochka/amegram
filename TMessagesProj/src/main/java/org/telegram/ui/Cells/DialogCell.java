@@ -269,6 +269,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private boolean visibleOnScreen = true;
     private boolean updateLayout;
     private boolean wasDrawnOnline;
+    // Miogram draws its own styled online dot (MiogramUiEngine.drawOnlineIndicator).
+    // When it did, upstream's key_chats_onlineCircle dot must stay off or the two
+    // stack up (green + blue) on the same avatar corner.
+    private boolean miogramOnlineDrawn;
 
     public void setMoving(boolean moving) {
         this.moving = moving;
@@ -1068,16 +1072,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             height = getCollapsedHeight();
         }
         return height;
-    }
-
-    /**
-     * Miogram Discord mode: group/channel rows render as branch rows
-     * (spine + "#" + centered name, no preview/time/checks) instead of
-     * Telegram dialog rows. DMs, topics, folders and archive keep classic look.
-     */
-    private boolean isDiscordBranchRow() {
-        return currentDialogId < 0 && !isTopic && currentDialogFolderId == 0
-                && app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled();
     }
 
     private int getCollapsedHeight() {
@@ -3951,6 +3945,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         boolean needInvalidate = false;
+        miogramOnlineDrawn = false;
 
         // Official iOS Telegram paints pinned chats with a distinct section
         // background (ChatListNode.swift). The upstream drawRect calls for the
@@ -4273,9 +4268,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             }
 
             int nameTop = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 14);
-            if (isDiscordBranchRow()) {
-                nameTop = nameLayout != null ? (getMeasuredHeight() - nameLayout.getHeight()) / 2 : dp(11);
-            } else if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
+            if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
                 nameTop = dp(11);
             } else if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
                 nameTop -= dp(isForumCell() ? 8 : 9);
@@ -4326,7 +4319,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 }
             }
 
-            if (timeLayout != null && currentDialogFolderId == 0 && !isDiscordBranchRow()) {
+            if (timeLayout != null && currentDialogFolderId == 0) {
                 canvas.save();
                 canvas.translate(timeLeft, timeTop);
 
@@ -4380,7 +4373,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 Theme.dialogs_lock2Drawable.draw(canvas);
             }
 
-            if (messageNameLayout != null && !isForumCell() && !isDiscordBranchRow()) {
+            if (messageNameLayout != null && !isForumCell()) {
                 if (currentDialogFolderId != 0) {
                     Theme.dialogs_messageNamePaint.setColor(Theme.dialogs_messageNamePaint.linkColor = Theme.getColor(Theme.key_chats_nameMessageArchived_threeLines, resourcesProvider));
                 } else if (draftMessage != null) {
@@ -4399,7 +4392,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.restore();
             }
 
-            if (messageLayout != null && !isDiscordBranchRow()) {
+            if (messageLayout != null) {
                 if (currentDialogFolderId != 0) {
                     if (chat != null) {
                         Theme.dialogs_messagePaint[paintIndex].setColor(Theme.dialogs_messagePaint[paintIndex].linkColor = Theme.getColor(Theme.key_chats_nameMessageArchived, resourcesProvider));
@@ -4565,7 +4558,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 canvas.restore();
             }
 
-            if (currentDialogFolderId == 0 && !isDiscordBranchRow()) {
+            if (currentDialogFolderId == 0) {
                 int currentStatus = (drawClock ? 1 : 0) + (drawCheck1 ? 2 : 0) + (drawCheck2 ? 4 : 0);
                 if (lastStatusDrawableParams >= 0 && lastStatusDrawableParams != currentStatus && !statusDrawableAnimationInProgress) {
                     createStatusDrawableAnimator(lastStatusDrawableParams, currentStatus);
@@ -4598,9 +4591,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int y = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f);
                 if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
                     y -= dp(9);
-                }
-                if (isDiscordBranchRow()) {
-                    y = (getMeasuredHeight() - dp(16)) / 2;
                 }
                 if (botVerification != null) {
                     botVerification.setBounds(
@@ -4635,9 +4625,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 float muteY = dp(SharedConfig.useThreeLinesLayout ? 13.5f : 17.5f);
                 if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
                     muteY -= dp(isForumCell() ? 8 : 9);
-                }
-                if (isDiscordBranchRow()) {
-                    muteY = (getMeasuredHeight() - dp(16)) / 2f;
                 }
                 setDrawableBounds(Theme.dialogs_muteDrawable, muteX, muteY);
                 setDrawableBounds(Theme.dialogs_unmuteDrawable, muteX, muteY);
@@ -4678,9 +4665,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
                     y -= dp(9);
                 }
-                if (isDiscordBranchRow()) {
-                    y = (getMeasuredHeight() - dp(16)) / 2f;
-                }
                 setDrawableBounds(Theme.dialogs_verifiedDrawable, nameMuteLeft - dp(1), y);
                 setDrawableBounds(Theme.dialogs_verifiedCheckDrawable, nameMuteLeft - dp(1), y);
                 Theme.dialogs_verifiedDrawable.draw(canvas);
@@ -4689,9 +4673,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int y = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f);
                 if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
                     y -= dp(9);
-                }
-                if (isDiscordBranchRow()) {
-                    y = (getMeasuredHeight() - dp(16)) / 2;
                 }
                 if (emojiStatus != null) {
                     emojiStatusView.setTranslationX(gtx + nameMuteLeft - dp(2));
@@ -4717,9 +4698,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 int y = dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12 : 15);
                 if ((!(useForceThreeLines || SharedConfig.useThreeLinesLayout) || isForumCell()) && hasTags()) {
                     y -= dp(9);
-                }
-                if (isDiscordBranchRow()) {
-                    y = (getMeasuredHeight() - dp(16)) / 2;
                 }
                 setDrawableBounds((drawScam == 1 ? Theme.dialogs_scamDrawable : Theme.dialogs_fakeDrawable), nameMuteLeft, y);
                 (drawScam == 1 ? Theme.dialogs_scamDrawable : Theme.dialogs_fakeDrawable).draw(canvas);
@@ -4942,9 +4920,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
             if (storyParams != null && storyParams.originalAvatarRect != null) {
                 app.miogram.bridge.customui.MiogramUiEngine.drawAvatarGlowRing(canvas, storyParams.originalAvatarRect);
+                miogramOnlineDrawn = false;
                 if (user != null && user.status != null && user.status.expires > org.telegram.tgnet.ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
                     int strokeColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
                     app.miogram.bridge.customui.MiogramUiEngine.drawOnlineIndicator(canvas, storyParams.originalAvatarRect, true, strokeColor);
+                    miogramOnlineDrawn = true;
                 }
             }
 
@@ -5316,10 +5296,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         left = (int) (storyParams.originalAvatarRect.right - dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 6));
                     }
 
-                    Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-                    canvas.drawCircle(left, top, dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
-                    Theme.dialogs_onlineCirclePaint.setColor(onlineColor);
-                    canvas.drawCircle(left, top, dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);
+                    // Miogram already painted its own styled dot above: drawing
+                    // upstream's key_chats_onlineCircle here stacks a second
+                    // (blue) dot on the same corner.
+                    if (!miogramOnlineDrawn) {
+                        Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                        canvas.drawCircle(left, top, dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
+                        Theme.dialogs_onlineCirclePaint.setColor(onlineColor);
+                        canvas.drawCircle(left, top, dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);
+                    }
                     if (isOnline) {
                         if (onlineProgress < 1.0f) {
                             onlineProgress += 16f / 150.0f;

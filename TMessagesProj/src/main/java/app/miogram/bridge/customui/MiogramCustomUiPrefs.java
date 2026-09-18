@@ -178,16 +178,6 @@ public class MiogramCustomUiPrefs {
     // --- Core Read/Write helpers ---
 
     public static boolean getBool(String key, boolean def) {
-        if (key != null && hotTagOk()) {
-            Boolean cached = genericBoolCache.get(key);
-            if (cached != null) return cached;
-        }
-        boolean v = getBoolUncached(key, def);
-        if (key != null) genericBoolCache.put(key, v);
-        return v;
-    }
-
-    private static boolean getBoolUncached(String key, boolean def) {
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -209,7 +199,6 @@ public class MiogramCustomUiPrefs {
     }
 
     public static void setBool(String key, boolean val) {
-        if (key != null) genericBoolCache.remove(key);
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -233,18 +222,6 @@ public class MiogramCustomUiPrefs {
     private static volatile Boolean hotBubbleColor = null;
     private static volatile Boolean hotBubbleGlow = null;
     private static volatile Boolean hotDialogCards = null;
-    private static volatile Boolean hotHideMute = null;
-
-    // Generic read-through cache: getBool/getInt/getColor/getString each cost
-    // 2x getSharedPreferences + keyTag + several map lookups, and they run
-    // per row draw / per Theme.getColor resolve. All writes funnel through
-    // setBool/setInt/setColor/setString, so per-key invalidation is exact.
-    private static final java.util.concurrent.ConcurrentHashMap<String, Boolean> genericBoolCache =
-            new java.util.concurrent.ConcurrentHashMap<>();
-    private static final java.util.concurrent.ConcurrentHashMap<String, Integer> genericIntCache =
-            new java.util.concurrent.ConcurrentHashMap<>();
-    private static final java.util.concurrent.ConcurrentHashMap<String, String> genericStringCache =
-            new java.util.concurrent.ConcurrentHashMap<>();
 
     private static boolean hotTagOk() {
         int slot = UserConfig.selectedAccount;
@@ -260,10 +237,6 @@ public class MiogramCustomUiPrefs {
         hotBubbleColor = null;
         hotBubbleGlow = null;
         hotDialogCards = null;
-        hotHideMute = null;
-        genericBoolCache.clear();
-        genericIntCache.clear();
-        genericStringCache.clear();
         return false;
     }
 
@@ -271,20 +244,9 @@ public class MiogramCustomUiPrefs {
         if (KEY_BUBBLE_COLOR_ENABLED.equals(key)) hotBubbleColor = null;
         else if (KEY_BUBBLE_GLOW_ENABLED.equals(key)) hotBubbleGlow = null;
         else if (KEY_UI_DIALOG_CARDS.equals(key)) hotDialogCards = null;
-        else if (KEY_HIDE_DIALOG_MUTE_ICON.equals(key)) hotHideMute = null;
     }
 
     public static int getInt(String key, int def) {
-        if (key != null && hotTagOk()) {
-            Integer cached = genericIntCache.get(key);
-            if (cached != null) return cached;
-        }
-        int v = getIntUncached(key, def);
-        if (key != null) genericIntCache.put(key, v);
-        return v;
-    }
-
-    private static int getIntUncached(String key, int def) {
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -306,7 +268,6 @@ public class MiogramCustomUiPrefs {
     }
 
     public static void setInt(String key, int val) {
-        if (key != null) genericIntCache.remove(key);
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -319,16 +280,6 @@ public class MiogramCustomUiPrefs {
     }
 
     public static int getColor(String key, int def) {
-        if (key != null && hotTagOk()) {
-            Integer cached = genericIntCache.get("c:" + key);
-            if (cached != null) return cached;
-        }
-        int v = getColorUncached(key, def);
-        if (key != null) genericIntCache.put("c:" + key, v);
-        return v;
-    }
-
-    private static int getColorUncached(String key, int def) {
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -348,7 +299,6 @@ public class MiogramCustomUiPrefs {
     }
 
     public static void setColor(String key, int color) {
-        if (key != null) genericIntCache.remove("c:" + key);
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -361,16 +311,6 @@ public class MiogramCustomUiPrefs {
     }
 
     public static String getString(String key, String def) {
-        if (key != null && hotTagOk()) {
-            String cached = genericStringCache.get(key);
-            if (cached != null) return cached;
-        }
-        String v = getStringUncached(key, def);
-        if (key != null && v != null) genericStringCache.put(key, v);
-        return v;
-    }
-
-    private static String getStringUncached(String key, String def) {
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -388,7 +328,6 @@ public class MiogramCustomUiPrefs {
     }
 
     public static void setString(String key, String val) {
-        if (key != null) genericStringCache.remove(key);
         SharedPreferences cpb = getCpbPrefs();
         if (cpb != null) {
             String fullKey = keyTag() + "_" + key;
@@ -1013,11 +952,7 @@ public class MiogramCustomUiPrefs {
     }
 
     public static boolean isHideDialogMuteIcon() {
-        Boolean v = hotTagOk() ? hotHideMute : null;
-        if (v != null) return v;
-        boolean b = getBool(KEY_HIDE_DIALOG_MUTE_ICON, true);
-        hotHideMute = b;
-        return b;
+        return getBool(KEY_HIDE_DIALOG_MUTE_ICON, true);
     }
 
     public static void setHideDialogMuteIcon(boolean hide) {

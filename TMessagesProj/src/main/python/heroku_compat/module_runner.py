@@ -49,9 +49,27 @@ def _run_coro(coro, timeout):
         return (False, repr(e))
 
 
+_MODULE_CACHE = {}
+
+
 def _load_module(path):
     import heroku_compat  # noqa: F401  (ensures shims are importable)
     from heroku_compat import loader as compat_loader
+    # Modules used to be re-imported AND re-executed on every outgoing message
+    # (run_filter) and every command, synchronously on the sender thread.
+    # Cache by file identity: editing the file changes mtime/size and reloads.
+    # Side effect: module top-level state now persists between calls, like a
+    # real userbot, instead of resetting on every message.
+    try:
+        import os
+        st = os.stat(path)
+        sig = (st.st_mtime_ns, st.st_size)
+    except Exception:
+        sig = None
+    if sig is not None:
+        hit = _MODULE_CACHE.get(path)
+        if hit is not None and hit[0] == sig:
+            return hit[1], compat_loader, hit[2]
     mod_name = "miogram_user_mod_%d" % (abs(hash(path)) % 1000000)
     spec = importlib.util.spec_from_file_location(mod_name, path)
     if spec is None or spec.loader is None:
@@ -61,7 +79,11 @@ def _load_module(path):
     try:
         spec.loader.exec_module(mod)
     except Exception as e:
+        if sig is not None:
+            _MODULE_CACHE[path] = (sig, None, "import error: %s" % (repr(e),))
         return None, None, "import error: %s" % (repr(e),)
+    if sig is not None:
+        _MODULE_CACHE[path] = (sig, mod, None)
     return mod, compat_loader, None
 
 

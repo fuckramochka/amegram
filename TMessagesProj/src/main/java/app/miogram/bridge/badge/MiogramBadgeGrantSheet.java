@@ -14,7 +14,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -31,8 +30,8 @@ import app.miogram.bridge.customui.MiogramHaptic;
  */
 public class MiogramBadgeGrantSheet extends BottomSheet {
 
-    /** Granting is founder-only. Previously badge holders passed too — that
-     *  was the hole: after the mass-mint bug everyone held a badge. */
+    /** Granting is founder-only. Server RLS + RPC secret enforce this;
+     *  the client check is UX only (hides the entry for everyone else). */
     public static boolean canGrantBadges() {
         try {
             long clientUserId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
@@ -433,7 +432,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
             titlesBuilder.append(b.getTitle());
         }
         final String fBadgeIds = idsBuilder.toString();
-        final String fTitle = selectedBadges.size() == 1 ? selectedBadges.iterator().next().getTitle() : "Miogram Community ໒꒱";
+        final String fTitle = selectedBadges.size() == 1 ? selectedBadges.iterator().next().getTitle() : MiogramLocale.get("Спільнота Miogram ໒꒱", "Сообщество Miogram ໒꒱", "Miogram Community ໒꒱");
 
         MiogramSupabaseBridge.grantBadgeToUser(t, fBadgeIds, fTitle, r, () -> {
             progress.setVisibility(View.GONE);

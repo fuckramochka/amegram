@@ -478,7 +478,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
             Uri uri = data.getData();
             if (uri != null) {
                 File cacheDir = AndroidUtilities.getCacheDir();
-                String tempFile = UUID.randomUUID().toString().replace("-", "") + ".nekox-settings.json";
+                String tempFile = UUID.randomUUID().toString().replace("-", "") + ".mio-settings.json";
                 File file = new File(cacheDir.getPath(), tempFile);
                 try {
                     final InputStream inputStream = ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri);

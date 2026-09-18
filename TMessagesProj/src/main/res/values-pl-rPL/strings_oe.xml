@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="OpenExteraInfo">Funkcje przeniesione z exteraGram</string>
+    <string name="OpenExteraInfo">Funkcje przeniesione z Miogram</string>
     <string name="OpenExteraChats">Czaty</string>
     <string name="AddCommaAfterMention">Dodaj przecinek po wzmiance</string>
     <string name="OpenExteraCategories">Kategorie</string>
@@ -18,7 +18,7 @@
     <string name="QrWifiPasswordCopied">Skopiowano hasło</string>
     <string name="QrWifiUnknownNetwork">W kodzie brakuje nazwy sieci</string>
     <string name="QrLoginHint">Ten kod loguje do konta. Skorzystaj z Ustawienia → Urządzenia → Podłącz komputer — tamten ekran weryfikuje kod i chroni Twoje konto.</string>
-    <string name="OpenExteraPreferences">Ustawienia exteraless</string>
+    <string name="OpenExteraPreferences">Ustawienia Miogram</string>
     <string name="OpenExteraDesignSection">Projekt graficzny</string>
     <string name="OpenExteraDesigner">Ikony i projekt graficzny</string>
     <string name="OpenExteraDesignStudio">Studio projektowe</string>

@@ -50,9 +50,12 @@ import xyz.nextalone.nagram.NaConfig;
  */
 public final class EtgBackup {
 
-    public static final String EXTENSION = ".extera";
+    public static final String EXTENSION = ".mio";
+    /** Legacy exteraGram backups still import transparently. */
+    public static final String LEGACY_EXTENSION = ".extera";
 
-    private static final String SECTION_EXTERA = "exteraconfig";
+    private static final String SECTION_EXTERA = "mioconfig";
+    private static final String SECTION_EXTERA_LEGACY = "exteraconfig";
     private static final String SECTION_PILLS = "pillstackconfig";
     private static final String SECTION_MAIN = "mainconfig";
 
@@ -131,16 +134,29 @@ public final class EtgBackup {
     }
 
     public static String generateBackupName() {
-        return "exteraless-" + Utilities.generateRandomString(4) + EXTENSION;
+        return "miogram-" + Utilities.generateRandomString(4) + EXTENSION;
     }
 
-    /** Файл похож на бэкап exteraGram: расширение на месте и внутри есть хоть один знакомый ключ. */
+    /** Matches .mio and legacy .extera backups with at least one known key. */
     public static boolean isBackup(File file) {
-        if (file == null || !file.getName().toLowerCase().endsWith(EXTENSION)) {
+        if (file == null) {
+            return false;
+        }
+        String name = file.getName().toLowerCase();
+        if (!name.endsWith(EXTENSION) && !name.endsWith(LEGACY_EXTENSION)) {
             return false;
         }
         JsonObject root = readBackup(file);
         return root != null && countKnownKeys(root) > 0;
+    }
+
+    /** Name-only check for tap routing (both .mio and legacy .extera). */
+    public static boolean matchesName(String name) {
+        if (name == null) {
+            return false;
+        }
+        String lower = name.toLowerCase();
+        return lower.endsWith(EXTENSION) || lower.endsWith(LEGACY_EXTENSION);
     }
 
     public static JsonObject readBackup(File file) {
@@ -217,6 +233,11 @@ public final class EtgBackup {
         }
         if (root.has(name) && root.get(name).isJsonObject()) {
             return root.getAsJsonObject(name);
+        }
+        // Legacy exteraGram files stored the same keys under "exteraconfig".
+        if (SECTION_EXTERA.equals(name) && root.has(SECTION_EXTERA_LEGACY)
+                && root.get(SECTION_EXTERA_LEGACY).isJsonObject()) {
+            return root.getAsJsonObject(SECTION_EXTERA_LEGACY);
         }
         if (!SECTION_MAIN.equals(name)) {
             return null;

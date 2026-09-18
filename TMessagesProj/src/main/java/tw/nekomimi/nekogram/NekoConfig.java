@@ -128,9 +128,8 @@ public class NekoConfig {
     public static ConfigItem showIdAndDc = addConfig("ShowIdAndDc", configTypeBool, true);
 
     public static ConfigItem cachePath = addConfig("cache_path", configTypeString, "");
-    // Имя форка, а не «Nagram»: значение видно в настройках («Save Path») и в пути
-    // Downloads/<папка>, куда уходят сохранённые файлы.
-    public static ConfigItem customSavePath = addConfig("customSavePath", configTypeString, "exteraless");
+    // Имя папки видно в настройках («Save Path») и в пути Downloads/<папка>.
+    public static ConfigItem customSavePath = addConfig("customSavePath", configTypeString, "Miogram");
 
     public static ConfigItem translationProvider = addConfig("translationProvider", configTypeInt, 1);
     public static ConfigItem translateToLang = addConfig("TransToLang", configTypeString, ""); // "" -> translate to current language (MessageTrans.kt & Translator.kt)

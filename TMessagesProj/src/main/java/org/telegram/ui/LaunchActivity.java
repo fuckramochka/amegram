@@ -1269,9 +1269,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             if (decoy >= 0 && account != decoy) {
                 return;
             }
-            if (decoy < 0 && app.miogram.bridge.vault.MiogramDoubleBottomManager.isAccountHiddenInDuress(account)) {
-                return;
-            }
         }
         if (account == UserConfig.selectedAccount || !UserConfig.isValidAccount(account)) {
             return;

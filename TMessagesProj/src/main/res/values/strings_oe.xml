@@ -25,11 +25,11 @@
     <string name="QrWifiPasswordCopied">Password copied</string>
     <string name="QrWifiUnknownNetwork">Network name is missing from the code</string>
     <string name="QrLoginHint">This code logs into an account. Use Settings → Devices → Link Desktop Device — that screen checks the code and protects your account.</string>
-    <string name="AppIconExteraless" translatable="false">exteraless</string>
+    <string name="AppIconExteraless" translatable="false">Miogram</string>
     <string name="AppIconBlueprint" translatable="false">Blueprint</string>
     <string name="AppIconRed" translatable="false">Red</string>
-    <string name="AppIconNya" translatable="false">Nya</string>
-    <string name="AppIconAyu" translatable="false">Ayu</string>
+    <string name="AppIconNya" translatable="false">Kitty</string>
+    <string name="AppIconAyu" translatable="false">Mio</string>
     <string name="AppIconQuack" translatable="false">Quack</string>
     <string name="OpenExteraPreferences">Miogram Preferences</string>
     <string name="OpenExteraDesignSection">Design</string>

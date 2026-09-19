@@ -177,7 +177,7 @@ public class MiogramCompanionToolbox {
             }
             if (n.equals("clear_chat") || n.equals("delete_chat")) {
                 String q = params != null ? params.optString("chat_query", "") : "";
-                return MiogramLocale.get("⚠️ Очистить/видалить історію чату «", "⚠️ Очистит/удалит историю чата «", "⚠️ Will clear/delete history of chat \"") + q + "».";
+                return MiogramLocale.get("Очистить/видалить історію чату «", "Очистит/удалит историю чата «", "Will clear/delete history of chat \"") + q + "».";
             }
             if (n.equals("remember_fact")) {
                 String k = params != null ? params.optString("key", "") : "";
@@ -272,7 +272,7 @@ public class MiogramCompanionToolbox {
                     callback.run(MiogramLocale.get("Користувача не знайдено.", "Пользователь не найден.", "User not found."));
                     return;
                 }
-                sb.append("👤 ").append(UserObject.getUserName(u)).append("\n");
+                sb.append(UserObject.getUserName(u)).append("\n");
                 if (u.username != null && !u.username.isEmpty()) sb.append("@").append(u.username).append("\n");
                 sb.append("id: ").append(u.id).append(u.bot ? " (bot)" : "").append("\n");
             } else {
@@ -282,7 +282,7 @@ public class MiogramCompanionToolbox {
                     return;
                 }
                 boolean isChannel = ChatObject.isChannelAndNotMegaGroup(c);
-                sb.append(isChannel ? "📢 " : "👥 ").append(c.title != null ? c.title : "").append("\n");
+                sb.append(c.title != null ? c.title : "").append(isChannel ? " [Канал]\n" : " [Група]\n");
                 if (c.username != null && !c.username.isEmpty()) sb.append("@").append(c.username).append("\n");
                 sb.append("id: ").append(c.id).append("\n");
                 if (c.participants_count > 0) {
@@ -314,25 +314,25 @@ public class MiogramCompanionToolbox {
             MessageObject cur = mc.getPlayingMessageObject();
             if (a.equals("next")) {
                 mc.playNextMessage();
-                callback.run(MiogramLocale.get("⏭ Наступний трек.", "⏭ Следующий трек.", "⏭ Next track."));
+                callback.run(MiogramLocale.get("Наступний трек.", "Следующий трек.", "Next track."));
             } else if (a.equals("prev") || a.equals("previous")) {
                 mc.playPreviousMessage();
-                callback.run(MiogramLocale.get("⏮ Попередній трек.", "⏮ Предыдущий трек.", "⏮ Previous track."));
+                callback.run(MiogramLocale.get("Попередній трек.", "Предыдущий трек.", "Previous track."));
             } else if (a.equals("pause")) {
                 if (cur != null && !mc.isMessagePaused()) mc.pauseMessage(cur);
-                callback.run(MiogramLocale.get("⏸ Пауза.", "⏸ Пауза.", "⏸ Paused."));
+                callback.run(MiogramLocale.get("Пауза.", "Пауза.", "Paused."));
             } else if (a.equals("play")) {
                 if (cur != null && mc.isMessagePaused()) mc.playMessage(cur);
-                callback.run(MiogramLocale.get("▶ Відтворення.", "▶ Воспроизведение.", "▶ Playing."));
+                callback.run(MiogramLocale.get("Відтворення.", "Воспроизведение.", "Playing."));
             } else {
                 if (cur == null) {
                     callback.run(MiogramLocale.get("Нічого не грає.", "Ничего не играет.", "Nothing playing."));
                 } else if (mc.isMessagePaused()) {
                     mc.playMessage(cur);
-                    callback.run(MiogramLocale.get("▶ Відтворення.", "▶ Воспроизведение.", "▶ Playing."));
+                    callback.run(MiogramLocale.get("Відтворення.", "Воспроизведение.", "Playing."));
                 } else {
                     mc.pauseMessage(cur);
-                    callback.run(MiogramLocale.get("⏸ Пауза.", "⏸ Пауза.", "⏸ Paused."));
+                    callback.run(MiogramLocale.get("Пауза.", "Пауза.", "Paused."));
                 }
             }
         } catch (Throwable t) {
@@ -351,7 +351,7 @@ public class MiogramCompanionToolbox {
             String title = cur.getMusicTitle();
             String author = cur.getMusicAuthor();
             if (title == null || title.isEmpty()) title = cur.getDocumentName();
-            callback.run((mc.isMessagePaused() ? "⏸ " : "▶ ")
+            callback.run((mc.isMessagePaused() ? "[Пауза] " : "[Грає] ")
                     + (author != null && !author.isEmpty() ? author + " — " : "")
                     + (title != null ? title : "?"));
         } catch (Throwable t) {
@@ -2003,7 +2003,7 @@ public class MiogramCompanionToolbox {
 
                     StringBuilder sb = new StringBuilder();
                     if (!unreadDialogs.isEmpty()) {
-                        sb.append(MiogramLocale.get("📬 Знайдено ", "📬 Найдено ", "📬 Found "))
+                        sb.append(MiogramLocale.get("Знайдено ", "Найдено ", "Found "))
                           .append(unreadDialogs.size())
                           .append(MiogramLocale.get(" чатів з непрочитаними повідомленнями:\n", " чатов с непрочитанными сообщениями:\n", " chats with unread messages:\n"));
 
@@ -2041,7 +2041,7 @@ public class MiogramCompanionToolbox {
                         }
                         sb.append("\n").append(MiogramLocale.get("Скажи ім'я або номер — і я прочитаю листування детально!", "Скажи имя или номер — и я прочитаю переписку детально!", "Tell me the name or number and I'll read the full chat!"));
                     } else {
-                        sb.append(MiogramLocale.get("✨ Непрочитаних повідомлень немає! Усі чати переглянуті.\nОсь останні активні чати:\n", "✨ Непрочитанных сообщений нет! Все чаты просмотрены.\nВот последние активные чаты:\n", "✨ No unread messages! All chats are up to date.\nHere are the most recent active chats:\n"));
+                        sb.append(MiogramLocale.get("Непрочитаних повідомлень немає! Усі чати переглянуті.\nОсь останні активні чати:\n", "Непрочитанных сообщений нет! Все чаты просмотрены.\nВот последние активные чаты:\n", "No unread messages! All chats are up to date.\nHere are the most recent active chats:\n"));
                         int max = Math.min(5, all.size());
                         for (int i = 0; i < max; i++) {
                             TLRPC.Dialog d = all.get(i);
@@ -2158,43 +2158,43 @@ public class MiogramCompanionToolbox {
                                 boolean installed = app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().installModuleFromCode(result.name, result.code);
                                 String msg = MiogramLocale.get(
                                         "✦ **Плагін на Python (Heroku Userbot) створено!**\n"
-                                        + "📁 Назва: `" + result.name + ".py`\n"
-                                        + "⚡ **Статус:** " + (installed ? "Успішно встановлено та АКТИВОВАНО! Він уже працює нативно." : "Збережено у модулі.") + "\n\n",
+                                        + "Назва: `" + result.name + ".py`\n"
+                                        + "**Статус:** " + (installed ? "Успішно встановлено та АКТИВОВАНО! Він уже працює нативно." : "Збережено у модулі.") + "\n\n",
                                         "✦ **Плагин на Python (Heroku Userbot) создан!**\n"
-                                        + "📁 Название: `" + result.name + ".py`\n"
-                                        + "⚡ **Статус:** " + (installed ? "Успешно установлен и АКТИВИРОВАН! Он уже работает нативно." : "Сохранен в модули.") + "\n\n",
+                                        + "Название: `" + result.name + ".py`\n"
+                                        + "**Статус:** " + (installed ? "Успешно установлен и АКТИВИРОВАН! Он уже работает нативно." : "Сохранен в модули.") + "\n\n",
                                         "✦ **Python (Heroku Userbot) plugin created!**\n"
-                                        + "📁 Name: `" + result.name + ".py`\n"
-                                        + "⚡ **Status:** " + (installed ? "Successfully installed and ACTIVATED! It is already running natively." : "Saved to modules.") + "\n\n"
+                                        + "Name: `" + result.name + ".py`\n"
+                                        + "**Status:** " + (installed ? "Successfully installed and ACTIVATED! It is already running natively." : "Saved to modules.") + "\n\n"
                                 ) + "```python\n" + (result.code.length() > 250 ? result.code.substring(0, 250) + "\n# ..." : result.code) + "\n```";
                                 callback.run(msg);
                             } else if ("lua".equalsIgnoreCase(finalLang)) {
                                 boolean installed = app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().installLuaPlugin(result.name, result.code);
                                 String msg = MiogramLocale.get(
                                         "✦ **Плагін на Lua створено!**\n"
-                                        + "📁 Назва: `" + result.name + ".lua`\n"
-                                        + "⚡ **Статус:** " + (installed ? "Збережено в модулі." : "Не збережено.") + " "
+                                        + "Назва: `" + result.name + ".lua`\n"
+                                        + "**Статус:** " + (installed ? "Збережено в модулі." : "Не збережено.") + " "
                                         + "Lua-движка на пристрої нема, тому працюють лише текстові фільтри (якщо скрипт їх оголошує).",
                                         "✦ **Плагин на Lua создан!**\n"
-                                        + "📁 Название: `" + result.name + ".lua`\n"
-                                        + "⚡ **Статус:** " + (installed ? "Сохранен в модули." : "Не сохранен.") + " "
+                                        + "Название: `" + result.name + ".lua`\n"
+                                        + "**Статус:** " + (installed ? "Сохранен в модули." : "Не сохранен.") + " "
                                         + "Lua-движка на устройстве нет, поэтому работают только текстовые фильтры (если скрипт их объявляет).",
                                         "✦ **Lua plugin created!**\n"
-                                        + "📁 Name: `" + result.name + ".lua`\n"
-                                        + "⚡ **Status:** " + (installed ? "Saved to modules." : "Not saved.") + " "
+                                        + "Name: `" + result.name + ".lua`\n"
+                                        + "**Status:** " + (installed ? "Saved to modules." : "Not saved.") + " "
                                         + "No Lua engine on device, so only declared text filters apply."
                                 );
                                 callback.run(msg);
                             } else {
                                 String msg = MiogramLocale.get(
                                         "✦ **WASM Плагін на " + finalLang.toUpperCase(java.util.Locale.US) + " створено!**\n"
-                                        + "📁 Назва: `" + result.name + "` (" + result.id + ")\n"
+                                        + "Назва: `" + result.name + "` (" + result.id + ")\n"
                                         + "Кузня плагінів підготувала проєкт під WASM ABI. Ви можете відкрити Кузню та експортувати ZIP або зібрати.",
                                         "✦ **WASM Плагин на " + finalLang.toUpperCase(java.util.Locale.US) + " создан!**\n"
-                                        + "📁 Название: `" + result.name + "` (" + result.id + ")\n"
+                                        + "Название: `" + result.name + "` (" + result.id + ")\n"
                                         + "Кузница плагинов подготовила проект под WASM ABI. Вы можете открыть Кузницу и экспортировать ZIP или собрать.",
                                         "✦ **WASM Plugin in " + finalLang.toUpperCase(java.util.Locale.US) + " created!**\n"
-                                        + "📁 Name: `" + result.name + "` (" + result.id + ")\n"
+                                        + "Name: `" + result.name + "` (" + result.id + ")\n"
                                         + "Plugin Forge prepared the project for WASM ABI. You can open Plugin Forge to export ZIP or build."
                                 );
                                 callback.run(msg);
@@ -2217,7 +2217,7 @@ public class MiogramCompanionToolbox {
                     if (map == null || map.isEmpty()) {
                         callback.run(MiogramLocale.get("У Miogram наразі немає встановлених плагінів Mio.", "В Miogram сейчас нет установленных плагинов Mio.", "No Mio plugins currently installed in Miogram."));
                     } else {
-                        StringBuilder sb = new StringBuilder(MiogramLocale.get("📦 Список встановлених плагінів:\n", "📦 Список установленных плагинов:\n", "📦 List of installed plugins:\n"));
+                        StringBuilder sb = new StringBuilder(MiogramLocale.get("Список встановлених плагінів:\n", "Список установленных плагинов:\n", "List of installed plugins:\n"));
                         int idx = 1;
                         for (app.exteraless.plugins.Plugin pInfo : map.values()) {
                             sb.append(idx++).append(". ").append(pInfo.getName()).append(" (v").append(pInfo.getVersion()).append(")")
@@ -2233,7 +2233,7 @@ public class MiogramCompanionToolbox {
                     String full = app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().getPrefix() + cmd + (args.isEmpty() ? "" : " " + args);
                     long targetDialogId = p.optLong("dialog_id", p.optLong("chat_id", UserConfig.getInstance(account).getClientUserId()));
                     app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().dispatchCommand(account, targetDialogId, full, null, null);
-                    callback.run("⚡ " + MiogramLocale.get("Виконано команду Heroku: `", "Выполнена команда Heroku: `", "Executed Heroku command: `") + full + "`");
+                    callback.run(MiogramLocale.get("Виконано команду Heroku: `", "Выполнена команда Heroku: `", "Executed Heroku command: `") + full + "`");
                     break;
                 }
                 case "diagnose_client_and_report":

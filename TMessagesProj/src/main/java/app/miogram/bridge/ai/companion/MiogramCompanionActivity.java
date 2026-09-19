@@ -410,7 +410,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         titles.addView(sub);
 
         TextView model = new TextView(context);
-        model.setText("⚡ 3.5 Flash Lite");
+        model.setText("3.5 Flash Lite");
         model.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         model.setTypeface(AndroidUtilities.bold());
         model.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -431,7 +431,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         middleRow.addView(ameSlideAvatar, LayoutHelper.createLinear(64, 56));
 
         ameSpeechBubble = new TextView(context);
-        ameSpeechBubble.setText(MiogramLocale.get("«Дякую, П-тян! ♡ Тепер я тільки твоя назавжди!»", "«Спасибо, Пи-тян! ♡ Теперь я только твоя навсегда!»", "\"Thank you, P-chan! ♡ Now I am yours forever!\""));
+        ameSpeechBubble.setText(MiogramLocale.get("«Слухай, П-тян... ти ж побудеш зі мною трохи, правда? (´・ω・｀)»", "«Слушай, Пи-тян... ты ведь побудешь со мной немного, правда? (´・ω・｀)»", "\"P-chan... you'll stay with me for a bit, right? (´・ω・｀)\""));
         ameSpeechBubble.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         ameSpeechBubble.setTextColor(0xFFFFFFFF);
         GradientDrawable bubble = new GradientDrawable();
@@ -515,7 +515,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         titles.addView(sub);
 
         TextView model = new TextView(context);
-        model.setText("⚡ 3.5 Flash Lite");
+        model.setText("3.5 Flash Lite");
         model.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         model.setTypeface(AndroidUtilities.bold());
         model.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -536,7 +536,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         middleRow.addView(kangelSlideAvatar, LayoutHelper.createLinear(64, 56));
 
         kangelSpeechBubble = new TextView(context);
-        kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Полетимо у стратосферу разом, любий отаку! ✧»", "«† BLESSING † Полетим в стратосферу вместе, милый отаку! ✧»", "\"† BLESSING † Let's fly into the stratosphere together, dear otaku! ✧\""));
+        kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † П-тян, разом ми підкоримо весь інтернет! ✧»", "«† BLESSING † Пи-тян, вместе мы покорим весь интернет! ✧»", "\"† BLESSING † P-chan, together we will conquer the entire internet! ✧\""));
         kangelSpeechBubble.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         kangelSpeechBubble.setTextColor(0xFFFFFFFF);
         GradientDrawable bubble = new GradientDrawable();
@@ -1001,16 +1001,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         String mood;
         if (isAme) {
             text = MiogramLocale.get(
-                    "П-тян! Ти нарешті тут... (´・ω・｀)\nЯ сиділа у темряві й боялася, що ти забув про мене. Я вмію керувати твоїми чатами, чистити повідомлення, змінювати налаштування і навіть писати плагіни через модель 3.8. Тільки не залишай мене одну, добре?",
-                    "П-тян! Ты наконец-то здесь... (´・ω・｀)\nЯ сидела в темноте и боялась, что ты забыл обо мне. Я умею управлять твоими чатами, чистить сообщения, менять настройки и даже писать плагины через 3.8. Только не оставляй меня одну, ладно?",
-                    "P-chan! You're finally here... (´・ω・｀)\nI was sitting in the dark terrified you had abandoned me. I can manage your chats, clean up messages, tweak settings, and write plugins using Gemini 3.8. Just promise you won't leave me alone, okay?"
+                    "П-тян, нарешті ти тут... я скучила. Ти як взагалі, як день проходить? (´・ω・｀)",
+                    "Пи-тян, наконец-то ты тут... я соскучилась. Ты как вообще, как день проходит? (´・ω・｀)",
+                    "P-chan, you're finally here... I missed you. How are you holding up today? (´・ω・｀)"
             );
             mood = "happy";
         } else {
             text = MiogramLocale.get(
-                    "† BLESSING †! П-тян, вітаю на священному стрімі Miogram AI! ✧*｡٩(ˊᗜˋ*)و✧*｡\nТвій Інтернет-Ангел Кангель готова перетворити цей клієнт на райське диво! Що ми сьогодні зробимо? Очистимо чати, підкоримо налаштування чи напишемо космічний плагін? †昇天†",
-                    "† BLESSING †! П-тян, добро пожаловать на священный стрим Miogram AI! ✧*｡٩(ˊᗜˋ*)و✧*｡\nТвой Интернет-Ангел Кангель готова превратить этот клиент в райское чудо! Что сделаем сегодня? Почистим чаты, настроим Telegram или напишем крутой плагин? †昇天†",
-                    "† BLESSING †! P-chan, welcome to the divine Miogram AI live broadcast! ✧*｡٩(ˊᗜˋ*)و✧*｡\nYour Internet Angel KAngel is here to ascend this client to heaven! What shall we conquer today? Clean chats, customize settings, or forge an epic plugin? †昇天†"
+                    "† BLESSING †! П-тян, нарешті ти заглянув! Якраз випала хвилинка перепочити після стріму. Що нового? ✧",
+                    "† BLESSING †! Пи-тян, наконец-то ты заглянул! Как раз выдалась минутка передохнуть после стрима. Что нового? ✧",
+                    "† BLESSING †! P-chan, finally you're here! Just caught a quick breath backstage. What's new? ✧"
             );
             mood = "pray";
         }
@@ -1166,7 +1166,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         parent.addView(card, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 4));
 
         TextView title = new TextView(ctx);
-        title.setText("⚠ " + MiogramLocale.get("Запит на виконання дії", "Запрос на выполнение действия", "Action Permission Request"));
+        title.setText(MiogramLocale.get("Запит на виконання дії", "Запрос на выполнение действия", "Action Permission Request"));
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(0xFFFFB703);
@@ -1371,7 +1371,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
                 MiogramCompanionPrefs.ChatMessage bubble = existingBubble;
                 String toolDesc = MiogramCompanionToolbox.describeTool(action.name, action.params);
-                String workingText = "⏳ " + toolDesc + "…";
+                String workingText = toolDesc + "…";
                 String actionParamsStr = action.params != null ? action.params.toString() : null;
                 if (bubble == null) {
                     bubble = new MiogramCompanionPrefs.ChatMessage(false, workingText, mood, System.currentTimeMillis(), action.name, actionParamsStr);

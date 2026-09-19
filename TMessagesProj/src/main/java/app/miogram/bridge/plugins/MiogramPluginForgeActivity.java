@@ -464,16 +464,27 @@ public class MiogramPluginForgeActivity extends BaseFragment {
 
         // Python and Lua run natively on-device without rustc/cargo toolchain!
         if ("python".equalsIgnoreCase(lang)) {
-            boolean ok = app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().installModuleFromCode(lastResult.name, lastResult.code);
-            statusView.setText(ok
-                    ? MiogramLocale.get("✓ ВСТАНОВЛЕНО ТА АКТИВОВАНО!\nМодуль Heroku Userbot запущено нативно на пристрої.",
-                                        "✓ УСТАНОВЛЕНО И АКТИВИРОВАНО!\nМодуль Heroku Userbot запущен нативно на устройстве.",
-                                        "✓ INSTALLED AND ACTIVATED!\nHeroku Userbot module running natively on device.")
-                    : MiogramLocale.get("Помилка встановлення Python модуля.",
-                                        "Ошибка установки Python модуля.",
-                                        "Failed to install Python module."));
-            MiogramHaptic.success(statusView);
-            Toast.makeText(getParentActivity(), MiogramLocale.get("Модуль успішно активовано!", "Модуль успешно активирован!", "Module activated!"), Toast.LENGTH_SHORT).show();
+            File pyFile = new File(dir, lastResult.id + ".py");
+            if (!pyFile.exists()) {
+                try {
+                    writeFile(pyFile, lastResult.code);
+                } catch (Throwable ignore) {}
+            }
+            app.exteraless.plugins.PluginsController.getInstance().installPlugin(pyFile, true, (ok, err, plugin) -> {
+                AndroidUtilities.runOnUIThread(() -> {
+                    app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().installModuleFromCode(lastResult.name, lastResult.code);
+                    if (ok) {
+                        statusView.setText(MiogramLocale.get("✓ ВСТАНОВЛЕНО ТА АКТИВОВАНО!\nПлагін додано до каталогу та активовано.",
+                                                             "✓ УСТАНОВЛЕНО И АКТИВИРОВАНО!\nПлагин добавлен в каталог и активирован.",
+                                                             "✓ INSTALLED AND ACTIVATED!\nPlugin added to catalog and activated."));
+                        MiogramHaptic.success(statusView);
+                        Toast.makeText(getParentActivity(), MiogramLocale.get("Плагін успішно встановлено!", "Плагин успешно установлен!", "Plugin installed successfully!"), Toast.LENGTH_SHORT).show();
+                    } else {
+                        statusView.setText(MiogramLocale.get("✓ ЗБЕРЕЖЕНО В МОДУЛІ HEROKU:\n", "✓ СОХРАНЕНО В МОДУЛИ HEROKU:\n", "✓ SAVED IN HEROKU MODULES:\n") + (err != null ? err : ""));
+                        Toast.makeText(getParentActivity(), MiogramLocale.get("Модуль збережено", "Модуль сохранен", "Module saved"), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            });
             return;
         } else if ("lua".equalsIgnoreCase(lang)) {
             boolean ok = app.miogram.bridge.userbot.MiogramHerokuManager.getInstance().installLuaPlugin(lastResult.name, lastResult.code);

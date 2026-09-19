@@ -21,6 +21,7 @@ import app.miogram.bridge.ui.ios.MiogramEnterViewIosHelper;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import xyz.nextalone.nagram.NaConfig;
+import xyz.nextalone.nagram.helper.DoubleTap;
 
 /**
  * Unified Miogram Chats & Media Settings with dynamic multilingual localization.
@@ -39,6 +40,7 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
     private int headerChatActionsRow;
     private int iosInputPanelRow;
     private int doubleTapActionRow;
+    private int doubleTapActionOutRow;
     private int noQuoteForwardRow;
     private int combineMessagesRow;
     private int showMessageIdRow;
@@ -79,6 +81,7 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
         headerChatActionsRow = addRow();
         iosInputPanelRow = addRow();
         doubleTapActionRow = addRow();
+        doubleTapActionOutRow = addRow();
         noQuoteForwardRow = addRow();
         combineMessagesRow = addRow();
         showMessageIdRow = addRow();
@@ -120,7 +123,9 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
             MiogramEnterViewIosHelper.setIosInputPanelEnabled(v);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
         } else if (position == doubleTapActionRow) {
-            showDoubleTapDialog();
+            showDoubleTapDialog(false);
+        } else if (position == doubleTapActionOutRow) {
+            showDoubleTapDialog(true);
         } else if (position == noQuoteForwardRow) {
             boolean v = !NaConfig.INSTANCE.getShowNoQuoteForward().Bool();
             NaConfig.INSTANCE.getShowNoQuoteForward().setConfigBool(v);
@@ -162,26 +167,71 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
         showDialog(builder.create());
     }
 
-    private void showDoubleTapDialog() {
+    private void showDoubleTapDialog(boolean out) {
         Context ctx = getParentActivity();
         if (ctx == null) return;
+
+        final int[] actionValues = new int[]{
+                DoubleTap.DOUBLE_TAP_ACTION_NONE,
+                DoubleTap.DOUBLE_TAP_ACTION_REPLY,
+                DoubleTap.DOUBLE_TAP_ACTION_SEND_REACTIONS,
+                DoubleTap.DOUBLE_TAP_ACTION_SHOW_REACTIONS,
+                DoubleTap.DOUBLE_TAP_ACTION_COPY_TEXT,
+                DoubleTap.DOUBLE_TAP_ACTION_SAVE,
+                DoubleTap.DOUBLE_TAP_ACTION_TRANSLATE,
+                DoubleTap.DOUBLE_TAP_ACTION_REPEAT_AS_COPY
+        };
 
         String[] options = new String[]{
                 MiogramLocale.get("Вимкнено", "Выключено", "Disabled"),
                 MiogramLocale.get("Відповідь", "Ответ", "Reply"),
-                MiogramLocale.get("Реакція", "Реакция", "Reaction"),
-                MiogramLocale.get("Копіювати", "Копировать", "Copy"),
+                MiogramLocale.get("Швидка реакція", "Быстрая реакция", "Quick Reaction"),
+                MiogramLocale.get("Меню реакцій", "Меню реакций", "Reactions Menu"),
+                MiogramLocale.get("Скопіювати текст", "Скопировать текст", "Copy Text"),
                 MiogramLocale.get("В Обране", "В Избранное", "Save to Saved"),
-                MiogramLocale.get("Переклад", "Перевод", "Translate")
+                MiogramLocale.get("Переклад", "Перевод", "Translate"),
+                MiogramLocale.get("Повторити як копію", "Повторить как копию", "Repeat as Copy")
         };
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        builder.setTitle(MiogramLocale.get("Подвійний тап по повідомленню", "Двойной тап по сообщению", "Double Tap on Message"));
+        builder.setTitle(out
+                ? MiogramLocale.get("Подвійний тап (вихідні)", "Двойной тап (исходящие)", "Double Tap (Outgoing)")
+                : MiogramLocale.get("Подвійний тап (вхідні)", "Двойной тап (входящие)", "Double Tap (Incoming)"));
         builder.setItems(options, (dialog, which) -> {
-            NaConfig.INSTANCE.getDoubleTapAction().setConfigInt(which);
-            listAdapter.notifyItemChanged(doubleTapActionRow);
+            int action = actionValues[which];
+            if (out) {
+                NaConfig.INSTANCE.getDoubleTapActionOut().setConfigInt(action);
+                listAdapter.notifyItemChanged(doubleTapActionOutRow);
+            } else {
+                NaConfig.INSTANCE.getDoubleTapAction().setConfigInt(action);
+                listAdapter.notifyItemChanged(doubleTapActionRow);
+            }
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         showDialog(builder.create());
+    }
+
+    private String getDoubleTapActionName(int act) {
+        switch (act) {
+            case DoubleTap.DOUBLE_TAP_ACTION_NONE:
+                return MiogramLocale.get("Вимкнено", "Выключено", "Disabled");
+            case DoubleTap.DOUBLE_TAP_ACTION_REPLY:
+                return MiogramLocale.get("Відповідь", "Ответ", "Reply");
+            case DoubleTap.DOUBLE_TAP_ACTION_SEND_REACTIONS:
+                return MiogramLocale.get("Швидка реакція", "Быстрая реакция", "Quick Reaction");
+            case DoubleTap.DOUBLE_TAP_ACTION_SHOW_REACTIONS:
+                return MiogramLocale.get("Меню реакцій", "Меню реакций", "Reactions Menu");
+            case DoubleTap.DOUBLE_TAP_ACTION_COPY_TEXT:
+                return MiogramLocale.get("Скопіювати текст", "Скопировать текст", "Copy Text");
+            case DoubleTap.DOUBLE_TAP_ACTION_SAVE:
+                return MiogramLocale.get("В Обране", "В Избранное", "Save to Saved");
+            case DoubleTap.DOUBLE_TAP_ACTION_TRANSLATE:
+            case DoubleTap.DOUBLE_TAP_ACTION_TRANSLATE_LLM:
+                return MiogramLocale.get("Переклад", "Перевод", "Translate");
+            case DoubleTap.DOUBLE_TAP_ACTION_REPEAT_AS_COPY:
+                return MiogramLocale.get("Повторити як копію", "Повторить как копию", "Repeat as Copy");
+            default:
+                return MiogramLocale.get("Відповідь", "Ответ", "Reply");
+        }
     }
 
     private void showStickerShapeDialog() {
@@ -298,17 +348,11 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
                         String val = t == 2 ? "CameraX" : (t == 1 ? "Camera2" : MiogramLocale.get("Системна", "Системная", "System"));
                         cell.setTextAndValue(MiogramLocale.get("Рушій відеокамери", "Движок видеокамеры", "Video Camera Engine"), val, true);
                     } else if (position == doubleTapActionRow) {
-                        int act = NaConfig.INSTANCE.getDoubleTapAction().Int();
-                        String[] opts = new String[]{
-                                MiogramLocale.get("Вимкнено", "Выключено", "Disabled"),
-                                MiogramLocale.get("Відповідь", "Ответ", "Reply"),
-                                MiogramLocale.get("Реакція", "Реакция", "Reaction"),
-                                MiogramLocale.get("Копіювати", "Копировать", "Copy"),
-                                MiogramLocale.get("В Обране", "В Избранное", "Save"),
-                                MiogramLocale.get("Переклад", "Перевод", "Translate")
-                        };
-                        String val = (act >= 0 && act < opts.length) ? opts[act] : MiogramLocale.get("Відповідь", "Ответ", "Reply");
-                        cell.setTextAndValue(MiogramLocale.get("Подвійний тап по повідомленню", "Двойной тап по сообщению", "Double Tap Action"), val, true);
+                        cell.setTextAndValue(MiogramLocale.get("Подвійний тап (вхідні)", "Двойной тап (входящие)", "Double Tap (Incoming)"),
+                                getDoubleTapActionName(NaConfig.INSTANCE.getDoubleTapAction().Int()), true);
+                    } else if (position == doubleTapActionOutRow) {
+                        cell.setTextAndValue(MiogramLocale.get("Подвійний тап (вихідні)", "Двойной тап (исходящие)", "Double Tap (Outgoing)"),
+                                getDoubleTapActionName(NaConfig.INSTANCE.getDoubleTapActionOut().Int()), true);
                     } else if (position == stickerShapeRow) {
                         int s = ChatsConfig.stickerShape.Int();
                         String val = s == 2 ? MiogramLocale.get("Бульбашка", "Пузырь", "Bubble") : (s == 1 ? MiogramLocale.get("Скруглена", "Скругленная", "Rounded") : MiogramLocale.get("Оригінальна", "Оригинальная", "Original"));

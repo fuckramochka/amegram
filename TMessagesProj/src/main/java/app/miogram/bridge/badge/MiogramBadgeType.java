@@ -6,30 +6,30 @@ import androidx.annotation.Nullable;
 import app.miogram.bridge.MiogramLocale;
 
 /**
- * 10 Canonical Miogram Badges from the official design system:
- * 01 - ORIGINAL (Classic winged heart with antenna)
- * 02 - PINK (Neon pink style)
- * 03 - CYAN (Cyber sky blue style)
- * 04 - DARK (Obsidian with velvet purple edge glow)
- * 05 - ANGEL (Floating halo with lavender heart)
- * 06 - DEVIL (Devil horns & bat wings)
- * 07 - RAINBOW (Prismatic spectrum wings)
- * 08 - OUTLINE (Crisp 1px wireframe pixel contour)
- * 09 - GLITCH (Split RGB displacement glitch)
- * 10 - PREMIUM (Golden royal crown & golden wings)
+ * 10 Canonical Miogram Badges with Needy Streamer Overload / Ame & KAngel aesthetic:
+ * 01 - ORIGINAL (Classic winged heart with antenna visor)
+ * 02 - ANGEL (Celestial angel with glowing halo & pastel wings)
+ * 03 - DARK (Midnight obsidian with velvet lavender glow & cyber ribbons)
+ * 04 - GLITCH (Cyber glitch with chromatic RGB displacement & scanlines)
+ * 05 - PINK (Neon pink streamer heart with chevron ribs)
+ * 06 - CYAN (Cyberspace matrix with laser cyan wings)
+ * 07 - DEVIL (Mischievous devil with horns & bat wings)
+ * 08 - RAINBOW (Prismatic rainbow with 5-tier spectrum feathers)
+ * 09 - OUTLINE (1-bit retro wireframe contour)
+ * 10 - PREMIUM (Supreme royal crown & golden halo)
  */
 public enum MiogramBadgeType {
 
-    ORIGINAL("original", "01 — ORIGINAL", "Класичний варіант", "Классический вариант", "Classic style"),
-    PINK("pink", "02 — PINK", "Рожевий стиль", "Розовый стиль", "Pink style"),
-    CYAN("cyan", "03 — CYAN", "Блакитний стиль", "Голубой стиль", "Cyan style"),
-    DARK("dark", "04 — DARK", "Темний варіант", "Темный вариант", "Dark style"),
-    ANGEL("angel", "05 — ANGEL", "З німбом", "С нимбом", "Angel with halo"),
-    DEVIL("devil", "06 — DEVIL", "З ріжками", "С рожками", "Devil with horns"),
-    RAINBOW("rainbow", "07 — RAINBOW", "Веселковий", "Радужный", "Rainbow style"),
-    OUTLINE("outline", "08 — OUTLINE", "Контурний", "Контурный", "Outline style"),
-    GLITCH("glitch", "09 — GLITCH", "Глітч-стиль", "Глитч-стиль", "Glitch style"),
-    PREMIUM("premium", "10 — PREMIUM", "Преміум варіант", "Премиум вариант", "Premium style");
+    ORIGINAL("original", "01 — ORIGINAL", "Класичний стиль", "Классический стиль", "Classic style"),
+    ANGEL("angel", "02 — ANGEL", "Небесний ангел", "Небесный ангел", "Celestial angel"),
+    DARK("dark", "03 — DARK", "Нічний обсидіан", "Ночной обсидиан", "Midnight obsidian"),
+    GLITCH("glitch", "04 — GLITCH", "Кібер-глітч", "Кибер-глитч", "Cyber glitch"),
+    PINK("pink", "05 — PINK", "Неоново-рожевий", "Неоново-розовый", "Neon pink"),
+    CYAN("cyan", "06 — CYAN", "Кібер-блакитний", "Кибер-лазурный", "Cyber cyan"),
+    DEVIL("devil", "07 — DEVIL", "Зухвалий чортик", "Дерзкий чертёнок", "Devil style"),
+    RAINBOW("rainbow", "08 — RAINBOW", "Призматичний спектр", "Призматический спектр", "Prismatic rainbow"),
+    OUTLINE("outline", "09 — OUTLINE", "Кібер-вайрфрейм", "Кибер-вайрфрейм", "Cyber wireframe"),
+    PREMIUM("premium", "10 — PREMIUM", "Королівська корона", "Королевская корона", "Royal crown");
 
     private final String id;
     private final String code;
@@ -61,8 +61,13 @@ public enum MiogramBadgeType {
     public static MiogramBadgeType fromId(@Nullable String id) {
         if (id != null) {
             String lower = id.trim().toLowerCase();
+            // Aliases
+            if ("kangel".equals(lower)) return ANGEL;
+            if ("ame".equals(lower)) return DARK;
+            if ("overdose".equals(lower)) return GLITCH;
+
             for (MiogramBadgeType type : values()) {
-                if (type.id.equals(lower)) {
+                if (type.id.equals(lower) || type.name().toLowerCase().equals(lower)) {
                     return type;
                 }
             }

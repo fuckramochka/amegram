@@ -2338,6 +2338,18 @@ public class ChatActivity extends BaseFragment implements
                     case DoubleTap.DOUBLE_TAP_ACTION_DELETE:
                         processSelectedOption(OPTION_DELETE);
                         break;
+                    case DoubleTap.DOUBLE_TAP_ACTION_COPY_TEXT:
+                        if (messageObject != null) {
+                            CharSequence messageContent = getMessageContent(messageObject);
+                            if (TextUtils.isEmpty(messageContent) && messageObject.messageOwner != null) {
+                                messageContent = messageObject.messageOwner.message;
+                            }
+                            if (!TextUtils.isEmpty(messageContent)) {
+                                AndroidUtilities.addToClipboard(messageContent);
+                                BulletinFactory.of(ChatActivity.this).createCopyBulletin(getString(R.string.TextCopied)).show();
+                            }
+                        }
+                        break;
                 }
             }
         }
@@ -20650,7 +20662,8 @@ public class ChatActivity extends BaseFragment implements
 
                 boolean hasSelectedAyuDeletedMessage = hasSelectedAyuDeletedMessage();
                 boolean noforwards = isPeerNoForwards() || hasSelectedNoforwardsMessage() || hasSelectedAyuDeletedMessage;
-                boolean canForward = chatMode != MODE_SCHEDULED && cantForwardMessagesCount == 0 && !noforwards;
+                boolean canForwardAsCopyVal = canForwardAsCopy(getSelectedMessages1());
+                boolean canForward = chatMode != MODE_SCHEDULED && cantForwardMessagesCount == 0 && (!noforwards || canForwardAsCopyVal);
                 boolean showForward = NaConfig.INSTANCE.getActionBarButtonForward().Bool();
                 boolean canSendMessage = ChatObject.canSendMessages(currentChat);
                 boolean canReport = false;
@@ -20665,7 +20678,7 @@ public class ChatActivity extends BaseFragment implements
                     forwardNoQuoteItem.setVisibility(canForward && NaConfig.INSTANCE.getShowNoQuoteForward().Bool());
                 }
                 if (saveMessageItem != null) {
-                    saveMessageItem.setVisibility(canForward);
+                    saveMessageItem.setVisibility(canForward || canForwardAsCopyVal);
                 }
                 if (repeatItem != null) {
                     repeatItem.setVisibility(canForward && canSendMessage);
@@ -48078,7 +48091,11 @@ public class ChatActivity extends BaseFragment implements
             }
         } else if (id == nkbtn_savemessage) {
             ArrayList<MessageObject> messages = getSelectedMessages();
-            forwardMessages(messages, false, false, true, 0, UserConfig.getInstance(currentAccount).getClientUserId(), 0);
+            if (hasNoforwardsMessage(messages) && canForwardAsCopy(messages)) {
+                forwardAsCopy(messages, UserConfig.getInstance(currentAccount).getClientUserId(), false, 0, 0);
+            } else {
+                forwardMessages(messages, false, false, true, 0, UserConfig.getInstance(currentAccount).getClientUserId(), 0);
+            }
             undoView.showWithAction(getUserConfig().getClientUserId(), UndoView.ACTION_FWD_MESSAGES, messages.size());
         } else if (id == nkbtn_hide) {
             ArrayList<MessageObject> messages = getSelectedMessages();
@@ -48270,7 +48287,11 @@ public class ChatActivity extends BaseFragment implements
                 } else {
                     messages.add(selectedObject);
                 }
-                forwardMessages(messages, false, false, true, 0, getUserConfig().getClientUserId(), 0);
+                if (hasNoforwardsMessage(messages) && canForwardAsCopy(messages)) {
+                    forwardAsCopy(messages, getUserConfig().getClientUserId(), false, 0, 0);
+                } else {
+                    forwardMessages(messages, false, false, true, 0, getUserConfig().getClientUserId(), 0);
+                }
                 undoView.showWithAction(getUserConfig().getClientUserId(), UndoView.ACTION_FWD_MESSAGES, messages.size());
                 break;
             }
@@ -50017,9 +50038,9 @@ public class ChatActivity extends BaseFragment implements
             allowPin = false;
         }
         allowPin = allowPin && message.getId() > 0 && (message.messageOwner.action == null || message.messageOwner.action instanceof TLRPC.TL_messageActionEmpty) && !message.isExpiredStory() && message.type != MessageObject.TYPE_STORY_MENTION;
-        boolean noforwards = isPeerNoForwards() || message.messageOwner.noforwards || getDialogId() == UserObject.VERIFY;
+        boolean noforwards = (isPeerNoForwards() || message.messageOwner.noforwards || getDialogId() == UserObject.VERIFY) && !NaConfig.INSTANCE.getForwardProtectedAsCopy().Bool();
         boolean noforwardsOverride = false;
-        boolean noforwardsOrPaidMedia = noforwardsOverride || message.type == MessageObject.TYPE_PAID_MEDIA;
+        boolean noforwardsOrPaidMedia = noforwardsOverride || (message.type == MessageObject.TYPE_PAID_MEDIA && !NaConfig.INSTANCE.getForwardProtectedAsCopy().Bool());
         boolean allowUnpin = !isEphemeral && message.getDialogId() != mergeDialogId && allowPin && (pinnedMessageObjects.containsKey(message.getId()) || groupedMessages != null && !groupedMessages.messages.isEmpty() && pinnedMessageObjects.containsKey(groupedMessages.messages.get(0).getId())) && !message.isExpiredStory();
         boolean allowEdit = !isEphemeral && message.canEditMessage(currentChat) && !chatActivityEnterView.hasAudioToSend() && message.getDialogId() != mergeDialogId && message.type != MessageObject.TYPE_STORY && message.type != MessageObject.TYPE_POLL;
 

@@ -92,6 +92,16 @@ public class EditTextBoldCursor extends EditTextEffects {
     private GradientDrawable gradientDrawable;
     private SubstringLayoutAnimator hintAnimator;
     float rightHintOffset;
+    private boolean allowMultilineHint;
+
+    public void setAllowMultilineHint(boolean allow) {
+        if (this.allowMultilineHint != allow) {
+            this.allowMultilineHint = allow;
+            if (hint != null) {
+                setHintText(hint, false);
+            }
+        }
+    }
 
     private final Choreographer60FpsContent.FrameCallback invalidateCallback = d -> invalidate();
 
@@ -650,13 +660,18 @@ public class EditTextBoldCursor extends EditTextEffects {
                 }
             }
             hint = text;
-            if (getMeasuredWidth() != 0) {
-                text = TextUtils.ellipsize(text, paint, getMeasuredWidth(), TextUtils.TruncateAt.END);
-                if (hintLayout != null && TextUtils.equals(hintLayout.getText(), text)) {
-                    return;
+            if (allowMultilineHint && getMeasuredWidth() > 0) {
+                int availWidth = Math.max(dp(100), getMeasuredWidth() - getPaddingLeft() - getPaddingRight());
+                hintLayout = new StaticLayout(text, paint, availWidth, Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
+            } else {
+                if (getMeasuredWidth() != 0) {
+                    text = TextUtils.ellipsize(text, paint, getMeasuredWidth(), TextUtils.TruncateAt.END);
+                    if (hintLayout != null && TextUtils.equals(hintLayout.getText(), text)) {
+                        return;
+                    }
                 }
+                hintLayout = new StaticLayout(text, paint, dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             }
-            hintLayout = new StaticLayout(text, paint, dp(1000), Layout.Alignment.ALIGN_NORMAL, 1.0f, 0.0f, false);
             invalidate();
         }
     }
@@ -829,7 +844,13 @@ public class EditTextBoldCursor extends EditTextEffects {
                 float offset = getMeasuredWidth() - hintWidth;
                 canvas.translate(hintLayoutX = left + getScrollX() + offset, hintLayoutY = lineY - hintLayout.getHeight() - dp(7));
             } else {
-                canvas.translate(hintLayoutX = left + getScrollX()+ hintLayoutOffset, hintLayoutY = lineY - hintLayout.getHeight() - AndroidUtilities.dp2(7));
+                int hy;
+                if (allowMultilineHint && hintLayout.getLineCount() > 1) {
+                    hy = getExtendedPaddingTop();
+                } else {
+                    hy = (int) lineY - hintLayout.getHeight() - AndroidUtilities.dp2(7);
+                }
+                canvas.translate(hintLayoutX = left + getScrollX()+ hintLayoutOffset, hintLayoutY = hy);
             }
             if (transformHintToHeader) {
                 float scale = 1.0f - 0.3f * headerAnimationProgress;

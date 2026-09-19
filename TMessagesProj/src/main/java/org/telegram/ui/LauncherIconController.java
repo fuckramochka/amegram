@@ -2,38 +2,87 @@ package org.telegram.ui;
 
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
 
 public class LauncherIconController {
+
+    private static final String KEY_SAVED_ICON = "saved_launcher_icon_key";
+
     public static void tryFixLauncherIconIfNeeded() {
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) return;
+
+        SharedPreferences prefs = MessagesController.getGlobalMainSettings();
+        String savedKey = prefs.getString(KEY_SAVED_ICON, null);
+        LauncherIcon targetIcon = LauncherIcon.EXTERALESS;
+        if (savedKey != null) {
+            for (LauncherIcon icon : LauncherIcon.values()) {
+                if (icon.key.equals(savedKey)) {
+                    targetIcon = icon;
+                    break;
+                }
+            }
+        }
+
         for (LauncherIcon icon : LauncherIcon.values()) {
             if (isEnabled(icon)) {
                 return;
             }
         }
 
-        setIcon(LauncherIcon.EXTERALESS);
+        setIcon(targetIcon);
     }
 
     public static boolean isEnabled(LauncherIcon icon) {
         Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) return false;
+
+        SharedPreferences prefs = MessagesController.getGlobalMainSettings();
+        String savedKey = prefs.getString(KEY_SAVED_ICON, null);
+        if (savedKey != null) {
+            return icon.key.equals(savedKey);
+        }
+
         int i = ctx.getPackageManager().getComponentEnabledSetting(icon.getComponentName(ctx));
-        // Пока пользователь ничего не выбирал, включённой считается наша иконка:
-        // именно она стоит у <application> в манифесте, и переключатель должен
-        // показывать выбранным то, что человек видит на рабочем столе.
+        // While user hasn't made a choice, default to EXTERALESS:
         return i == PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                || i == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && icon == LauncherIcon.EXTERALESS;
+                || (i == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && icon == LauncherIcon.EXTERALESS);
     }
 
     public static void setIcon(LauncherIcon icon) {
         Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null || icon == null) return;
+
         PackageManager pm = ctx.getPackageManager();
+
+        // 1. Persist chosen icon in preferences
+        MessagesController.getGlobalMainSettings().edit().putString(KEY_SAVED_ICON, icon.key).apply();
+
+        // 2. Enable target component FIRST to prevent Android 14-16 / Samsung One UI from seeing 0 launcher components
+        try {
+            pm.setComponentEnabledSetting(
+                    icon.getComponentName(ctx),
+                    PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+                    PackageManager.DONT_KILL_APP
+            );
+        } catch (Throwable ignore) {}
+
+        // 3. Disable all other launcher components
         for (LauncherIcon i : LauncherIcon.values()) {
-            pm.setComponentEnabledSetting(i.getComponentName(ctx), i == icon ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED :
-                    PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP);
+            if (i != icon) {
+                try {
+                    pm.setComponentEnabledSetting(
+                            i.getComponentName(ctx),
+                            PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                            PackageManager.DONT_KILL_APP
+                    );
+                } catch (Throwable ignore) {}
+            }
         }
     }
 

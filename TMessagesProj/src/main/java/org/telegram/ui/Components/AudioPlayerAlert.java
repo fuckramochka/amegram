@@ -691,11 +691,17 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 if (messageObject != null && (messageObject.isMusic() || messageObject.isVoice())) {
                     updateProgress(messageObject);
                 }
+                if (modernPlayerLayout != null) {
+                    modernPlayerLayout.onSeekBarScrub(!stop, progress);
+                }
             }
 
             @Override
             public void onSeekBarPressed(boolean pressed) {
                 draggingSeekBar = pressed;
+                if (modernPlayerLayout != null) {
+                    modernPlayerLayout.onSeekBarScrub(pressed, seekBarView.getProgress());
+                }
             }
 
             @Override
@@ -1845,6 +1851,10 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (backwardButton != null) {
             backwardButton.setTextColor(getThemedColor(Theme.key_player_button));
         }
+    }
+
+    public app.miogram.bridge.player.MiogramModernPlayerLayout getModernPlayerLayout() {
+        return modernPlayerLayout;
     }
 
     public void openMusicSearch() {

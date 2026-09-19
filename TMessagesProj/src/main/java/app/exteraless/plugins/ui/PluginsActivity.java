@@ -166,7 +166,7 @@ public class PluginsActivity extends BaseFragment {
         String[] titles = {
             app.miogram.bridge.MiogramLocale.get("Всі", "Все", "All"),
             "Miogram WASM",
-            "Mio Python (.py)",
+            "ETG (exteraGram)",
             app.miogram.bridge.MiogramLocale.get("Каталог ໒꒱", "Каталог ໒꒱", "Catalog ໒꒱")
         };
         int[] filters = {FILTER_ALL, FILTER_MIOGRAM, FILTER_EXTERA, FILTER_CATALOG};
@@ -244,18 +244,15 @@ public class PluginsActivity extends BaseFragment {
                 if (!matches) continue;
             }
 
-            // Category filtering
+            // Category filtering: WASM vs exteraGram (Python/ETG)
+            boolean isWasm = "wasm".equalsIgnoreCase(plugin.engine)
+                    || (plugin.path != null && (plugin.path.endsWith(".wasm") || plugin.path.endsWith(".so") || plugin.path.endsWith(".mioplugin")))
+                    || (plugin.id != null && (plugin.id.endsWith(".wasm") || plugin.id.endsWith(".so") || plugin.id.endsWith(".mioplugin")));
+
             if (currentFilter == FILTER_MIOGRAM) {
-                String idLower = (plugin.id != null ? plugin.id : "").toLowerCase(Locale.ROOT);
-                String nameLower = plugin.getDisplayName().toLowerCase(Locale.ROOT);
-                boolean isMiogram = idLower.contains("wasm") || idLower.contains("miogram") || idLower.contains("rust")
-                        || nameLower.contains("miogram") || nameLower.contains("wasm") || nameLower.contains("shader");
-                if (!isMiogram) continue;
+                if (!isWasm) continue;
             } else if (currentFilter == FILTER_EXTERA) {
-                String idLower = (plugin.id != null ? plugin.id : "").toLowerCase(Locale.ROOT);
-                boolean isExtera = idLower.endsWith(".py") || idLower.endsWith(".plugin") || idLower.contains("python")
-                        || idLower.contains("extera") || idLower.contains("hook");
-                if (!isExtera) continue;
+                if (isWasm) continue;
             }
             filtered.add(plugin);
         }

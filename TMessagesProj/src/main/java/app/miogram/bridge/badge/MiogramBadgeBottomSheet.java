@@ -571,7 +571,6 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
         }
     }
 
-    /** Honest suffix: shown only for the founder or staff-verified rows. */
     private static String verifiedSuffix(boolean isFounder, MiogramSupabaseBridge.BadgeRecord record) {
         if (!isFounder && (record == null || !record.verified)) {
             return "";
@@ -583,55 +582,55 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
         switch (type) {
             case PINK:
                 return MiogramLocale.get(
-                        "Неоново-рожевий кібер-стиль із шевронами серця. Символ естетики Needy Streamer Overload та безмежної любові до Інтернет-Ангела.",
-                        "Неоново-розовый кибер-стиль с шевронами сердца. Символ эстетики Needy Streamer Overload и бесконечной любви к Интернет-Ангелу.",
-                        "Neon pink cyber aesthetic with chevron heart ribs. The quintessential symbol of Needy Streamer Overload devotion.");
+                        "Неоново-рожеве піксельне серце з подвійними шевронами та блискітками. Символ невичерпної енергії, цифрових емоцій та відданості спільноті.",
+                        "Неоново-розовое пиксельное сердце с двойными шевронами и блёстками. Символ неиссякаемой энергии, цифровых эмоций и преданности сообществу.",
+                        "Neon pink pixel heart with double chevrons and sparkles. A symbol of boundless energy, digital emotion, and community devotion.");
             case CYAN:
                 return MiogramLocale.get(
-                        "Електричний блакитний стиль з білими акцентами та сяйвом. Символізує технологічність, холодний розум та надшвидку реакцію Miogram.",
-                        "Электрический лазурный стиль с белыми акцентами и сиянием. Символизирует технологичность, холодный ум и сверхбыструю реакцию Miogram.",
-                        "Electric sky-blue cyber wings with luminous starlight. Symbolizes Miogram speed, clarity, and next-gen technology.");
+                        "Електричний блакитний стиль з антеною-візором, крижаним сяйвом та білими акцентами. Символізує швидкість, технологічність та цифровий простір.",
+                        "Электрический лазурный стиль с антенной-визором, ледяным сиянием и белыми акцентами. Символизирует скорость, технологичность и цифровое пространство.",
+                        "Electric sky-blue wings with data antenna visor, icy starlight, and crisp highlights. Symbolizes next-gen speed and digital clarity.");
             case DARK:
                 return MiogramLocale.get(
-                        "Темний обсидіановий варіант з оксамитовим неоновим краєм для поціновувачів нічного режиму, таємничості та естетики глибокого космосу.",
-                        "Темный обсидиановый вариант с бархатным неоновым краем для ценителей ночного режима, таинственности и эстетики глубокого космоса.",
-                        "Midnight obsidian wings with velvet violet aura. Crafted for night owls, stealth lovers, and deep-space vibes.");
+                        "Нічний обсидіан з оксамитовим фіолетовим краєм, кібер-шпильками та лавандовим серцем. Для поціновувачів таємничої меланхолії та нічного вайбу.",
+                        "Ночной обсидиан с бархатным фиолетовым краем, кибер-заколками и лавандовым сердцем. Для ценителей таинственной меланхолии и ночного вайба.",
+                        "Midnight obsidian wings with velvet purple aura, cyber clips, and lavender heart. Crafted for lovers of nocturnal mystique and quiet melancholia.");
             case ANGEL:
                 return MiogramLocale.get(
-                        "Ангельські крила з ширяючим білим німбом та лавандовим серцем. Відзнака гармонії, чистих помислів та піднесення †昇天†.",
-                        "Ангельские крылья с парящим белым нимбом и лавандовым сердцем. Знак гармонии, чистых помыслов и вознесения †昇天†.",
-                        "Angelic wings with hovering white halo and lavender heart. The badge of purity, harmony, and transcendental ascension †昇天†.");
+                        "Ангельські крила з ширяючим золотистим німбом, пастельними пір'їнами та чистим серцем. Відзнака гармонії, світлих намірів та піднесення.",
+                        "Ангельские крылья с парящим золотистым нимбом, пастельными перьями и чистым сердцем. Знак гармонии, светлых намерений и возвышения.",
+                        "Angelic wings with hovering golden halo, pastel feathered tips, and glowing heart. An emblem of harmony, pure intention, and ascension.");
             case DEVIL:
                 return MiogramLocale.get(
-                        "Грайливі ріжки та крила кажана з гарячим рожевим неоном. Відзнака бунтарського духу, свободи від правил та зухвалого шарму.",
-                        "Игривые рожки и крылья летучей мыши с горячим розовым неоном. Знак бунтарского духа, свободы от правил и дерзкого шарма.",
-                        "Playful devil horns and scalloped bat wings with blazing neon. Distinctive emblem of rebellion, defiance, and chaos charm.");
+                        "Гострі ріжки та крила кажана з гарячим неоновим контуром. Відзнака бунтарського характеру, зухвалого шарму та свободи самовираження.",
+                        "Острые рожки и крылья летучей мыши с горячим неоновым контуром. Знак бунтарского характера, дерзкого шарма и свободы самовыражения.",
+                        "Sharp devil horns and scalloped bat wings with blazing neon. Distinctive emblem of playful rebellion, bold charm, and pure expression.");
             case RAINBOW:
                 return MiogramLocale.get(
-                        "Призматичний веселковий спектр із золотим контуром. Символ безмежного різноманіття, креативності та яскравих емоцій у спілкуванні.",
-                        "Призматический радужный спектр с золотым контуром. Символ безграничного разнообразия, креативности и ярких эмоций в общении.",
-                        "Prismatic rainbow spectrum with golden accents. Represents limitless diversity, creative energy, and joyful communication.");
+                        "П'ятирівневий призматичний спектр із золотим контуром серця. Символ яскравих емоцій, творчого розмаїття та святкового настрою.",
+                        "Пятиуровневый призматический спектр с золотым контуром сердца. Символ ярких эмоций, творческого разнообразия и праздничного настроения.",
+                        "Five-tier prismatic rainbow spectrum with golden heart contour. Represents vivid emotion, creative diversity, and celebratory energy.");
             case OUTLINE:
                 return MiogramLocale.get(
-                        "Мінімалістичний 1-піксельний вайрфрейм-контур. Кіберпанк у чистому вигляді — жодної зайвої деталі, лише чиста геометрія та функціонал.",
-                        "Минималистичный 1-пиксельный вайрфрейм-контур. Чистый киберпанк — ни единой лишней детали, только чистая геометрия и функционал.",
-                        "Minimalist 1px wireframe cyber contour. Pure cyberpunk minimalism — clean geometry, sharp lines, zero excess.");
+                        "Мінімалістичний 1-піксельний контур у стилі ретро-дисплеїв. Чиста цифрова естетика — точні лінії, прозора форма та жодних зайвих деталей.",
+                        "Минималистичный 1-пиксельный контур в стиле ретро-дисплеев. Чистая цифровая эстетика — точные линии, прозрачная форма и никаких лишних деталей.",
+                        "Minimalist 1px wireframe contour in retro-display style. Pure digital aesthetics — sharp geometry, transparent core, zero excess.");
             case GLITCH:
                 return MiogramLocale.get(
-                        "Хроматична аберація RGB із розщепленням форми та сканлайнами. Для поціновувачів естетики VHS касет, CRT моніторів та кібер-збоїв.",
-                        "Хроматическая аберрация RGB с расщеплением формы и сканлайнами. Для ценителей эстетики VHS кассет, CRT мониторов и кибер-сбоев.",
-                        "Chromatic RGB displacement with dynamic scanlines. Made for connoisseurs of VHS tapes, CRT monitors, and cyber distortion.");
+                        "Хроматичне розщеплення кольору з ефектом RGB-зсуву та мерехтливими сканлайнами. Для поціновувачів естетики CRT-екранів, ретро-касет та цифрових збоїв.",
+                        "Хроматическое расщепление цвета с эффектом RGB-сдвига и мерцающими сканлайнами. Для ценителей эстетики CRT-экранов, ретро-кассет и цифровых сбоев.",
+                        "Chromatic RGB displacement with dynamic flickering scanlines. Made for connoisseurs of CRT monitors, retro VHS tapes, and cyber glitches.");
             case PREMIUM:
                 return MiogramLocale.get(
-                        "Королівська золота корона, янтарні крила та золоті ребра. Елітна відзнака визнання найвищих досягнень та статусу в екосистемі Miogram.",
-                        "Королевская золотая корона, янтарные крылья и золотые ребра. Элитное отличие признания высших достижений и статуса в экосистеме Miogram.",
-                        "Royal golden crown and amber wings with chest armor. Elite distinction honoring top contributors and paramount status.");
+                        "Королівська золота корона, сяючий німб та янтарні крила з нагрудними шевронами. Відзнака визнання найвищих досягнень та статусу в Miogram.",
+                        "Королевская золотая корона, сияющий нимб и янтарные крылья с нагрудными шевронами. Знак признания высших достижений и статуса в Miogram.",
+                        "Royal golden crown, radiant halo shimmer, and amber wings with armor chevrons. Elite distinction honoring paramount achievements and status.");
             case ORIGINAL:
             default:
                 return MiogramLocale.get(
-                        "Класична стрілочка Miogram з антеною та рожевими пір'їнами. Перша відзнака екосистеми, з якої розпочалася вся історія проекту ໒꒱.",
-                        "Классическая стрелочка Miogram с антенной и розовыми перьями. Первое отличие экосистемы, с которого началась вся история проекта ໒꒱.",
-                        "Canonical Miogram winged heart with antenna visor. The foundational badge of the ecosystem that started it all ໒꒱.");
+                        "Класичне піксельне серце з крилами, антеною та м'яким неоновим сяйвом. Канонічна відзнака, з якої розпочалася історія спільноти.",
+                        "Классическое пиксельное сердце с крыльями, антенной и мягким неоновым сиянием. Канонический знак, с которого началась история сообщества.",
+                        "Canonical pixel heart with wings, antenna visor, and soft neon glow. The foundational emblem of the community.");
         }
     }
 }

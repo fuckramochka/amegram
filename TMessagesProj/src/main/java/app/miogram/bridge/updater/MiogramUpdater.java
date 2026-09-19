@@ -16,6 +16,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -45,6 +46,9 @@ public class MiogramUpdater {
     private static final String KEY_UPDATE_CHANNEL = "update_channel"; // "beta" (default) | "stable"
     private static final String KEY_CHANNEL_CHOICE_VERSION = "channel_choice_version";
     private static final String KEY_PROMO_VERSION = "channel_promo_version";
+    // Once-ever flags: user asked once -> never ask again after updates.
+    private static final String KEY_CHANNEL_CHOSEN_ONCE = "channel_chosen_once";
+    private static final String KEY_PROMO_DONE_ONCE = "promo_done_once";
     public static final String CHANNEL_BETA = "beta";
     public static final String CHANNEL_STABLE = "stable";
 
@@ -118,18 +122,61 @@ public class MiogramUpdater {
     }
 
     /**
-     * Once-per-version notices: mandatory update-channel chooser (beta/stable
-     * + companion) and the community channel promo.
+     * Once-ever notices: update-channel chooser (beta/stable + companion)
+     * and the community channel promo. Asked once, never again after updates
+     * (old per-version keys migrate to once-ever on first run).
      */
     public static void maybeShowPostUpdateNotices() {
         LaunchActivity act = LaunchActivity.instance;
         if (act == null || act.isFinishing()) return;
         BaseFragment fragment = act.getSafeLastFragment();
         if (fragment == null || fragment.getParentActivity() == null) return;
-        String ver = getCurrentAppVersion();
         SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        boolean needChoice = !ver.equals(prefs.getString(KEY_CHANNEL_CHOICE_VERSION, ""));
-        boolean needPromo = !ver.equals(prefs.getString(KEY_PROMO_VERSION, ""));
+        SharedPreferences globalPrefs = null;
+        try {
+            globalPrefs = org.telegram.messenger.MessagesController.getGlobalMainSettings();
+        } catch (Throwable ignore) {}
+
+        // Check if user has ever chosen their channel / companion in any prefs
+        boolean chosenOnce = prefs.getBoolean(KEY_CHANNEL_CHOSEN_ONCE, false)
+                || (globalPrefs != null && globalPrefs.getBoolean(KEY_CHANNEL_CHOSEN_ONCE, false))
+                || !prefs.getString(KEY_CHANNEL_CHOICE_VERSION, "").isEmpty()
+                || (globalPrefs != null && !globalPrefs.getString(KEY_CHANNEL_CHOICE_VERSION, "").isEmpty());
+
+        if (!chosenOnce) {
+            // Also check if companion onboarding was already completed
+            try {
+                if (app.miogram.bridge.ai.companion.MiogramCompanionPrefs.hasCompletedOnboarding()) {
+                    chosenOnce = true;
+                }
+            } catch (Throwable ignore) {}
+        }
+
+        if (chosenOnce) {
+            prefs.edit().putBoolean(KEY_CHANNEL_CHOSEN_ONCE, true)
+                    .putString(KEY_CHANNEL_CHOICE_VERSION, getCurrentAppVersion()).apply();
+            if (globalPrefs != null) {
+                globalPrefs.edit().putBoolean(KEY_CHANNEL_CHOSEN_ONCE, true)
+                        .putString(KEY_CHANNEL_CHOICE_VERSION, getCurrentAppVersion()).apply();
+            }
+        }
+
+        boolean promoDone = prefs.getBoolean(KEY_PROMO_DONE_ONCE, false)
+                || (globalPrefs != null && globalPrefs.getBoolean(KEY_PROMO_DONE_ONCE, false))
+                || !prefs.getString(KEY_PROMO_VERSION, "").isEmpty()
+                || (globalPrefs != null && !globalPrefs.getString(KEY_PROMO_VERSION, "").isEmpty());
+
+        if (promoDone) {
+            prefs.edit().putBoolean(KEY_PROMO_DONE_ONCE, true)
+                    .putString(KEY_PROMO_VERSION, getCurrentAppVersion()).apply();
+            if (globalPrefs != null) {
+                globalPrefs.edit().putBoolean(KEY_PROMO_DONE_ONCE, true)
+                        .putString(KEY_PROMO_VERSION, getCurrentAppVersion()).apply();
+            }
+        }
+
+        boolean needChoice = !chosenOnce;
+        boolean needPromo = !promoDone && !isAlreadyInCommunityChannel();
         if (!needChoice && !needPromo) return;
         new Handler(Looper.getMainLooper()).post(() -> {
             LaunchActivity currentAct = LaunchActivity.instance;
@@ -144,6 +191,20 @@ public class MiogramUpdater {
                 showChannelPromo(currentFrag);
             }
         });
+    }
+
+    /** True if @dkmiogram is already resolvable from the local cache (user already joined). */
+    private static boolean isAlreadyInCommunityChannel() {
+        try {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                try {
+                    MessagesController mc = MessagesController.getInstance(a);
+                    if (mc == null) continue;
+                    if (mc.getUserOrChat("dkmiogram") != null) return true;
+                } catch (Throwable ignore) {}
+            }
+        } catch (Throwable ignore) {}
+        return false;
     }
 
     /** Mandatory, non-dismissible: pick update channel + companion. Beta↔Ame, stable↔KAngel by default. */
@@ -233,7 +294,11 @@ public class MiogramUpdater {
             } catch (Throwable ignore) {}
             try {
                 ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                        .edit().putString(KEY_CHANNEL_CHOICE_VERSION, getCurrentAppVersion()).apply();
+                        .edit().putString(KEY_CHANNEL_CHOICE_VERSION, getCurrentAppVersion())
+                        .putBoolean(KEY_CHANNEL_CHOSEN_ONCE, true).apply();
+                org.telegram.messenger.MessagesController.getGlobalMainSettings().edit()
+                        .putString(KEY_CHANNEL_CHOICE_VERSION, getCurrentAppVersion())
+                        .putBoolean(KEY_CHANNEL_CHOSEN_ONCE, true).apply();
             } catch (Throwable ignore) {}
             d.dismiss();
             if (onDone != null) onDone.run();
@@ -267,7 +332,8 @@ public class MiogramUpdater {
         Context context = fragment.getParentActivity();
         try {
             ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                    .edit().putString(KEY_PROMO_VERSION, getCurrentAppVersion()).apply();
+                    .edit().putString(KEY_PROMO_VERSION, getCurrentAppVersion())
+                    .putBoolean(KEY_PROMO_DONE_ONCE, true).apply();
         } catch (Throwable ignore) {}
         org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
         builder.setTitle(MiogramLocale.get("Наш Telegram-канал", "Наш Telegram-канал", "Our Telegram channel"));

@@ -34,29 +34,46 @@ import app.miogram.bridge.customui.MiogramHaptic;
 public class MiogramPlayerSectionSheet extends BottomSheet {
 
     private static final int[] PALETTE = new int[]{
-            0xFFFFFFFF, 0xFF000000, 0xFFFF3B30, 0xFFFF9500,
-            0xFFFFCC00, 0xFF34C759, 0xFF00C7BE, 0xFF32ADE6,
-            0xFF007AFF, 0xFF5856D6, 0xFFAF52DE, 0xFFFF2D55
+            0xFFFFFFFF, 0xFF000000, 0xFF8E8E93, 0xFFFF3B30,
+            0xFFFF9500, 0xFFFFCC00, 0xFF34C759, 0xFF00C7BE,
+            0xFF32ADE6, 0xFF007AFF, 0xFF5856D6, 0xFFAF52DE,
+            0xFFFF2D55, 0xFFE05252, 0xFF47D16A, 0xFFF5A623,
+            0xFF00C0FF, 0xFFFF69B4, 0xFF20B2AA, 0xFF673AB7
     };
 
     private final MiogramModernPlayerLayout playerLayout;
-    private final String section;
+    private String currentSection;
     private final int accentColor;
     private final int textColor;
     private final int subTextColor;
+
+    private LinearLayout contentContainer;
+    private TextView titleView;
+    private TextView subtitleView;
+    private final List<TextView> sectionTabButtons = new ArrayList<>();
+    private final String[] allSections = new String[]{
+            "background", "cover", "text", "seekbar", "controls", "lyrics", "visualizer", "profile", "effects"
+    };
 
     private LinearLayout orderBox;
     private final List<View> grad1Swatches = new ArrayList<>();
     private final List<View> grad2Swatches = new ArrayList<>();
     private final List<View> glowSwatches = new ArrayList<>();
     private final List<View> lyricGlowSwatches = new ArrayList<>();
+    private final List<View> titleColorSwatches = new ArrayList<>();
+    private final List<View> authorColorSwatches = new ArrayList<>();
+    private final List<View> seekbarProgressSwatches = new ArrayList<>();
+    private final List<View> seekbarTrackSwatches = new ArrayList<>();
+    private final List<View> timeTextSwatches = new ArrayList<>();
+    private final List<View> buttonColorSwatches = new ArrayList<>();
+    private final List<View> visualizerColorSwatches = new ArrayList<>();
     private TextView mediaStatus;
 
     public MiogramPlayerSectionSheet(Context context, Theme.ResourcesProvider resourcesProvider,
                                      MiogramModernPlayerLayout playerLayout, String section) {
         super(context, false, resourcesProvider);
         this.playerLayout = playerLayout;
-        this.section = section != null ? section : "controls";
+        this.currentSection = section != null ? section : "controls";
 
         setApplyBottomPadding(false);
         setApplyTopPadding(false);
@@ -88,22 +105,48 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
         dragHandle.setBackground(handleBg);
         root.addView(dragHandle, LayoutHelper.createLinear(38, 5, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 14));
 
-        TextView titleView = new TextView(context);
-        titleView.setText(sectionTitle(this.section));
+        titleView = new TextView(context);
+        titleView.setText(sectionTitle(this.currentSection));
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 19);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(textColor);
         titleView.setGravity(Gravity.CENTER);
         root.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
 
-        TextView subtitleView = new TextView(context);
-        subtitleView.setText(sectionSubtitle(this.section));
+        subtitleView = new TextView(context);
+        subtitleView.setText(sectionSubtitle(this.currentSection));
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         subtitleView.setTextColor(subTextColor);
         subtitleView.setGravity(Gravity.CENTER);
         root.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
 
-        buildSection(root, context, this.section);
+        android.widget.HorizontalScrollView tabScroll = new android.widget.HorizontalScrollView(context);
+        tabScroll.setHorizontalScrollBarEnabled(false);
+        tabScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        LinearLayout tabRow = new LinearLayout(context);
+        tabRow.setOrientation(LinearLayout.HORIZONTAL);
+        tabRow.setGravity(Gravity.CENTER_VERTICAL);
+        for (String s : allSections) {
+            TextView tab = new TextView(context);
+            tab.setText(sectionTitle(s));
+            tab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            tab.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(6), AndroidUtilities.dp(12), AndroidUtilities.dp(6));
+            tab.setGravity(Gravity.CENTER);
+            tab.setOnClickListener(v -> {
+                MiogramHaptic.select(v);
+                switchSection(s, context);
+            });
+            sectionTabButtons.add(tab);
+            tabRow.addView(tab, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+        }
+        tabScroll.addView(tabRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        root.addView(tabScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
+
+        contentContainer = new LinearLayout(context);
+        contentContainer.setOrientation(LinearLayout.VERTICAL);
+        root.addView(contentContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        switchSection(this.currentSection, context);
 
         // Footer: done only — no general settings, each panel is standalone.
         LinearLayout actionsRow = new LinearLayout(context);
@@ -132,8 +175,34 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
         setCustomView(scrollView);
     }
 
+    private void switchSection(String newSection, Context context) {
+        this.currentSection = newSection;
+        if (titleView != null) titleView.setText(sectionTitle(newSection));
+        if (subtitleView != null) subtitleView.setText(sectionSubtitle(newSection));
+        for (int i = 0; i < allSections.length; i++) {
+            if (i < sectionTabButtons.size()) {
+                TextView tab = sectionTabButtons.get(i);
+                boolean active = allSections[i].equals(newSection);
+                GradientDrawable tabBg = new GradientDrawable();
+                tabBg.setCornerRadius(AndroidUtilities.dp(14));
+                tabBg.setColor(active ? accentColor : 0x18FFFFFF);
+                tab.setBackground(tabBg);
+                tab.setTextColor(active ? 0xFFFFFFFF : subTextColor);
+                tab.setTypeface(active ? AndroidUtilities.bold() : AndroidUtilities.getTypeface(""));
+            }
+        }
+        if (contentContainer != null) {
+            contentContainer.removeAllViews();
+            buildSection(contentContainer, context, newSection);
+        }
+    }
+
     private String sectionTitle(String s) {
         if ("background".equals(s)) return MiogramLocale.get("Фон", "Фон", "Background");
+        if ("cover".equals(s)) return MiogramLocale.get("Обкладинка", "Обложка", "Cover");
+        if ("text".equals(s)) return MiogramLocale.get("Текст та інфо", "Текст и инфо", "Text & Info");
+        if ("seekbar".equals(s)) return MiogramLocale.get("Прогрес", "Прогресс", "Progress");
+        if ("controls".equals(s)) return MiogramLocale.get("Кнопки", "Кнопки", "Controls");
         if ("lyrics".equals(s)) return MiogramLocale.get("Текст пісні", "Текст песни", "Lyrics");
         if ("visualizer".equals(s)) return MiogramLocale.get("Візуалізатор", "Визуалайзер", "Visualizer");
         if ("profile".equals(s)) return MiogramLocale.get("Кнопка профілю", "Кнопка профиля", "Profile button");
@@ -143,60 +212,163 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
 
     private String sectionSubtitle(String s) {
         if ("background".equals(s)) return MiogramLocale.get("Фон, градієнт, фото або відео", "Фон, градиент, фото или видео", "Backdrop, gradient, photo or video");
-        if ("lyrics".equals(s)) return MiogramLocale.get("Шрифт, сяйво та прозорість рядків", "Шрифт, сияние и прозрачность строк", "Font, glow and line opacity");
+        if ("cover".equals(s)) return MiogramLocale.get("Закруглення кутів та тінь", "Закругление углов и тень", "Corner radius and shadow");
+        if ("text".equals(s)) return MiogramLocale.get("Кольори назви пісні, автора та шрифти", "Цвета названия песни, автора и шрифты", "Colors and fonts for title and artist");
+        if ("seekbar".equals(s)) return MiogramLocale.get("Кольори таймлайну, повзунка та бульбашки", "Цвета таймлайна, ползунка и пузырька", "Timeline, thumb and bubble colors");
+        if ("controls".equals(s)) return MiogramLocale.get("Прозорість, колір, порядок та видимість", "Прозрачность, цвет, порядок и видимость", "Opacity, color, order and visibility");
+        if ("lyrics".equals(s)) return MiogramLocale.get("Шрифт, сяйво, прозорість та караоке", "Шрифт, сияние, прозрачность и караоке", "Font, glow, opacity and karaoke");
         if ("visualizer".equals(s)) return MiogramLocale.get("Смуги підскакують під бас", "Полосы прыгают под бас", "Bars bounce with bass");
         if ("profile".equals(s)) return MiogramLocale.get("Видимість та положення пігулки", "Видимость и положение пилюли", "Pill visibility and position");
         if ("effects".equals(s)) return MiogramLocale.get("Колір неонового сяйва", "Цвет неонового сияния", "Neon glow color");
-        return MiogramLocale.get("Прозорість, порядок та видимість", "Прозрачность, порядок и видимость", "Opacity, order and visibility");
+        return MiogramLocale.get("Прозорість, колір, порядок та видимість", "Прозрачность, цвет, порядок и видимость", "Opacity, color, order and visibility");
     }
 
     private void buildSection(LinearLayout root, Context context, String s) {
         if ("background".equals(s)) {
             buildBackground(root, context);
+        } else if ("cover".equals(s)) {
+            buildCover(root, context);
+        } else if ("text".equals(s)) {
+            buildText(root, context);
+        } else if ("seekbar".equals(s)) {
+            buildSeekbar(root, context);
         } else if ("lyrics".equals(s)) {
             buildLyrics(root, context);
         } else if ("visualizer".equals(s)) {
-            addToggleRow(root, context, MiogramLocale.get("Увімкнути візуалізатор", "Включить визуалайзер", "Enable visualizer"),
-                    MiogramPlayerPrefs.isVisualizerEnabled(), enabled -> {
-                        MiogramPlayerPrefs.setVisualizerEnabled(enabled);
-                        apply();
-                    });
-            addNote(root, context, MiogramLocale.get("За замовчуванням вимкнено, щоб нічого не стрибало без потреби.",
-                    "По умолчанию выключен, чтобы ничего не прыгало без нужды.",
-                    "Off by default so nothing jumps without need."));
+            buildVisualizer(root, context);
         } else if ("profile".equals(s)) {
-            addToggleRow(root, context, MiogramLocale.get("Показувати кнопку", "Показывать кнопку", "Show button"),
-                    MiogramPlayerPrefs.isProfileButtonEnabled(), enabled -> {
-                        MiogramPlayerPrefs.setProfileButtonEnabled(enabled);
-                        apply();
-                    });
-            addSegmentRow(root, context, MiogramLocale.get("Положення", "Положение", "Position"),
-                    new String[]{
-                            MiogramLocale.get("Ліво", "Лево", "Left"),
-                            MiogramLocale.get("Центр", "Центр", "Center"),
-                            MiogramLocale.get("Право", "Право", "Right")
-                    }, MiogramPlayerPrefs.getProfileAlign(), index -> {
-                        MiogramPlayerPrefs.setProfileAlign(index);
-                        if (playerLayout != null) playerLayout.applyProfileAlign();
-                    });
-            addNote(root, context, MiogramLocale.get("Пігулку також можна тягнути пальцем прямо в плеєрі.",
-                    "Пилюлю тоже можно тянуть пальцем прямо в плеере.",
-                    "You can also drag the pill right in the player."));
+            buildProfile(root, context);
         } else if ("effects".equals(s)) {
-            addToggleRow(root, context, MiogramLocale.get("Неонове сяйво кнопки Play", "Неоновое сияние кнопки Play", "Play button neon glow"),
-                    MiogramPlayerPrefs.isButtonGlowEnabled(), enabled -> {
-                        MiogramPlayerPrefs.setButtonGlowEnabled(enabled);
-                        apply();
-                    });
-            addLabel(root, context, MiogramLocale.get("Колір сяйва", "Цвет сияния", "Glow color"));
-            addPaletteRow(root, context, 0, glowSwatches, color -> {
-                MiogramPlayerPrefs.setButtonGlowColor(color);
-                apply();
-            });
-            refreshPalette(glowSwatches, MiogramPlayerPrefs.getButtonGlowColor());
+            buildEffects(root, context);
         } else {
             buildControls(root, context);
         }
+    }
+
+    private void buildCover(LinearLayout root, Context context) {
+        addSliderRow(root, context, MiogramLocale.get("Закруглення кутів", "Закругление углов", "Corner radius"),
+                MiogramPlayerPrefs.getCoverCornerRadius(), 0, 36, " dp", val -> {
+                    MiogramPlayerPrefs.setCoverCornerRadius(val);
+                    apply();
+                });
+        addSliderRow(root, context, MiogramLocale.get("Тінь обкладинки", "Тень обложки", "Cover shadow"),
+                MiogramPlayerPrefs.getCoverElevation(), 0, 24, " dp", val -> {
+                    MiogramPlayerPrefs.setCoverElevation(val);
+                    apply();
+                });
+    }
+
+    private void buildText(LinearLayout root, Context context) {
+        addLabel(root, context, MiogramLocale.get("Колір назви треку", "Цвет названия трека", "Track title color"));
+        addPaletteRow(root, context, MiogramPlayerPrefs.getTitleColor(), titleColorSwatches, color -> {
+            MiogramPlayerPrefs.setTitleColor(color);
+            apply();
+        });
+        refreshPalette(titleColorSwatches, MiogramPlayerPrefs.getTitleColor());
+
+        addSliderRow(root, context, MiogramLocale.get("Розмір шрифту назви", "Размер шрифта названия", "Title font size"),
+                MiogramPlayerPrefs.getTitleFontSize(), 14, 26, " sp", val -> {
+                    MiogramPlayerPrefs.setTitleFontSize(val);
+                    apply();
+                });
+
+        addLabel(root, context, MiogramLocale.get("Колір імені виконавця", "Цвет имени исполнителя", "Artist name color"));
+        addPaletteRow(root, context, MiogramPlayerPrefs.getAuthorColor(), authorColorSwatches, color -> {
+            MiogramPlayerPrefs.setAuthorColor(color);
+            apply();
+        });
+        refreshPalette(authorColorSwatches, MiogramPlayerPrefs.getAuthorColor());
+
+        addSliderRow(root, context, MiogramLocale.get("Розмір шрифту виконавця", "Размер шрифта исполнителя", "Artist font size"),
+                MiogramPlayerPrefs.getAuthorFontSize(), 11, 20, " sp", val -> {
+                    MiogramPlayerPrefs.setAuthorFontSize(val);
+                    apply();
+                });
+
+        addToggleRow(root, context, MiogramLocale.get("Автоматична прокрутка довгої назви", "Автопрокрутка длинного названия", "Auto-scroll long title"),
+                MiogramPlayerPrefs.isTitleMarqueeEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setTitleMarqueeEnabled(enabled);
+                    apply();
+                });
+    }
+
+    private void buildSeekbar(LinearLayout root, Context context) {
+        addLabel(root, context, MiogramLocale.get("Колір прогресу (повзунок)", "Цвет прогресса (ползунок)", "Progress color (thumb)"));
+        addPaletteRow(root, context, MiogramPlayerPrefs.getSeekbarProgressColor(), seekbarProgressSwatches, color -> {
+            MiogramPlayerPrefs.setSeekbarProgressColor(color);
+            apply();
+        });
+        refreshPalette(seekbarProgressSwatches, MiogramPlayerPrefs.getSeekbarProgressColor());
+
+        addLabel(root, context, MiogramLocale.get("Колір таймлайну (доріжка)", "Цвет таймлайна (дорожка)", "Timeline track color"));
+        addPaletteRow(root, context, MiogramPlayerPrefs.getSeekbarTrackColor(), seekbarTrackSwatches, color -> {
+            MiogramPlayerPrefs.setSeekbarTrackColor(color);
+            apply();
+        });
+        refreshPalette(seekbarTrackSwatches, MiogramPlayerPrefs.getSeekbarTrackColor());
+
+        addLabel(root, context, MiogramLocale.get("Колір тексту часу", "Цвет текста времени", "Time text color"));
+        addPaletteRow(root, context, MiogramPlayerPrefs.getTimeTextColor(), timeTextSwatches, color -> {
+            MiogramPlayerPrefs.setTimeTextColor(color);
+            apply();
+        });
+        refreshPalette(timeTextSwatches, MiogramPlayerPrefs.getTimeTextColor());
+
+        addToggleRow(root, context, MiogramLocale.get("Підказка з часом і текстом при перемотуванні", "Подсказка со временем и текстом при перемотке", "Time & lyric bubble while scrubbing"),
+                MiogramPlayerPrefs.isSeekbarScrubBubbleEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setSeekbarScrubBubbleEnabled(enabled);
+                });
+    }
+
+    private void buildVisualizer(LinearLayout root, Context context) {
+        addToggleRow(root, context, MiogramLocale.get("Увімкнути візуалізатор", "Включить визуалайзер", "Enable visualizer"),
+                MiogramPlayerPrefs.isVisualizerEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setVisualizerEnabled(enabled);
+                    apply();
+                });
+        addLabel(root, context, MiogramLocale.get("Колір смуг візуалізатора", "Цвет полос визуалайзера", "Visualizer bar color"));
+        addPaletteRow(root, context, MiogramPlayerPrefs.getVisualizerColor(), visualizerColorSwatches, color -> {
+            MiogramPlayerPrefs.setVisualizerColor(color);
+            apply();
+        });
+        refreshPalette(visualizerColorSwatches, MiogramPlayerPrefs.getVisualizerColor());
+        addNote(root, context, MiogramLocale.get("Смуги підскакують у такт басу.",
+                "Полосы прыгают в такт басу.",
+                "Bars bounce to the beat of the bass."));
+    }
+
+    private void buildProfile(LinearLayout root, Context context) {
+        addToggleRow(root, context, MiogramLocale.get("Показувати кнопку", "Показывать кнопку", "Show button"),
+                MiogramPlayerPrefs.isProfileButtonEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setProfileButtonEnabled(enabled);
+                    apply();
+                });
+        addSegmentRow(root, context, MiogramLocale.get("Положення", "Положение", "Position"),
+                new String[]{
+                        MiogramLocale.get("Ліво", "Лево", "Left"),
+                        MiogramLocale.get("Центр", "Центр", "Center"),
+                        MiogramLocale.get("Право", "Право", "Right")
+                }, MiogramPlayerPrefs.getProfileAlign(), index -> {
+                    MiogramPlayerPrefs.setProfileAlign(index);
+                    if (playerLayout != null) playerLayout.applyProfileAlign();
+                });
+        addNote(root, context, MiogramLocale.get("Пігулку також можна тягнути пальцем прямо в плеєрі.",
+                "Пилюлю тоже можно тянуть пальцем прямо в плеере.",
+                "You can also drag the pill right in the player."));
+    }
+
+    private void buildEffects(LinearLayout root, Context context) {
+        addToggleRow(root, context, MiogramLocale.get("Неонове сяйво кнопки Play", "Неоновое сияние кнопки Play", "Play button neon glow"),
+                MiogramPlayerPrefs.isButtonGlowEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setButtonGlowEnabled(enabled);
+                    apply();
+                });
+        addLabel(root, context, MiogramLocale.get("Колір сяйва", "Цвет сияния", "Glow color"));
+        addPaletteRow(root, context, MiogramPlayerPrefs.getButtonGlowColor(), glowSwatches, color -> {
+            MiogramPlayerPrefs.setButtonGlowColor(color);
+            apply();
+        });
+        refreshPalette(glowSwatches, MiogramPlayerPrefs.getButtonGlowColor());
     }
 
     // ---------------- Background ----------------
@@ -543,6 +715,16 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
                     MiogramPlayerPrefs.setLyricsInactiveOpacity(val / 100.0f);
                     apply();
                 });
+
+        addLabel(root, context, MiogramLocale.get("Текст у полі вводу чату", "Текст в поле ввода чата", "Lyrics in chat input"));
+        addToggleRow(root, context, MiogramLocale.get("Перенос рядків у підказці", "Перенос строк в подсказке", "Multiline hint wrapping"),
+                MiogramPlayerPrefs.isLyricsHintMultiline(), enabled -> {
+                    MiogramPlayerPrefs.setLyricsHintMultiline(enabled);
+                });
+        addToggleRow(root, context, MiogramLocale.get("Караоке-підсвітка в полі вводу", "Караоке-подсветка в поле ввода", "Karaoke highlight in input"),
+                MiogramPlayerPrefs.isLyricsHintKaraoke(), enabled -> {
+                    MiogramPlayerPrefs.setLyricsHintKaraoke(enabled);
+                });
     }
 
     // ---------------- Shared widgets ----------------
@@ -734,8 +916,9 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
         grid.setOrientation(LinearLayout.VERTICAL);
         grid.setPadding(0, AndroidUtilities.dp(2), 0, AndroidUtilities.dp(6));
         LinearLayout row = null;
+        int cols = 5;
         for (int i = 0; i < PALETTE.length; i++) {
-            if (i % 6 == 0) {
+            if (i % cols == 0) {
                 row = new LinearLayout(context);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.CENTER);
@@ -754,10 +937,78 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
                 refreshPalette(store, color);
                 if (listener != null) listener.onPick(color);
             });
-            row.addView(chip, LayoutHelper.createLinear(38, 38, Gravity.CENTER, 6, 0, 6, 0));
+            row.addView(chip, LayoutHelper.createLinear(36, 36, Gravity.CENTER, 5, 0, 5, 0));
             store.add(chip);
         }
+
+        // Custom Color Button
+        if (row == null || row.getChildCount() >= cols) {
+            row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER);
+            grid.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+        }
+        FrameLayout customChip = new FrameLayout(context);
+        GradientDrawable customBg = new GradientDrawable();
+        customBg.setShape(GradientDrawable.OVAL);
+        customBg.setColor(0x22FFFFFF);
+        customBg.setStroke(AndroidUtilities.dp(1.5f), accentColor);
+        customChip.setBackground(customBg);
+        ImageView customIcon = new ImageView(context);
+        customIcon.setImageResource(R.drawable.msg_customize);
+        customIcon.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+        customChip.addView(customIcon, LayoutHelper.createFrame(18, 18, Gravity.CENTER));
+        customChip.setContentDescription(MiogramLocale.get("Власний колір", "Свой цвет", "Custom Color"));
+        customChip.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            openCustomColorPicker(context, selected != 0 ? selected : accentColor, color -> {
+                refreshPalette(store, color);
+                if (listener != null) listener.onPick(color);
+            });
+        });
+        row.addView(customChip, LayoutHelper.createLinear(36, 36, Gravity.CENTER, 5, 0, 5, 0));
+
         parent.addView(grid, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+    }
+
+    private void openCustomColorPicker(Context context, int initialColor, OnColorListener onPick) {
+        try {
+            BottomSheet.Builder builder = new BottomSheet.Builder(context);
+            builder.setTitle(MiogramLocale.get("Вибір кольору", "Выбор цвета", "Choose Color"), true);
+            LinearLayout pickerRoot = new LinearLayout(context);
+            pickerRoot.setOrientation(LinearLayout.VERTICAL);
+            pickerRoot.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(8), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+
+            final int[] picked = new int[]{initialColor};
+            org.telegram.ui.Components.ColorPicker picker = new org.telegram.ui.Components.ColorPicker(context, false, (color, num, done) -> {
+                picked[0] = color;
+                if (onPick != null) onPick.onPick(color);
+            });
+            picker.setColor(initialColor, 0);
+            pickerRoot.addView(picker, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 320));
+
+            TextView confirm = new TextView(context);
+            confirm.setText(MiogramLocale.get("Застосувати колір", "Применить цвет", "Apply Color"));
+            confirm.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            confirm.setTypeface(AndroidUtilities.bold());
+            confirm.setTextColor(0xFFFFFFFF);
+            confirm.setGravity(Gravity.CENTER);
+            GradientDrawable confirmBg = new GradientDrawable();
+            confirmBg.setColor(accentColor);
+            confirmBg.setCornerRadius(AndroidUtilities.dp(14));
+            confirm.setBackground(confirmBg);
+            confirm.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(10), AndroidUtilities.dp(16), AndroidUtilities.dp(10));
+
+            builder.setCustomView(pickerRoot);
+            BottomSheet sheet = builder.create();
+            confirm.setOnClickListener(v -> {
+                MiogramHaptic.success(v);
+                if (onPick != null) onPick.onPick(picked[0]);
+                sheet.dismiss();
+            });
+            pickerRoot.addView(confirm, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
+            sheet.show();
+        } catch (Throwable ignore) {}
     }
 
     private void refreshPalette(List<View> store, int selected) {

@@ -339,7 +339,7 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
 
         // --- SECTION 2: КНОПКИ ТА ЕЛЕМЕНТИ ---
         addSectionHeader(root, MiogramLocale.get("КНОПКИ ТА КЕРУВАННЯ", "КНОПКИ И УПРАВЛЕНИЕ", "BUTTONS & CONTROLS"), accentColor);
-        addSectionSubtitle(root, MiogramLocale.get("Центр (⏮ ▶ ⏭) завжди по центру. Стрілки ← → рухають зайві кнопки ліворуч/праворуч, око — ховає.", "Центр (⏮ ▶ ⏭) всегда по центру. Стрелки ← → двигают лишние кнопки влево/вправо, глаз — прячет.", "Center (⏮ ▶ ⏭) stays centered. Arrows move extra buttons left/right, eye hides."), subTextColor);
+        addSectionSubtitle(root, MiogramLocale.get("Центр (Prev, Play, Next) завжди по центру. Стрілки ← → рухають зайві кнопки ліворуч/праворуч, око — ховає.", "Центр (Prev, Play, Next) всегда по центру. Стрелки ← → двигают лишние кнопки влево/вправо, глаз — прячет.", "Center (Prev, Play, Next) stays centered. Arrows move extra buttons left/right, eye hides."), subTextColor);
         LinearLayout orderBox = new LinearLayout(context);
         orderBox.setOrientation(LinearLayout.VERTICAL);
         root.addView(orderBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
@@ -612,7 +612,7 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
                 ? MiogramLocale.get("Відео-фон", "Видео-фон", "Video background")
                 : MiogramLocale.get("Фото-фон", "Фото-фон", "Photo background");
         String state = valid
-                ? MiogramLocale.get("✓ обрано — тап щоб змінити", "✓ выбрано — тап чтобы сменить", "✓ set — tap to change")
+                ? MiogramLocale.get("обрано — тап щоб змінити", "выбрано — тап чтобы сменить", "set — tap to change")
                 : MiogramLocale.get("не обрано", "не выбрано", "not set");
 
         LinearLayout row = new LinearLayout(context);
@@ -645,7 +645,7 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
 
         if (valid) {
             TextView clear = new TextView(context);
-            clear.setText("✕");
+            clear.setText(MiogramLocale.get("Скинути", "Сбросить", "Clear"));
             clear.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             clear.setTypeface(AndroidUtilities.bold());
             clear.setGravity(Gravity.CENTER);
@@ -745,12 +745,12 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
     }
 
     private String controlName(String id) {
-        if (id.equals("shuffle")) return MiogramLocale.get("Shuffle", "Shuffle", "Shuffle");
-        if (id.equals("repeat")) return MiogramLocale.get("Repeat", "Repeat", "Repeat");
-        if (id.equals("prev")) return "⏮ Prev";
-        if (id.equals("play")) return "▶ Play";
-        if (id.equals("next")) return "Next ⏭";
-        if (id.equals("queue")) return MiogramLocale.get("Queue", "Queue", "Queue");
+        if (id.equals("shuffle")) return MiogramLocale.get("Перемішати", "Перемешать", "Shuffle");
+        if (id.equals("repeat")) return MiogramLocale.get("Повтор", "Повтор", "Repeat");
+        if (id.equals("prev")) return MiogramLocale.get("Назад", "Назад", "Prev");
+        if (id.equals("play")) return MiogramLocale.get("Пауза", "Пауза", "Play");
+        if (id.equals("next")) return MiogramLocale.get("Далі", "Далее", "Next");
+        if (id.equals("queue")) return MiogramLocale.get("Черга", "Очередь", "Queue");
         return id;
     }
 
@@ -768,7 +768,7 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
             row.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(3), AndroidUtilities.dp(4), AndroidUtilities.dp(3));
 
             TextView name = new TextView(context);
-            name.setText((locked ? "🔒 " : (hidden ? "👁‍🗨 " : "• ")) + controlName(id));
+            name.setText((locked ? MiogramLocale.get("[Центр] ", "[Центр] ", "[Center] ") : (hidden ? MiogramLocale.get("[Сховано] ", "[Скрыто] ", "[Hidden] ") : "• ")) + controlName(id));
             name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
             name.setTextColor(hidden ? subTextColor : textColor);
             row.addView(name, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1.0f));
@@ -807,8 +807,8 @@ public class MiogramPlayerCustomizeAlert extends BottomSheet {
                 row.addView(right, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
                 TextView eye = new TextView(context);
-                eye.setText(hidden ? "🚫" : "👁");
-                eye.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+                eye.setText(hidden ? MiogramLocale.get("Показати", "Показать", "Show") : MiogramLocale.get("Сховати", "Скрыть", "Hide"));
+                eye.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
                 eye.setGravity(Gravity.CENTER);
                 eye.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
                 eye.setOnClickListener(v -> {

@@ -112,6 +112,7 @@ public class MiogramModernPlayerLayout extends FrameLayout {
     private final FrameLayout timersRow;
     private View timeView;
     private View durationView;
+    private TextView scrubLyricBubble;
 
     private final LinearLayout mainControlsRow;
     private ImageView shuffleButton;
@@ -547,6 +548,25 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         // Seekbar & Timestamps - AT BOTTOM below buttons
         seekbarContainer = new LinearLayout(context);
         seekbarContainer.setOrientation(LinearLayout.VERTICAL);
+
+        scrubLyricBubble = new TextView(context);
+        scrubLyricBubble.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        scrubLyricBubble.setTypeface(AndroidUtilities.bold());
+        scrubLyricBubble.setTextColor(0xFFFFFFFF);
+        scrubLyricBubble.setGravity(Gravity.CENTER);
+        scrubLyricBubble.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(6), AndroidUtilities.dp(12), AndroidUtilities.dp(6));
+        GradientDrawable bubbleBg = new GradientDrawable();
+        bubbleBg.setColor(0xE6141824);
+        bubbleBg.setCornerRadius(AndroidUtilities.dp(14));
+        bubbleBg.setStroke(AndroidUtilities.dp(1), ColorUtils.setAlphaComponent(accentColor, 160));
+        scrubLyricBubble.setBackground(bubbleBg);
+        scrubLyricBubble.setVisibility(View.GONE);
+        scrubLyricBubble.setAlpha(0f);
+        if (Build.VERSION.SDK_INT >= 21) {
+            scrubLyricBubble.setElevation(AndroidUtilities.dp(6));
+        }
+        seekbarContainer.addView(scrubLyricBubble, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 4));
+
         timersRow = new FrameLayout(context);
         seekbarContainer.addView(timersRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
         bottomSection.addView(seekbarContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 2));
@@ -705,9 +725,20 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 }
             }
 
-            // Buttons: opacity + neon glow on hero play.
+            // Buttons: opacity + color + neon glow on hero play.
             float btnOpacity = MiogramPlayerPrefs.getButtonOpacity();
+            int btnColor = MiogramPlayerPrefs.getButtonColor();
             boolean glow = MiogramPlayerPrefs.isButtonGlowEnabled();
+            int glowColor = MiogramPlayerPrefs.getButtonGlowColor();
+            if (glowColor == 0) glowColor = accent;
+
+            if (btnColor != 0) {
+                PorterDuffColorFilter cf = new PorterDuffColorFilter(btnColor, PorterDuff.Mode.SRC_IN);
+                if (shuffleButton != null) shuffleButton.setColorFilter(cf);
+                if (queueButton != null) queueButton.setColorFilter(cf);
+                if (speedButton != null) speedButton.setTextColor(btnColor);
+            }
+
             if (shuffleButton != null) shuffleButton.setAlpha(btnOpacity);
             if (repeatButton != null) repeatButton.setAlpha(btnOpacity);
             if (prevButton != null) prevButton.setAlpha(btnOpacity);
@@ -721,13 +752,60 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 }
             }
 
+            // Cover: corner radius & shadow elevation
+            int coverRadius = MiogramPlayerPrefs.getCoverCornerRadius();
+            int coverElev = MiogramPlayerPrefs.getCoverElevation();
+            if (compactCoverWrapper != null && android.os.Build.VERSION.SDK_INT >= 21) {
+                compactCoverWrapper.setElevation(AndroidUtilities.dp(coverElev));
+            }
+            if (fullscreenCoverHolder != null && android.os.Build.VERSION.SDK_INT >= 21) {
+                fullscreenCoverHolder.setElevation(AndroidUtilities.dp(coverElev));
+            }
+
+            // Text (Title & Artist)
+            int titleCol = MiogramPlayerPrefs.getTitleColor();
+            int authorCol = MiogramPlayerPrefs.getAuthorColor();
+            int titleSize = MiogramPlayerPrefs.getTitleFontSize();
+            int authorSize = MiogramPlayerPrefs.getAuthorFontSize();
+            boolean marquee = MiogramPlayerPrefs.isTitleMarqueeEnabled();
+
+            if (compactTitleView != null) {
+                if (titleCol != 0) compactTitleView.setTextColor(titleCol);
+                compactTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, titleSize);
+                compactTitleView.setSelected(marquee);
+            }
+            if (compactAuthorView != null) {
+                if (authorCol != 0) compactAuthorView.setTextColor(authorCol);
+                compactAuthorView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, authorSize);
+            }
+            if (fullscreenTitleView != null) {
+                if (titleCol != 0) fullscreenTitleView.setTextColor(titleCol);
+                fullscreenTitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(16, titleSize + 2));
+                fullscreenTitleView.setSelected(marquee);
+            }
+            if (fullscreenAuthorView != null) {
+                if (authorCol != 0) fullscreenAuthorView.setTextColor(authorCol);
+                fullscreenAuthorView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(12, authorSize + 1));
+            }
+
+            // Seekbar & Time text
+            int timeCol = MiogramPlayerPrefs.getTimeTextColor();
+            if (timeCol != 0) {
+                if (timeView instanceof TextView) ((TextView) timeView).setTextColor(timeCol);
+                if (durationView instanceof TextView) ((TextView) durationView).setTextColor(timeCol);
+            }
+
             // Visualizer: user toggle (default OFF — removes "extra jumping stripes").
             boolean viz = MiogramPlayerPrefs.isVisualizerEnabled();
+            int vizCol = MiogramPlayerPrefs.getVisualizerColor();
+            if (vizCol == 0) vizCol = accent;
             if (compactBassVisualizer != null) {
+                compactBassVisualizer.setVisualizerColor(vizCol);
                 compactBassVisualizer.setVisibility(viz ? View.VISIBLE : View.GONE);
                 if (!viz) compactBassVisualizer.decayToIdle();
             }
             if (fullscreenBassVisualizer != null) {
+                fullscreenBassVisualizer.setVisualizerColor(vizCol);
                 fullscreenBassVisualizer.setVisibility(viz && playerMode == PlayerMode.COVER ? View.VISIBLE : View.GONE);
                 if (!viz) fullscreenBassVisualizer.decayToIdle();
             }
@@ -847,7 +925,9 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             if (seekBar.getParent() instanceof ViewGroup) {
                 ((ViewGroup) seekBar.getParent()).removeView(seekBar);
             }
-            seekbarContainer.addView(seekBar, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30));
+            int insertIndex = seekbarContainer.indexOfChild(timersRow);
+            if (insertIndex < 0) insertIndex = seekbarContainer.getChildCount();
+            seekbarContainer.addView(seekBar, insertIndex, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30));
         }
 
         if (timersRow != null) {
@@ -1648,13 +1728,32 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         if (repeatButton != null && repeatButton.getParent() != null) out.add(repeatButton);
         if (prevButton != null && prevButton.getParent() != null) out.add(prevButton);
         if (heroPlayButton != null && heroPlayButton.getParent() != null) out.add(heroPlayButton);
+        if (playButton != null && playButton != heroPlayButton && playButton.getParent() != null) out.add(playButton);
         if (nextButton != null && nextButton.getParent() != null) out.add(nextButton);
         if (queueButton != null && queueButton.getParent() != null) out.add(queueButton);
         if (speedButton != null && speedButton.getParent() != null) out.add(speedButton);
         View profile = currentProfileButton();
         if (profile != null && profile.getParent() != null) out.add(profile);
+
+        // Cover
+        if (compactCoverWrapper != null && compactCoverWrapper.getVisibility() == View.VISIBLE) out.add(compactCoverWrapper);
+        if (fullscreenCoverHolder != null && fullscreenCoverHolder.getVisibility() == View.VISIBLE) out.add(fullscreenCoverHolder);
+
+        // Text & Info
+        if (compactInfoContainer != null && compactInfoContainer.getVisibility() == View.VISIBLE) out.add(compactInfoContainer);
+        if (fullscreenTitleView != null && fullscreenTitleView.getVisibility() == View.VISIBLE) out.add(fullscreenTitleView);
+        if (fullscreenAuthorView != null && fullscreenAuthorView.getVisibility() == View.VISIBLE) out.add(fullscreenAuthorView);
+
+        // Seekbar & Timers
+        if (seekbarContainer != null && seekbarContainer.getVisibility() == View.VISIBLE) out.add(seekbarContainer);
+        if (timersRow != null && timersRow.getVisibility() == View.VISIBLE) out.add(timersRow);
+
+        // Visualizer
         if (compactBassVisualizer != null && compactBassVisualizer.getVisibility() == View.VISIBLE) out.add(compactBassVisualizer);
         if (fullscreenBassVisualizer != null && fullscreenBassVisualizer.getVisibility() == View.VISIBLE) out.add(fullscreenBassVisualizer);
+
+        // Lyrics
+        if (lyricsView != null && lyricsView.getVisibility() == View.VISIBLE) out.add(lyricsView);
         return out;
     }
 
@@ -1672,21 +1771,21 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             java.util.List<View> targets = editJiggleTargets();
             for (int i = 0; i < targets.size(); i++) {
                 View v = targets.get(i);
-                android.animation.ObjectAnimator rot = android.animation.ObjectAnimator.ofFloat(v, "rotation", -3.4f, 3.4f);
+                android.animation.ObjectAnimator rot = android.animation.ObjectAnimator.ofFloat(v, "rotation", -2.8f, 2.8f);
                 rot.setDuration(140);
                 rot.setRepeatMode(android.animation.ValueAnimator.REVERSE);
                 rot.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-                android.animation.ObjectAnimator sx = android.animation.ObjectAnimator.ofFloat(v, "scaleX", 1f, 1.06f);
-                sx.setDuration(300);
+                android.animation.ObjectAnimator sx = android.animation.ObjectAnimator.ofFloat(v, "scaleX", 1f, 1.05f);
+                sx.setDuration(280);
                 sx.setRepeatMode(android.animation.ValueAnimator.REVERSE);
                 sx.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-                android.animation.ObjectAnimator sy = android.animation.ObjectAnimator.ofFloat(v, "scaleY", 1f, 1.06f);
-                sy.setDuration(300);
+                android.animation.ObjectAnimator sy = android.animation.ObjectAnimator.ofFloat(v, "scaleY", 1f, 1.05f);
+                sy.setDuration(280);
                 sy.setRepeatMode(android.animation.ValueAnimator.REVERSE);
                 sy.setRepeatCount(android.animation.ValueAnimator.INFINITE);
                 android.animation.AnimatorSet set = new android.animation.AnimatorSet();
                 set.playTogether(rot, sx, sy);
-                set.setStartDelay((i % 4) * 40L);
+                set.setStartDelay((i % 5) * 35L);
                 set.start();
                 jiggleAnims.add(set);
             }
@@ -1726,12 +1825,28 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             attachExtraEditTouch(speedButton, "speed", "controls", true);
             attachExtraEditTouch(prevButton, "prev", "controls", false);
             attachExtraEditTouch(playButton, "play", "controls", false);
+            if (heroPlayButton != null) {
+                attachExtraEditTouch(heroPlayButton, "play", "controls", false);
+            }
             attachExtraEditTouch(nextButton, "next", "controls", false);
             attachExtraEditTouch(saveToProfileButton, "profile", "profile", true);
             attachExtraEditTouch(unsaveFromProfileButton, "profile", "profile", true);
+            attachZoneTap(profileButtonContainer, "profile");
+
             attachZoneTap(backgroundBlurView, "background");
-            attachZoneTap(compactCoverWrapper, "background");
-            attachZoneTap(fullscreenCoverHolder, "background");
+            attachZoneTap(compactCoverWrapper, "cover");
+            attachZoneTap(fullscreenCoverHolder, "cover");
+
+            attachZoneTap(compactInfoContainer, "text");
+            attachZoneTap(fullscreenTitleView, "text");
+            attachZoneTap(fullscreenAuthorView, "text");
+
+            attachZoneTap(seekbarContainer, "seekbar");
+            attachZoneTap(timersRow, "seekbar");
+            if (seekBarView != null) {
+                attachZoneTap(seekBarView, "seekbar");
+            }
+
             attachZoneTap(compactBassVisualizer, "visualizer");
             attachZoneTap(fullscreenBassVisualizer, "visualizer");
             if (lyricsView != null) {
@@ -1758,7 +1873,7 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         // Only edit-mode interceptors are removed — everything underneath stays intact.
         try {
             View[] views = new View[]{shuffleButton, repeatButton, queueButton, speedButton,
-                    prevButton, playButton, nextButton, saveToProfileButton, unsaveFromProfileButton};
+                    prevButton, playButton, heroPlayButton, nextButton, saveToProfileButton, unsaveFromProfileButton};
             for (View v : views) {
                 if (v != null) {
                     try {
@@ -1766,31 +1881,22 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                     } catch (Throwable ignore) {}
                 }
             }
-            if (backgroundBlurView != null) {
-                try {
-                    backgroundBlurView.setOnClickListener(null);
-                } catch (Throwable ignore) {}
+            View[] clickZones = new View[]{backgroundBlurView, fullscreenCoverHolder,
+                    compactInfoContainer, fullscreenTitleView, fullscreenAuthorView,
+                    seekbarContainer, timersRow, seekBarView, compactBassVisualizer,
+                    fullscreenBassVisualizer, profileButtonContainer};
+            for (View z : clickZones) {
+                if (z != null) {
+                    try {
+                        z.setOnClickListener(null);
+                    } catch (Throwable ignore) {}
+                }
             }
             if (compactCoverWrapper != null) {
                 compactCoverWrapper.setOnClickListener(v -> {
                     MiogramHaptic.tap(v);
                     openFullscreenFromCover();
                 });
-            }
-            if (fullscreenCoverHolder != null) {
-                try {
-                    fullscreenCoverHolder.setOnClickListener(null);
-                } catch (Throwable ignore) {}
-            }
-            if (compactBassVisualizer != null) {
-                try {
-                    compactBassVisualizer.setOnClickListener(null);
-                } catch (Throwable ignore) {}
-            }
-            if (fullscreenBassVisualizer != null) {
-                try {
-                    fullscreenBassVisualizer.setOnClickListener(null);
-                } catch (Throwable ignore) {}
             }
             if (lyricsView != null) {
                 try {
@@ -1899,5 +2005,45 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         try {
             new MiogramPlayerSectionSheet(getContext(), resourcesProvider, MiogramModernPlayerLayout.this, section).show();
         } catch (Throwable ignore) {}
+    }
+
+    public void onSeekBarScrub(boolean pressed, float progress) {
+        if (scrubLyricBubble == null || !MiogramPlayerPrefs.isSeekbarScrubBubbleEnabled()) return;
+        if (pressed) {
+            long durationMs = 0L;
+            if (lyricsView != null && lyricsView.getCurrentSong() != null && lyricsView.getCurrentSong().durationMs > 0) {
+                durationMs = lyricsView.getCurrentSong().durationMs;
+            }
+            if (durationMs <= 0L) {
+                MessageObject playing = MediaController.getInstance().getPlayingMessageObject();
+                if (playing != null) {
+                    durationMs = (playing.audioPlayerDuration > 0 ? (long) playing.audioPlayerDuration : (long) playing.getDuration()) * 1000L;
+                }
+            }
+            long targetTimeMs = (long) (Math.max(0f, Math.min(1f, progress)) * durationMs);
+            int totalSec = (int) (targetTimeMs / 1000L);
+            int m = totalSec / 60;
+            int s = totalSec % 60;
+            String timeCode = String.format(java.util.Locale.US, "%d:%02d", m, s);
+
+            String lyricLine = null;
+            if (lyricsView != null) {
+                lyricLine = lyricsView.getLineTextAtTime(targetTimeMs);
+            }
+            if (!TextUtils.isEmpty(lyricLine)) {
+                scrubLyricBubble.setText(timeCode + " · " + lyricLine);
+            } else {
+                scrubLyricBubble.setText(timeCode);
+            }
+
+            if (scrubLyricBubble.getVisibility() != View.VISIBLE) {
+                scrubLyricBubble.setVisibility(View.VISIBLE);
+                scrubLyricBubble.animate().alpha(1f).setDuration(150).start();
+            }
+        } else {
+            scrubLyricBubble.animate().alpha(0f).setDuration(180).withEndAction(() -> {
+                scrubLyricBubble.setVisibility(View.GONE);
+            }).start();
+        }
     }
 }

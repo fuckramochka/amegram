@@ -270,6 +270,35 @@ public class MiogramLyricsView extends FrameLayout {
         addView(toastPillView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 0, 52, 0, 0));
     }
 
+    public void showToastPill(String text) {
+        if (toastPillView == null) return;
+        toastPillView.setText(text);
+        if (hideToastRunnable != null) {
+            removeCallbacks(hideToastRunnable);
+        }
+        toastPillView.setVisibility(View.VISIBLE);
+        toastPillView.animate().alpha(1.0f).setDuration(180).start();
+        hideToastRunnable = () -> {
+            toastPillView.animate().alpha(0.0f).setDuration(220).withEndAction(() -> {
+                toastPillView.setVisibility(View.GONE);
+            }).start();
+        };
+        postDelayed(hideToastRunnable, 2000);
+    }
+
+    public MiogramLrcModel.LrcSong getCurrentSong() {
+        return currentSong;
+    }
+
+    public String getLineTextAtTime(long timeMs) {
+        if (currentSong == null || currentSong.lines.isEmpty()) return null;
+        int idx = currentSong.findLineIndex(timeMs);
+        if (idx >= 0 && idx < currentSong.lines.size()) {
+            return currentSong.lines.get(idx).text;
+        }
+        return null;
+    }
+
     private void updateSourcePillText() {
         sourcePillButton.setText(MiogramSourceSelectAlert.getSourceName(currentSourceId));
         notifySourceChanged();
@@ -409,8 +438,10 @@ public class MiogramLyricsView extends FrameLayout {
 
     /**
      * Player edit (jiggle) mode: while set, an item-touch interceptor consumes
-     * EVERYTHING (rows, empty space) before children — tap opens the lyrics
-     * panel, scroll/seek are suspended. Pass null to restore normal behavior.
+     * taps on lyric ROWS — tap opens the lyrics panel, scroll/seek are
+     * suspended. Taps on EMPTY space are NOT consumed, so they fall through
+     * to the background zone below (background settings). Pass null to
+     * restore normal behavior.
      * (A plain OnTouchListener does NOT work: clickable row children consume
      * the gesture first and the parent listener never fires.)
      */
@@ -436,6 +467,16 @@ public class MiogramLyricsView extends FrameLayout {
             public boolean onInterceptTouchEvent(RecyclerView rv, android.view.MotionEvent e) {
                 int action = e.getActionMasked();
                 if (action == android.view.MotionEvent.ACTION_DOWN) {
+                    // Empty space belongs to the background zone below:
+                    // only lyric rows open the lyrics panel.
+                    android.view.View child = null;
+                    try {
+                        child = rv.findChildViewUnder(e.getX(), e.getY());
+                    } catch (Throwable ignore) {}
+                    if (child == null) {
+                        tracking = false;
+                        return false;
+                    }
                     downX = e.getRawX();
                     downY = e.getRawY();
                     tracking = true;
@@ -886,6 +927,22 @@ public class MiogramLyricsView extends FrameLayout {
                         MediaController.getInstance().seekToProgress(currentMessageObject, Math.max(0f, Math.min(1f, progress)));
                     }
                 }
+            });
+            final String copyText = displayText;
+            holder.itemView.setOnLongClickListener(v -> {
+                try {
+                    if (!TextUtils.isEmpty(copyText)) {
+                        android.content.ClipboardManager cm = (android.content.ClipboardManager)
+                                v.getContext().getSystemService(Context.CLIPBOARD_SERVICE);
+                        if (cm != null) {
+                            cm.setPrimaryClip(android.content.ClipData.newPlainText("lyrics", copyText));
+                            MiogramHaptic.success(v);
+                            showToastPill(MiogramLocale.get("Стрічку скопійовано", "Строка скопирована", "Line copied"));
+                            return true;
+                        }
+                    }
+                } catch (Throwable ignore) {}
+                return false;
             });
         }
 

@@ -1017,6 +1017,16 @@ public class MiogramSupabaseBridge {
                     if (onComplete != null) {
                         AndroidUtilities.runOnUIThread(onComplete);
                     }
+                } else if (code == 404) {
+                    // Function not in PostgREST schema cache yet or founder protection
+                    FileLog.w("MiogramSupabaseBridge: miogram_revoke_badge returned 404. Badge cleared locally.");
+                    if (onComplete != null) {
+                        AndroidUtilities.runOnUIThread(onComplete);
+                    }
+                    showSyncErrorDialog(null, MiogramLocale.get(
+                            "Бейдж знято локально. Відповідь сервера: HTTP 404 (оновіть кеш схеми в Supabase: NOTIFY pgrst, 'reload schema').",
+                            "Бейдж снят локально. Ответ сервера: HTTP 404 (обновите кэш схемы в Supabase: NOTIFY pgrst, 'reload schema').",
+                            "Badge removed locally. Server returned HTTP 404 (reload Supabase schema cache: NOTIFY pgrst, 'reload schema')."));
                 } else {
                     showSyncErrorDialog(null, "Revoke badge HTTP " + code);
                 }

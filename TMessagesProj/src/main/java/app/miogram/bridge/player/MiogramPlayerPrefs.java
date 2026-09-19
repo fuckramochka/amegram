@@ -338,4 +338,151 @@ public class MiogramPlayerPrefs {
         getPrefs().edit().putString("controls_order", order).apply();
         notifyChanged();
     }
+
+    // --- Lyrics Hint in Chat Input ---
+
+    public static boolean isLyricsHintMultiline() {
+        return getPrefs().getBoolean("lyrics_hint_multiline", true);
+    }
+
+    public static void setLyricsHintMultiline(boolean multiline) {
+        getPrefs().edit().putBoolean("lyrics_hint_multiline", multiline).apply();
+        notifyChanged();
+    }
+
+    public static boolean isLyricsHintKaraoke() {
+        return getPrefs().getBoolean("lyrics_hint_karaoke", true);
+    }
+
+    public static void setLyricsHintKaraoke(boolean karaoke) {
+        getPrefs().edit().putBoolean("lyrics_hint_karaoke", karaoke).apply();
+        notifyChanged();
+    }
+
+    // --- Text (Title & Artist) ---
+
+    public static int getTitleColor() {
+        return getPrefs().getInt("text_title_color", 0);
+    }
+
+    public static void setTitleColor(int col) {
+        getPrefs().edit().putInt("text_title_color", col).apply();
+        notifyChanged();
+    }
+
+    public static int getAuthorColor() {
+        return getPrefs().getInt("text_author_color", 0);
+    }
+
+    public static void setAuthorColor(int col) {
+        getPrefs().edit().putInt("text_author_color", col).apply();
+        notifyChanged();
+    }
+
+    public static int getTitleFontSize() {
+        return getPrefs().getInt("text_title_size", 18);
+    }
+
+    public static void setTitleFontSize(int size) {
+        getPrefs().edit().putInt("text_title_size", size).apply();
+        notifyChanged();
+    }
+
+    public static int getAuthorFontSize() {
+        return getPrefs().getInt("text_author_size", 13);
+    }
+
+    public static void setAuthorFontSize(int size) {
+        getPrefs().edit().putInt("text_author_size", size).apply();
+        notifyChanged();
+    }
+
+    public static boolean isTitleMarqueeEnabled() {
+        return getPrefs().getBoolean("text_marquee_enabled", true);
+    }
+
+    public static void setTitleMarqueeEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("text_marquee_enabled", enabled).apply();
+        notifyChanged();
+    }
+
+    // --- Seekbar & Progress ---
+
+    public static int getSeekbarProgressColor() {
+        return getPrefs().getInt("sb_progress_color", 0); // 0 = accent
+    }
+
+    public static void setSeekbarProgressColor(int col) {
+        getPrefs().edit().putInt("sb_progress_color", col).apply();
+        notifyChanged();
+    }
+
+    public static int getSeekbarTrackColor() {
+        return getPrefs().getInt("sb_track_color", 0);
+    }
+
+    public static void setSeekbarTrackColor(int col) {
+        getPrefs().edit().putInt("sb_track_color", col).apply();
+        notifyChanged();
+    }
+
+    public static int getTimeTextColor() {
+        return getPrefs().getInt("sb_time_color", 0);
+    }
+
+    public static void setTimeTextColor(int col) {
+        getPrefs().edit().putInt("sb_time_color", col).apply();
+        notifyChanged();
+    }
+
+    public static boolean isSeekbarScrubBubbleEnabled() {
+        return getPrefs().getBoolean("sb_scrub_bubble", true);
+    }
+
+    public static void setSeekbarScrubBubbleEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("sb_scrub_bubble", enabled).apply();
+        notifyChanged();
+    }
+
+    // --- Controls Color ---
+
+    public static int getButtonColor() {
+        return getPrefs().getInt("btn_color", 0);
+    }
+
+    public static void setButtonColor(int col) {
+        getPrefs().edit().putInt("btn_color", col).apply();
+        notifyChanged();
+    }
+
+    // --- Cover Art ---
+
+    public static int getCoverCornerRadius() {
+        return getPrefs().getInt("cover_corner_radius", 20);
+    }
+
+    public static void setCoverCornerRadius(int radius) {
+        getPrefs().edit().putInt("cover_corner_radius", radius).apply();
+        notifyChanged();
+    }
+
+    public static int getCoverElevation() {
+        return getPrefs().getInt("cover_elevation", 4);
+    }
+
+    public static void setCoverElevation(int elevation) {
+        getPrefs().edit().putInt("cover_elevation", elevation).apply();
+        notifyChanged();
+    }
+
+    // --- Visualizer Color ---
+
+    public static int getVisualizerColor() {
+        return getPrefs().getInt("viz_color", 0);
+    }
+
+    public static void setVisualizerColor(int col) {
+        getPrefs().edit().putInt("viz_color", col).apply();
+        notifyChanged();
+    }
 }

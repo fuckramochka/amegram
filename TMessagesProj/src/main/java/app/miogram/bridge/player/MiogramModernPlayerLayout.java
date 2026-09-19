@@ -1771,21 +1771,20 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             java.util.List<View> targets = editJiggleTargets();
             for (int i = 0; i < targets.size(); i++) {
                 View v = targets.get(i);
-                android.animation.ObjectAnimator rot = android.animation.ObjectAnimator.ofFloat(v, "rotation", -2.8f, 2.8f);
-                rot.setDuration(140);
+                boolean isLarge = (v == compactCoverWrapper || v == fullscreenCoverHolder
+                        || v == lyricsView || v == seekbarContainer || v == compactInfoContainer
+                        || v == fullscreenTitleView || v == fullscreenAuthorView);
+                float angle = isLarge ? 0.6f : 1.2f;
+                float dir = (i % 2 == 0) ? 1.0f : -1.0f;
+                android.animation.ObjectAnimator rot = android.animation.ObjectAnimator.ofFloat(v, "rotation", -angle * dir, angle * dir);
+                rot.setDuration(320);
+                rot.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
                 rot.setRepeatMode(android.animation.ValueAnimator.REVERSE);
                 rot.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-                android.animation.ObjectAnimator sx = android.animation.ObjectAnimator.ofFloat(v, "scaleX", 1f, 1.05f);
-                sx.setDuration(280);
-                sx.setRepeatMode(android.animation.ValueAnimator.REVERSE);
-                sx.setRepeatCount(android.animation.ValueAnimator.INFINITE);
-                android.animation.ObjectAnimator sy = android.animation.ObjectAnimator.ofFloat(v, "scaleY", 1f, 1.05f);
-                sy.setDuration(280);
-                sy.setRepeatMode(android.animation.ValueAnimator.REVERSE);
-                sy.setRepeatCount(android.animation.ValueAnimator.INFINITE);
+
                 android.animation.AnimatorSet set = new android.animation.AnimatorSet();
-                set.playTogether(rot, sx, sy);
-                set.setStartDelay((i % 5) * 35L);
+                set.play(rot);
+                set.setStartDelay((i % 4) * 45L);
                 set.start();
                 jiggleAnims.add(set);
             }
@@ -1833,6 +1832,9 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             attachExtraEditTouch(unsaveFromProfileButton, "profile", "profile", true);
             attachZoneTap(profileButtonContainer, "profile");
 
+            attachZoneTap(this, "background");
+            attachZoneTap(centerContainer, "background");
+            attachZoneTap(fullContentContainer, "background");
             attachZoneTap(backgroundBlurView, "background");
             attachZoneTap(compactCoverWrapper, "cover");
             attachZoneTap(fullscreenCoverHolder, "cover");
@@ -1861,6 +1863,7 @@ public class MiogramModernPlayerLayout extends FrameLayout {
     private void attachZoneTap(View zone, final String section) {
         if (zone == null) return;
         try {
+            zone.setClickable(true);
             zone.setOnClickListener(v -> {
                 if (!editMode) return;
                 MiogramHaptic.select(v);
@@ -1881,14 +1884,15 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                     } catch (Throwable ignore) {}
                 }
             }
-            View[] clickZones = new View[]{backgroundBlurView, fullscreenCoverHolder,
-                    compactInfoContainer, fullscreenTitleView, fullscreenAuthorView,
+            View[] clickZones = new View[]{this, centerContainer, fullContentContainer, backgroundBlurView,
+                    fullscreenCoverHolder, compactInfoContainer, fullscreenTitleView, fullscreenAuthorView,
                     seekbarContainer, timersRow, seekBarView, compactBassVisualizer,
                     fullscreenBassVisualizer, profileButtonContainer};
             for (View z : clickZones) {
                 if (z != null) {
                     try {
                         z.setOnClickListener(null);
+                        z.setClickable(false);
                     } catch (Throwable ignore) {}
                 }
             }

@@ -7895,7 +7895,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().isPlaying()) {
                 String line = app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().getCurrentLyricsLine();
                 if (!TextUtils.isEmpty(line)) {
-                    return "🎵 " + line;
+                    return formatMusicHint(line, false, 0L, 0L, 0L);
                 }
             }
             // 2. Telegram in-app music player
@@ -7907,51 +7907,59 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 app.miogram.bridge.lyrics.MiogramLrcModel.LrcSong song = app.miogram.bridge.lyrics.MiogramLyricsEngine.getInstance().getCachedSong(playingMsg);
                 if (song != null && !song.lines.isEmpty()) {
-                    long currentMs = (long) (playingMsg.audioProgressSec * 1000L);
+                    long currentMs = playingMsg.audioProgressMs > 0 ? (long) playingMsg.audioProgressMs : (long) (playingMsg.audioProgressSec * 1000L);
                     int idx = song.findLineIndex(currentMs);
                     if (idx >= 0 && idx < song.lines.size()) {
                         app.miogram.bridge.lyrics.MiogramLrcModel.LrcLine lrcLine = song.lines.get(idx);
                         String line = lrcLine.text;
                         if (!TextUtils.isEmpty(line)) {
-                            if (app.miogram.bridge.player.MiogramPlayerPrefs.isLyricsHintKaraoke()) {
-                                long lineStart = lrcLine.timeMs;
-                                long lineEnd = (idx + 1 < song.lines.size()) ? song.lines.get(idx + 1).timeMs : (lineStart + 4000L);
-                                float fraction = 0f;
-                                if (lineEnd > lineStart) {
-                                    fraction = Math.max(0f, Math.min(1f, (float) (currentMs - lineStart) / (float) (lineEnd - lineStart)));
-                                }
-                                SpannableStringBuilder ssb = new SpannableStringBuilder(line);
-                                int prefixLen = 0;
-                                int textLen = line.length();
-                                int sungChars = Math.round(textLen * fraction);
-                                sungChars = Math.max(0, Math.min(textLen, sungChars));
-                                int accentColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider);
-                                if (accentColor == 0) accentColor = 0xFF5B8DEF;
-                                int hintColor = Theme.getColor(Theme.key_chat_messagePanelHint, resourcesProvider);
-                                if (sungChars > 0) {
-                                    ssb.setSpan(new android.text.style.ForegroundColorSpan(accentColor), prefixLen, prefixLen + sungChars, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                                }
-                                if (sungChars < textLen) {
-                                    int dimColor = androidx.core.graphics.ColorUtils.setAlphaComponent(hintColor != 0 ? hintColor : 0x88FFFFFF, 120);
-                                    ssb.setSpan(new android.text.style.ForegroundColorSpan(dimColor), prefixLen + sungChars, prefixLen + textLen, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                                }
-                                return ssb;
-                            } else {
-                                return line;
-                            }
+                            boolean karaoke = app.miogram.bridge.player.MiogramPlayerPrefs.isLyricsHintKaraoke();
+                            long lineStart = lrcLine.timeMs;
+                            long lineEnd = (idx + 1 < song.lines.size()) ? song.lines.get(idx + 1).timeMs : (lineStart + 4000L);
+                            return formatMusicHint(line, karaoke, currentMs, lineStart, lineEnd);
                         }
                     }
                 }
                 String title = playingMsg.getMusicTitle();
                 String author = playingMsg.getMusicAuthor();
                 if (!TextUtils.isEmpty(title)) {
-                    return !TextUtils.isEmpty(author) ? (title + " — " + author) : title;
+                    String trackInfo = !TextUtils.isEmpty(author) ? (title + " — " + author) : title;
+                    return formatMusicHint(trackInfo, false, 0L, 0L, 0L);
                 }
             } else {
                 lyricsHintTickerScheduled = false;
             }
         } catch (Throwable ignore) {}
         return null;
+    }
+
+    private CharSequence formatMusicHint(String text, boolean isKaraoke, long currentMs, long lineStart, long lineEnd) {
+        if (TextUtils.isEmpty(text)) return null;
+        SpannableStringBuilder ssb = new SpannableStringBuilder("  " + text);
+        try {
+            ColoredImageSpan iconSpan = new ColoredImageSpan(R.drawable.baseline_music_note_16);
+            ssb.setSpan(iconSpan, 0, 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        } catch (Throwable ignore) {}
+        int prefixLen = 2;
+        int textLen = text.length();
+        int hintColor = Theme.getColor(Theme.key_chat_messagePanelHint, resourcesProvider);
+        if (hintColor == 0) hintColor = 0x88FFFFFF;
+        if (isKaraoke && lineEnd > lineStart) {
+            float fraction = Math.max(0f, Math.min(1f, (float) (currentMs - lineStart) / (float) (lineEnd - lineStart)));
+            int sungChars = Math.round(textLen * fraction);
+            sungChars = Math.max(0, Math.min(textLen, sungChars));
+            int accentColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider);
+            if (accentColor == 0) accentColor = 0xFF5B8DEF;
+            if (sungChars > 0) {
+                ssb.setSpan(new android.text.style.ForegroundColorSpan(accentColor), prefixLen, prefixLen + sungChars, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            if (sungChars < textLen) {
+                ssb.setSpan(new android.text.style.ForegroundColorSpan(hintColor), prefixLen + sungChars, prefixLen + textLen, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+        } else {
+            ssb.setSpan(new android.text.style.ForegroundColorSpan(hintColor), prefixLen, prefixLen + textLen, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
+        return ssb;
     }
 
     public void updateFieldHint(boolean animated) {
@@ -8090,11 +8098,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                             }
                         }
                     }
-                    if (!TextUtils.isEmpty(musicHint)) {
-                        messageEditText.setAllowMultilineHint(app.miogram.bridge.player.MiogramPlayerPrefs.isLyricsHintMultiline());
-                    } else {
-                        messageEditText.setAllowMultilineHint(false);
-                    }
+                    messageEditText.setAllowMultilineHint(false);
                     maybeAppendSendAsUnderMessageHint(messageEditTextText);
                     messageEditText.setHintText(messageEditTextText, animated);
                 }

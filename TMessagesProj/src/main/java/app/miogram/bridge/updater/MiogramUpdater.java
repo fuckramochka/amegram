@@ -62,6 +62,10 @@ public class MiogramUpdater {
         }
     }
 
+    public static String getUpdateChannelName() {
+        return CHANNEL_STABLE.equals(getUpdateChannel()) ? "Stable" : "Beta";
+    }
+
     public static void setUpdateChannel(String channel) {
         try {
             Context ctx = ApplicationLoader.applicationContext;

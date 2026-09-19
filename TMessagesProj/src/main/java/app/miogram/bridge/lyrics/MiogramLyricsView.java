@@ -403,27 +403,6 @@ public class MiogramLyricsView extends FrameLayout {
         });
     }
 
-    private void showToastPill(String text) {
-        if (hideToastRunnable != null) {
-            removeCallbacks(hideToastRunnable);
-        }
-        toastPillView.animate().setListener(null);
-        toastPillView.animate().cancel();
-        toastPillView.setText(text);
-        toastPillView.setVisibility(View.VISIBLE);
-        toastPillView.animate().alpha(1.0f).setDuration(180).start();
-
-        hideToastRunnable = () -> {
-            toastPillView.animate().alpha(0.0f).setDuration(220).setListener(new AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(Animator animation) {
-                    toastPillView.setVisibility(View.GONE);
-                }
-            }).start();
-        };
-        postDelayed(hideToastRunnable, 1500);
-    }
-
     public void setOnCloseClickListener(Runnable listener) {
         this.onCloseClickListener = listener;
     }

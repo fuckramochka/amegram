@@ -61,6 +61,10 @@ public class MiogramBassVisualizer extends View {
         postInvalidateOnAnimation();
     }
 
+    public void setVisualizerColor(int color) {
+        setColor(color);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);

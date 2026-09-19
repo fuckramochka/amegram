@@ -10,8 +10,10 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
+import org.telegram.ui.Components.AudioPlayerAlert;
 
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.ai.companion.MiogramCompanionActivity;
@@ -257,9 +259,9 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         else if (position == updaterRow) {
             MiogramUpdater.checkAndShowUpdate(this, true);
         } else if (position == channelRow) {
-            AndroidUtilities.openUrlInBrowser(getParentActivity(), "https://t.me/miogram_app");
+            Browser.openUrl(getParentActivity(), "https://t.me/miogram_app");
         } else if (position == supportRow) {
-            AndroidUtilities.openUrlInBrowser(getParentActivity(), "https://t.me/miogram_app");
+            Browser.openUrl(getParentActivity(), "https://t.me/miogram_app");
         }
     }
 

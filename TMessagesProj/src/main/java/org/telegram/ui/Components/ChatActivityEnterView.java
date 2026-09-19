@@ -7920,8 +7920,8 @@ public class ChatActivityEnterView extends FrameLayout implements
                                 if (lineEnd > lineStart) {
                                     fraction = Math.max(0f, Math.min(1f, (float) (currentMs - lineStart) / (float) (lineEnd - lineStart)));
                                 }
-                                SpannableStringBuilder ssb = new SpannableStringBuilder("🎵 " + line);
-                                int prefixLen = 2; // "🎵 "
+                                SpannableStringBuilder ssb = new SpannableStringBuilder(line);
+                                int prefixLen = 0;
                                 int textLen = line.length();
                                 int sungChars = Math.round(textLen * fraction);
                                 sungChars = Math.max(0, Math.min(textLen, sungChars));
@@ -7929,15 +7929,15 @@ public class ChatActivityEnterView extends FrameLayout implements
                                 if (accentColor == 0) accentColor = 0xFF5B8DEF;
                                 int hintColor = Theme.getColor(Theme.key_chat_messagePanelHint, resourcesProvider);
                                 if (sungChars > 0) {
-                                    ssb.setSpan(new ForegroundColorSpan(accentColor), prefixLen, prefixLen + sungChars, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    ssb.setSpan(new android.text.style.ForegroundColorSpan(accentColor), prefixLen, prefixLen + sungChars, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                 }
                                 if (sungChars < textLen) {
                                     int dimColor = androidx.core.graphics.ColorUtils.setAlphaComponent(hintColor != 0 ? hintColor : 0x88FFFFFF, 120);
-                                    ssb.setSpan(new ForegroundColorSpan(dimColor), prefixLen + sungChars, prefixLen + textLen, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                                    ssb.setSpan(new android.text.style.ForegroundColorSpan(dimColor), prefixLen + sungChars, prefixLen + textLen, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                                 }
                                 return ssb;
                             } else {
-                                return "🎵 " + line;
+                                return line;
                             }
                         }
                     }
@@ -7945,7 +7945,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 String title = playingMsg.getMusicTitle();
                 String author = playingMsg.getMusicAuthor();
                 if (!TextUtils.isEmpty(title)) {
-                    return "🎵 " + (!TextUtils.isEmpty(author) ? (title + " — " + author) : title);
+                    return !TextUtils.isEmpty(author) ? (title + " — " + author) : title;
                 }
             } else {
                 lyricsHintTickerScheduled = false;

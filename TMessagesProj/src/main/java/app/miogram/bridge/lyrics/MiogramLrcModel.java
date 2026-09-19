@@ -144,6 +144,7 @@ public class MiogramLrcModel {
         public final String source;
         public boolean isSynced;
         public String plainLyrics;
+        public long durationMs = 0L;
         public final List<LrcLine> lines = new ArrayList<>();
 
         public LrcSong(String title, String artist, String source, boolean isSynced) {

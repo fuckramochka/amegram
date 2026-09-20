@@ -35,7 +35,8 @@ import tw.nekomimi.nekogram.ui.cells.HeaderCell;
  */
 public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
-    public static final String CHANNEL_USERNAME = "dkmiogram";
+    public static final String CHANNEL_USERNAME = MiogramUpdater.CHANNEL_USERNAME;
+    public static final String FALLBACK_CHANNEL_USERNAME = MiogramUpdater.FALLBACK_CHANNEL_USERNAME;
 
     // Group 1: Кастом, аудіо та функціонал
     private int headerCustomRow;
@@ -63,7 +64,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return MiogramLocale.get("Налаштування Miogram", "Настройки Miogram", "Miogram Settings");
+        return MiogramLocale.get("Налаштування Amegram", "Настройки Amegram", "Amegram Settings");
     }
 
     @Override
@@ -137,9 +138,24 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         else if (position == aboutRow) {
             presentFragment(new MiogramAboutActivity());
         } else if (position == channelRow) {
-            openUsername(CHANNEL_USERNAME);
+            openChannel();
         } else if (position == updaterRow) {
             MiogramUpdater.checkAndShowUpdate(this, true);
+        }
+    }
+
+    private void openChannel() {
+        try {
+            MessagesController mc = MessagesController.getInstance(currentAccount);
+            mc.getUserNameResolver().resolve(CHANNEL_USERNAME, (peerId) -> {
+                if (peerId != null) {
+                    mc.openByUserName(CHANNEL_USERNAME, this, 1);
+                } else {
+                    mc.openByUserName(FALLBACK_CHANNEL_USERNAME, this, 1);
+                }
+            });
+        } catch (Throwable ignore) {
+            openUsername(CHANNEL_USERNAME);
         }
     }
 
@@ -184,7 +200,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == headerExtrasRow) {
                         cell.setText(MiogramLocale.get("2. Додаткові фішки, ШІ та плагіни", "2. Дополнительные фишки, ИИ и плагины", "2. Extras, AI & Plugins"));
                     } else if (position == headerAboutRow) {
-                        cell.setText(MiogramLocale.get("3. Підтримка проекту, Про Miogram та оновлення", "3. Поддержка проекта, О Miogram и обновления", "3. Support, About Miogram & Updates"));
+                        cell.setText(MiogramLocale.get("3. Підтримка проекту, Про Amegram та оновлення", "3. Поддержка проекта, Об Amegram и обновления", "3. Support, About Amegram & Updates"));
                     }
                     break;
                 }
@@ -232,7 +248,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         );
                     } else if (position == mioMomentsRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Mio Moments (Історія та видалені)", "Mio Moments (История и удаленные)", "Mio Moments (History & Deleted)"),
+                                MiogramLocale.get("Ame Moments (Історія та видалені)", "Ame Moments (История и удаленные)", "Ame Moments (History & Deleted)"),
                                 R.drawable.msg_delete,
                                 false
                         );
@@ -246,7 +262,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         );
                     } else if (position == companionRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("ШІ-Супутниця Miogram", "ИИ-Спутница Miogram", "AI Companion"),
+                                MiogramLocale.get("ШІ-Супутниця Amegram", "ИИ-Спутница Amegram", "AI Companion"),
                                 R.drawable.baseline_stars_24,
                                 true
                         );
@@ -272,14 +288,14 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                     // Group 3: Підтримка проекту, Про Miogram та оновлення
                     else if (position == aboutRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Про Miogram", "О Miogram", "About Miogram"),
+                                MiogramLocale.get("Про Amegram", "Об Amegram", "About Amegram"),
                                 R.drawable.msg_info,
                                 true
                         );
                     } else if (position == channelRow) {
                         cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Офіційний канал @dkmiogram", "Официальный канал @dkmiogram", "Official Channel @dkmiogram"),
-                                "@dkmiogram",
+                                MiogramLocale.get("Офіційний канал @" + CHANNEL_USERNAME, "Официальный канал @" + CHANNEL_USERNAME, "Official Channel @" + CHANNEL_USERNAME),
+                                "@" + CHANNEL_USERNAME,
                                 R.drawable.msg_channel,
                                 true
                         );
@@ -287,7 +303,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         String branch = MiogramUpdater.getUpdateChannelName();
                         String ver = "v" + BuildVars.BUILD_VERSION_STRING + " (" + branch + ")";
                         cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Оновлення Miogram", "Обновления Miogram", "Miogram Updates"),
+                                MiogramLocale.get("Оновлення Amegram", "Обновления Amegram", "Amegram Updates"),
                                 ver,
                                 R.drawable.msg_download_solar,
                                 false

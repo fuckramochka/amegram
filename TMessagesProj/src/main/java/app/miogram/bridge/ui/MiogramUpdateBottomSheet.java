@@ -138,14 +138,14 @@ public class MiogramUpdateBottomSheet extends BottomSheet implements MiogramDown
         if (hasUpdate) {
             String noteText = (!TextUtils.isEmpty(changelog))
                     ? changelog.trim()
-                    : MiogramLocale.get("• Оновлено Miogram AI (Gemini 2.5 Flash)\n• Нативна розшифровка голосових повідомлень\n• Оптимізація та прискорення роботи",
-                    "• Обновлен Miogram AI (Gemini 2.5 Flash)\n• Нативная расшифровка голосовых сообщений\n• Оптимизация и ускорение работы",
-                    "• Updated Miogram AI (Gemini 2.5 Flash)\n• Native voice message transcription\n• Performance optimizations");
+                    : MiogramLocale.get("• Оновлено Amegram AI (Gemini 2.5 Flash)\n• Нативна розшифровка голосових повідомлень\n• Оптимізація та прискорення роботи",
+                    "• Обновлен Amegram AI (Gemini 2.5 Flash)\n• Нативная расшифровка голосовых сообщений\n• Оптимизация и ускорение работы",
+                    "• Updated Amegram AI (Gemini 2.5 Flash)\n• Native voice message transcription\n• Performance optimizations");
             descriptionView.setText(MiogramLocale.get("Що нового:\n", "Что нового:\n", "What's new:\n") + noteText);
         } else {
-            descriptionView.setText(MiogramLocale.get("У вас встановлено найновішу збірку Miogram.",
-                    "У вас установлена самая новая сборка Miogram.",
-                    "You have the latest build of Miogram."));
+            descriptionView.setText(MiogramLocale.get("У вас встановлено найновішу збірку Amegram.",
+                    "У вас установлена самая новая сборка Amegram.",
+                    "You have the latest build of Amegram."));
         }
         descriptionView.setTextSize(13);
         descriptionView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));

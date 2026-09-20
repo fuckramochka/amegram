@@ -39,8 +39,13 @@ import app.miogram.bridge.ui.MiogramUpdateBottomSheet;
  */
 public class MiogramUpdater {
 
-    private static final String GITHUB_API_LATEST = "https://api.github.com/repos/fuckramochka/miogram/releases/latest";
-    private static final String GITHUB_API_RELEASES = "https://api.github.com/repos/fuckramochka/miogram/releases?per_page=10";
+    public static final String[] GITHUB_REPOS = new String[]{
+            "fuckramochka/amegram",
+            "fuckramochka/miogram"
+    };
+    public static final String CHANNEL_USERNAME = "dkamegram";
+    public static final String FALLBACK_CHANNEL_USERNAME = "dkmiogram";
+
     private static final String PREFS_NAME = "miogram_updater_prefs";
     private static final String KEY_LAST_SEEN_TAG = "last_seen_tag";
     private static final String KEY_UPDATE_CHANNEL = "update_channel"; // "beta" (default) | "stable"
@@ -197,14 +202,14 @@ public class MiogramUpdater {
         });
     }
 
-    /** True if @dkmiogram is already resolvable from the local cache (user already joined). */
+    /** True if @dkamegram or @dkmiogram is already resolvable from the local cache (user already joined). */
     private static boolean isAlreadyInCommunityChannel() {
         try {
             for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
                 try {
                     MessagesController mc = MessagesController.getInstance(a);
                     if (mc == null) continue;
-                    if (mc.getUserOrChat("dkmiogram") != null) return true;
+                    if (mc.getUserOrChat(CHANNEL_USERNAME) != null || mc.getUserOrChat(FALLBACK_CHANNEL_USERNAME) != null) return true;
                 } catch (Throwable ignore) {}
             }
         } catch (Throwable ignore) {}
@@ -215,7 +220,7 @@ public class MiogramUpdater {
     private static void showChannelChooser(BaseFragment fragment, Runnable onDone) {
         Context context = fragment.getParentActivity();
         org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
-        builder.setTitle(MiogramLocale.get("Як оновлювати Miogram?", "Как обновлять Miogram?", "How should Miogram update?"));
+        builder.setTitle(MiogramLocale.get("Як оновлювати Amegram?", "Как обновлять Amegram?", "How should Amegram update?"));
 
         android.widget.LinearLayout root = new android.widget.LinearLayout(context);
         root.setOrientation(android.widget.LinearLayout.VERTICAL);
@@ -342,18 +347,25 @@ public class MiogramUpdater {
         org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
         builder.setTitle(MiogramLocale.get("Наш Telegram-канал", "Наш Telegram-канал", "Our Telegram channel"));
         builder.setMessage(MiogramLocale.get(
-                "Заходь на @dkmiogram: новини оновлень, можна кидати помилки та пропонувати ідеї. Нам важливий кожен!",
-                "Заходи на @dkmiogram: новости обновлений, можно кидать ошибки и предлагать идеи. Нам важен каждый!",
-                "Join @dkmiogram: update news, bug reports and your ideas are welcome. Every member counts!"));
+                "Заходь на @" + CHANNEL_USERNAME + ": новини оновлень, можна кидати помилки та пропонувати ідеї. Нам важливий кожен!",
+                "Заходи на @" + CHANNEL_USERNAME + ": новости обновлений, можно кидать ошибки и предлагать идеи. Нам важен каждый!",
+                "Join @" + CHANNEL_USERNAME + ": update news, bug reports and your ideas are welcome. Every member counts!"));
         builder.setPositiveButton(MiogramLocale.get("Приєднатися", "Присоединиться", "Join"), (d, which) -> {
             d.dismiss();
             try {
                 int account = fragment.getCurrentAccount();
-                MessagesController.getInstance(account).openByUserName("dkmiogram", fragment, 1);
+                MessagesController mc = MessagesController.getInstance(account);
+                mc.getUserNameResolver().resolve(CHANNEL_USERNAME, (peerId) -> {
+                    if (peerId != null) {
+                        mc.openByUserName(CHANNEL_USERNAME, fragment, 1);
+                    } else {
+                        mc.openByUserName(FALLBACK_CHANNEL_USERNAME, fragment, 1);
+                    }
+                });
             } catch (Throwable t) {
                 try {
                     android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_VIEW,
-                            android.net.Uri.parse("https://t.me/dkmiogram"));
+                            android.net.Uri.parse("https://t.me/" + CHANNEL_USERNAME));
                     intent.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
                     context.startActivity(intent);
                 } catch (Throwable ignore) {}
@@ -406,7 +418,7 @@ public class MiogramUpdater {
         if (fragment == null || fragment.getParentActivity() == null) return;
 
         if (manualCheck) {
-            Toast.makeText(fragment.getParentActivity(), MiogramLocale.get("Перевірка оновлень Miogram...", "Проверка обновлений Miogram...", "Checking for Miogram updates..."), Toast.LENGTH_SHORT).show();
+            Toast.makeText(fragment.getParentActivity(), MiogramLocale.get("Перевірка оновлень Amegram...", "Проверка обновлений Amegram...", "Checking for Amegram updates..."), Toast.LENGTH_SHORT).show();
         }
 
         fetchLatestRelease((hasUpdate, version, changelog, apkUrl) -> {
@@ -425,63 +437,92 @@ public class MiogramUpdater {
         void onResult(boolean hasUpdate, String version, String changelog, String apkUrl);
     }
 
+    private static class ReleaseCandidate {
+        final String version;
+        final String tag;
+        final String body;
+        final String apkUrl;
+
+        ReleaseCandidate(String version, String tag, String body, String apkUrl) {
+            this.version = version;
+            this.tag = tag;
+            this.body = body;
+            this.apkUrl = apkUrl;
+        }
+    }
+
     private static void fetchLatestRelease(UpdateCallback callback) {
         final boolean beta = !CHANNEL_STABLE.equals(getUpdateChannel());
         new Thread(() -> {
-            try {
-                URL url = new URL(beta ? GITHUB_API_RELEASES : GITHUB_API_LATEST);
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-                conn.setConnectTimeout(8000);
-                conn.setReadTimeout(8000);
+            ReleaseCandidate bestCandidate = null;
+            for (String repo : GITHUB_REPOS) {
+                try {
+                    String endpoint = beta
+                            ? "https://api.github.com/repos/" + repo + "/releases"
+                            : "https://api.github.com/repos/" + repo + "/releases/latest";
+                    URL url = new URL(endpoint);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestMethod("GET");
+                    conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
+                    conn.setConnectTimeout(6000);
+                    conn.setReadTimeout(6000);
 
-                int code = conn.getResponseCode();
-                if (code == 200) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
-                    }
-                    reader.close();
-
-                    JSONObject json;
-                    if (beta) {
-                        json = pickBetaRelease(new JSONArray(sb.toString()));
-                        if (json == null) {
-                            callback.onResult(false, getCurrentAppVersion(), null, null);
-                            return;
+                    int code = conn.getResponseCode();
+                    if (code == 200) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line);
                         }
-                    } else {
-                        json = new JSONObject(sb.toString());
-                    }
-                    String tag = json.optString("tag_name", "v12.10.1");
-                    String body = json.optString("body", "");
-                    String apkUrl = "";
+                        reader.close();
 
-                    JSONArray assets = json.optJSONArray("assets");
-                    if (assets != null) {
-                        for (int i = 0; i < assets.length(); i++) {
-                            JSONObject asset = assets.getJSONObject(i);
-                            String name = asset.optString("name", "");
-                            if (name.endsWith(".apk")) {
-                                apkUrl = asset.optString("browser_download_url", "");
-                                break;
+                        JSONObject json;
+                        if (beta) {
+                            json = pickBetaRelease(new JSONArray(sb.toString()));
+                            if (json == null) continue;
+                        } else {
+                            json = new JSONObject(sb.toString());
+                        }
+
+                        String tag = json.optString("tag_name", "");
+                        String body = json.optString("body", "");
+                        String apkUrl = "";
+
+                        JSONArray assets = json.optJSONArray("assets");
+                        if (assets != null) {
+                            for (int i = 0; i < assets.length(); i++) {
+                                JSONObject asset = assets.getJSONObject(i);
+                                String name = asset.optString("name", "");
+                                if (name.endsWith(".apk")) {
+                                    apkUrl = asset.optString("browser_download_url", "");
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!TextUtils.isEmpty(apkUrl) && !TextUtils.isEmpty(tag)) {
+                            String ver = tag.replace("v", "").replace("V", "").trim();
+                            ReleaseCandidate candidate = new ReleaseCandidate(ver, tag, body, apkUrl);
+                            if (bestCandidate == null) {
+                                bestCandidate = candidate;
+                            } else {
+                                if (isNewerVersion(bestCandidate.version, candidate.version, candidate.tag, candidate.body)) {
+                                    bestCandidate = candidate;
+                                }
                             }
                         }
                     }
-
-                    final String finalVersion = tag.replace("v", "").replace("V", "").trim();
-                    final String currentVersion = getCurrentAppVersion();
-                    boolean isNewer = isNewerVersion(currentVersion, finalVersion, tag, body);
-
-                    callback.onResult(isNewer, finalVersion, body, apkUrl);
-                } else {
-                    callback.onResult(false, getCurrentAppVersion(), null, null);
+                } catch (Throwable e) {
+                    FileLog.e(e);
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
+            }
+
+            if (bestCandidate != null) {
+                final String currentVersion = getCurrentAppVersion();
+                boolean isNewer = isNewerVersion(currentVersion, bestCandidate.version, bestCandidate.tag, bestCandidate.body);
+                callback.onResult(isNewer, bestCandidate.version, bestCandidate.body, bestCandidate.apkUrl);
+            } else {
                 callback.onResult(false, getCurrentAppVersion(), null, null);
             }
         }).start();

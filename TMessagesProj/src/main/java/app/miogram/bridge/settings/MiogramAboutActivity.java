@@ -23,16 +23,18 @@ import org.telegram.ui.Cells.UserCell;
 import org.telegram.ui.Components.RecyclerListView;
 
 import app.miogram.bridge.MiogramLocale;
+import app.miogram.bridge.updater.MiogramUpdater;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 /**
- * About Miogram: what it is, who builds it, how old it is, where to help.
+ * About Amegram: what it is, who builds it, how old it is, where to help.
  */
 public class MiogramAboutActivity extends BaseNekoSettingsActivity {
 
     public static final String CREATOR_USERNAME = "dkramochka";
-    public static final String CHANNEL_USERNAME = "dkmiogram";
+    public static final String CHANNEL_USERNAME = MiogramUpdater.CHANNEL_USERNAME;
+    public static final String FALLBACK_CHANNEL_USERNAME = MiogramUpdater.FALLBACK_CHANNEL_USERNAME;
     /** Miogram birthday: 1 September 2026. */
     public static final long BIRTHDAY_MS = 1788220800000L;
 
@@ -53,7 +55,7 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return MiogramLocale.get("Про Miogram", "О Miogram", "About Miogram");
+        return MiogramLocale.get("Про Amegram", "Об Amegram", "About Amegram");
     }
 
     @Override
@@ -83,11 +85,26 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
         if (position == creatorRow) {
             openUsername(CREATOR_USERNAME);
         } else if (position == channelRow) {
-            openUsername(CHANNEL_USERNAME);
+            openChannel();
         } else if (position == donateRow) {
             Toast.makeText(getParentActivity() != null ? getParentActivity() : getContext(),
                     MiogramLocale.get("Підтримка розробки тимчасово недоступна", "Поддержка разработки временно недоступна", "Donations are temporarily unavailable"),
                     Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void openChannel() {
+        try {
+            MessagesController mc = MessagesController.getInstance(currentAccount);
+            mc.getUserNameResolver().resolve(CHANNEL_USERNAME, (peerId) -> {
+                if (peerId != null) {
+                    mc.openByUserName(CHANNEL_USERNAME, this, 1);
+                } else {
+                    mc.openByUserName(FALLBACK_CHANNEL_USERNAME, this, 1);
+                }
+            });
+        } catch (Throwable ignore) {
+            openUsername(CHANNEL_USERNAME);
         }
     }
 
@@ -145,7 +162,7 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
     }
 
     private String creatorStatus() {
-        return MiogramLocale.get("Засновник і розробник Miogram", "Основатель и разработчик Miogram", "Miogram founder & developer");
+        return MiogramLocale.get("Засновник і розробник Amegram", "Основатель и разработчик Amegram", "Amegram founder & developer");
     }
 
     private static String ageText() {
@@ -169,9 +186,9 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
 
     private String aboutText() {
         return MiogramLocale.get(
-                "Miogram — кастомний Telegram-клієнт: хмарне сховище, плагіни, юзербот, присутність (Steam, Spotify, Discord, GitHub), ШІ-супутниці Аме та KAngel, теми і обхід блокувань.\n\nРозробка: @dkramochka, відкрито і по живому — новини, баги та ідеї летять у @dkmiogram.\n\nНародився 1 вересня 2026 — живе вже " + ageText() + ".",
-                "Miogram — кастомный Telegram-клиент: облачное хранилище, плагины, юзербот, присутствие (Steam, Spotify, Discord, GitHub), ИИ-спутницы Аме и KAngel, темы и обход блокировок.\n\nРазработка: @dkramochka, открыто и вживую — новости, баги и идеи летят в @dkmiogram.\n\nРодился 1 сентября 2026 — живёт уже " + ageText() + ".",
-                "Miogram is a custom Telegram client: cloud vault, plugins, userbot, presence (Steam, Spotify, Discord, GitHub), AI companions Ame & KAngel, themes and anti-block.\n\nBuilt by @dkramochka in the open — news, bugs and ideas live in @dkmiogram.\n\nBorn September 1, 2026 — alive for " + ageText() + "."
+                "Amegram — кастомний Telegram-клієнт: хмарне сховище, плагіни, юзербот, присутність (Steam, Spotify, Discord, GitHub), ШІ-супутниці Аме та KAngel, теми і обхід блокувань.\n\nРозробка: @dkramochka, відкрито і по живому — новини, баги та ідеї летять у @" + CHANNEL_USERNAME + ".\n\nНародився 1 вересня 2026 — живе вже " + ageText() + ".",
+                "Amegram — кастомный Telegram-клиент: облачное хранилище, плагины, юзербот, присутствие (Steam, Spotify, Discord, GitHub), ИИ-спутницы Аме и KAngel, темы и обход блокировок.\n\nРазработка: @dkramochka, открыто и вживую — новости, баги и идеи летят в @" + CHANNEL_USERNAME + ".\n\nРодился 1 сентября 2026 — живёт уже " + ageText() + ".",
+                "Amegram is a custom Telegram client: cloud vault, plugins, userbot, presence (Steam, Spotify, Discord, GitHub), AI companions Ame & KAngel, themes and anti-block.\n\nBuilt by @dkramochka in the open — news, bugs and ideas live in @" + CHANNEL_USERNAME + ".\n\nBorn September 1, 2026 — alive for " + ageText() + "."
         );
     }
 
@@ -217,7 +234,7 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
                     if (position == headerCreatorRow) {
                         cell.setText(MiogramLocale.get("Творець", "Создатель", "Creator"));
                     } else if (position == headerAboutRow) {
-                        cell.setText(MiogramLocale.get("Що таке Miogram", "Что такое Miogram", "What is Miogram"));
+                        cell.setText(MiogramLocale.get("Що таке Amegram", "Что такое Amegram", "What is Amegram"));
                     } else if (position == headerLinksRow) {
                         cell.setText(MiogramLocale.get("Посилання та підтримка", "Ссылки и поддержка", "Links & Support"));
                     }
@@ -244,7 +261,7 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
                     if (position == channelRow) {
-                        cell.setTextAndIcon("@dkmiogram — " + MiogramLocale.get("канал новин і багів", "канал новостей и багов", "news & bugs channel"), R.drawable.msg_channel, true);
+                        cell.setTextAndIcon("@" + CHANNEL_USERNAME + " — " + MiogramLocale.get("канал новин і багів", "канал новостей и багов", "news & bugs channel"), R.drawable.msg_channel, true);
                     } else if (position == donateRow) {
                         cell.setTextAndIcon(MiogramLocale.get("Підтримати розробку", "Поддержать разработку", "Support development"), R.drawable.msg_gift_premium, false);
                     }

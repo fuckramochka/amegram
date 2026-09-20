@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="MiogramSettingsRow">Міограм</string>
+    <string name="MiogramSettingsRow">Амеграм</string>
     <string name="MiogramVaultTitle">Сховище та тривожний PIN</string>
     <string name="MiogramAITitle">ШІ: локально / хмара</string>
     <string name="MiogramPluginsTitle">WASM-плагіни</string>
     <string name="MiogramPluginsNoRuntime">WASM-плагіни (рантайм відсутній у збірці)</string>
     <string name="MiogramVisualsTitle">Рідке скло (AGSL)</string>
-    <string name="MiogramToggleExtera">Можливості Miogram</string>
-    <string name="MiogramToggleNagram">Налаштування Mio</string>
-    <string name="MiogramToggleAyu">Швидкий доступ Mio Moments</string>
+    <string name="MiogramToggleExtera">Можливості Amegram</string>
+    <string name="MiogramToggleNagram">Налаштування Ame</string>
+    <string name="MiogramToggleAyu">Швидкий доступ Ame Moments</string>
     <string name="MiogramKeyDialogTitle">Ключ Gemini API</string>
     <string name="MiogramPingTest">Зберегти та пінгнути</string>
     <string name="MiogramPingNoKey">Спочатку введіть ключ</string>
@@ -33,7 +33,7 @@
     <string name="MiogramIntensity">Інтенсивність ефекту</string>
     <string name="MiogramCustomization">Кастомізація</string>
     <string name="MiogramPillStack">Стек пілюль</string>
-    <string name="MiogramVisualsNote">Застосовується до декоративних панелей Miogram після повторного відкриття екрана. Потрібен Android 13+; на старіших — спрощений вигляд.</string>
+    <string name="MiogramVisualsNote">Застосовується до декоративних панелей Amegram після повторного відкриття екрана. Потрібен Android 13+; на старіших — спрощений вигляд.</string>
     <string name="MiogramEnabled">Увімкнено</string>
     <string name="MiogramDisabled">Вимкнено</string>
     <string name="MiogramInstallHeader">Встановлення</string>

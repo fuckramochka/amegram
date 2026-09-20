@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Miogram</string>
-    <string name="AppNameBeta">Miogram Beta</string>
+    <string name="AppName">Amegram</string>
+    <string name="AppNameBeta">Amegram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -11228,15 +11228,15 @@
     <string name="UnsupportedMessageTitle">Unsupported Message</string>
     <string name="UnsupportedMessageMessage">Update Telegram to view this message</string>
     <string name="UnsupportedUpdate">Update</string>
-    <string name="MiogramSettingsRow">Miogram</string>
+    <string name="MiogramSettingsRow">Amegram</string>
     <string name="MiogramVaultTitle">Vault &amp; Duress PIN</string>
     <string name="MiogramAITitle">AI: local / cloud</string>
     <string name="MiogramPluginsTitle">WASM plugins</string>
     <string name="MiogramPluginsNoRuntime">WASM plugins (runtime missing in this build)</string>
     <string name="MiogramVisualsTitle">Liquid glass (AGSL)</string>
-    <string name="MiogramToggleExtera">Miogram features</string>
-    <string name="MiogramToggleNagram">Mio settings</string>
-    <string name="MiogramToggleAyu">Mio Moments quick access</string>
+    <string name="MiogramToggleExtera">Amegram features</string>
+    <string name="MiogramToggleNagram">Ame settings</string>
+    <string name="MiogramToggleAyu">Ame Moments quick access</string>
     <string name="MiogramKeyDialogTitle">Gemini API key</string>
     <string name="MiogramPingTest">Save &amp; ping test</string>
     <string name="MiogramPingNoKey">Enter the key first</string>
@@ -11261,7 +11261,7 @@
     <string name="MiogramIntensity">Effect intensity</string>
     <string name="MiogramCustomization">Customization</string>
     <string name="MiogramPillStack">Pill Stack</string>
-    <string name="MiogramVisualsNote">Applies to Miogram decorative panels after the screen is reopened. Requires Android 13+; older devices get a simplified fallback.</string>
+    <string name="MiogramVisualsNote">Applies to Amegram decorative panels after the screen is reopened. Requires Android 13+; older devices get a simplified fallback.</string>
     <string name="MiogramEnabled">Enabled</string>
     <string name="MiogramDisabled">Disabled</string>
     <string name="MiogramInstallHeader">Install</string>

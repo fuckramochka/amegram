@@ -46,7 +46,7 @@ public class AmegramMigrationConsumer {
             return false;
         }
         // If current app already has active accounts, don't overwrite
-        if (UserConfig.hasSelectedAccounts()) {
+        if (UserConfig.getActivatedAccountsCount() > 0) {
             prefs.edit().putBoolean(KEY_MIGRATION_DONE, true).apply();
             return false;
         }

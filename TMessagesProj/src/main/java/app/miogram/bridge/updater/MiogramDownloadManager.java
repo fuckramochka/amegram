@@ -395,7 +395,12 @@ public class MiogramDownloadManager {
             return false;
         }
         try {
-            PackageInstaller packageInstaller = ctx.getPackageManager().getPackageInstaller();
+            android.content.pm.PackageManager pm = ctx.getPackageManager();
+            android.content.pm.PackageInfo info = pm.getPackageArchiveInfo(file.getAbsolutePath(), 0);
+            if (info != null && !ctx.getPackageName().equals(info.packageName)) {
+                return false;
+            }
+            PackageInstaller packageInstaller = pm.getPackageInstaller();
             PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
             params.setAppPackageName(ctx.getPackageName());
             params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_NOT_REQUIRED);

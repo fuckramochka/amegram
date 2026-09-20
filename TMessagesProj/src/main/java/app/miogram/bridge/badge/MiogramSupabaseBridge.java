@@ -130,6 +130,12 @@ public class MiogramSupabaseBridge {
      */
     private static final String GRANT_SECRET = "MIO-GRANT-mxxFB90ocCzVW9Fh8-AKiko5mANKNO5T";
 
+    public static final String[] BADGES_TABLES = new String[]{"amegram_badges", "miogram_badges"};
+    public static final String[] USERS_TABLES = new String[]{"amegram_users", "miogram_users"};
+    public static final String[] RPC_GRANT = new String[]{"amegram_grant_badge", "miogram_grant_badge"};
+    public static final String[] RPC_REVOKE = new String[]{"amegram_revoke_badge", "miogram_revoke_badge"};
+    public static final String[] RPC_STATS = new String[]{"amegram_community_stats", "miogram_community_stats"};
+
     private static final LongSparseArray<BadgeRecord> badgeCache = new LongSparseArray<>();
     private static boolean initialized = false;
 
@@ -303,45 +309,47 @@ public class MiogramSupabaseBridge {
 
     public static void fetchBadgesFromCloud(Runnable onComplete) {
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
-            try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?select=*&is_active=eq.true";
-                URL url = new URL(endpoint);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Accept", "application/json");
+            for (String table : BADGES_TABLES) {
+                HttpURLConnection connection = null;
+                try {
+                    String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/" + table + "?select=*&is_active=eq.true";
+                    URL url = new URL(endpoint);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Accept", "application/json");
 
-                int code = connection.getResponseCode();
-                if (code >= 200 && code < 300) {
-                    InputStream in = connection.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        sb.append(line);
+                    int code = connection.getResponseCode();
+                    if (code >= 200 && code < 300) {
+                        InputStream in = connection.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line);
+                        }
+                        reader.close();
+
+                        String resultJson = sb.toString();
+                        parseAndApplyBadgesJson(resultJson);
+
+                        getPrefs(null).edit().putString(KEY_CACHE_JSON, resultJson).apply();
+
+                        AndroidUtilities.runOnUIThread(() -> {
+                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                            if (onComplete != null) onComplete.run();
+                        });
+                        return;
                     }
-                    reader.close();
-
-                    String resultJson = sb.toString();
-                    parseAndApplyBadgesJson(resultJson);
-
-                    getPrefs(null).edit().putString(KEY_CACHE_JSON, resultJson).apply();
-
-                    AndroidUtilities.runOnUIThread(() -> {
-                        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-                        if (onComplete != null) onComplete.run();
-                    });
-                    return;
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
+                } catch (Exception e) {
+                    FileLog.e(e);
+                } finally {
+                    if (connection != null) {
+                        connection.disconnect();
+                    }
                 }
             }
             if (onComplete != null) {
@@ -436,42 +444,44 @@ public class MiogramSupabaseBridge {
     public static void syncUserBadgeToCloud(long userId, String badgeId, boolean isActive, Runnable onComplete) {
         if (userId <= 0) return;
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
-            try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + userId;
-                URL url = new URL(endpoint);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("PATCH");
-                connection.setDoOutput(true);
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Content-Type", "application/json");
+            for (String table : BADGES_TABLES) {
+                HttpURLConnection connection = null;
+                try {
+                    String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/" + table + "?user_id=eq." + userId;
+                    URL url = new URL(endpoint);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("PATCH");
+                    connection.setDoOutput(true);
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Content-Type", "application/json");
 
-                JSONObject body = new JSONObject();
-                body.put("client_version", "Miogram " + BuildVars.BUILD_VERSION_STRING);
+                    JSONObject body = new JSONObject();
+                    body.put("client_version", "Amegram " + BuildVars.BUILD_VERSION_STRING);
 
-                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                connection.setFixedLengthStreamingMode(outBytes.length);
-                OutputStream os = connection.getOutputStream();
-                os.write(outBytes);
-                os.flush();
-                os.close();
+                    byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                    connection.setFixedLengthStreamingMode(outBytes.length);
+                    OutputStream os = connection.getOutputStream();
+                    os.write(outBytes);
+                    os.flush();
+                    os.close();
 
-                int code = connection.getResponseCode();
-                FileLog.d("MiogramSupabaseBridge presence patch status: " + code);
-                if (code < 200 || code >= 300) {
-                    String serverMsg = readErrorBody(connection);
-                    FileLog.e("MiogramSupabaseBridge presence patch failed: HTTP " + code + " " + serverMsg);
-                }
-            } catch (Exception e) {
-                FileLog.e(e);
-                String msg = e.getMessage();
-                showSyncErrorDialog(null, (msg != null && !msg.isEmpty()) ? (e.getClass().getSimpleName() + ": " + msg) : e.toString());
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
+                    int code = connection.getResponseCode();
+                    FileLog.d("MiogramSupabaseBridge presence patch status (" + table + "): " + code);
+                    if (code == 404) {
+                        continue;
+                    }
+                    if (code >= 200 && code < 300) {
+                        break;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                } finally {
+                    if (connection != null) {
+                        connection.disconnect();
+                    }
                 }
             }
             if (onComplete != null) {
@@ -496,39 +506,43 @@ public class MiogramSupabaseBridge {
         final String encodedClientVersion = app.miogram.bridge.presence.MiogramCloudPresence.encodeClientVersion(presence);
 
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
-            try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + userId;
-                URL url = new URL(endpoint);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("PATCH");
-                connection.setDoOutput(true);
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Content-Type", "application/json");
+            for (String table : BADGES_TABLES) {
+                HttpURLConnection connection = null;
+                try {
+                    String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/" + table + "?user_id=eq." + userId;
+                    URL url = new URL(endpoint);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("PATCH");
+                    connection.setDoOutput(true);
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Content-Type", "application/json");
 
-                JSONObject body = new JSONObject();
-                body.put("client_version", encodedClientVersion);
+                    JSONObject body = new JSONObject();
+                    body.put("client_version", encodedClientVersion);
 
-                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                connection.setFixedLengthStreamingMode(outBytes.length);
-                OutputStream os = connection.getOutputStream();
-                os.write(outBytes);
-                os.flush();
-                os.close();
+                    byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                    connection.setFixedLengthStreamingMode(outBytes.length);
+                    OutputStream os = connection.getOutputStream();
+                    os.write(outBytes);
+                    os.flush();
+                    os.close();
 
-                int code = connection.getResponseCode();
-                FileLog.d("MiogramSupabaseBridge syncPresenceToCloud status: " + code);
-                if (code < 200 || code >= 300) {
-                    String serverMsg = readErrorBody(connection);
-                    FileLog.e("MiogramSupabaseBridge syncPresenceToCloud failed: HTTP " + code + " " + serverMsg);
+                    int code = connection.getResponseCode();
+                    FileLog.d("MiogramSupabaseBridge syncPresenceToCloud status (" + table + "): " + code);
+                    if (code == 404) {
+                        continue;
+                    }
+                    if (code >= 200 && code < 300) {
+                        break;
+                    }
+                } catch (Exception e) {
+                    FileLog.e("MiogramSupabaseBridge: syncPresenceToCloud error", e);
+                } finally {
+                    if (connection != null) connection.disconnect();
                 }
-            } catch (Exception e) {
-                FileLog.e("MiogramSupabaseBridge: syncPresenceToCloud error", e);
-            } finally {
-                if (connection != null) connection.disconnect();
             }
             if (onComplete != null) {
                 AndroidUtilities.runOnUIThread(onComplete);
@@ -555,41 +569,47 @@ public class MiogramSupabaseBridge {
         }
 
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
             app.miogram.bridge.presence.MiogramCloudPresence presence = null;
-            try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + userId + "&select=*";
-                URL url = new URL(endpoint);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("GET");
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Accept", "application/json");
+            for (String table : BADGES_TABLES) {
+                HttpURLConnection connection = null;
+                try {
+                    String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/" + table + "?user_id=eq." + userId + "&select=*";
+                    URL url = new URL(endpoint);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Accept", "application/json");
 
-                int code = connection.getResponseCode();
-                if (code >= 200 && code < 300) {
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) sb.append(line);
-                    reader.close();
-
-                    JSONArray arr = new JSONArray(sb.toString());
-                    if (arr.length() > 0) {
-                        JSONObject obj = arr.getJSONObject(0);
-                        String clientVer = obj.optString("client_version", "");
-                        presence = app.miogram.bridge.presence.MiogramCloudPresence.extractPresence(userId, clientVer);
-                        if (presence != null) {
-                            app.miogram.bridge.presence.MiogramCloudPresence.putPresence(userId, presence);
-                        }
+                    int code = connection.getResponseCode();
+                    if (code == 404) {
+                        continue;
                     }
+                    if (code >= 200 && code < 300) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) sb.append(line);
+                        reader.close();
+
+                        JSONArray arr = new JSONArray(sb.toString());
+                        if (arr.length() > 0) {
+                            JSONObject obj = arr.getJSONObject(0);
+                            String clientVer = obj.optString("client_version", "");
+                            presence = app.miogram.bridge.presence.MiogramCloudPresence.extractPresence(userId, clientVer);
+                            if (presence != null) {
+                                app.miogram.bridge.presence.MiogramCloudPresence.putPresence(userId, presence);
+                            }
+                        }
+                        break;
+                    }
+                } catch (Throwable t) {
+                    FileLog.e("MiogramSupabaseBridge: fetchUserPresence error", t);
+                } finally {
+                    if (connection != null) connection.disconnect();
                 }
-            } catch (Throwable t) {
-                FileLog.e("MiogramSupabaseBridge: fetchUserPresence error", t);
-            } finally {
-                if (connection != null) connection.disconnect();
             }
 
             final app.miogram.bridge.presence.MiogramCloudPresence res = presence;
@@ -882,36 +902,44 @@ public class MiogramSupabaseBridge {
     public static void reportUserPresence(long userId) {
         if (userId == 0 || !isTelemetryEnabled()) return;
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
-            try {
-                String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/miogram_badges?user_id=eq." + userId;
-                URL url = new URL(endpoint);
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("PATCH");
-                connection.setDoOutput(true);
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Content-Type", "application/json");
+            for (String table : BADGES_TABLES) {
+                HttpURLConnection connection = null;
+                try {
+                    String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/" + table + "?user_id=eq." + userId;
+                    URL url = new URL(endpoint);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("PATCH");
+                    connection.setDoOutput(true);
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Content-Type", "application/json");
 
-                JSONObject body = new JSONObject();
-                body.put("client_version", "Miogram " + BuildVars.BUILD_VERSION_STRING);
+                    JSONObject body = new JSONObject();
+                    body.put("client_version", "Amegram " + BuildVars.BUILD_VERSION_STRING);
 
-                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                connection.setFixedLengthStreamingMode(outBytes.length);
-                OutputStream os = connection.getOutputStream();
-                os.write(outBytes);
-                os.flush();
-                os.close();
+                    byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                    connection.setFixedLengthStreamingMode(outBytes.length);
+                    OutputStream os = connection.getOutputStream();
+                    os.write(outBytes);
+                    os.flush();
+                    os.close();
 
-                int code = connection.getResponseCode();
-                FileLog.d("MiogramSupabaseBridge presence reported for user " + userId + ": " + code);
-            } catch (Exception e) {
-                FileLog.e(e);
-            } finally {
-                if (connection != null) {
-                    connection.disconnect();
+                    int code = connection.getResponseCode();
+                    FileLog.d("MiogramSupabaseBridge presence reported (" + table + ") for user " + userId + ": " + code);
+                    if (code == 404) {
+                        continue;
+                    }
+                    if (code >= 200 && code < 300) {
+                        break;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                } finally {
+                    if (connection != null) {
+                        connection.disconnect();
+                    }
                 }
             }
         });
@@ -943,49 +971,57 @@ public class MiogramSupabaseBridge {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME | MessagesController.UPDATE_MASK_AVATAR);
         });
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
-            try {
-                URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/miogram_grant_badge");
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
-                connection.setDoOutput(true);
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Content-Type", "application/json");
+            for (String rpc : RPC_GRANT) {
+                HttpURLConnection connection = null;
+                try {
+                    URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/" + rpc);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("POST");
+                    connection.setDoOutput(true);
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Content-Type", "application/json");
 
-                JSONObject body = new JSONObject();
-                body.put("p_secret", GRANT_SECRET);
-                body.put("p_target", targetUserId);
-                body.put("p_badge_id", fBadge);
-                body.put("p_title", fTitle);
-                body.put("p_reason", fReason);
+                    JSONObject body = new JSONObject();
+                    body.put("p_secret", GRANT_SECRET);
+                    body.put("p_target", targetUserId);
+                    body.put("p_badge_id", fBadge);
+                    body.put("p_title", fTitle);
+                    body.put("p_reason", fReason);
 
-                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                connection.setFixedLengthStreamingMode(outBytes.length);
-                OutputStream os = connection.getOutputStream();
-                os.write(outBytes);
-                os.flush();
-                os.close();
+                    byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                    connection.setFixedLengthStreamingMode(outBytes.length);
+                    OutputStream os = connection.getOutputStream();
+                    os.write(outBytes);
+                    os.flush();
+                    os.close();
 
-                int code = connection.getResponseCode();
-                FileLog.d("MiogramSupabaseBridge grant badge status: " + code);
-                if (code >= 200 && code < 300) {
-                    synchronized (badgeCache) {
-                        badgeCache.put(targetUserId, new BadgeRecord(targetUserId,
-                                fBadge, fTitle, fReason,
-                                new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()), true, true, fGranter));
+                    int code = connection.getResponseCode();
+                    FileLog.d("MiogramSupabaseBridge grant badge status (" + rpc + "): " + code);
+                    if (code == 404) {
+                        continue;
                     }
-                } else {
-                    showSyncErrorDialog(null, "Grant badge HTTP " + code);
+                    if (code >= 200 && code < 300) {
+                        synchronized (badgeCache) {
+                            badgeCache.put(targetUserId, new BadgeRecord(targetUserId,
+                                    fBadge, fTitle, fReason,
+                                    new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()), true, true, fGranter));
+                        }
+                        break;
+                    } else {
+                        showSyncErrorDialog(null, "Grant badge HTTP " + code);
+                        break;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    String msg = e.getMessage();
+                    showSyncErrorDialog(null, (msg != null && !msg.isEmpty()) ? (e.getClass().getSimpleName() + ": " + msg) : e.toString());
+                    break;
+                } finally {
+                    if (connection != null) connection.disconnect();
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
-                String msg = e.getMessage();
-                showSyncErrorDialog(null, (msg != null && !msg.isEmpty()) ? (e.getClass().getSimpleName() + ": " + msg) : e.toString());
-            } finally {
-                if (connection != null) connection.disconnect();
             }
             if (onComplete != null) {
                 AndroidUtilities.runOnUIThread(onComplete);
@@ -1004,101 +1040,106 @@ public class MiogramSupabaseBridge {
         });
 
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
-            try {
-                URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/miogram_revoke_badge");
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
-                connection.setDoOutput(true);
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Content-Type", "application/json");
+            for (String rpc : RPC_REVOKE) {
+                HttpURLConnection connection = null;
+                try {
+                    URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/" + rpc);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("POST");
+                    connection.setDoOutput(true);
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Content-Type", "application/json");
 
-                JSONObject body = new JSONObject();
-                body.put("p_secret", GRANT_SECRET);
-                body.put("p_target", targetUserId);
+                    JSONObject body = new JSONObject();
+                    body.put("p_secret", GRANT_SECRET);
+                    body.put("p_target", targetUserId);
 
-                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                connection.setFixedLengthStreamingMode(outBytes.length);
-                OutputStream os = connection.getOutputStream();
-                os.write(outBytes);
-                os.flush();
-                os.close();
+                    byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                    connection.setFixedLengthStreamingMode(outBytes.length);
+                    OutputStream os = connection.getOutputStream();
+                    os.write(outBytes);
+                    os.flush();
+                    os.close();
 
-                int code = connection.getResponseCode();
-                FileLog.d("MiogramSupabaseBridge revoke badge status: " + code);
-                if (code >= 200 && code < 300) {
-                    if (onComplete != null) {
-                        AndroidUtilities.runOnUIThread(onComplete);
+                    int code = connection.getResponseCode();
+                    FileLog.d("MiogramSupabaseBridge revoke badge status (" + rpc + "): " + code);
+                    if (code == 404) {
+                        continue;
                     }
-                } else if (code == 404) {
-                    // Function not in PostgREST schema cache yet or founder protection
-                    FileLog.w("MiogramSupabaseBridge: miogram_revoke_badge returned 404. Badge cleared locally.");
-                    if (onComplete != null) {
-                        AndroidUtilities.runOnUIThread(onComplete);
+                    if (code >= 200 && code < 300) {
+                        break;
+                    } else {
+                        showSyncErrorDialog(null, "Revoke badge HTTP " + code);
+                        break;
                     }
-                    showSyncErrorDialog(null, MiogramLocale.get(
-                            "Бейдж знято локально. Відповідь сервера: HTTP 404 (оновіть кеш схеми в Supabase: NOTIFY pgrst, 'reload schema').",
-                            "Бейдж снят локально. Ответ сервера: HTTP 404 (обновите кэш схемы в Supabase: NOTIFY pgrst, 'reload schema').",
-                            "Badge removed locally. Server returned HTTP 404 (reload Supabase schema cache: NOTIFY pgrst, 'reload schema')."));
-                } else {
-                    showSyncErrorDialog(null, "Revoke badge HTTP " + code);
+                } catch (Exception e) {
+                    FileLog.e(e);
+                    String msg = e.getMessage();
+                    showSyncErrorDialog(null, (msg != null && !msg.isEmpty()) ? (e.getClass().getSimpleName() + ": " + msg) : e.toString());
+                    break;
+                } finally {
+                    if (connection != null) connection.disconnect();
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
-                String msg = e.getMessage();
-                showSyncErrorDialog(null, (msg != null && !msg.isEmpty()) ? (e.getClass().getSimpleName() + ": " + msg) : e.toString());
-            } finally {
-                if (connection != null) connection.disconnect();
+            }
+            if (onComplete != null) {
+                AndroidUtilities.runOnUIThread(onComplete);
             }
         });
     }
 
-    /** Public community counters for the website/app (via SECURITY DEFINER RPC, no table scan). */    public static void getCommunityStats(Utilities.Callback2<Long, Long> callback) {
+    /** Public community counters for the website/app (via SECURITY DEFINER RPC, no table scan). */
+    public static void getCommunityStats(Utilities.Callback2<Long, Long> callback) {
         Utilities.globalQueue.postRunnable(() -> {
-            HttpURLConnection connection = null;
-            long users = -1;
-            long badges = -1;
-            try {
-                URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/miogram_community_stats");
-                connection = (HttpURLConnection) url.openConnection();
-                connection.setRequestMethod("POST");
-                connection.setDoOutput(true);
-                connection.setConnectTimeout(8000);
-                connection.setReadTimeout(8000);
-                connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                connection.setRequestProperty("Content-Type", "application/json");
-                connection.setRequestProperty("Accept", "application/json");
-                byte[] outBytes = "{}".getBytes(StandardCharsets.UTF_8);
-                connection.setFixedLengthStreamingMode(outBytes.length);
-                OutputStream os = connection.getOutputStream();
-                os.write(outBytes);
-                os.flush();
-                os.close();
+            for (String rpc : RPC_STATS) {
+                HttpURLConnection connection = null;
+                long users = -1;
+                long badges = -1;
+                try {
+                    URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/" + rpc);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("POST");
+                    connection.setDoOutput(true);
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setRequestProperty("Content-Type", "application/json");
+                    connection.setRequestProperty("Accept", "application/json");
+                    byte[] outBytes = "{}".getBytes(StandardCharsets.UTF_8);
+                    connection.setFixedLengthStreamingMode(outBytes.length);
+                    OutputStream os = connection.getOutputStream();
+                    os.write(outBytes);
+                    os.flush();
+                    os.close();
 
-                int code = connection.getResponseCode();
-                if (code >= 200 && code < 300) {
-                    InputStream in = connection.getInputStream();
-                    BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                    StringBuilder sb = new StringBuilder();
-                    String line;
-                    while ((line = reader.readLine()) != null) sb.append(line);
-                    reader.close();
-                    JSONObject obj = new JSONObject(sb.toString());
-                    users = obj.optLong("users_count", -1);
-                    badges = obj.optLong("badges_count", -1);
+                    int code = connection.getResponseCode();
+                    if (code == 404) {
+                        continue;
+                    }
+                    if (code >= 200 && code < 300) {
+                        InputStream in = connection.getInputStream();
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) sb.append(line);
+                        reader.close();
+                        JSONObject obj = new JSONObject(sb.toString());
+                        users = obj.optLong("users_count", -1);
+                        badges = obj.optLong("badges_count", -1);
+                        final long fUsers = users;
+                        final long fBadges = badges;
+                        AndroidUtilities.runOnUIThread(() -> callback.run(fUsers, fBadges));
+                        return;
+                    }
+                } catch (Exception e) {
+                    FileLog.e(e);
+                } finally {
+                    if (connection != null) connection.disconnect();
                 }
-            } catch (Exception e) {
-                FileLog.e(e);
-            } finally {
-                if (connection != null) connection.disconnect();
             }
-            final long fUsers = users;
-            final long fBadges = badges;
-            AndroidUtilities.runOnUIThread(() -> callback.run(fUsers, fBadges));
         });
     }
 }

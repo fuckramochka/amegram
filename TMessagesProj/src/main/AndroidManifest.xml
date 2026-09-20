@@ -95,11 +95,16 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
 
-    <uses-permission android:name="android.permission.CREDENTIAL_MANAGER_SET_ORIGIN" />
+    <permission
+        android:name="app.amegram.permission.MIGRATE_DATA"
+        android:protectionLevel="signature" />
+    <uses-permission android:name="app.amegram.permission.MIGRATE_DATA" />
 
     <uses-sdk tools:overrideLibrary="com.google.mlkit.vision.segmentation.subject, com.nothing.thirdparty"/>
 
     <queries>
+        <package android:name="com.exteraless.app"/>
+        <package android:name="app.amegram"/>
         <package android:name="com.google.android.apps.maps"/>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
@@ -381,6 +386,7 @@
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="vnd.android.cursor.item/vnd.com.exteraless.app.android.profile"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.app.amegram.android.profile"/>
             </intent-filter>
             <!-- exteraless plugins: файл плагина, открытый из чата, файлового
                  менеджера или «Поделиться». Без этого фильтра система показывает
@@ -445,6 +451,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="vnd.android.cursor.item/vnd.com.exteraless.app.android.call"/>
                 <data android:mimeType="vnd.android.cursor.item/vnd.com.exteraless.app.android.call.video"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.app.amegram.android.call"/>
+                <data android:mimeType="vnd.android.cursor.item/vnd.app.amegram.android.call.video"/>
             </intent-filter>
         </activity-alias>
         <activity
@@ -924,6 +932,12 @@
         <service
             android:name="app.miogram.bridge.multichat.MiogramFloatingChatService"
             android:exported="false" />
+
+        <provider
+            android:name="app.miogram.bridge.migration.AmegramMigrationProvider"
+            android:authorities="${applicationId}.migration"
+            android:exported="true"
+            android:permission="app.amegram.permission.MIGRATE_DATA" />
 
     </application>
 

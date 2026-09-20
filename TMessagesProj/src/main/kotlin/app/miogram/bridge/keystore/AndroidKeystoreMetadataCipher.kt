@@ -49,7 +49,7 @@ class AndroidKeystoreMetadataCipher(
 
     private fun obtainSoftwareFallbackKey(): SecretKey {
         val ctx = org.telegram.messenger.ApplicationLoader.applicationContext
-        val filesDir = ctx?.filesDir ?: File("/data/data/com.exteraless.app/files")
+        val filesDir = ctx?.filesDir ?: File("/data/data/${ctx?.packageName ?: "app.amegram"}/files")
         if (!filesDir.exists()) filesDir.mkdirs()
         val seedFile = File(filesDir, "miogram_vault_seed.bin")
         val raw = if (seedFile.exists() && seedFile.length() == 32L) {

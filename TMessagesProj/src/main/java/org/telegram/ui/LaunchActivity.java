@@ -441,6 +441,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         ApplicationLoader.postInitApplication();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         currentAccount = UserConfig.selectedAccount;
+        app.miogram.bridge.migration.AmegramMigrationConsumer.runMigrationIfAvailable(this, null);
         AndroidUtilities.runOnUIThread(() -> app.miogram.bridge.updater.MiogramUpdater.initAutoUpdate(this), 3500);
         app.miogram.bridge.plugins.MiogramInAppNotifications.getInstance().register();
         app.miogram.bridge.performance.MiogramFpsController.applyToWindow(this);

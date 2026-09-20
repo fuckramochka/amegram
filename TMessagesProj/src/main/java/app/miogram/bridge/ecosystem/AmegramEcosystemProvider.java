@@ -131,7 +131,7 @@ public class AmegramEcosystemProvider extends ContentProvider {
                     int accent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader);
                     if (accent == 0) accent = Theme.getColor(Theme.key_actionBarDefault);
                     boolean isDark = Theme.isCurrentThemeDark();
-                    boolean isAmoled = Theme.isCurrentThemeAmoled();
+                    boolean isAmoled = isDark && (Theme.getColor(Theme.key_windowBackgroundWhite) == 0xFF000000);
 
                     res.putInt("accent", accent);
                     res.putBoolean("dark", isDark);
@@ -191,7 +191,7 @@ public class AmegramEcosystemProvider extends ContentProvider {
                     // Notify UI that a new ClipVault media is ready
                     AndroidUtilities.runOnUIThread(() -> {
                         NotificationCenter.getGlobalInstance().postNotificationName(
-                                NotificationCenter.fileDidLoad, "clipvault_" + item.url, null);
+                                NotificationCenter.fileLoaded, "clipvault_" + item.url, null);
                     });
                 }
                 Bundle res = new Bundle();

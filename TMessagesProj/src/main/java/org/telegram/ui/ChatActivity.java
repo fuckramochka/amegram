@@ -3300,7 +3300,7 @@ public class ChatActivity extends BaseFragment implements
 
         // exteraless plugins: реестр пунктов меняется, когда плагин включают/выключают.
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pluginMenuItemsUpdated);
-        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.fileLoaded);
 
         if (chatMode != MODE_SCHEDULED) {
             if (threadMessageId == 0) {
@@ -3839,7 +3839,7 @@ public class ChatActivity extends BaseFragment implements
 
         getNotificationCenter().removeObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginMenuItemsUpdated);
-        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.fileDidLoad);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.fileLoaded);
 
         if (chatMode == 0 && AndroidUtilities.isTablet()) {
             getNotificationCenter().postNotificationName(NotificationCenter.openedChatChanged, dialog_id, getTopicId(), true);
@@ -9182,7 +9182,7 @@ public class ChatActivity extends BaseFragment implements
 
         mediaDownloadPill = new app.miogram.bridge.media.MiogramMediaDownloadPill(context, themeDelegate, (mediaUrl, progressListener, callback) -> {
             app.miogram.bridge.media.MiogramMediaDownloader.downloadAndSend(
-                getParentActivity(), currentAccount, dialog_id, getThreadId(), mediaUrl, progressListener, callback
+                getParentActivity(), currentAccount, dialog_id, null, mediaUrl, progressListener, callback
             );
         }, () -> {
             if (chatActivityEnterView != null) {
@@ -22130,7 +22130,7 @@ public class ChatActivity extends BaseFragment implements
             }
             return;
         }
-        if (id == NotificationCenter.fileDidLoad) {
+        if (id == NotificationCenter.fileLoaded) {
             if (args != null && args.length > 0 && args[0] instanceof String) {
                 String str = (String) args[0];
                 if (str.startsWith("clipvault_") && mediaDownloadPill != null) {

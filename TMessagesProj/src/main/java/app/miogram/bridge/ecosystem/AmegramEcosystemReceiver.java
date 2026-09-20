@@ -77,7 +77,7 @@ public class AmegramEcosystemReceiver extends BroadcastReceiver {
 
                     AndroidUtilities.runOnUIThread(() -> {
                         NotificationCenter.getGlobalInstance().postNotificationName(
-                                NotificationCenter.fileDidLoad, "clipvault_" + url, null);
+                                NotificationCenter.fileLoaded, "clipvault_" + url, null);
                     });
                 }
                 break;

@@ -131,7 +131,7 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
             int accent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader);
             if (accent == 0) accent = Theme.getColor(Theme.key_actionBarDefault);
             boolean dark = Theme.isCurrentThemeDark();
-            boolean amoled = Theme.isCurrentThemeAmoled();
+            boolean amoled = dark && (Theme.getColor(Theme.key_windowBackgroundWhite) == 0xFF000000);
 
             AmegramTikTokBridge.syncThemeToTikTokMi(context, accent, dark, amoled);
             Toast.makeText(context, MiogramLocale.get("Тему синхронізовано з TikTok MI ໒꒱", "Тема синхронизирована с TikTok MI ໒꒱", "Theme synced with TikTok MI ໒꒱"), Toast.LENGTH_SHORT).show();
@@ -156,7 +156,7 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
             } else if (position == openDirectRow || position == cleanUrlsRow || position == themeSyncRow || position == clipVaultRow || position == soundboardRow) {
                 return TYPE_CHECK;
             } else if (position == statusInfoRow || position == linksInfoRow || position == syncInfoRow) {
-                return TYPE_INFO;
+                return TYPE_INFO_PRIVACY;
             }
             return TYPE_TEXT;
         }
@@ -215,7 +215,7 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
                     break;
                 }
 
-                case TYPE_INFO: {
+                case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == statusInfoRow) {
                         cell.setText(MiogramLocale.get(

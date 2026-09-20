@@ -129,10 +129,10 @@ jobs:
         continue-on-error: true
         if: startsWith(github.ref, 'refs/heads/main') || github.event_name == 'workflow_dispatch'
         with:
-          tag_name: v12.10.${{ github.run_number }}
-          name: "Amegram v12.10.${{ github.run_number }}${{ steps.channel.outputs.suffix }}"
+          tag_name: v12.11.${{ github.run_number }}
+          name: "Amegram v12.11.${{ github.run_number }}${{ steps.channel.outputs.suffix }}"
           body: |
-            ## Amegram Release v12.10.${{ github.run_number }}
+            ## Amegram Release v12.11.${{ github.run_number }}
             ${{ github.event.head_commit.message }}
           draft: false
           prerelease: ${{ steps.channel.outputs.prerelease == 'true' }}

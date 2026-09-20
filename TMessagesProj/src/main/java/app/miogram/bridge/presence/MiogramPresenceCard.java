@@ -57,6 +57,7 @@ public class MiogramPresenceCard extends FrameLayout {
     private final PresencePagerAdapter pagerAdapter;
     private final LinearLayout headerRow;
     private final TextView serviceTitleView;
+    private final TextView playerPresetPill;
     private final LinearLayout dotsRow;
     private final List<View> dotViews = new ArrayList<>();
     private final List<Integer> activeServices = new ArrayList<>();
@@ -130,6 +131,18 @@ public class MiogramPresenceCard extends FrameLayout {
         });
         headerRow.addView(serviceTitleView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
+        playerPresetPill = new TextView(context);
+        playerPresetPill.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10.5f);
+        playerPresetPill.setTypeface(AndroidUtilities.bold());
+        playerPresetPill.setTextColor(0xFFFFFFFF);
+        playerPresetPill.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(2), AndroidUtilities.dp(8), AndroidUtilities.dp(2));
+        GradientDrawable pillBg = new GradientDrawable();
+        pillBg.setColor(0x3366C0F4);
+        pillBg.setCornerRadius(AndroidUtilities.dp(8));
+        playerPresetPill.setBackground(pillBg);
+        playerPresetPill.setVisibility(View.GONE);
+        headerRow.addView(playerPresetPill, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 8, 0));
+
         dotsRow = new LinearLayout(context);
         dotsRow.setOrientation(LinearLayout.HORIZONTAL);
         dotsRow.setGravity(Gravity.CENTER_VERTICAL);
@@ -182,9 +195,9 @@ public class MiogramPresenceCard extends FrameLayout {
                     int h = child.getMeasuredHeight();
                     if (h > height) height = h;
                 }
-                if (height != 0) {
-                    heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
-                }
+                int minH = AndroidUtilities.dp(110);
+                if (height < minH) height = minH;
+                heightMeasureSpec = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             }
         };
@@ -200,6 +213,14 @@ public class MiogramPresenceCard extends FrameLayout {
 
         refreshActiveServices();
         loadLiveData();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        if (getMeasuredHeight() < AndroidUtilities.dp(120)) {
+            setMeasuredDimension(getMeasuredWidth(), AndroidUtilities.dp(120));
+        }
     }
 
     @Override
@@ -324,8 +345,10 @@ public class MiogramPresenceCard extends FrameLayout {
             }
         }
 
+        sortActiveServicesByOrder(activeServices);
         buildDots();
         pagerAdapter.notifyDataSetChanged();
+        updatePresetPill();
 
         int count = activeServices.isEmpty() ? 1 : activeServices.size();
         int cur = viewPager.getCurrentItem();
@@ -370,8 +393,10 @@ public class MiogramPresenceCard extends FrameLayout {
             }
         }
 
+        sortActiveServicesByOrder(activeServices);
         buildDots();
         pagerAdapter.notifyDataSetChanged();
+        updatePresetPill();
 
         int count = activeServices.isEmpty() ? 1 : activeServices.size();
         int cur = viewPager.getCurrentItem();
@@ -379,6 +404,49 @@ public class MiogramPresenceCard extends FrameLayout {
             viewPager.setCurrentItem(Math.max(0, count - 1), false);
         }
         updateDotSelection(viewPager.getCurrentItem());
+    }
+
+    private void sortActiveServicesByOrder(List<Integer> services) {
+        try {
+            android.content.SharedPreferences sp = getContext().getSharedPreferences("miogram_presence_prefs", Context.MODE_PRIVATE);
+            String orderStr = sp.getString("service_order", null);
+            if (!TextUtils.isEmpty(orderStr)) {
+                String[] parts = orderStr.split(",");
+                List<Integer> orderedList = new ArrayList<>();
+                for (String p : parts) {
+                    try {
+                        int s = Integer.parseInt(p.trim());
+                        if (services.contains(s) && !orderedList.contains(s)) {
+                            orderedList.add(s);
+                        }
+                    } catch (Throwable ignore) {}
+                }
+                for (Integer s : services) {
+                    if (!orderedList.contains(s)) {
+                        orderedList.add(s);
+                    }
+                }
+                services.clear();
+                services.addAll(orderedList);
+            }
+        } catch (Throwable ignore) {}
+    }
+
+    private void updatePresetPill() {
+        if (playerPresetPill == null) return;
+        String preset = null;
+        if (isSelf) {
+            preset = app.miogram.bridge.player.MiogramPlayerPrefs.getLayoutPreset();
+        } else if (cloudPresence != null && !TextUtils.isEmpty(cloudPresence.playerPreset)) {
+            preset = cloudPresence.playerPreset;
+        }
+        if (!TextUtils.isEmpty(preset) && !app.miogram.bridge.player.MiogramPlayerPrefs.PRESET_DEFAULT.equals(preset)) {
+            String label = preset.substring(0, 1).toUpperCase() + preset.substring(1);
+            playerPresetPill.setText(MiogramLocale.get("Плеєр: " + label, "Плеер: " + label, "Player: " + label));
+            playerPresetPill.setVisibility(View.VISIBLE);
+        } else {
+            playerPresetPill.setVisibility(View.GONE);
+        }
     }
 
     private void buildDots() {

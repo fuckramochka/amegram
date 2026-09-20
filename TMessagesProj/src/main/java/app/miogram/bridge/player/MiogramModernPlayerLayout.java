@@ -366,7 +366,7 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             compactCoverWrapper.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), AndroidUtilities.dp(20));
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), AndroidUtilities.dp(MiogramPlayerPrefs.getCoverCornerRadius()));
                 }
             });
             compactCoverWrapper.setClipToOutline(true);
@@ -438,7 +438,7 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             fullscreenCoverHolder.setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), AndroidUtilities.dp(22));
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), AndroidUtilities.dp(MiogramPlayerPrefs.getCoverCornerRadius()));
                 }
             });
             fullscreenCoverHolder.setClipToOutline(true);
@@ -732,11 +732,36 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             int glowColor = MiogramPlayerPrefs.getButtonGlowColor();
             if (glowColor == 0) glowColor = accent;
 
-            if (btnColor != 0) {
-                PorterDuffColorFilter cf = new PorterDuffColorFilter(btnColor, PorterDuff.Mode.SRC_IN);
-                if (shuffleButton != null) shuffleButton.setColorFilter(cf);
-                if (queueButton != null) queueButton.setColorFilter(cf);
-                if (speedButton != null) speedButton.setTextColor(btnColor);
+            int defaultBtnColor = getThemedColor(Theme.key_player_button);
+            if (defaultBtnColor == 0) defaultBtnColor = 0xFF888888;
+            PorterDuffColorFilter cf = btnColor != 0 ? new PorterDuffColorFilter(btnColor, PorterDuff.Mode.SRC_IN) : null;
+
+            if (shuffleButton != null) {
+                if (cf != null) shuffleButton.setColorFilter(cf);
+                else shuffleButton.setColorFilter(new PorterDuffColorFilter(SharedConfig.shuffleMusic ? accent : defaultBtnColor, PorterDuff.Mode.SRC_IN));
+            }
+            if (queueButton != null) {
+                if (cf != null) queueButton.setColorFilter(cf);
+                else queueButton.setColorFilter(new PorterDuffColorFilter(playerMode == PlayerMode.QUEUE ? accent : defaultBtnColor, PorterDuff.Mode.SRC_IN));
+            }
+            if (speedButton != null) speedButton.setTextColor(btnColor != 0 ? btnColor : defaultBtnColor);
+
+            if (repeatButton instanceof org.telegram.ui.ActionBar.ActionBarMenuItem) {
+                ((org.telegram.ui.ActionBar.ActionBarMenuItem) repeatButton).setIconColor(btnColor != 0 ? btnColor : (SharedConfig.repeatMode != 0 ? getThemedColor(Theme.key_player_buttonActive) : defaultBtnColor));
+            } else if (repeatButton instanceof ImageView) {
+                ((ImageView) repeatButton).setColorFilter(cf);
+            }
+            if (prevButton instanceof ImageView) {
+                if (cf != null) ((ImageView) prevButton).setColorFilter(cf);
+                else ((ImageView) prevButton).setColorFilter(new PorterDuffColorFilter(defaultBtnColor, PorterDuff.Mode.SRC_IN));
+            }
+            if (nextButton instanceof ImageView) {
+                if (cf != null) ((ImageView) nextButton).setColorFilter(cf);
+                else ((ImageView) nextButton).setColorFilter(new PorterDuffColorFilter(defaultBtnColor, PorterDuff.Mode.SRC_IN));
+            }
+            if (playButton instanceof ImageView) {
+                if (cf != null) ((ImageView) playButton).setColorFilter(cf);
+                else ((ImageView) playButton).setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
             }
 
             if (shuffleButton != null) shuffleButton.setAlpha(btnOpacity);
@@ -757,9 +782,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             int coverElev = MiogramPlayerPrefs.getCoverElevation();
             if (compactCoverWrapper != null && android.os.Build.VERSION.SDK_INT >= 21) {
                 compactCoverWrapper.setElevation(AndroidUtilities.dp(coverElev));
+                compactCoverWrapper.invalidateOutline();
             }
             if (fullscreenCoverHolder != null && android.os.Build.VERSION.SDK_INT >= 21) {
                 fullscreenCoverHolder.setElevation(AndroidUtilities.dp(coverElev));
+                fullscreenCoverHolder.invalidateOutline();
             }
 
             // Text (Title & Artist)
@@ -794,6 +821,13 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 if (timeView instanceof TextView) ((TextView) timeView).setTextColor(timeCol);
                 if (durationView instanceof TextView) ((TextView) durationView).setTextColor(timeCol);
             }
+            int sbProg = MiogramPlayerPrefs.getSeekbarProgressColor();
+            if (sbProg == 0) sbProg = accent;
+            int sbTrack = MiogramPlayerPrefs.getSeekbarTrackColor();
+            if (sbTrack == 0) sbTrack = 0x33FFFFFF;
+            if (seekBarView instanceof org.telegram.ui.Components.SeekBarView) {
+                ((org.telegram.ui.Components.SeekBarView) seekBarView).setColors(sbTrack, sbProg);
+            }
 
             // Visualizer: user toggle (default OFF — removes "extra jumping stripes").
             boolean viz = MiogramPlayerPrefs.isVisualizerEnabled();
@@ -815,9 +849,34 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 profileButtonContainer.setVisibility(MiogramPlayerPrefs.isProfileButtonEnabled() ? View.VISIBLE : View.GONE);
             }
 
+            // Layout presets
+            applyLayoutPreset(MiogramPlayerPrefs.getLayoutPreset());
+
             // Lyrics styling.
             if (lyricsView != null) lyricsView.reloadCustomization();
         } catch (Throwable ignore) {}
+    }
+
+    private void applyLayoutPreset(String preset) {
+        if (preset == null) preset = MiogramPlayerPrefs.PRESET_DEFAULT;
+        if (MiogramPlayerPrefs.PRESET_LYRICS.equals(preset)) {
+            if (isFullScreen && playerMode != PlayerMode.LYRICS) {
+                setPlayerMode(PlayerMode.LYRICS);
+            }
+        } else if (MiogramPlayerPrefs.PRESET_MINIMAL.equals(preset)) {
+            if (compactBassVisualizer != null) compactBassVisualizer.setVisibility(View.GONE);
+            if (fullscreenBassVisualizer != null) fullscreenBassVisualizer.setVisibility(View.GONE);
+        } else if (MiogramPlayerPrefs.PRESET_VINYL.equals(preset)) {
+            if (compactCoverWrapper != null && Build.VERSION.SDK_INT >= 21) {
+                compactCoverWrapper.setOutlineProvider(new ViewOutlineProvider() {
+                    @Override
+                    public void getOutline(View view, Outline outline) {
+                        outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), Math.min(view.getWidth(), view.getHeight()) / 2f);
+                    }
+                });
+                compactCoverWrapper.invalidateOutline();
+            }
+        }
     }
 
     private TextView createModeButton(String text) {
@@ -1472,6 +1531,8 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         if (lyricsView != null && messageObject != null) {
             lyricsView.setSong(messageObject);
         }
+        captureBlurBackground();
+        applyCustomization();
         refreshImproveButton();
     }
 
@@ -1774,17 +1835,17 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 boolean isLarge = (v == compactCoverWrapper || v == fullscreenCoverHolder
                         || v == lyricsView || v == seekbarContainer || v == compactInfoContainer
                         || v == fullscreenTitleView || v == fullscreenAuthorView);
-                float angle = isLarge ? 0.6f : 1.2f;
+                float angle = isLarge ? 0.35f : 0.7f;
                 float dir = (i % 2 == 0) ? 1.0f : -1.0f;
                 android.animation.ObjectAnimator rot = android.animation.ObjectAnimator.ofFloat(v, "rotation", -angle * dir, angle * dir);
-                rot.setDuration(320);
+                rot.setDuration(600);
                 rot.setInterpolator(new android.view.animation.AccelerateDecelerateInterpolator());
                 rot.setRepeatMode(android.animation.ValueAnimator.REVERSE);
                 rot.setRepeatCount(android.animation.ValueAnimator.INFINITE);
 
                 android.animation.AnimatorSet set = new android.animation.AnimatorSet();
                 set.play(rot);
-                set.setStartDelay((i % 4) * 45L);
+                set.setStartDelay((i % 4) * 60L);
                 set.start();
                 jiggleAnims.add(set);
             }
@@ -1833,9 +1894,12 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             attachZoneTap(profileButtonContainer, "profile");
 
             attachZoneTap(this, "background");
+            attachZoneTap(topSection, "background");
             attachZoneTap(centerContainer, "background");
             attachZoneTap(fullContentContainer, "background");
+            attachZoneTap(fullCoverWrapper, "background");
             attachZoneTap(backgroundBlurView, "background");
+            attachZoneTap(bottomSection, "background");
             attachZoneTap(compactCoverWrapper, "cover");
             attachZoneTap(fullscreenCoverHolder, "cover");
 
@@ -1884,8 +1948,8 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                     } catch (Throwable ignore) {}
                 }
             }
-            View[] clickZones = new View[]{this, centerContainer, fullContentContainer, backgroundBlurView,
-                    fullscreenCoverHolder, compactInfoContainer, fullscreenTitleView, fullscreenAuthorView,
+            View[] clickZones = new View[]{this, topSection, centerContainer, fullContentContainer, fullCoverWrapper, backgroundBlurView,
+                    bottomSection, fullscreenCoverHolder, compactInfoContainer, fullscreenTitleView, fullscreenAuthorView,
                     seekbarContainer, timersRow, seekBarView, compactBassVisualizer,
                     fullscreenBassVisualizer, profileButtonContainer};
             for (View z : clickZones) {
@@ -1908,6 +1972,16 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 } catch (Throwable ignore) {}
             }
         } catch (Throwable ignore) {}
+    }
+
+    @Override
+    public boolean onTouchEvent(android.view.MotionEvent event) {
+        if (editMode && event.getAction() == android.view.MotionEvent.ACTION_UP) {
+            MiogramHaptic.select(this);
+            openSectionSheet("background");
+            return true;
+        }
+        return super.onTouchEvent(event);
     }
 
     private void attachExtraEditTouch(View v, final String id, final String section, final boolean draggable) {

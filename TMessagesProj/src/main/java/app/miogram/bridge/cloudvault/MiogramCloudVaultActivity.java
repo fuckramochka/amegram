@@ -411,9 +411,9 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
         TextView zeroStorageNotice = new TextView(context);
         zeroStorageNotice.setText(MiogramLocale.get(
-                "⚡ Тільки ключ на пристрої • Файли живуть у хмарі",
-                "⚡ Только ключ на устройстве • Файлы живут в облаке",
-                "⚡ Key only on device • Files live in cloud"
+                "Тільки ключ на пристрої • Безлімітна хмара Telegram • Розшифрування на льоту",
+                "Только ключ на устройстве • Безлимитное облако Telegram • Дешифрование на лету",
+                "Key only on device • Unlimited Telegram cloud • On-the-fly streaming decryption"
         ));
         zeroStorageNotice.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         zeroStorageNotice.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
@@ -515,11 +515,11 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         if (context == null) return;
 
         // 1. Media Type Filter Pills
-        addCategoryPill(context, CATEGORY_ALL, MiogramLocale.get("📁 Всі", "📁 Все", "📁 All"), currentCategoryFilter == CATEGORY_ALL);
-        addCategoryPill(context, CATEGORY_MEDIA, MiogramLocale.get("🖼️ Галерея", "🖼️ Галерея", "🖼️ Gallery"), currentCategoryFilter == CATEGORY_MEDIA);
-        addCategoryPill(context, CATEGORY_DOCS, MiogramLocale.get("📄 Документи", "📄 Документы", "📄 Docs"), currentCategoryFilter == CATEGORY_DOCS);
-        addCategoryPill(context, CATEGORY_AUDIO, MiogramLocale.get("🎵 Музика", "🎵 Музыка", "🎵 Music"), currentCategoryFilter == CATEGORY_AUDIO);
-        addCategoryPill(context, CATEGORY_ARCHIVES, MiogramLocale.get("📦 Архіви", "📦 Архивы", "📦 Archives"), currentCategoryFilter == CATEGORY_ARCHIVES);
+        addCategoryPill(context, CATEGORY_ALL, MiogramLocale.get("Всі", "Все", "All"), currentCategoryFilter == CATEGORY_ALL);
+        addCategoryPill(context, CATEGORY_MEDIA, MiogramLocale.get("Галерея", "Галерея", "Gallery"), currentCategoryFilter == CATEGORY_MEDIA);
+        addCategoryPill(context, CATEGORY_DOCS, MiogramLocale.get("Документи", "Документы", "Docs"), currentCategoryFilter == CATEGORY_DOCS);
+        addCategoryPill(context, CATEGORY_AUDIO, MiogramLocale.get("Музика", "Музыка", "Music"), currentCategoryFilter == CATEGORY_AUDIO);
+        addCategoryPill(context, CATEGORY_ARCHIVES, MiogramLocale.get("Архіви", "Архивы", "Archives"), currentCategoryFilter == CATEGORY_ARCHIVES);
 
         // Separator between categories and folder topics
         if (!cachedTopics.isEmpty()) {
@@ -616,7 +616,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         builder.setTitle(MiogramLocale.get("Створити папку (Тему форуму)", "Создать папку (Тему форума)", "Create Folder (Forum Topic)"));
 
         final EditText input = new EditText(getParentActivity());
-        input.setHint(MiogramLocale.get("Назва папки (напр. 📸 Фотографії)", "Название папки (напр. 📸 Фотографии)", "Folder name (e.g. 📸 Photos)"));
+        input.setHint(MiogramLocale.get("Назва папки (напр. Фотографії)", "Название папки (напр. Фотографии)", "Folder name (e.g. Photos)"));
         input.setSingleLine(true);
         FrameLayout container = new FrameLayout(getParentActivity());
         container.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(8), AndroidUtilities.dp(20), AndroidUtilities.dp(8));

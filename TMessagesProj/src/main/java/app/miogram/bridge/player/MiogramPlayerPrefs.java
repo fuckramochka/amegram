@@ -24,6 +24,12 @@ public class MiogramPlayerPrefs {
     public static final int PROFILE_ALIGN_CENTER = 1;
     public static final int PROFILE_ALIGN_RIGHT = 2;
 
+    public static final String PRESET_DEFAULT = "default";
+    public static final String PRESET_LYRICS = "lyrics";
+    public static final String PRESET_MINIMAL = "minimal";
+    public static final String PRESET_VINYL = "vinyl";
+    public static final String PRESET_COMPACT = "compact";
+
     public interface OnPrefsChangedListener {
         void onPrefsChanged();
     }
@@ -483,6 +489,28 @@ public class MiogramPlayerPrefs {
 
     public static void setVisualizerColor(int col) {
         getPrefs().edit().putInt("viz_color", col).apply();
+        notifyChanged();
+    }
+
+    // --- Layout Presets ---
+
+    public static String getLayoutPreset() {
+        return getPrefs().getString("player_layout_preset", PRESET_DEFAULT);
+    }
+
+    public static void setLayoutPreset(String preset) {
+        getPrefs().edit().putString("player_layout_preset", preset != null ? preset : PRESET_DEFAULT).apply();
+        notifyChanged();
+    }
+
+    // --- Chat Input Lyrics Hint ---
+
+    public static boolean isLyricsHintInChatInputEnabled() {
+        return getPrefs().getBoolean("lyrics_hint_in_chat_input", false);
+    }
+
+    public static void setLyricsHintInChatInputEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("lyrics_hint_in_chat_input", enabled).apply();
         notifyChanged();
     }
 }

@@ -43,6 +43,7 @@ public class MiogramCloudPresence {
     public String robloxGame = "";
     public String robloxUniverse = "";
     public int robloxState = -1;
+    public String playerPreset = "";
     public long lastUpdated = 0;
 
     private static final LongSparseArray<MiogramCloudPresence> presenceCache = new LongSparseArray<>();
@@ -61,7 +62,8 @@ public class MiogramCloudPresence {
                 !TextUtils.isEmpty(spotifyUser) ||
                 !TextUtils.isEmpty(spotifyTrack) ||
                 !TextUtils.isEmpty(robloxUser) ||
-                !TextUtils.isEmpty(robloxId);
+                !TextUtils.isEmpty(robloxId) ||
+                (!TextUtils.isEmpty(playerPreset) && !app.miogram.bridge.player.MiogramPlayerPrefs.PRESET_DEFAULT.equals(playerPreset));
     }
 
     public static void putPresence(long userId, MiogramCloudPresence presence) {
@@ -99,6 +101,7 @@ public class MiogramCloudPresence {
             if (!TextUtils.isEmpty(robloxGame)) obj.put("rbg", robloxGame);
             if (!TextUtils.isEmpty(robloxUniverse)) obj.put("rbgi", robloxUniverse);
             if (robloxState >= 0) obj.put("rbs", robloxState);
+            if (!TextUtils.isEmpty(playerPreset)) obj.put("pp", playerPreset);
         } catch (Throwable t) {
             FileLog.e(t);
         }
@@ -126,6 +129,7 @@ public class MiogramCloudPresence {
         p.robloxGame = obj.optString("rbg", obj.optString("roblox_game", ""));
         p.robloxUniverse = obj.optString("rbgi", obj.optString("roblox_universe", ""));
         p.robloxState = obj.optInt("rbs", obj.optInt("roblox_state", -1));
+        p.playerPreset = obj.optString("pp", "");
         p.lastUpdated = System.currentTimeMillis();
         return p;
     }
@@ -215,6 +219,7 @@ public class MiogramCloudPresence {
             }
         }
 
+        p.playerPreset = app.miogram.bridge.player.MiogramPlayerPrefs.getLayoutPreset();
         p.lastUpdated = System.currentTimeMillis();
         putPresence(userId, p);
         return p;

@@ -350,13 +350,13 @@ public class MiogramCloudVaultEngine {
                 vaultFile.localPath = file.getAbsolutePath();
 
                 if (vaultFile.isMedia()) {
-                    vaultFile.topicName = "🎬 Медіа";
+                    vaultFile.topicName = "Медіа";
                 } else if (vaultFile.isAudio()) {
-                    vaultFile.topicName = "🎵 Музика";
+                    vaultFile.topicName = "Музика";
                 } else if (vaultFile.isArchive()) {
-                    vaultFile.topicName = "📦 Архіви";
+                    vaultFile.topicName = "Архіви";
                 } else {
-                    vaultFile.topicName = "📁 Документи";
+                    vaultFile.topicName = "Документи";
                 }
 
                 long targetDialogId = getVaultDialogId(currentAccount, vaultChatId);
@@ -482,7 +482,7 @@ public class MiogramCloudVaultEngine {
         }
 
         TLRPC.TL_channels_createChannel req = new TLRPC.TL_channels_createChannel();
-        req.title = "Miogram Cloud Vault ☁️";
+        req.title = "Miogram Cloud Vault";
         req.about = "Зашифроване персональне хмарне сховище Miogram.";
         req.megagroup = true;
         req.forum = true;
@@ -501,9 +501,9 @@ public class MiogramCloudVaultEngine {
                     setVaultChatId(currentAccount, chatId);
 
                     // Create starter forum topics
-                    createTopic(currentAccount, chatId, "📁 Документи", 0x3390EC);
-                    createTopic(currentAccount, chatId, "🎬 Медіа", 0xE53935);
-                    createTopic(currentAccount, chatId, "📦 Архіви", 0xFB8C00);
+                    createTopic(currentAccount, chatId, "Документи", 0x3390EC);
+                    createTopic(currentAccount, chatId, "Медіа", 0xE53935);
+                    createTopic(currentAccount, chatId, "Архіви", 0xFB8C00);
 
                     if (callback != null) {
                         callback.onCreated(chatId);

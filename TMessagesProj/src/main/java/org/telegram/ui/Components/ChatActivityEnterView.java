@@ -7874,6 +7874,10 @@ public class ChatActivityEnterView extends FrameLayout implements
     private final Runnable lyricsHintTicker = new Runnable() {
         @Override
         public void run() {
+            if (!app.miogram.bridge.player.MiogramPlayerPrefs.isLyricsHintInChatInputEnabled()) {
+                lyricsHintTickerScheduled = false;
+                return;
+            }
             if (messageEditText == null || messageEditText.length() > 0) {
                 lyricsHintTickerScheduled = false;
                 return;
@@ -7891,6 +7895,9 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     private CharSequence getActiveSongLyricsHint() {
         try {
+            if (!app.miogram.bridge.player.MiogramPlayerPrefs.isLyricsHintInChatInputEnabled()) {
+                return null;
+            }
             // 1. Spotify playback bridge
             if (app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().isPlaying()) {
                 String line = app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().getCurrentLyricsLine();

@@ -438,12 +438,14 @@ public class MiogramUpdater {
     }
 
     private static class ReleaseCandidate {
+        final String repo;
         final String version;
         final String tag;
         final String body;
         final String apkUrl;
 
-        ReleaseCandidate(String version, String tag, String body, String apkUrl) {
+        ReleaseCandidate(String repo, String version, String tag, String body, String apkUrl) {
+            this.repo = repo;
             this.version = version;
             this.tag = tag;
             this.body = body;
@@ -503,13 +505,17 @@ public class MiogramUpdater {
 
                         if (!TextUtils.isEmpty(apkUrl) && !TextUtils.isEmpty(tag)) {
                             String ver = tag.replace("v", "").replace("V", "").trim();
-                            ReleaseCandidate candidate = new ReleaseCandidate(ver, tag, body, apkUrl);
+                            ReleaseCandidate candidate = new ReleaseCandidate(repo, ver, tag, body, apkUrl);
                             if (bestCandidate == null) {
                                 bestCandidate = candidate;
                             } else {
                                 if (isNewerVersion(bestCandidate.version, candidate.version, candidate.tag, candidate.body)) {
                                     bestCandidate = candidate;
                                 }
+                            }
+                            // Primary repo (fuckramochka/amegram) found an APK release: use it immediately!
+                            if ("fuckramochka/amegram".equalsIgnoreCase(repo)) {
+                                break;
                             }
                         }
                     }
@@ -521,6 +527,10 @@ public class MiogramUpdater {
             if (bestCandidate != null) {
                 final String currentVersion = getCurrentAppVersion();
                 boolean isNewer = isNewerVersion(currentVersion, bestCandidate.version, bestCandidate.tag, bestCandidate.body);
+                // If running in legacy package (com.exteraless.app), any release from fuckramochka/amegram is an upgrade
+                if ("com.exteraless.app".equals(ApplicationLoader.applicationContext.getPackageName()) && "fuckramochka/amegram".equalsIgnoreCase(bestCandidate.repo)) {
+                    isNewer = true;
+                }
                 callback.onResult(isNewer, bestCandidate.version, bestCandidate.body, bestCandidate.apkUrl);
             } else {
                 callback.onResult(false, getCurrentAppVersion(), null, null);

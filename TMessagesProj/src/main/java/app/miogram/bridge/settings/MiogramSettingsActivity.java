@@ -64,33 +64,35 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return MiogramLocale.get("Налаштування Amegram", "Настройки Amegram", "Amegram Settings");
+        return "Amegram";
     }
 
     @Override
     protected void updateRows() {
         super.updateRows();
 
-        // Group 1: Кастом, аудіо та функціонал
+        // Оформлення
         headerCustomRow = addRow();
         visualsRow = addRow();
         playerEditRow = addRow();
         badgeStudioRow = addRow();
         spotifyRow = addRow();
+
+        // Приватність і чати
+        headerExtrasRow = addRow();
         chatsRow = addRow();
         privacyRow = addRow();
         mioMomentsRow = addRow();
 
-        // Group 2: Додаткові фішки, ШІ та плагіни
-        headerExtrasRow = addRow();
-        cloudVaultRow = addRow();
+        // Штучний інтелект і плагіни
+        headerAboutRow = addRow(); // using headerAboutRow as 3rd header
         companionRow = addRow();
         aiEngineRow = addRow();
+        cloudVaultRow = addRow();
         pluginsRow = addRow();
         userbotHubRow = addRow();
 
-        // Group 3: Підтримка проекту, Про Miogram та оновлення
-        headerAboutRow = addRow();
+        // Про додаток
         aboutRow = addRow();
         channelRow = addRow();
         updaterRow = addRow();
@@ -98,7 +100,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     public void onItemClick(View view, int position, float x, float y) {
-        // Group 1: Кастом, аудіо та функціонал
+        // Оформлення
         if (position == visualsRow) {
             presentFragment(new MiogramVisualsActivity());
         } else if (position == playerEditRow) {
@@ -115,26 +117,28 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         } else if (position == spotifyRow) {
             app.miogram.bridge.presence.MiogramConnectedAppsSheet sheet = new app.miogram.bridge.presence.MiogramConnectedAppsSheet(getParentActivity(), null);
             sheet.show();
-        } else if (position == chatsRow) {
+        }
+        // Приватність і чати
+        else if (position == chatsRow) {
             presentFragment(new MiogramChatsSettingsActivity());
         } else if (position == privacyRow) {
             presentFragment(new MiogramPrivacySettingsActivity());
         } else if (position == mioMomentsRow) {
             presentFragment(new tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity());
         }
-        // Group 2: Додаткові фішки, ШІ та плагіни
-        else if (position == cloudVaultRow) {
-            presentFragment(new app.miogram.bridge.cloudvault.MiogramCloudVaultActivity());
-        } else if (position == companionRow) {
+        // Штучний інтелект і плагіни
+        else if (position == companionRow) {
             presentFragment(new MiogramCompanionActivity());
         } else if (position == aiEngineRow) {
             presentFragment(new MiogramAiSettingsActivity());
+        } else if (position == cloudVaultRow) {
+            presentFragment(new app.miogram.bridge.cloudvault.MiogramCloudVaultActivity());
         } else if (position == pluginsRow) {
             presentFragment(new app.exteraless.plugins.ui.PluginsActivity());
         } else if (position == userbotHubRow) {
             presentFragment(new MiogramHerokuActivity());
         }
-        // Group 3: Підтримка проекту, Про Miogram та оновлення
+        // Про додаток
         else if (position == aboutRow) {
             presentFragment(new MiogramAboutActivity());
         } else if (position == channelRow) {
@@ -196,96 +200,98 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == headerCustomRow) {
-                        cell.setText(MiogramLocale.get("1. Кастом, аудіо та функціонал", "1. Кастом, аудио и функционал", "1. Custom, Audio & Features"));
+                        cell.setText(MiogramLocale.get("Оформлення", "Оформление", "Appearance"));
                     } else if (position == headerExtrasRow) {
-                        cell.setText(MiogramLocale.get("2. Додаткові фішки, ШІ та плагіни", "2. Дополнительные фишки, ИИ и плагины", "2. Extras, AI & Plugins"));
+                        cell.setText(MiogramLocale.get("Приватність і чати", "Приватность и чаты", "Privacy & Chats"));
                     } else if (position == headerAboutRow) {
-                        cell.setText(MiogramLocale.get("3. Підтримка проекту, Про Amegram та оновлення", "3. Поддержка проекта, Об Amegram и обновления", "3. Support, About Amegram & Updates"));
+                        cell.setText(MiogramLocale.get("Штучний інтелект і плагіни", "Искусственный интеллект и плагины", "AI & Plugins"));
                     }
                     break;
                 }
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
-                    // Group 1: Кастом, аудіо та функціонал
+                    // Оформлення
                     if (position == visualsRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Зовнішній вигляд та оформлення", "Внешний вид и оформление", "Appearance & Theming"),
+                                MiogramLocale.get("Зовнішній вигляд", "Внешний вид", "Appearance"),
                                 R.drawable.msg_theme,
                                 true
                         );
                     } else if (position == playerEditRow) {
                         cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Кастомізація аудіоплеєра", "Кастомизация аудиоплеера", "Audio Player Customization"),
-                                MiogramLocale.get("Режим редагування", "Режим редактирования", "Edit Mode"),
+                                MiogramLocale.get("Аудіоплеєр", "Аудиоплеер", "Audio Player"),
+                                MiogramLocale.get("Налаштувати", "Настроить", "Customize"),
                                 R.drawable.msg_customize,
                                 true
                         );
                     } else if (position == badgeStudioRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Стрілочки та бейджі спільноти", "Стрелочки и бейджи сообщества", "Community Badges & Arrows"),
+                                MiogramLocale.get("Стрілочки та бейджі", "Стрелочки и бейджи", "Badges & Arrows"),
                                 R.drawable.msg_fave,
                                 true
                         );
                     } else if (position == spotifyRow) {
                         boolean linked = app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().isLinked();
                         cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Музичні сервіси (Spotify / Presence)", "Музыкальные сервисы (Spotify / Presence)", "Music Services (Spotify / Presence)"),
-                                linked ? MiogramLocale.get("Підключено", "Подключено", "Connected") : MiogramLocale.get("Не підключено", "Не подключено", "Not linked"),
+                                MiogramLocale.get("Музичні сервіси", "Музыкальные сервисы", "Music Services"),
+                                linked ? MiogramLocale.get("Підключено", "Подключено", "Connected") : MiogramLocale.get("Вимкнено", "Отключено", "Off"),
                                 R.drawable.baseline_music_note_24,
-                                true
+                                false
                         );
-                    } else if (position == chatsRow) {
+                    }
+                    // Приватність і чати
+                    else if (position == chatsRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Налаштування чатів та перекладач", "Настройки чатов и переводчик", "Chat Settings & Translator"),
+                                MiogramLocale.get("Налаштування чатів", "Настройки чатов", "Chat Settings"),
                                 R.drawable.msg_message,
                                 true
                         );
                     } else if (position == privacyRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Приватність та Ghost Mode", "Приватность и Ghost Mode", "Privacy & Ghost Mode"),
+                                MiogramLocale.get("Приватність", "Приватность", "Privacy"),
                                 R.drawable.msg_secret,
                                 true
                         );
                     } else if (position == mioMomentsRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Ame Moments (Історія та видалені)", "Ame Moments (История и удаленные)", "Ame Moments (History & Deleted)"),
+                                MiogramLocale.get("Історія повідомлень", "История сообщений", "Message History"),
                                 R.drawable.msg_delete,
                                 false
                         );
                     }
-                    // Group 2: Додаткові фішки, ШІ та плагіни
-                    else if (position == cloudVaultRow) {
+                    // Штучний інтелект і плагіни
+                    else if (position == companionRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Хмарне сховище (Cloud Vault)", "Облачное хранилище (Cloud Vault)", "Cloud Storage (Cloud Vault)"),
-                                R.drawable.msg_saved,
-                                true
-                        );
-                    } else if (position == companionRow) {
-                        cell.setTextAndIcon(
-                                MiogramLocale.get("ШІ-Супутниця Amegram", "ИИ-Спутница Amegram", "AI Companion"),
+                                MiogramLocale.get("ШІ-Супутниця", "ИИ-Спутница", "AI Companion"),
                                 R.drawable.baseline_stars_24,
                                 true
                         );
                     } else if (position == aiEngineRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Налаштування рушія та моделей ШІ", "Настройки движка и моделей ИИ", "AI Engine & Models"),
+                                MiogramLocale.get("Моделі ШІ", "Модели ИИ", "AI Models"),
                                 R.drawable.msg_bot,
+                                true
+                        );
+                    } else if (position == cloudVaultRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud Storage"),
+                                R.drawable.msg_saved,
                                 true
                         );
                     } else if (position == pluginsRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Каталог плагінів та модулів (.mioplugin)", "Каталог плагинов и модулей (.mioplugin)", "Plugins & Modules Catalog"),
+                                MiogramLocale.get("Плагіни", "Плагины", "Plugins"),
                                 R.drawable.msg_plugins,
                                 true
                         );
                     } else if (position == userbotHubRow) {
                         cell.setTextAndIcon(
-                                MiogramLocale.get("Userbot та автоматизація (Heroku)", "Юзербот и автоматизация (Heroku)", "Userbot & Automation (Heroku)"),
+                                MiogramLocale.get("Автоматизація", "Автоматизация", "Automation"),
                                 R.drawable.msg_contacts,
                                 false
                         );
                     }
-                    // Group 3: Підтримка проекту, Про Miogram та оновлення
+                    // Про додаток
                     else if (position == aboutRow) {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Про Amegram", "Об Amegram", "About Amegram"),
@@ -294,7 +300,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         );
                     } else if (position == channelRow) {
                         cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Офіційний канал @" + CHANNEL_USERNAME, "Официальный канал @" + CHANNEL_USERNAME, "Official Channel @" + CHANNEL_USERNAME),
+                                MiogramLocale.get("Канал спільноти", "Канал сообщества", "Community Channel"),
                                 "@" + CHANNEL_USERNAME,
                                 R.drawable.msg_channel,
                                 true
@@ -303,7 +309,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         String branch = MiogramUpdater.getUpdateChannelName();
                         String ver = "v" + BuildVars.BUILD_VERSION_STRING + " (" + branch + ")";
                         cell.setTextAndValueAndIcon(
-                                MiogramLocale.get("Оновлення Amegram", "Обновления Amegram", "Amegram Updates"),
+                                MiogramLocale.get("Оновлення", "Обновления", "Updates"),
                                 ver,
                                 R.drawable.msg_download_solar,
                                 false

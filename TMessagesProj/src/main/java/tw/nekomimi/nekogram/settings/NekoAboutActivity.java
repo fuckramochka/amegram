@@ -38,9 +38,9 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
         if (position == xChannelRow) {
-            MessagesController.getInstance(currentAccount).openByUserName("dkmiogram", NekoAboutActivity.this, 1);
+            MessagesController.getInstance(currentAccount).openByUserName("dkamegram", NekoAboutActivity.this, 1);
         } else if (position == sourceCodeRow) {
-            Browser.openUrl(getParentActivity(), "https://github.com/fuckramochka/miogram");
+            Browser.openUrl(getParentActivity(), "https://github.com/fuckramochka/amegram");
         } else if (position == datacenterStatusRow) {
             presentFragment(new DatacenterActivity(0));
         }
@@ -62,9 +62,9 @@ public class NekoAboutActivity extends BaseNekoSettingsActivity {
             if (holder.getItemViewType() == TYPE_SETTINGS) {
                 TextSettingsCell textCell = (TextSettingsCell) holder.itemView;
                 if (position == xChannelRow) {
-                    textCell.setTextAndValue(getString(R.string.XChannel), "@dkmiogram", true);
+                    textCell.setTextAndValue(getString(R.string.XChannel), "@dkamegram", true);
                 } else if (position == sourceCodeRow) {
-                    textCell.setTextAndValue(getString(R.string.SourceCode), "fuckramochka/miogram", true);
+                    textCell.setTextAndValue(getString(R.string.SourceCode), "fuckramochka/amegram", true);
                 } else if (position == datacenterStatusRow) {
                     textCell.setText(getString(R.string.DatacenterStatus), false);
                 }

@@ -40,8 +40,7 @@ import app.miogram.bridge.ui.MiogramUpdateBottomSheet;
 public class MiogramUpdater {
 
     public static final String[] GITHUB_REPOS = new String[]{
-            "fuckramochka/amegram",
-            "fuckramochka/miogram"
+            "fuckramochka/amegram"
     };
     public static final String CHANNEL_USERNAME = "dkamegram";
     public static final String FALLBACK_CHANNEL_USERNAME = "dkmiogram";

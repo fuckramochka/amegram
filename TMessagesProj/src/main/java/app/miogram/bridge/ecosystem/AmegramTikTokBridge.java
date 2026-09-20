@@ -1,0 +1,244 @@
+package app.miogram.bridge.ecosystem;
+
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Bundle;
+import android.os.Environment;
+import android.text.TextUtils;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
+import org.telegram.messenger.browser.Browser;
+import org.telegram.ui.ActionBar.Theme;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import app.miogram.bridge.MiogramLocale;
+
+/**
+ * Ecosystem Bridge facade for Amegram to interact with TikTok MI.
+ * Designed for non-intrusive, seamless, high-speed ecosystem integration.
+ */
+public class AmegramTikTokBridge {
+
+    public static final String[] TIKTOK_PACKAGES = new String[]{
+            "com.zhiliaoapp.musically",
+            "com.ss.android.ugc.trill",
+            "com.ss.android.ugc.aweme"
+    };
+
+    public static final String PREFS_NAME = "amegram_ecosystem_prefs";
+    public static final String KEY_OPEN_DIRECT = "tiktok_open_direct";
+    public static final String KEY_CLEAN_URLS = "tiktok_clean_urls";
+    public static final String KEY_CLIPVAULT = "tiktok_clipvault";
+    public static final String KEY_THEME_SYNC = "tiktok_theme_sync";
+    public static final String KEY_SOUNDBOARD = "tiktok_soundboard";
+
+    public static final String ACTION_TIKTOKMI_THEME = "mi.tiktokmi.ACTION_THEME_CHANGED";
+    private static final Pattern VIDEO_ID_PATTERN = Pattern.compile("/video/(\\d+)");
+    private static final Pattern USER_PATTERN = Pattern.compile("/@([a-zA-Z0-9_.-]+)");
+
+    // ------------------------------------------------------------- Preferences
+
+    private static SharedPreferences getPrefs(Context context) {
+        if (context == null) context = ApplicationLoader.applicationContext;
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    public static boolean isOpenDirectEnabled() {
+        return getPrefs(null).getBoolean(KEY_OPEN_DIRECT, true);
+    }
+
+    public static void setOpenDirectEnabled(boolean enabled) {
+        getPrefs(null).edit().putBoolean(KEY_OPEN_DIRECT, enabled).apply();
+    }
+
+    public static boolean isCleanUrlsEnabled() {
+        return getPrefs(null).getBoolean(KEY_CLEAN_URLS, true);
+    }
+
+    public static void setCleanUrlsEnabled(boolean enabled) {
+        getPrefs(null).edit().putBoolean(KEY_CLEAN_URLS, enabled).apply();
+    }
+
+    public static boolean isClipVaultEnabled() {
+        return getPrefs(null).getBoolean(KEY_CLIPVAULT, true);
+    }
+
+    public static void setClipVaultEnabled(boolean enabled) {
+        getPrefs(null).edit().putBoolean(KEY_CLIPVAULT, enabled).apply();
+    }
+
+    public static boolean isThemeSyncEnabled() {
+        return getPrefs(null).getBoolean(KEY_THEME_SYNC, true);
+    }
+
+    public static void setThemeSyncEnabled(boolean enabled) {
+        getPrefs(null).edit().putBoolean(KEY_THEME_SYNC, enabled).apply();
+    }
+
+    public static boolean isSoundboardEnabled() {
+        return getPrefs(null).getBoolean(KEY_SOUNDBOARD, true);
+    }
+
+    public static void setSoundboardEnabled(boolean enabled) {
+        getPrefs(null).edit().putBoolean(KEY_SOUNDBOARD, enabled).apply();
+    }
+
+    // ------------------------------------------------------------- Package & App Status
+
+    /**
+     * Checks if TikTok MI (or TikTok) is installed on the device.
+     */
+    public static boolean isTikTokMiInstalled(Context context) {
+        if (context == null) context = ApplicationLoader.applicationContext;
+        PackageManager pm = context.getPackageManager();
+        for (String pkg : TIKTOK_PACKAGES) {
+            try {
+                pm.getPackageInfo(pkg, 0);
+                return true;
+            } catch (Throwable ignored) {
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Gets the active installed TikTok package name.
+     */
+    public static String getInstalledTikTokPackage(Context context) {
+        if (context == null) context = ApplicationLoader.applicationContext;
+        PackageManager pm = context.getPackageManager();
+        for (String pkg : TIKTOK_PACKAGES) {
+            try {
+                pm.getPackageInfo(pkg, 0);
+                return pkg;
+            } catch (Throwable ignored) {
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Cleans tracking parameters from TikTok URLs (e.g. ?_t=..., &is_from_webapp=1, etc.).
+     */
+    public static String cleanTikTokUrl(String url) {
+        if (TextUtils.isEmpty(url)) return url;
+        try {
+            int qIndex = url.indexOf('?');
+            if (qIndex != -1) {
+                return url.substring(0, qIndex);
+            }
+        } catch (Throwable ignored) {
+        }
+        return url;
+    }
+
+    /**
+     * Opens a TikTok video or profile URL directly inside TikTok MI without any dialogs.
+     */
+    public static boolean openInTikTokMi(Context context, String url) {
+        if (context == null || TextUtils.isEmpty(url)) return false;
+
+        String pkg = getInstalledTikTokPackage(context);
+        if (pkg == null) return false;
+
+        try {
+            String targetUrl = isCleanUrlsEnabled() ? cleanTikTokUrl(url) : url;
+
+            // 1. Try extracting video ID for direct aweme detail deep link
+            Matcher mVideo = VIDEO_ID_PATTERN.matcher(targetUrl);
+            if (mVideo.find()) {
+                String videoId = mVideo.group(1);
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("snssdk1233://aweme/detail/" + videoId));
+                intent.setPackage(pkg);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+                return true;
+            }
+
+            // 2. Try extracting user handle for direct profile deep link
+            Matcher mUser = USER_PATTERN.matcher(targetUrl);
+            if (mUser.find()) {
+                String username = mUser.group(1);
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse("snssdk1233://user/profile/" + username));
+                intent.setPackage(pkg);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(intent);
+                return true;
+            }
+
+            // 3. Fallback: package view with target url
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(targetUrl));
+            intent.setPackage(pkg);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            return true;
+        } catch (Throwable error) {
+            try {
+                Intent fallback = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                fallback.setPackage(pkg);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(fallback);
+                return true;
+            } catch (Throwable ignored) {
+                return false;
+            }
+        }
+    }
+
+    /**
+     * Broadcasts Amegram's current theme/accent to TikTok MI.
+     */
+    public static void syncThemeToTikTokMi(Context context, int accentColor, boolean isDark, boolean isAmoled) {
+        if (!isThemeSyncEnabled()) return;
+        if (context == null) context = ApplicationLoader.applicationContext;
+        String pkg = getInstalledTikTokPackage(context);
+        if (pkg == null) return;
+
+        try {
+            Intent broadcast = new Intent(ACTION_TIKTOKMI_THEME);
+            broadcast.setPackage(pkg);
+            broadcast.putExtra("accent", accentColor);
+            broadcast.putExtra("dark", isDark);
+            broadcast.putExtra("amoled", isAmoled);
+            context.sendBroadcast(broadcast);
+        } catch (Throwable ignored) {
+        }
+    }
+
+    /**
+     * Lists recently downloaded TikTok sound tracks from storage for the Soundboard integration.
+     */
+    public static List<File> getRecentSoundTracks(Context context) {
+        List<File> tracks = new ArrayList<>();
+        try {
+            File downloadDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+            File ttmiDir = new File(downloadDir, "TikTok MI");
+            if (ttmiDir.exists() && ttmiDir.isDirectory()) {
+                File[] files = ttmiDir.listFiles((dir, name) -> {
+                    String lower = name.toLowerCase();
+                    return lower.endsWith(".mp3") || lower.endsWith(".m4a") || lower.endsWith(".aac");
+                });
+                if (files != null) {
+                    Arrays.sort(files, (a, b) -> Long.compare(b.lastModified(), a.lastModified()));
+                    for (int i = 0; i < Math.min(files.length, 30); i++) {
+                        tracks.add(files[i]);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return tracks;
+    }
+}

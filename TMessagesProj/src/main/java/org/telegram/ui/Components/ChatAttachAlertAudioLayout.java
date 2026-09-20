@@ -815,6 +815,85 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
             } catch (Exception e) {
                 FileLog.e(e);
             }
+
+            if (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isSoundboardEnabled()) {
+                try {
+                    java.util.List<File> ttmiTracks = app.miogram.bridge.ecosystem.AmegramTikTokBridge.getRecentSoundTracks(ApplicationLoader.applicationContext);
+                    int customId = -2100000000;
+                    for (File track : ttmiTracks) {
+                        if (track == null || !track.exists()) continue;
+                        boolean alreadyAdded = false;
+                        for (MediaController.AudioEntry existing : newAudioEntries) {
+                            if (track.getAbsolutePath().equals(existing.path)) {
+                                alreadyAdded = true;
+                                break;
+                            }
+                        }
+                        if (alreadyAdded) continue;
+
+                        MediaController.AudioEntry audioEntry = new MediaController.AudioEntry();
+                        audioEntry.id = customId;
+                        audioEntry.path = track.getAbsolutePath();
+                        audioEntry.author = "TikTok MI ໒꒱";
+                        String name = track.getName();
+                        int dot = name.lastIndexOf('.');
+                        audioEntry.title = dot > 0 ? name.substring(0, dot) : name;
+                        audioEntry.genre = "TikTok";
+
+                        final TLRPC.TL_message message = new TLRPC.TL_message();
+                        message.out = true;
+                        message.id = customId;
+                        message.peer_id = new TLRPC.TL_peerUser();
+                        message.from_id = new TLRPC.TL_peerUser();
+                        message.peer_id.user_id = message.from_id.user_id = UserConfig.getInstance(parentAlert.currentAccount).getClientUserId();
+                        message.date = (int) (track.lastModified() / 1000);
+                        message.message = "";
+                        message.attachPath = audioEntry.path;
+                        message.media = new TLRPC.TL_messageMediaDocument();
+                        message.media.flags |= 3;
+                        message.media.document = new TLRPC.TL_document();
+                        message.flags |= TLRPC.MESSAGE_FLAG_HAS_MEDIA | TLRPC.MESSAGE_FLAG_HAS_FROM_ID;
+
+                        final String ext = FileLoader.getFileExtension(track);
+                        message.media.document.id = 0;
+                        message.media.document.access_hash = 0;
+                        message.media.document.file_reference = new byte[0];
+                        message.media.document.date = message.date;
+                        message.media.document.mime_type = "audio/" + (ext.length() > 0 ? ext : "mp3");
+                        message.media.document.size = (int) track.length();
+                        message.media.document.dc_id = 0;
+
+                        final TLRPC.TL_documentAttributeAudio attributeAudio = new TLRPC.TL_documentAttributeAudio();
+                        attributeAudio.duration = audioEntry.duration;
+                        attributeAudio.title = audioEntry.title;
+                        attributeAudio.performer = audioEntry.author;
+                        attributeAudio.flags |= 3;
+                        message.media.document.attributes.add(attributeAudio);
+
+                        final TLRPC.TL_documentAttributeFilename fileName = new TLRPC.TL_documentAttributeFilename();
+                        fileName.file_name = track.getName();
+                        message.media.document.attributes.add(fileName);
+
+                        audioEntry.messageObject = new MessageObject(parentAlert.currentAccount, message, false, true);
+
+                        final AudioInfo info = AudioInfo.getAudioInfo(track);
+                        if (info != null) {
+                            if (info.getTitle() != null) audioEntry.title = info.getTitle().toString();
+                            if (info.getArtist() != null) audioEntry.author = info.getArtist().toString();
+                            audioEntry.duration = (int) (info.getDuration() / 1000);
+                            attributeAudio.duration = audioEntry.duration;
+                            attributeAudio.title = audioEntry.title;
+                            attributeAudio.performer = audioEntry.author;
+                        }
+
+                        newAudioEntries.add(0, audioEntry);
+                        customId--;
+                    }
+                } catch (Throwable t) {
+                    FileLog.e(t);
+                }
+            }
+
             AndroidUtilities.runOnUIThread(() -> {
                 loadingAudio = false;
                 audioEntries = newAudioEntries;

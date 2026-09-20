@@ -44,6 +44,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int playerEditRow;
     private int badgeStudioRow;
     private int spotifyRow;
+    private int tiktokEcosystemRow;
     private int chatsRow;
     private int privacyRow;
     private int mioMomentsRow;
@@ -77,6 +78,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         playerEditRow = addRow();
         badgeStudioRow = addRow();
         spotifyRow = addRow();
+        tiktokEcosystemRow = addRow();
 
         // Приватність і чати
         headerExtrasRow = addRow();
@@ -117,6 +119,8 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         } else if (position == spotifyRow) {
             app.miogram.bridge.presence.MiogramConnectedAppsSheet sheet = new app.miogram.bridge.presence.MiogramConnectedAppsSheet(getParentActivity(), null);
             sheet.show();
+        } else if (position == tiktokEcosystemRow) {
+            presentFragment(new app.miogram.bridge.ecosystem.AmegramTikTokSettingsActivity());
         }
         // Приватність і чати
         else if (position == chatsRow) {
@@ -237,6 +241,14 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                                 linked ? MiogramLocale.get("Підключено", "Подключено", "Connected") : MiogramLocale.get("Вимкнено", "Отключено", "Off"),
                                 R.drawable.baseline_music_note_24,
                                 false
+                        );
+                    } else if (position == tiktokEcosystemRow) {
+                        boolean installed = app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(getParentActivity());
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("TikTok MI Екосистема", "TikTok MI Экосистема", "TikTok MI Ecosystem"),
+                                installed ? MiogramLocale.get("Підключено", "Подключено", "Connected") : MiogramLocale.get("Вимкнено", "Отключено", "Off"),
+                                R.drawable.msg_fave,
+                                true
                         );
                     }
                     // Приватність і чати

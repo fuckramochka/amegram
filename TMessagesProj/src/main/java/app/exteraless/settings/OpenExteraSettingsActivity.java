@@ -170,10 +170,10 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
         } else if (position == otherRow) {
             presentFragment(new OpenExteraOtherActivity());
         } else if (position == channelRow) {
-            getMessagesController().openByUserName("dkmiogram", this, 1);
+            getMessagesController().openByUserName("dkamegram", this, 1);
         } else if (position == sourceRow) {
             org.telegram.messenger.browser.Browser.openUrl(getParentActivity(),
-                    "https://github.com/fuckramochka/miogram");
+                    "https://github.com/fuckramochka/amegram");
         } else if (position == designerRow) {
             getMessagesController().openByUserName("the8055u", this, 1);
         } else if (position == designStudioRow) {

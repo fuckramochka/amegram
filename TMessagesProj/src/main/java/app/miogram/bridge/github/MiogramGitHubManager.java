@@ -69,7 +69,7 @@ public class MiogramGitHubManager {
     }
 
     public static class WorkflowRun {
-        public String repo = "fuckramochka/miogram";
+        public String repo = "fuckramochka/amegram";
         public String workflowName = "";
         public String status = "";      // "completed", "in_progress", "queued"
         public String conclusion = "";  // "success", "failure", "cancelled"
@@ -108,7 +108,7 @@ public class MiogramGitHubManager {
     private static final String PREFS_NAME = "miogram_github_prefs";
     private static final String KEY_REPO = "github_repo";
     private static final String KEY_USERNAME = "github_username";
-    private static final String DEFAULT_REPO = "fuckramochka/miogram";
+    private static final String DEFAULT_REPO = "fuckramochka/amegram";
     private static final String DEFAULT_USERNAME = "fuckramochka";
 
     private WorkflowRun cachedRun;

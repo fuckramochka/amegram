@@ -1908,6 +1908,33 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                         importingStickersEmoji = null;
                         importingStickersSoftware = null;
                     }
+                } else if ("app.amegram.POST_STORY".equals(intent.getAction())) {
+                    try {
+                        Uri storyUri = intent.getData();
+                        if (storyUri == null) {
+                            storyUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                        }
+                        String storyCaption = intent.getStringExtra("caption");
+                        if (storyCaption == null) {
+                            storyCaption = intent.getStringExtra(Intent.EXTRA_TEXT);
+                        }
+                        if (storyUri != null) {
+                            String path = AndroidUtilities.getPath(storyUri);
+                            if (path == null) path = storyUri.getPath();
+                            if (path != null) {
+                                File file = new File(path);
+                                if (file.exists()) {
+                                    org.telegram.ui.Stories.recorder.StoryEntry entry = org.telegram.ui.Stories.recorder.StoryEntry.fromVideoShoot(file, null, 15000);
+                                    if (storyCaption != null) {
+                                        entry.caption = new SpannableStringBuilder(storyCaption);
+                                    }
+                                    org.telegram.ui.Stories.recorder.StoryRecorder.getInstance(this, currentAccount).openEdit(null, entry, 0, false);
+                                }
+                            }
+                        }
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
                 } else if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
                     boolean error = false;
                     try {

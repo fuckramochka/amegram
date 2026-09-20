@@ -41,6 +41,7 @@ replay_pid*.log
 *.apk
 *.keystore
 *.bak
+miogram.jpg
 # Web-артефакты
 node_modules/
 dist/

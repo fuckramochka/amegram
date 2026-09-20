@@ -426,7 +426,7 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
 
-        org.osmdroid.config.Configuration.getInstance().setUserAgentValue("Miogram/" + BuildConfig.VERSION_NAME + " (+https://github.com/fuckramochka/miogram)");
+        org.osmdroid.config.Configuration.getInstance().setUserAgentValue("Amegram/" + BuildConfig.VERSION_NAME + " (+https://github.com/fuckramochka/amegram)");
         final File osmdroidBasePath = new File(ApplicationLoader.applicationContext.getCacheDir(), "osmdroid");
         org.osmdroid.config.Configuration.getInstance().setOsmdroidBasePath(osmdroidBasePath);
         org.osmdroid.config.Configuration.getInstance().setOsmdroidTileCache(new File(osmdroidBasePath, "tiles"));

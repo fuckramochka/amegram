@@ -681,6 +681,7 @@ public class ChatActivity extends BaseFragment implements
     private AnimatedTextView selectedMessagesCountTextView;
     private RecyclerListView.OnItemClickListener mentionsOnItemClickListener;
     private SuggestEmojiView suggestEmojiPanel;
+    private app.miogram.bridge.media.MiogramMediaDownloadPill mediaDownloadPill;
     private ActionBarMenuItem.Item muteItem;
     private ActionBarMenuItem.Item muteItemGap;
     private ActionBarMenuItem.Item feeItemGap;
@@ -3299,6 +3300,7 @@ public class ChatActivity extends BaseFragment implements
 
         // exteraless plugins: реестр пунктов меняется, когда плагин включают/выключают.
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.pluginMenuItemsUpdated);
+        NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.fileDidLoad);
 
         if (chatMode != MODE_SCHEDULED) {
             if (threadMessageId == 0) {
@@ -3837,6 +3839,7 @@ public class ChatActivity extends BaseFragment implements
 
         getNotificationCenter().removeObserver(this, NotificationCenter.closeChats);
         NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.pluginMenuItemsUpdated);
+        NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.fileDidLoad);
 
         if (chatMode == 0 && AndroidUtilities.isTablet()) {
             getNotificationCenter().postNotificationName(NotificationCenter.openedChatChanged, dialog_id, getTopicId(), true);
@@ -9176,6 +9179,32 @@ public class ChatActivity extends BaseFragment implements
             LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 160, Gravity.LEFT | Gravity.BOTTOM, 7, 0, 7, 0)
         );
         suggestEmojiPanel.setVisibility(allowStickersPanel && !isInPreviewMode() && (chatActivityEnterView == null || !chatActivityEnterView.isStickersExpanded()) ? View.VISIBLE : View.GONE);
+
+        mediaDownloadPill = new app.miogram.bridge.media.MiogramMediaDownloadPill(context, themeDelegate, (mediaUrl, progressListener, callback) -> {
+            app.miogram.bridge.media.MiogramMediaDownloader.downloadAndSend(
+                getParentActivity(), currentAccount, dialog_id, getThreadId(), mediaUrl, progressListener, callback
+            );
+        }, () -> {
+            if (chatActivityEnterView != null) {
+                chatActivityEnterView.setFieldText("");
+            }
+        });
+        contentView.addView(mediaDownloadPill, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0, 0, 56));
+
+        if (chatActivityEnterView != null) {
+            chatActivityEnterView.addTextChangedListener(new android.text.TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override
+                public void onTextChanged(CharSequence s, int start, int before, int count) {
+                    if (mediaDownloadPill != null) {
+                        mediaDownloadPill.inspectText(s);
+                    }
+                }
+                @Override
+                public void afterTextChanged(android.text.Editable s) {}
+            });
+        }
 
         final ChatActivityEnterTopView.EditView editView = new ChatActivityEnterTopView.EditView(context);
         editView.setMotionEventSplittingEnabled(false);
@@ -22101,6 +22130,17 @@ public class ChatActivity extends BaseFragment implements
             }
             return;
         }
+        if (id == NotificationCenter.fileDidLoad) {
+            if (args != null && args.length > 0 && args[0] instanceof String) {
+                String str = (String) args[0];
+                if (str.startsWith("clipvault_") && mediaDownloadPill != null) {
+                    if (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isClipVaultEnabled()) {
+                        mediaDownloadPill.inspectText(str.substring("clipvault_".length()));
+                    }
+                }
+            }
+            return;
+        }
         if (id == NotificationCenter.messagesDidLoad) {
             didReceivedNotification_messagesDidLoad(id, account, args);
         } else {
@@ -31799,6 +31839,14 @@ public class ChatActivity extends BaseFragment implements
         cachedIsGestureNavigation = AndroidUtil.isGestureNavigation(getContext());
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
+
+        if (mediaDownloadPill != null && app.miogram.bridge.ecosystem.AmegramTikTokBridge.isClipVaultEnabled()) {
+            app.miogram.bridge.ecosystem.AmegramEcosystemProvider.ClipVaultItem item =
+                    app.miogram.bridge.ecosystem.AmegramEcosystemProvider.lastClipVaultItem;
+            if (item != null && (System.currentTimeMillis() - item.timestamp < 300_000)) {
+                mediaDownloadPill.inspectText(item.url);
+            }
+        }
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
             ImportingAlert alert = new ImportingAlert(getParentActivity(), null, this, themeDelegate);
             alert.setOnHideListener(dialog -> {

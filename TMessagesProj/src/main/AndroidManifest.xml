@@ -105,10 +105,18 @@
     <queries>
         <package android:name="com.exteraless.app"/>
         <package android:name="app.amegram"/>
+        <package android:name="app.miogram"/>
+        <package android:name="com.zhiliaoapp.musically"/>
+        <package android:name="com.ss.android.ugc.trill"/>
+        <package android:name="com.ss.android.ugc.aweme"/>
         <package android:name="com.google.android.apps.maps"/>
         <intent>
             <action android:name="android.intent.action.VIEW"/>
             <data android:scheme="ton"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="tiktokmi"/>
         </intent>
     </queries>
 
@@ -434,6 +442,17 @@
                 <action android:name="org.telegram.messenger.CREATE_STICKER_PACK"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="*/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="app.amegram.POST_STORY"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <data android:mimeType="video/*"/>
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="amegram"/>
             </intent-filter>
             <meta-data android:name="android.service.chooser.chooser_target_service" android:value="androidx.sharetarget.ChooserTargetServiceCompat" tools:targetApi="23" />
             <meta-data android:name="android.app.shortcuts" android:resource="@xml/shortcuts" />
@@ -858,6 +877,21 @@
             android:name="app.exteraless.icons.IconPackProvider"
             android:exported="false"
             android:grantUriPermissions="true"/>
+
+        <provider
+            android:authorities="app.amegram.ecosystem"
+            android:name="app.miogram.bridge.ecosystem.AmegramEcosystemProvider"
+            android:exported="true" />
+
+        <receiver
+            android:name="app.miogram.bridge.ecosystem.AmegramEcosystemReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="app.amegram.ACTION_THEME_CHANGED" />
+                <action android:name="app.amegram.POST_STORY" />
+                <action android:name="app.amegram.ACTION_CLIP_VAULT" />
+            </intent-filter>
+        </receiver>
 
         <meta-data android:name="com.google.android.geo.API_KEY" android:value="${MAPS_API_KEY}" />
         <meta-data android:name="NothingKey" android:value="${GLYPH_API_KEY}" />

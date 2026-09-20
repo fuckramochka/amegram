@@ -117,12 +117,12 @@ jobs:
         id: channel
         run: |
           MSG="${{ github.event.head_commit.message }}"
-          if echo "$MSG" | grep -qi '\[stable\]'; then
-            echo "prerelease=false" >> "$GITHUB_OUTPUT"
-            echo "suffix=" >> "$GITHUB_OUTPUT"
-          else
+          if echo "$MSG" | grep -qi '\[beta\]'; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
             echo "suffix= (beta)" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "suffix=" >> "$GITHUB_OUTPUT"
           fi
       - name: Create and Publish GitHub Release
         uses: softprops/action-gh-release@v2
@@ -136,6 +136,7 @@ jobs:
             ${{ github.event.head_commit.message }}
           draft: false
           prerelease: ${{ steps.channel.outputs.prerelease == 'true' }}
+          make_latest: true
           files: |
             TMessagesProj/build/outputs/apk/release/*.apk
         env:

@@ -14664,8 +14664,11 @@ public class MessagesController extends BaseController implements NotificationCe
             return;
         }
         ArrayList<Integer> arrayList = new ArrayList<>();
-        if (messageObject.messageOwner.mentioned) {
-            getMessagesStorage().markMentionMessageAsRead(-messageObject.messageOwner.peer_id.channel_id, messageObject.getId(), messageObject.getDialogId());
+        if (messageObject.messageOwner != null && messageObject.messageOwner.mentioned) {
+            long targetDialogId = (messageObject.messageOwner.peer_id != null && messageObject.messageOwner.peer_id.channel_id != 0)
+                    ? -messageObject.messageOwner.peer_id.channel_id
+                    : messageObject.getDialogId();
+            getMessagesStorage().markMentionMessageAsRead(targetDialogId, messageObject.getId(), messageObject.getDialogId());
         }
         arrayList.add(messageObject.getId());
         long dialogId = messageObject.getDialogId();

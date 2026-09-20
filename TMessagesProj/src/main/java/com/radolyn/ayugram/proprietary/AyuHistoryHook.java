@@ -244,6 +244,9 @@ public abstract class AyuHistoryHook {
             }
         }
         tlMessage.ayuDeleted = true;
+        tlMessage.mentioned = false;
+        tlMessage.media_unread = false;
+        tlMessage.unread = false;
         AyuMessageUtils.mapMedia(deletedMessageFull.message, tlMessage, accountId);
         return tlMessage;
     }

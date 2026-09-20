@@ -188,7 +188,10 @@ public class MiogramSupabaseBridge {
         init();
         synchronized (badgeCache) {
             BadgeRecord record = badgeCache.get(userId);
-            return record != null && record.isActive;
+            if (record != null) {
+                return record.isActive;
+            }
+            return isSyncEnabledForAccount(null, userId);
         }
     }
 
@@ -201,6 +204,10 @@ public class MiogramSupabaseBridge {
             BadgeRecord record = badgeCache.get(userId);
             if (record == null && userId == MiogramBadgeManager.FOUNDER_USER_ID) {
                 record = createDefaultFounderRecord();
+                badgeCache.put(userId, record);
+            } else if (record == null && isSyncEnabledForAccount(null, userId)) {
+                MiogramBadgeType selected = getSelectedBadgeForAccount(null, userId);
+                record = new BadgeRecord(userId, selected, fallbackTitle(false), fallbackReason(false), "2026", true);
                 badgeCache.put(userId, record);
             }
             return record;
@@ -378,6 +385,15 @@ public class MiogramSupabaseBridge {
                 }
                 if (badgeCache.get(MiogramBadgeManager.FOUNDER_USER_ID) == null) {
                     badgeCache.put(MiogramBadgeManager.FOUNDER_USER_ID, createDefaultFounderRecord());
+                }
+                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    long uid = UserConfig.getInstance(a).getClientUserId();
+                    if (uid > 0 && isSyncEnabledForAccount(null, uid)) {
+                        if (badgeCache.get(uid) == null) {
+                            MiogramBadgeType selected = getSelectedBadgeForAccount(null, uid);
+                            badgeCache.put(uid, new BadgeRecord(uid, selected, fallbackTitle(uid == MiogramBadgeManager.FOUNDER_USER_ID), fallbackReason(uid == MiogramBadgeManager.FOUNDER_USER_ID), "2026", true));
+                        }
+                    }
                 }
             }
         } catch (Exception e) {

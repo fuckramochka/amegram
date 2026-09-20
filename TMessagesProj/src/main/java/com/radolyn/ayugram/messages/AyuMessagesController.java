@@ -48,6 +48,7 @@ public class AyuMessagesController {
         AyuSavePreferences.loadAllExclusions();
 
         refreshDaos();
+        AyuData.purgeOldMessages(30);
     }
 
     public void refreshDaos() {
@@ -56,15 +57,22 @@ public class AyuMessagesController {
     }
 
     private <T> T withDaoRetry(String tag, Callable<T> callable) {
+        if (editedMessageDao == null || deletedMessageDao == null) {
+            refreshDaos();
+        }
         try {
-            return callable.call();
+            if (callable != null) {
+                return callable.call();
+            }
         } catch (Exception e) {
             FileLog.e(tag, e);
         }
 
         try {
             refreshDaos();
-            return callable.call();
+            if (callable != null) {
+                return callable.call();
+            }
         } catch (Exception e) {
             FileLog.e(tag, e);
         }
@@ -273,52 +281,62 @@ public class AyuMessagesController {
     }
 
     public boolean hasAnyRevisions(long userId, long dialogId, int messageId) {
-        return editedMessageDao.hasAnyRevisions(userId, dialogId, messageId);
+        if (editedMessageDao == null) refreshDaos();
+        return editedMessageDao != null && editedMessageDao.hasAnyRevisions(userId, dialogId, messageId);
     }
 
     public List<EditedMessage> getRevisions(long userId, long dialogId, int messageId) {
-        return editedMessageDao.getAllRevisions(userId, dialogId, messageId);
+        if (editedMessageDao == null) refreshDaos();
+        return editedMessageDao != null ? editedMessageDao.getAllRevisions(userId, dialogId, messageId) : new ArrayList<>();
     }
 
     public DeletedMessageFull getMessage(long userId, long dialogId, int messageId) {
-        return deletedMessageDao.getMessage(userId, dialogId, messageId);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getMessage(userId, dialogId, messageId) : null;
     }
 
     public String getMediaPath(long userId, long dialogId, int messageId) {
-        return deletedMessageDao.getMediaPath(userId, dialogId, messageId);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getMediaPath(userId, dialogId, messageId) : null;
     }
 
     public List<DeletedMessageFull> getMessages(long userId, long dialogId, long startId, long endId, int limit) {
-        return deletedMessageDao.getMessages(userId, dialogId, startId, endId, limit);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getMessages(userId, dialogId, startId, endId, limit) : new ArrayList<>();
     }
 
     public List<DeletedMessageFull> getTopicMessages(long userId, long dialogId, long topicId, long startId, long endId, int limit) {
-        return deletedMessageDao.getTopicMessages(userId, dialogId, topicId, startId, endId, limit);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getTopicMessages(userId, dialogId, topicId, startId, endId, limit) : new ArrayList<>();
     }
 
     public List<DeletedMessageFull> getThreadMessages(long userId, long dialogId, long threadMessageId, long startId, long endId, int limit) {
-        return deletedMessageDao.getThreadMessages(userId, dialogId, threadMessageId, startId, endId, limit);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getThreadMessages(userId, dialogId, threadMessageId, startId, endId, limit) : new ArrayList<>();
     }
 
     public List<DeletedMessageFull> getMessagesGroupedIn(long userId, long dialogId, List<Long> groupedIds) {
         if (groupedIds == null || groupedIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return deletedMessageDao.getMessagesGroupedIn(userId, dialogId, groupedIds);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getMessagesGroupedIn(userId, dialogId, groupedIds) : new ArrayList<>();
     }
 
     public List<Integer> getExistingMessageIds(long userId, long dialogId, List<Integer> messageIds) {
         if (messageIds == null || messageIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return deletedMessageDao.getExistingMessageIds(userId, dialogId, messageIds);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getExistingMessageIds(userId, dialogId, messageIds) : new ArrayList<>();
     }
 
     public List<DeletedMessageFull> getMessagesByIds(long userId, long dialogId, List<Integer> messageIds) {
         if (messageIds == null || messageIds.isEmpty()) {
             return new ArrayList<>();
         }
-        return deletedMessageDao.getMessagesByIds(userId, dialogId, messageIds);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getMessagesByIds(userId, dialogId, messageIds) : new ArrayList<>();
     }
 
     public void delete(long userId, long dialogId, int messageId) {
@@ -327,7 +345,10 @@ public class AyuMessagesController {
             return;
         }
 
-        deletedMessageDao.delete(userId, dialogId, messageId);
+        if (deletedMessageDao == null) refreshDaos();
+        if (deletedMessageDao != null) {
+            deletedMessageDao.delete(userId, dialogId, messageId);
+        }
 
         if (!TextUtils.isEmpty(msg.message.mediaPath)) {
             var p = new File(msg.message.mediaPath);
@@ -346,8 +367,13 @@ public class AyuMessagesController {
             return;
         }
 
-        deletedMessageDao.deleteMessages(userId, dialogId, messageIds);
-        editedMessageDao.deleteByDialogIdAndMessageIds(dialogId, messageIds);
+        if (deletedMessageDao == null || editedMessageDao == null) refreshDaos();
+        if (deletedMessageDao != null) {
+            deletedMessageDao.deleteMessages(userId, dialogId, messageIds);
+        }
+        if (editedMessageDao != null) {
+            editedMessageDao.deleteByDialogIdAndMessageIds(dialogId, messageIds);
+        }
 
         for (int messageId : messageIds) {
             var msg = getMessage(userId, dialogId, messageId);
@@ -369,6 +395,10 @@ public class AyuMessagesController {
     }
 
     public void deleteRevision(long fakeId) {
+        if (editedMessageDao == null) refreshDaos();
+        if (editedMessageDao == null) {
+            return;
+        }
         String mediaPath = editedMessageDao.getMediaPathByFakeId(fakeId);
         int deleted = editedMessageDao.deleteByFakeId(fakeId);
         if (deleted == 0) {
@@ -387,6 +417,13 @@ public class AyuMessagesController {
     }
 
     public void deleteCurrent(long dialogId, long mergeDialogId, Runnable callback) {
+        if (deletedMessageDao == null || editedMessageDao == null) refreshDaos();
+        if (deletedMessageDao == null || editedMessageDao == null) {
+            if (callback != null) {
+                callback.run();
+            }
+            return;
+        }
         List<DeletedMessageFull> messages = deletedMessageDao.getMessagesByDialog(dialogId);
 
         if (mergeDialogId != 0) {
@@ -430,19 +467,25 @@ public class AyuMessagesController {
     }
 
     public int getDeletedCount(long userId, long dialogId) {
-        return deletedMessageDao.countByDialog(userId, dialogId);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.countByDialog(userId, dialogId) : 0;
     }
 
     public List<DeletedMessageFull> getLatestMessages(long userId, long dialogId, int limit) {
-        return deletedMessageDao.getLatestMessages(userId, dialogId, limit);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getLatestMessages(userId, dialogId, limit) : new ArrayList<>();
     }
 
     public List<DeletedMessageFull> getOlderMessagesBefore(long userId, long dialogId, int before, int limit) {
-        return deletedMessageDao.getOlderMessagesBefore(userId, dialogId, before, limit);
+        if (deletedMessageDao == null) refreshDaos();
+        return deletedMessageDao != null ? deletedMessageDao.getOlderMessagesBefore(userId, dialogId, before, limit) : new ArrayList<>();
     }
 
     public void updateMediaPath(long userId, long dialogId, int messageId, String newPath) {
-        deletedMessageDao.updateMediaPathIfEmpty(userId, dialogId, messageId, newPath);
+        if (deletedMessageDao == null) refreshDaos();
+        if (deletedMessageDao != null) {
+            deletedMessageDao.updateMediaPathIfEmpty(userId, dialogId, messageId, newPath);
+        }
     }
 
     public void clean() {

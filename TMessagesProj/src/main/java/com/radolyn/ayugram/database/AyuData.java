@@ -137,6 +137,7 @@ public class AyuData {
         RoomDatabase.Builder<AyuDatabase> builder = Room.databaseBuilder(ApplicationLoader.applicationContext, AyuDatabase.class, name)
                 .allowMainThreadQueries()
                 .fallbackToDestructiveMigrationOnDowngrade()
+                .fallbackToDestructiveMigration()
                 .addMigrations(MIGRATION_21_22, MIGRATION_22_23, MIGRATION_23_24, MIGRATION_24_25, MIGRATION_25_26);
         MiogramRoomAdapter.applyOpenHelperFactory(builder, name);
         return builder.build();
@@ -347,6 +348,27 @@ public class AyuData {
             attachmentsSize = getAttachmentsDirSize();
             totalSize = dbSize + attachmentsSize;
             AndroidUtilities.runOnUIThread(onLoaded, 500);
+        });
+    }
+
+    public static void purgeOldMessages(int days) {
+        if (days <= 0) {
+            return;
+        }
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
+                int cutoffDate = (int) (System.currentTimeMillis() / 1000L) - (days * 86400);
+                DeletedMessageDao delDao = getDeletedMessageDao();
+                if (delDao != null) {
+                    delDao.deleteOlderThan(cutoffDate);
+                }
+                EditedMessageDao editDao = getEditedMessageDao();
+                if (editDao != null) {
+                    editDao.deleteOlderThan(cutoffDate);
+                }
+            } catch (Exception e) {
+                FileLog.e("Failed to purge old Ayu messages", e);
+            }
         });
     }
 }

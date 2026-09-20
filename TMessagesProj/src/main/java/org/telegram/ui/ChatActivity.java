@@ -51661,29 +51661,33 @@ public class ChatActivity extends BaseFragment implements
             });
         } else {
             final MessagesStorage messagesStorage = getMessagesStorage();
+            TLRPC.InputPeer inputPeer = getMessagesController().getInputPeer(dialog_id);
+            if (inputPeer == null) {
+                newMentionsCount = 0;
+                hasAllMentionsLocal = true;
+                showMentionDownButton(false, true);
+                if (sideControlsButtonsLayout != null) {
+                    sideControlsButtonsLayout.setButtonCount(ChatActivitySideControlsButtonsLayout.BUTTON_MENTION, 0, true);
+                }
+                return;
+            }
             TLRPC.TL_messages_getUnreadMentions req = new TLRPC.TL_messages_getUnreadMentions();
-            req.peer = getMessagesController().getInputPeer(dialog_id);
+            req.peer = inputPeer;
             req.limit = 1;
             if (isTopic) {
                 req.top_msg_id = (int) threadMessageId;
                 req.flags |= 1;
             }
-            req.add_offset = newMentionsCount - 1;
+            req.add_offset = Math.max(0, newMentionsCount - 1);
             getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
                 TLRPC.messages_Messages res = (TLRPC.messages_Messages) response;
-                if (error != null || res.messages.isEmpty()) {
-                    if (res != null) {
-                        newMentionsCount = res.count;
-                    } else {
-                        newMentionsCount = 0;
-                    }
+                if (error != null || res == null || res.messages.isEmpty()) {
+                    newMentionsCount = 0;
                     messagesStorage.resetMentionsCount(dialog_id, getTopicId(), newMentionsCount);
-                    if (newMentionsCount == 0) {
-                        hasAllMentionsLocal = true;
-                        showMentionDownButton(false, true);
-                    } else {
-                        sideControlsButtonsLayout.setButtonCount(ChatActivitySideControlsButtonsLayout.BUTTON_MENTION, newMentionsCount, true);
-                        loadLastUnreadMention();
+                    hasAllMentionsLocal = true;
+                    showMentionDownButton(false, true);
+                    if (sideControlsButtonsLayout != null) {
+                        sideControlsButtonsLayout.setButtonCount(ChatActivitySideControlsButtonsLayout.BUTTON_MENTION, 0, true);
                     }
                 } else {
                     int id = res.messages.get(0).id;

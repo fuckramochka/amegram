@@ -5822,7 +5822,8 @@ public class MessagesStorage extends BaseController {
         storageQueue.postRunnable(() -> {
             SQLiteCursor cursor = null;
             try {
-                database.executeFast(String.format(Locale.US, "UPDATE messages_v2 SET read_state = read_state | 2 WHERE mid = %d AND uid = %d", messageId, dialogId)).stepThis().dispose();
+                long targetDialogId = dialogId != 0 ? dialogId : did;
+                database.executeFast(String.format(Locale.US, "UPDATE messages_v2 SET read_state = read_state | 2 WHERE mid = %d AND uid = %d", messageId, targetDialogId)).stepThis().dispose();
                 cursor = database.queryFinalized("SELECT unread_count_i FROM dialogs WHERE did = " + did);
                 int old_mentions_count = 0;
                 if (cursor.next()) {

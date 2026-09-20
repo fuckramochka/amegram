@@ -7,6 +7,7 @@ import androidx.core.util.Pair;
 import com.radolyn.ayugram.AyuConstants;
 import com.radolyn.ayugram.AyuUtils;
 import com.radolyn.ayugram.database.entities.AyuMessageBase;
+import com.radolyn.ayugram.database.entities.DeletedMessage;
 import com.radolyn.ayugram.messages.AyuMessagesController;
 import com.radolyn.ayugram.messages.AyuSavePreferences;
 import com.radolyn.ayugram.utils.AyuFileLocation;
@@ -81,6 +82,11 @@ public abstract class AyuMessageUtils {
         target.out = (flags & 2) != 0;
         target.mentioned = (flags & 16) != 0;
         target.media_unread = (flags & 32) != 0;
+        if (target.ayuDeleted || source instanceof DeletedMessage) {
+            target.mentioned = false;
+            target.media_unread = false;
+            target.unread = false;
+        }
         target.silent = (flags & LiteMode.FLAG_ANIMATED_EMOJI_REACTIONS_NOT_PREMIUM) != 0;
         target.post = (flags & 16384) != 0;
         target.from_scheduled = (262144 & flags) != 0;

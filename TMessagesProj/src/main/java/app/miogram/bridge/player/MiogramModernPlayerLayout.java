@@ -861,7 +861,7 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         if (preset == null) preset = MiogramPlayerPrefs.PRESET_DEFAULT;
         if (MiogramPlayerPrefs.PRESET_LYRICS.equals(preset)) {
             if (isFullScreen && playerMode != PlayerMode.LYRICS) {
-                setPlayerMode(PlayerMode.LYRICS);
+                setPlayerMode(PlayerMode.LYRICS, false);
             }
         } else if (MiogramPlayerPrefs.PRESET_MINIMAL.equals(preset)) {
             if (compactBassVisualizer != null) compactBassVisualizer.setVisibility(View.GONE);

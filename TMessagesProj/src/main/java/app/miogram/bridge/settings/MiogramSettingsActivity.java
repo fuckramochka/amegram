@@ -45,6 +45,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int spotifyRow;
     private int chatsRow;
     private int privacyRow;
+    private int mioMomentsRow;
 
     // Group 2: Додаткові фішки, ШІ та плагіни
     private int headerExtrasRow;
@@ -77,6 +78,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         spotifyRow = addRow();
         chatsRow = addRow();
         privacyRow = addRow();
+        mioMomentsRow = addRow();
 
         // Group 2: Додаткові фішки, ШІ та плагіни
         headerExtrasRow = addRow();
@@ -116,6 +118,8 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new MiogramChatsSettingsActivity());
         } else if (position == privacyRow) {
             presentFragment(new MiogramPrivacySettingsActivity());
+        } else if (position == mioMomentsRow) {
+            presentFragment(new tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity());
         }
         // Group 2: Додаткові фішки, ШІ та плагіни
         else if (position == cloudVaultRow) {
@@ -224,6 +228,12 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Приватність та Ghost Mode", "Приватность и Ghost Mode", "Privacy & Ghost Mode"),
                                 R.drawable.msg_secret,
+                                true
+                        );
+                    } else if (position == mioMomentsRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Mio Moments (Історія та видалені)", "Mio Moments (История и удаленные)", "Mio Moments (History & Deleted)"),
+                                R.drawable.msg_delete,
                                 false
                         );
                     }

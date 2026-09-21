@@ -227,4 +227,28 @@ public final class MioForgeScaffold {
                 + "  cargo build --release --target wasm32-unknown-unknown\n"
                 + "Then drop the .wasm next to manifest.json or publish it to the mioplugin repo.";
     }
+
+    public static String pythonScaffold(String id, String name, String description) {
+        String safeId = sanitizeId(id);
+        String safeName = name != null && !name.trim().isEmpty() ? name.trim() : safeId;
+        String safeDesc = description != null ? description.replace("\"", "'").replace("\n", " ") : "";
+        return "__id__ = \"" + safeId + "\"\n"
+                + "__name__ = \"" + safeName + "\"\n"
+                + "__description__ = \"" + safeDesc + "\"\n"
+                + "__author__ = \"Amegram AI\"\n"
+                + "__version__ = \"1.0.0\"\n"
+                + "\n"
+                + "from base_plugin import BasePlugin, HookStrategy, HookResult\n"
+                + "\n"
+                + "class " + structName(safeId) + "(BasePlugin):\n"
+                + "    def on_plugin_load(self):\n"
+                + "        self.log(\"Plugin " + safeName + " loaded!\")\n"
+                + "\n"
+                + "    def on_plugin_unload(self):\n"
+                + "        self.log(\"Plugin " + safeName + " unloaded!\")\n"
+                + "\n"
+                + "    def on_send_message_hook(self, account, params):\n"
+                + "        # params contains 'message' dict with text, etc.\n"
+                + "        return None\n";
+    }
 }

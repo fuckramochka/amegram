@@ -330,6 +330,10 @@ public class Browser {
         String uriStr = uri.toString();
         if (uriStr != null && (uriStr.contains("tiktok.com/") || uriStr.contains("vm.tiktok.com/") || uriStr.contains("vt.tiktok.com/"))
                 && !uriStr.contains("ecosystem_bypass=1")) {
+            if (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isPlayInAppEnabled()) {
+                app.miogram.bridge.ecosystem.AmegramTikTokPlayer.show(context, uriStr);
+                return;
+            }
             if (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(context)
                     && app.miogram.bridge.ecosystem.AmegramTikTokBridge.isOpenDirectEnabled()) {
                 if (app.miogram.bridge.ecosystem.AmegramTikTokBridge.openInTikTokMi(context, uriStr)) {

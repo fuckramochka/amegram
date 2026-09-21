@@ -39,12 +39,21 @@ public class AmegramTikTokBridge {
 
     public static final String PREFS_NAME = "amegram_ecosystem_prefs";
     public static final String KEY_OPEN_DIRECT = "tiktok_open_direct";
+    public static final String KEY_PLAY_IN_APP = "tiktok_play_in_app";
     public static final String KEY_CLEAN_URLS = "tiktok_clean_urls";
     public static final String KEY_CLIPVAULT = "tiktok_clipvault";
     public static final String KEY_THEME_SYNC = "tiktok_theme_sync";
     public static final String KEY_SOUNDBOARD = "tiktok_soundboard";
 
+    public static final String KEY_LAST_WATCHED_URL = "tiktok_last_url";
+    public static final String KEY_LAST_WATCHED_TITLE = "tiktok_last_title";
+    public static final String KEY_LAST_WATCHED_AUTHOR = "tiktok_last_author";
+    public static final String KEY_LAST_WATCHED_COVER = "tiktok_last_cover";
+    public static final String KEY_LAST_WATCHED_TIME = "tiktok_last_time";
+
     public static final String ACTION_TIKTOKMI_THEME = "mi.tiktokmi.ACTION_THEME_CHANGED";
+    public static final String ACTION_TIKTOK_WATCHING = "app.amegram.ACTION_TIKTOK_WATCHING";
+
     private static final Pattern VIDEO_ID_PATTERN = Pattern.compile("/video/(\\d+)");
     private static final Pattern USER_PATTERN = Pattern.compile("/@([a-zA-Z0-9_.-]+)");
 
@@ -53,6 +62,14 @@ public class AmegramTikTokBridge {
     private static SharedPreferences getPrefs(Context context) {
         if (context == null) context = ApplicationLoader.applicationContext;
         return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+    }
+
+    public static boolean isPlayInAppEnabled() {
+        return getPrefs(null).getBoolean(KEY_PLAY_IN_APP, true);
+    }
+
+    public static void setPlayInAppEnabled(boolean enabled) {
+        getPrefs(null).edit().putBoolean(KEY_PLAY_IN_APP, enabled).apply();
     }
 
     public static boolean isOpenDirectEnabled() {
@@ -93,6 +110,42 @@ public class AmegramTikTokBridge {
 
     public static void setSoundboardEnabled(boolean enabled) {
         getPrefs(null).edit().putBoolean(KEY_SOUNDBOARD, enabled).apply();
+    }
+
+    public static class WatchingVideo {
+        public String url;
+        public String title;
+        public String author;
+        public String coverUrl;
+        public long timestamp;
+
+        public boolean isRecent() {
+            return System.currentTimeMillis() - timestamp < 24 * 60 * 60 * 1000L;
+        }
+    }
+
+    public static void setCurrentlyWatching(String url, String title, String author, String coverUrl) {
+        if (TextUtils.isEmpty(url)) return;
+        getPrefs(null).edit()
+                .putString(KEY_LAST_WATCHED_URL, url)
+                .putString(KEY_LAST_WATCHED_TITLE, title != null ? title : "")
+                .putString(KEY_LAST_WATCHED_AUTHOR, author != null ? author : "")
+                .putString(KEY_LAST_WATCHED_COVER, coverUrl != null ? coverUrl : "")
+                .putLong(KEY_LAST_WATCHED_TIME, System.currentTimeMillis())
+                .apply();
+    }
+
+    public static WatchingVideo getCurrentlyWatching() {
+        SharedPreferences p = getPrefs(null);
+        String url = p.getString(KEY_LAST_WATCHED_URL, null);
+        if (TextUtils.isEmpty(url)) return null;
+        WatchingVideo v = new WatchingVideo();
+        v.url = url;
+        v.title = p.getString(KEY_LAST_WATCHED_TITLE, "");
+        v.author = p.getString(KEY_LAST_WATCHED_AUTHOR, "");
+        v.coverUrl = p.getString(KEY_LAST_WATCHED_COVER, "");
+        v.timestamp = p.getLong(KEY_LAST_WATCHED_TIME, 0);
+        return v;
     }
 
     // ------------------------------------------------------------- Package & App Status
@@ -240,5 +293,40 @@ public class AmegramTikTokBridge {
         } catch (Throwable ignored) {
         }
         return tracks;
+    }
+
+    private static volatile boolean watchingReceiverRegistered = false;
+
+    /**
+     * Initializes dynamic broadcast receiver for incoming TikTok MI watching status updates.
+     */
+    public static void initWatchingReceiver(Context context) {
+        if (watchingReceiverRegistered) return;
+        if (context == null) context = ApplicationLoader.applicationContext;
+        if (context == null) return;
+
+        try {
+            android.content.IntentFilter filter = new android.content.IntentFilter(ACTION_TIKTOK_WATCHING);
+            android.content.BroadcastReceiver receiver = new android.content.BroadcastReceiver() {
+                @Override
+                public void onReceive(Context ctx, Intent intent) {
+                    if (intent == null) return;
+                    String url = intent.getStringExtra("url");
+                    String title = intent.getStringExtra("title");
+                    String author = intent.getStringExtra("author");
+                    String cover = intent.getStringExtra("coverUrl");
+                    if (!TextUtils.isEmpty(url)) {
+                        setCurrentlyWatching(url, title, author, cover);
+                    }
+                }
+            };
+            if (android.os.Build.VERSION.SDK_INT >= 33) {
+                context.registerReceiver(receiver, filter, Context.RECEIVER_EXPORTED);
+            } else {
+                context.registerReceiver(receiver, filter);
+            }
+            watchingReceiverRegistered = true;
+        } catch (Throwable ignored) {
+        }
     }
 }

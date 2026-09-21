@@ -212,6 +212,31 @@ public class AmegramEcosystemProvider extends ContentProvider {
                 return res;
             }
 
+            case "setWatching": {
+                if (extras == null) return null;
+                String url = extras.getString("url", "");
+                String title = extras.getString("title", "");
+                String author = extras.getString("author", "");
+                String coverUrl = extras.getString("coverUrl", "");
+                AmegramTikTokBridge.setCurrentlyWatching(url, title, author, coverUrl);
+                Bundle res = new Bundle();
+                res.putBoolean("success", true);
+                return res;
+            }
+
+            case "getWatching": {
+                Bundle res = new Bundle();
+                AmegramTikTokBridge.WatchingVideo w = AmegramTikTokBridge.getCurrentlyWatching();
+                if (w != null) {
+                    res.putString("url", w.url);
+                    res.putString("title", w.title);
+                    res.putString("author", w.author);
+                    res.putString("coverUrl", w.coverUrl);
+                    res.putLong("timestamp", w.timestamp);
+                }
+                return res;
+            }
+
             default:
                 return null;
         }

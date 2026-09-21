@@ -1,15 +1,15 @@
 <div align="center">
 
-<img src="assets/logo.png" width="128" alt="Miogram Logo">
+<img src="assets/logo.png" width="128" alt="Amegram Logo">
 
-# Miogram (Міограм)
+# Amegram (Амеграм)
 
-### *More than just a messenger. Telegram, but make it cute & powerful.*
-**Next-Generation Telegram Client with Zero-Trust Security, Modern Audio Player, WebAssembly Plugins & Cyber Pixel Badges**
+### *More than just a messenger. Telegram, but make it cute, powerful & unstoppable.*
+**Next-Generation Telegram Client with Zero-Trust Security, Modern Audio Player, 2026 Frontier AI, WASM Plugins & TikTok MI Ecosystem**
 
-[![Download Latest APK](https://img.shields.io/badge/Download-Latest%20APK-00F0FF?style=for-the-badge&logo=android&logoColor=black)](https://github.com/fuckramochka/miogram/releases/latest)
-[![Official Website](https://img.shields.io/badge/Website-MioGram%20Portal-FF69B4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://fuckramochka.github.io/miogram/)
-[![Author](https://img.shields.io/badge/Author-@dkramochka-FF2A93?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/dkramochka)
+[![Download Latest APK](https://img.shields.io/badge/Download-Latest%20APK-00F0FF?style=for-the-badge&logo=android&logoColor=black)](https://github.com/fuckramochka/amegram/releases/latest)
+[![Official Website](https://img.shields.io/badge/Website-Amegram%20Portal-FF69B4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://fuckramochka.github.io/amegram/)
+[![Author](https://img.shields.io/badge/Author-@dkamegram-FF2A93?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/dkamegram)
 [![License](https://img.shields.io/badge/License-GPL%20v3-9D4EDD?style=for-the-badge)](LICENSE)
 [![Android 15](https://img.shields.io/badge/Android%2015-16KB%20ELF%20Ready-3DDC84?style=for-the-badge&logo=android&logoColor=white)](docs/BUILD.md)
 
@@ -17,21 +17,24 @@
 
 ---
 
-## ✦ Overview / Про проєкт
+## Overview / Про проєкт
 
-**Miogram** — незалежний високоефективний клієнт Telegram для Android, створений для тих, хто цінує абсолютну конфіденційність, сучасну естетику, першокласний звук і безмежну кастомізацію.
+**Amegram** — незалежний високоефективний клієнт Telegram для Android, створений для тих, хто цінує абсолютну конфіденційність, естетику, передовий штучний інтелект 2026 року, першокласний звук і безшовну екосистему.
 
-Miogram поєднує в собі:
+Amegram поєднує в собі:
 - 🛡️ **Zero-Trust сховище «Подвійне дно»** з екстреним Duress PIN та апаратною ізоляцією StrongBox.
+- 🚀 **Мікро-патчі на льоту (`AmegramPatchManager`)**: оновлення критичних компонентів напряму з GitHub без перевстановлення APK.
+- 🌐 **Anti-Censorship & Anti-Block Engine**: миттєвий обхід блокувань ТСПУ/РКН з локальними зондами (`ya.ru`, `vk.com`, `77.88.8.8`) та динамічним проксі.
+- 🧠 **Frontier AI 2026 & On-Device Models**: інтеграція Gemini 3.5 Flash-Lite (ліміти в 10 разів вищі), Gemini 3.8 Flash, LiteRT-LM / AI Edge SDK (Gemini Nano, Gemma 4 E2B/E4B, Qwen 2.5/3.5) з аналізом заліза пристрою та генератором плагінів.
+- 📱 **Безшовна екосистема з TikTok MI**: вбудований відеоплеєр `AmegramTikTokPlayer`, картка цифрової присутності з неоновим градієнтом, 1-tap надсилання у «Збережене» та ClipVault.
 - 🎵 **Сучасний аудіоплеєр** з живою візуалізацією басів, текстами пісень та ергономікою Apple Music / Spotify.
 - 🎨 **Мультимакетний інтерфейс**: миттєве перемикання між стилями Discord, iOS, Minimalist та класичним Telegram.
-- ⚡ **WebAssembly (WASM) Rust плагін-рушій** з холодним запуском < 1 мс та мінімальним споживанням пам'яті (~150 КБ).
-- ʚ♡ɞ **10 канонічних піксельних бейджів** з хмарною синхронізацією через Supabase та інтерактивними часточками.
-- 🧠 **Приватний AI-роутер**: локальний Whisper STT без інтернету та розумна санітизація даних.
+- ⚡ **WebAssembly (WASM) Rust & Python плагін-рушій** з холодним запуском < 1 мс.
+- ʚ♡ɞ **10 канонічних піксельних бейджів** з хмарною синхронізацією через Supabase.
 
 ---
 
-## ʚ♡ɞ Ключові можливості / Key Features
+## Ключові можливості / Key Features
 
 ### 1. 🛡️ Захист від примусу (Duress PIN) та шифрування SQLCipher
 * **Два незалежних PIN-коди:**
@@ -47,86 +50,105 @@ Miogram поєднує в собі:
 
 ---
 
-### 2. 🎵 Сучасний аудіоплеєр з візуалізацією басів
-* **Жива візуалізація басів (`MiogramBassVisualizer`):** плавний мультисмуговий спектральний аналізатор у компактному та повноекранному режимах, що адаптується до кольорів теми.
+### 2. 🚀 Мікро-патчі на льоту (Rapid Hotfixes)
+* **`AmegramPatchManager`:** система гарячого застосування мікро-патчів з репозиторію GitHub без потреби завантажувати й перевстановлювати весь APK.
+* **Керування в Налаштуваннях:** розділ «Оновлення та інформація» містить статус застосованих патчів та кнопку ручної перевірки з детальним звітом.
+
+---
+
+### 3. 🌐 Обхід блокувань та цензури ТСПУ/РКН (Anti-Block Engine)
+* **`MiogramAntiBlockEngine`:** активна діагностика блокування з таймаутом усього 3.5 секунди для миттєвого підключення обхідних маршрутів.
+* **Стійкі локальні зонди:** перевірка доступності через внутрішні вузли (`ya.ru:443`, `vk.com:443`, `77.88.8.8:53`), які не фільтруються ТСПУ, на відміну від заблокованих `1.1.1.1` та `8.8.8.8`.
+* **Автоматичний fallback:** у разі виявлення блокування застосунок автоматично підключає вбудовані стійкі проксі-канали.
+
+---
+
+### 4. 🧠 Frontier AI 2026 & Локальні моделі (LiteRT-LM)
+* **Моделі 2026 року:**
+  * `gemini-3.5-flash-lite`: основна хмарна модель за замовчуванням. Має в 10 разів вищі ліміти запитів, наднизьку затримку та максимальну стабільність.
+  * `gemini-3.8-flash`: передова модель для кодингу, міркувань та складних задач.
+  * `gemini-3.5-flash`: збалансований варіант для загальних задач.
+  * `local-litert`: підтримка локального виконання нейромереж на пристрої через Google AI Edge SDK / Android AICore (Gemini Nano, Gemma 4 E2B/E4B, Qwen 2.5/3.5 Mobile).
+* **Аналіз заліза (Hardware Profiling):** застосунок аналізує обсяг оперативної пам'яті, процесорні ядра та архітектуру і надає персоналізовану рекомендацію моделі для найкращого балансу швидкості та якості.
+* **Генератор плагінів Amegram:** створення валідних плагінів для Python (`BasePlugin`), Java та Rust в один клік через AI.
+
+---
+
+### 5. 📱 Екосистема TikTok MI
+* **Вбудований відеоплеєр (`AmegramTikTokPlayer`):** перегляд відео за посиланнями TikTok безпосередньо в Amegram без водяних знаків та реклами.
+* **Цифрова присутність (Digital Presence):** відображення статусу перегляду TikTok у картці профілю з неоновим градієнтом `#00F2FE` (Cyan) / `#FE2C55` (Pink).
+* **1-Tap експорт:** збереження відео у «Збережені повідомлення», експорт звукових доріжок у плеєр та надсилання у Telegram Stories.
+* **Синхронізація тем та буфера ClipVault:** передача акцентів та скопійованих медіа між Amegram та TikTok MI.
+
+---
+
+### 6. 🎵 Сучасний аудіоплеєр з візуалізацією басів
+* **Жива візуалізація басів (`MiogramBassVisualizer`):** плавний мультисмуговий спектральний аналізатор у компактному та повноекранному режимах.
 * **Повноекранна обкладинка з інфо:** назва треку, автор, кнопка улюбленого та живий візуалізатор відображаються прямо поверх повноформатної обкладинки.
-* **6-кнопкова ергономічна панель:** виділена кнопка Shuffle (випадковий порядок), кнопка Repeat з підтримкою довгого натискання для виклику підменю, кнопки попереднього/наступного треку, Play/Pause та черга.
-* **Фікс контрастності та подвійного ріпла:** кристально чиста біла іконка Play/Pause у режимі `SRC_IN` без темних артефактів.
+* **6-кнопкова ергономічна панель:** Shuffle, Repeat з контекстним меню, Prev/Next, Play/Pause та черга.
 * **Синхронізовані тексти пісень (LRC)** та жестове перемотування.
 
 📖 *Детальніше у [Audio Player Architecture](docs/AUDIO_PLAYER.md).*
 
 ---
 
-### 3. 🎨 Мультимакетний інтерфейс (Layout Switcher)
-Перемикайте інтерфейс головного екрана в один дотик:
+### 7. 🎨 Мультимакетний інтерфейс (Layout Switcher)
 * **Discord Layout:** бічні сервери та канали, знайома структура для геймерів та спільнот.
 * **iOS Cupertino:** витончена нижня панель та напівпрозорий розмитий заголовок.
 * **Minimalist Rail:** ультракомпактна бічна колонка для фокусування на повідомленнях.
 * **Classic & Modern Telegram:** перевірений часом швидкий інтерфейс.
-* *Захист від нашарування:* автоматична система тегів `miogram_custom_layout` гарантує відсутність дублювання елементів при зміні режимів.
 
 ---
 
-### 4. ⚡ WebAssembly (WASM) Rust плагін-рушій
+### 8. ⚡ WebAssembly (WASM) Rust & Python плагін-рушій
 * **Субмілісекундний запуск:** виконання на базі мікрорантайму WAMR без важких інтерпретаторів.
 * **Мінімальний оверхед:** лише ~150 КБ оперативної пам'яті та ~85 КБ у фінальному APK.
 * **Офіційний Rust SDK (`sdk/rust/miogram-plugin-sdk`):** набір інструментів з макросом `register!`, типізованими конвертами та нульовим копіюванням.
 * **Криптографічний підпис Ed25519:** захист плагінів від модифікації.
-* **Паралельна підтримка Python-плагінів (Chaquopy 3.11)** та Java/Kotlin розширень.
+* **Паралельна підтримка Python-плагінів (Chaquopy 3.11)** з валідними метаданими та класами `BasePlugin`.
 
 📖 *Детальніше у [Plugin Developer Guide](docs/PLUGINS_DEV_GUIDE.md).*
 
 ---
 
-### 5. ʚ♡ɞ 10 канонічних піксельних бейджів та Supabase
+### 9. ʚ♡ɞ 10 канонічних піксельних бейджів та Supabase
 * **10 унікальних стилів:** Original Visor, Neon Pink, Cyan Cyber, Dark Velvet, Angel Halo, Devil Horns, Rainbow Prismatic, Wireframe Outline, Chromatic Glitch, Royal Golden Crown.
-* **Хмарна синхронізація Supabase:** статус учасника та історія нагородження зберігаються у базі PostgREST та кешуються локально для миттєвого відображення.
-* **Інтерактивна картка:** натискання на бейдж показує історію та причину нагородження.
+* **Хмарна синхронізація Supabase:** статус учасника та історія нагородження зберігаються у базі PostgREST та кешуються локально.
 
 ---
 
-### 6. 🧠 Приватний AI-роутер та локальний Whisper STT
-* **Автоматична санітизація (Privacy Shield):** номери карток, телефонів та паролі маскуються перед передачею в хмарні AI-сервіси.
-* **Локальне розпізнавання мови (Whisper STT):** транскрипція аудіо безпосередньо на пристрої без виходу в інтернет.
-* **Підтримка BYOK:** використання власних ключів Google Gemini з шифруванням у сховищі.
-
----
-
-### 7. 🗑️ Великоднє яйце «Мусордроп» (`tg://musor_drop`)
+### 10. 🗑️ Великоднє яйце «Мусордроп» (`tg://musor_drop`)
 * Інтерактивне відео-яйце з підтримкою відтворення як `.mp4`, так і `.mp3`.
-* Вбудований ассет прямо в APK (`assets/musordrop.mp4`) забезпечує гарантовану роботу з коробки без необхідності завантажувати файли вручну.
+* Вбудований ассет прямо в APK (`assets/musordrop.mp4`) забезпечує гарантовану роботу з коробки.
 
 📖 *Детальніше у [Easter Eggs Guide](docs/EASTER_EGGS.md).*
 
 ---
 
-## 🌐 Вебсайт та пряме встановлення / Website & Downloads
+## Вебсайт та завантаження / Website & Downloads
 
-* **Офіційний портал:** [https://fuckramochka.github.io/miogram/](https://fuckramochka.github.io/miogram/)
-  * Лічильник активних користувачів у реальному часі через Supabase.
-  * Пряме завантаження APK в один клік з GitHub Releases.
-  * Інтерактивне демо тем (Strawberry milk, Lavender dream, Minty angel).
-* **GitHub Releases:** [https://github.com/fuckramochka/miogram/releases/latest](https://github.com/fuckramochka/miogram/releases/latest)
+* **Офіційний портал:** [https://fuckramochka.github.io/amegram/](https://fuckramochka.github.io/amegram/)
+* **GitHub Releases:** [https://github.com/fuckramochka/amegram/releases/latest](https://github.com/fuckramochka/amegram/releases/latest)
+* **Канал проєкту:** [@dkamegram](https://t.me/dkamegram)
 
 ---
 
-## 🏗 Архітектура проєкту / Project Structure
+## Архітектура проєкту / Project Structure
 
-Miogram слідує суворій односпрямованій архітектурі:
+Amegram слідує суворій односпрямованій архітектурі:
 ```
 app.miogram.ui        →    app.miogram.bridge    →    app.miogram.core
 (Activities, Views)        (System Keystore, DB)      (Pure JVM Crypto, Vault, WASM)
 ```
 
 * `app.miogram.core` — 100% чиста JVM-логіка (криптографія, політики, кодеки), що тестується без емулятора.
-* `app.miogram.bridge` — адаптери до Android-системи (AndroidKeyStore, Room, SQLCipher, Supabase).
+* `app.miogram.bridge` — адаптери до Android-системи (AndroidKeyStore, Room, SQLCipher, Supabase, Ecosystem).
 * `sdk/rust/miogram-plugin-sdk` — Rust-бібліотека для розробки WASM-плагінів.
 * `website/` — офіційний вебсайт проєкту на базі React 19, Vite та Tailwind.
 
 ---
 
-## 🛠 Збирання з вихідного коду / Building from Source
+## Збирання з вихідного коду / Building from Source
 
 ### Системні вимоги:
 * **JDK:** 21 (Eclipse Temurin або OpenJDK)
@@ -137,8 +159,8 @@ app.miogram.ui        →    app.miogram.bridge    →    app.miogram.core
 ### Команди збирання:
 ```bash
 # 1. Клонувати репозиторій з субмодулями:
-git clone --recursive https://github.com/fuckramochka/miogram.git
-cd miogram
+git clone --recursive https://github.com/fuckramochka/amegram.git
+cd amegram
 
 # 2. Зібрати Debug APK:
 ./gradlew assembleDebug
@@ -154,7 +176,7 @@ cd miogram
 
 ---
 
-## 📚 Документація / Documentation Index
+## Документація / Documentation Index
 
 | Документ | Опис |
 |---|---|
@@ -167,14 +189,14 @@ cd miogram
 
 ---
 
-## 📄 Ліцензія / License
+## Ліцензія / License
 
-Код Miogram поширюється під ліцензією **GNU General Public License v3.0 (GPL-3.0)**.  
+Код Amegram поширюється під ліцензією **GNU General Public License v3.0 (GPL-3.0)**.  
 Дивіться файл [LICENSE](LICENSE) для отримання повної інформації.
 
 ---
 
 <div align="center">
-Made with ♡ by <b>@dkramochka</b> and the Miogram Community.<br>
+Made with ♡ by <b>@fuckramochka</b> and the Amegram Community.<br>
 <i>Stay soft. Stay safe. Stay you. ✧</i>
 </div>

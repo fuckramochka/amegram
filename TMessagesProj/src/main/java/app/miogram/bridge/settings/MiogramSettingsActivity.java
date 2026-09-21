@@ -61,6 +61,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int headerAboutRow;
     private int aboutRow;
     private int channelRow;
+    private int hotfixRow;
     private int updaterRow;
 
     @Override
@@ -97,6 +98,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         // Про додаток
         aboutRow = addRow();
         channelRow = addRow();
+        hotfixRow = addRow();
         updaterRow = addRow();
     }
 
@@ -147,6 +149,27 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new MiogramAboutActivity());
         } else if (position == channelRow) {
             openChannel();
+        } else if (position == hotfixRow) {
+            org.telegram.ui.ActionBar.AlertDialog progressDialog = new org.telegram.ui.ActionBar.AlertDialog(getParentActivity(), 3);
+            progressDialog.show();
+            app.miogram.bridge.patch.AmegramPatchManager.getInstance().checkForPatches((newPatchesApplied, message) -> {
+                try {
+                    progressDialog.dismiss();
+                } catch (Throwable ignore) {}
+                String title = MiogramLocale.get("Мікро-патчі Amegram", "Микро-патчи Amegram", "Amegram Hotfixes");
+                String desc;
+                if (newPatchesApplied > 0) {
+                    desc = MiogramLocale.get("Успішно застосовано " + newPatchesApplied + " швидких фіксів!\nЗміни активні без перезавантаження.",
+                            "Успешно применено " + newPatchesApplied + " быстрых фиксов!\nИзменения активны без перезагрузки.",
+                            "Successfully applied " + newPatchesApplied + " hotfixes!\nChanges are active without reboot.");
+                } else {
+                    desc = MiogramLocale.get("Всі швидкі фікси вже застосовано.\nСистема в актуальному стані.",
+                            "Все быстрые фиксы уже применены.\nСистема в актуальном состоянии.",
+                            "All hotfixes are already applied.\nSystem is up to date.");
+                }
+                org.telegram.ui.Components.AlertsCreator.showSimpleAlert(MiogramSettingsActivity.this, title, desc);
+                if (listAdapter != null) listAdapter.notifyDataSetChanged();
+            });
         } else if (position == updaterRow) {
             MiogramUpdater.checkAndShowUpdate(this, true);
         }
@@ -315,6 +338,17 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                                 MiogramLocale.get("Канал спільноти", "Канал сообщества", "Community Channel"),
                                 "@" + CHANNEL_USERNAME,
                                 R.drawable.msg_channel,
+                                true
+                        );
+                    } else if (position == hotfixRow) {
+                        int applied = app.miogram.bridge.patch.AmegramPatchManager.getInstance().getAppliedPatchCount();
+                        String countStr = applied > 0
+                                ? MiogramLocale.get("Застосовано: " + applied, "Применено: " + applied, "Applied: " + applied)
+                                : MiogramLocale.get("Усі актуальні", "Все актуальные", "Up to date");
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Швидкі фікси (Hotfixes)", "Быстрые фиксы (Hotfixes)", "Rapid Hotfixes"),
+                                countStr,
+                                R.drawable.msg_customize,
                                 true
                         );
                     } else if (position == updaterRow) {

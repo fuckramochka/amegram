@@ -43,6 +43,8 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
     private int companionInfoRow;
 
     private int headerAiRow;
+    private int hardwareRow;
+    private int hardwareInfoRow;
     private int keyRow;
     private int modelRow;
     private int getKeyRow;
@@ -55,7 +57,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return "Miogram AI";
+        return "Amegram AI";
     }
 
     @Override
@@ -69,6 +71,8 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
         companionInfoRow = addRow();
 
         headerAiRow = addRow();
+        hardwareRow = addRow();
+        hardwareInfoRow = addRow();
         keyRow = addRow();
         modelRow = addRow();
         getKeyRow = addRow();
@@ -206,16 +210,16 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
         if (ctx == null) return;
 
         String[] models = {
-                "gemini-3.5-flash-lite (" + MiogramLocale.get("За замовчуванням, надшвидка", "По умолчанию, сверхбыстрая", "Default, ultra-fast") + ")",
-                "gemini-2.5-flash (" + MiogramLocale.get("Швидка, рекомендовано", "Быстрая, рекомендовано", "Fast, recommended") + ")",
-                "gemini-2.5-pro (" + MiogramLocale.get("Глибокий аналіз", "Глубокий анализ", "Deep reasoning") + ")",
-                "gemini-2.0-flash (" + MiogramLocale.get("Стабільна", "Стабильная", "Stable") + ")",
+                "gemini-3.5-flash-lite (" + MiogramLocale.get("За замовчуванням, 10x ліміти, швидка", "По умолчанию, 10x лимиты, быстрая", "Default, 10x limits, fast") + ")",
+                "gemini-3.8-flash (" + MiogramLocale.get("Флагман 2026, міркування та код", "Флагман 2026, рассуждения и код", "Frontier 2026 reasoning & code") + ")",
+                "gemini-3.5-flash (" + MiogramLocale.get("Збалансована модель 2026", "Сбалансированная модель 2026", "Balanced 2026 Flash") + ")",
+                "local-litert (" + MiogramLocale.get("Локальний ШІ: LiteRT-LM / On-Device", "Локальный ИИ: LiteRT-LM / On-Device", "Local AI: LiteRT-LM / On-Device") + ")",
                 MiogramLocale.get("Вказати власну модель…", "Указать свою модель…", "Custom model…")
         };
-        String[] modelKeys = {"gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.0-flash", "custom"};
+        String[] modelKeys = {"gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.5-flash", "local-litert", "custom"};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        builder.setTitle(MiogramLocale.get("Модель Miogram AI", "Модель Miogram AI", "Miogram AI Model"));
+        builder.setTitle(MiogramLocale.get("Модель Amegram AI", "Модель Amegram AI", "Amegram AI Model"));
         builder.setItems(models, (dialog, which) -> {
             if ("custom".equals(modelKeys[which])) {
                 showCustomModelDialog();
@@ -236,7 +240,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
 
         EditTextBoldCursor input = new EditTextBoldCursor(ctx);
         input.setText(savedModel());
-        input.setHint("gemini-2.5-flash");
+        input.setHint("gemini-3.5-flash-lite");
         input.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         input.setHintColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
         input.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(12), AndroidUtilities.dp(24), AndroidUtilities.dp(12));
@@ -259,16 +263,21 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
         }
 
         @Override
+        public int getItemCount() {
+            return rowCount;
+        }
+
+        @Override
         public int getItemViewType(int position) {
-            if (position == headerAiRow || position == headerFeaturesRow || position == headerCompanionRow) {
+            if (position == headerCompanionRow || position == headerAiRow || position == headerFeaturesRow) {
                 return TYPE_HEADER;
-            } else if (position == keyRow || position == modelRow || position == voiceTranscribeInfoRow || position == companionChoiceRow) {
+            } else if (position == companionChoiceRow || position == keyRow || position == modelRow || position == voiceTranscribeInfoRow || position == hardwareRow) {
                 return TYPE_SETTINGS;
-            } else if (position == getKeyRow || position == openCompanionRow) {
+            } else if (position == openCompanionRow || position == getKeyRow) {
                 return TYPE_TEXT;
-            } else if (position == piiMaskRow || position == companionBottomTabRow) {
+            } else if (position == companionBottomTabRow || position == piiMaskRow) {
                 return TYPE_CHECK;
-            } else if (position == aiInfoRow || position == featuresInfoRow || position == companionInfoRow) {
+            } else if (position == companionInfoRow || position == aiInfoRow || position == featuresInfoRow || position == hardwareInfoRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_SETTINGS;
@@ -280,11 +289,11 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == headerCompanionRow) {
-                        cell.setText(MiogramLocale.get("ШІ Супутник (Needy Streamer Overload) ໒꒱", "ИИ Спутник (Needy Streamer Overload) ໒꒱", "AI Companion (Needy Streamer Overload) ໒꒱"));
+                        cell.setText(MiogramLocale.get("ШІ-Супутниця (Ame & KAngel)", "ИИ-Спутница (Ame & KAngel)", "AI Companion (Ame & KAngel)"));
                     } else if (position == headerAiRow) {
-                        cell.setText(MiogramLocale.get("Конфігурація Gemini AI", "Конфигурация Gemini AI", "Gemini AI Configuration"));
+                        cell.setText(MiogramLocale.get("Рушій та налаштування ШІ", "Движок и настройки ИИ", "AI Engine & Settings"));
                     } else if (position == headerFeaturesRow) {
-                        cell.setText(MiogramLocale.get("Застосування Miogram AI", "Применение Miogram AI", "Miogram AI Applications"));
+                        cell.setText(MiogramLocale.get("Можливості та приватність", "Возможности и приватность", "Features & Privacy"));
                     }
                     break;
                 }
@@ -295,6 +304,13 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                         boolean isAme = app.miogram.bridge.ai.companion.MiogramCompanionPrefs.isAmeActive();
                         String companionName = isAme ? "Ame-chan ໒꒱" : "KAngel ✧†";
                         cell.setTextAndValue(MiogramLocale.get("Активний супутник", "Активный спутник", "Active Companion"), companionName, true);
+                    } else if (position == hardwareRow) {
+                        MiogramAiService.DeviceHardwareInfo hw = MiogramAiService.getDeviceHardwareInfo();
+                        cell.setTextAndValue(
+                                MiogramLocale.get("Оптимізація під пристрій", "Оптимизация под устройство", "Device Optimization"),
+                                hw.deviceSummary,
+                                false
+                        );
                     } else if (position == keyRow) {
                         cell.setTextAndValue(MiogramLocale.get("API ключі Gemini", "API ключи Gemini", "Gemini API Keys"), keySummary(), true);
                     } else if (position == modelRow) {
@@ -332,10 +348,13 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                                 "Аме и Кангель — автономные ИИ-агенты со своими характерами из Needy Streamer Overload. Они умеют читать и чистить чаты, менять настройки клиента и синтезировать плагины на Gemini 3.8 Flash.",
                                 "Ame and KAngel are autonomous AI agents inspired by Needy Streamer Overload. They can read and clear chats, modify settings, and generate plugins on Gemini 3.8 Flash."
                         ));
+                    } else if (position == hardwareInfoRow) {
+                        MiogramAiService.DeviceHardwareInfo hw = MiogramAiService.getDeviceHardwareInfo();
+                        cell.setText(hw.recommendationReason);
                     } else if (position == aiInfoRow) {
-                        cell.setText(MiogramLocale.get("Додайте один або кілька ключів Gemini, по одному в рядку. Miogram обирає ключі по черзі та переходить до наступного, коли ключ неавторизований або вичерпав квоту.",
-                                "Добавьте один или несколько ключей Gemini, по одному в строке. Miogram выбирает ключи по очереди и переходит к следующему, когда ключ не авторизован или исчерпал квоту.",
-                                "Add one or more Gemini keys, one per line. Miogram rotates keys and tries the next one when a key is unauthorized or out of quota."));
+                        cell.setText(MiogramLocale.get("Додайте один або кілька ключів Gemini, по одному в рядку. Amegram обирає ключі по черзі та переходит до наступного, коли ключ неавторизований або вичерпав квоту.",
+                                "Добавьте один или несколько ключей Gemini, по одному в строке. Amegram выбирает ключи по очереди и переходит к следующему, когда ключ не авторизован или исчерпал квоту.",
+                                "Add one or more Gemini keys, one per line. Amegram rotates keys and tries the next one when a key is unauthorized or out of quota."));
                     } else if (position == featuresInfoRow) {
                         cell.setText(MiogramLocale.get("Натисніть кнопку розшифровки на будь-якому голосовому повідомленні або кружечку в чаті для отримання тексту за 0.3 секунди.",
                                 "Нажмите кнопку расшифровки на любом голосовом сообщении или кружочке в чате для получения текста за 0.3 секунды.",

@@ -55,9 +55,68 @@ public class MiogramAiService {
     /** Must stay in sync with the model list in MiogramAiSettingsActivity. */
     public static final String DEFAULT_MODEL = "gemini-3.5-flash-lite";
     /** Stable tier guaranteed by every fallback chain below. */
-    public static final String FALLBACK_MODEL = "gemini-2.5-flash";
+    public static final String FALLBACK_MODEL = "gemini-3.5-flash";
     /** Dedicated model for plugin code generation (Miogram Plugin Forge). */
     public static final String PLUGIN_MODEL = "gemini-3.8-flash";
+
+    public static class DeviceHardwareInfo {
+        public float totalRamGb;
+        public float availRamGb;
+        public int cpuCores;
+        public String abi;
+        public String recommendedModel;
+        public String recommendationReason;
+        public String deviceSummary;
+    }
+
+    public static DeviceHardwareInfo getDeviceHardwareInfo() {
+        DeviceHardwareInfo info = new DeviceHardwareInfo();
+        Context ctx = ApplicationLoader.applicationContext;
+        float totalGb = 4.0f;
+        float availGb = 2.0f;
+        if (ctx != null) {
+            try {
+                android.app.ActivityManager am = (android.app.ActivityManager) ctx.getSystemService(Context.ACTIVITY_SERVICE);
+                if (am != null) {
+                    android.app.ActivityManager.MemoryInfo mi = new android.app.ActivityManager.MemoryInfo();
+                    am.getMemoryInfo(mi);
+                    totalGb = (float) (mi.totalMem / (1024.0 * 1024.0 * 1024.0));
+                    availGb = (float) (mi.availMem / (1024.0 * 1024.0 * 1024.0));
+                }
+            } catch (Throwable ignore) {}
+        }
+        info.totalRamGb = Math.round(totalGb * 10f) / 10f;
+        info.availRamGb = Math.round(availGb * 10f) / 10f;
+        info.cpuCores = Runtime.getRuntime().availableProcessors();
+        info.abi = android.os.Build.SUPPORTED_ABIS != null && android.os.Build.SUPPORTED_ABIS.length > 0
+                ? android.os.Build.SUPPORTED_ABIS[0] : "arm64-v8a";
+
+        info.deviceSummary = info.totalRamGb + " ГБ RAM • " + info.cpuCores + " ядер (" + info.abi + ")";
+
+        if (info.totalRamGb < 4.5f) {
+            info.recommendedModel = "gemini-3.5-flash-lite";
+            info.recommendationReason = app.miogram.bridge.MiogramLocale.get(
+                    "Хмарна Gemini 3.5 Flash-Lite (Рекомендовано для пристроїв з < 4 ГБ ОЗП: нульовий розхід пам'яті, в 10 разів вищі ліміти, швидкість < 0.3с)",
+                    "Облачная Gemini 3.5 Flash-Lite (Рекомендовано для устройств с < 4 ГБ ОЗУ: нулевой расход памяти, в 10 раз выше лимиты, скорость < 0.3с)",
+                    "Cloud Gemini 3.5 Flash-Lite (Recommended for < 4GB RAM: 0 RAM footprint, 10x higher rate limits, < 0.3s speed)"
+            );
+        } else if (info.totalRamGb < 7.5f) {
+            info.recommendedModel = "gemini-3.5-flash-lite";
+            info.recommendationReason = app.miogram.bridge.MiogramLocale.get(
+                    "Gemini 3.5 Flash-Lite (Хмара) або Gemma 4 E2B / Qwen 2.5 1.5B (Локально): ідеальний баланс для 4-6 ГБ ОЗП",
+                    "Gemini 3.5 Flash-Lite (Облако) или Gemma 4 E2B / Qwen 2.5 1.5B (Локально): идеальный баланс для 4-6 ГБ ОЗУ",
+                    "Gemini 3.5 Flash-Lite (Cloud) or Gemma 4 E2B / Qwen 2.5 1.5B (Local): ideal balance for 4-6 GB RAM"
+            );
+        } else {
+            info.recommendedModel = "gemini-3.8-flash";
+            info.recommendationReason = app.miogram.bridge.MiogramLocale.get(
+                    "Gemini 3.8 Flash (Хмара) або Gemma 4 E4B / Qwen 3B (Локально): ваш пристрій має " + info.totalRamGb + " ГБ ОЗП і забезпечує максимальну продуктивність ШІ",
+                    "Gemini 3.8 Flash (Облако) или Gemma 4 E4B / Qwen 3B (Локально): устройство имеет " + info.totalRamGb + " ГБ ОЗУ и обеспечивает максимальную мощность ИИ",
+                    "Gemini 3.8 Flash (Cloud) or Gemma 4 E4B / Qwen 3B (Local): your device has " + info.totalRamGb + " GB RAM and provides peak AI performance"
+            );
+        }
+        return info;
+    }
     private static final AtomicInteger apiKeyCursor = new AtomicInteger();
     // Base64 expands data; stay well below Gemini's 20 MB inline audio limit.
     private static final long MAX_INLINE_AUDIO_BYTES = 14L * 1024L * 1024L;
@@ -682,21 +741,24 @@ public class MiogramAiService {
                     + "Encode answers with the same layout. Unknown op => return -1. Build: tinygo build -o plugin.wasm -target wasm .\n";
         } else if ("python".equals(wantLang)) {
             codeKeyName = "module_py";
-            contract = "You write native Miogram / Heroku Userbot modules in Python (3.8+ compatible):\n"
-                    + "from heroku_compat import loader, utils\n\n"
-                    + "@loader.tds\n"
-                    + "class MyModuleMod(loader.Module):\n"
-                    + "    \"\"\"Module docstring explaining features\"\"\"\n"
-                    + "    strings = {\"name\": \"MyModule\"}\n\n"
-                    + "    @loader.command()\n"
-                    + "    async def mycmd(self, message):\n"
-                    + "        \"\"\"Command documentation\"\"\"\n"
-                    + "        await utils.answer(message, \"Result text\")\n\n"
-                    + "    # If the user requested automatic text transformation/filtering (e.g. putting a dot at the end of each word):\n"
-                    + "    def filter_outgoing(self, text: str) -> str:\n"
-                    + "        # transform and return text\n"
-                    + "        return ...\n"
-                    + "Rules: valid clean Python 3, no uninstalled heavy libraries, fully self-contained.\n";
+            contract = "You write native Amegram plugins in Python (3.8+ compatible, subclassing BasePlugin):\n"
+                    + "__id__ = \"my_plugin\"  # required: 2-32 lowercase ASCII letters, digits, underscores\n"
+                    + "__name__ = \"My Plugin\"  # required: human name\n"
+                    + "__description__ = \"Plugin description\"  # required\n"
+                    + "__author__ = \"Amegram AI\"  # required\n"
+                    + "__version__ = \"1.0.0\"  # required\n\n"
+                    + "from base_plugin import BasePlugin, HookStrategy, HookResult\n\n"
+                    + "class MyPlugin(BasePlugin):\n"
+                    + "    \"\"\"Amegram plugin implementation\"\"\"\n\n"
+                    + "    def on_plugin_load(self):\n"
+                    + "        self.log(\"Plugin loaded!\")\n\n"
+                    + "    def on_plugin_unload(self):\n"
+                    + "        self.log(\"Plugin unloaded!\")\n\n"
+                    + "    # If the user requested text transformation/filtering on outgoing messages:\n"
+                    + "    def on_send_message_hook(self, account, params):\n"
+                    + "        # params contains 'message' dict with text, etc.\n"
+                    + "        return None\n\n"
+                    + "Rules: valid clean Python 3, MUST declare __id__, __name__, __description__, __author__, __version__ at top level, MUST subclass BasePlugin.\n";
         } else if ("lua".equals(wantLang)) {
             codeKeyName = "script_lua";
             contract = "You write lightweight Miogram Lua plugins (runs directly on device without compilation):\n"

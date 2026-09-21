@@ -45,8 +45,8 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
     private static final String PREFS_NAME = "miogram_bypass";
 
     // TSPU throttling detection thresholds
-    public static final long DEFAULT_DETECTION_TIMEOUT_MS = 7000L; // 7 seconds stuck connecting directly
-    private static final long PROXY_STUCK_TIMEOUT_MS = 6000L; // 6 seconds stuck connecting to proxy
+    public static final long DEFAULT_DETECTION_TIMEOUT_MS = 3500L; // 3.5 seconds stuck connecting directly
+    private static final long PROXY_STUCK_TIMEOUT_MS = 5000L; // 5 seconds stuck connecting to proxy
     private static final long MAX_ACCEPTABLE_PING_MS = 2500L;
 
     // Direct Telegram DC probes for deep diagnostic check
@@ -574,23 +574,21 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
                 return;
             }
 
-            // 1. Probe neutral external internet host (1.1.1.1 or 8.8.8.8) to verify device has general network access
+            // 1. Probe domestic Russian endpoints (ya.ru, vk.com, 77.88.8.8) to verify device has general network access in RF
             boolean neutralReachable = false;
-            try {
-                java.net.Socket s = new java.net.Socket();
-                s.connect(new java.net.InetSocketAddress("1.1.1.1", 443), 3000);
-                neutralReachable = true;
-                s.close();
-            } catch (Throwable t) {
+            String[] domesticHosts = new String[]{"ya.ru", "vk.com", "77.88.8.8", "1.1.1.1"};
+            int[] domesticPorts = new int[]{443, 443, 53, 443};
+            for (int h = 0; h < domesticHosts.length; h++) {
                 try {
-                    java.net.Socket s2 = new java.net.Socket();
-                    s2.connect(new java.net.InetSocketAddress("8.8.8.8", 53), 3000);
+                    java.net.Socket s = new java.net.Socket();
+                    s.connect(new java.net.InetSocketAddress(domesticHosts[h], domesticPorts[h]), 2500);
                     neutralReachable = true;
-                    s2.close();
+                    s.close();
+                    break;
                 } catch (Throwable ignored) {}
             }
 
-            if (!neutralReachable) {
+            if (!neutralReachable && !ApplicationLoader.isNetworkOnline()) {
                 if (callback != null) {
                     AndroidUtilities.runOnUIThread(() -> callback.onResult(false, MiogramLocale.get("Загальний інтернет відсутній (не блокування Telegram)", "Общий интернет недоступен (не блокировка Telegram)", "General internet unavailable (not a Telegram block)")));
                 }
@@ -609,7 +607,7 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
                 long start = SystemClock.elapsedRealtime();
                 try {
                     java.net.Socket socket = new java.net.Socket();
-                    socket.connect(new java.net.InetSocketAddress(ip, port), 3500);
+                    socket.connect(new java.net.InetSocketAddress(ip, port), 3000);
                     long rtt = SystemClock.elapsedRealtime() - start;
                     socket.close();
                     reachableCount++;
@@ -623,8 +621,8 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
             final boolean isBlocked;
             final String report;
 
-            // Block confirmed ONLY when neutral internet works BUT Telegram DCs are systematically dead/reset
-            if (reachableCount == 0 && failedCount >= 3) {
+            // Block confirmed when neutral/domestic internet works BUT Telegram DCs fail (or <= 1 reachable while >= 2 blocked)
+            if (reachableCount == 0 || (failedCount >= 2 && reachableCount <= 1)) {
                 isBlocked = true;
                 report = MiogramLocale.get("Виявлено блокування ТСПУ: сервери Telegram недоступні (" + dcLog.toString().trim() + ")",
                         "Обнаружена блокировка ТСПУ: серверы Telegram недоступны (" + dcLog.toString().trim() + ")",

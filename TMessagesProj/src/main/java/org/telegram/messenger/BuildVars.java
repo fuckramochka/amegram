@@ -27,8 +27,8 @@ public class BuildVars {
     public static String BUILD_VERSION_STRING = BuildConfig.BUILD_VERSION_STRING;
     public static String BUILD_COMMIT_ID = BuildConfig.BUILD_COMMIT_ID;
 
-    public static int APP_ID = 6;
-    public static String APP_HASH = "eb06d4abfb49dc3eeb1aeb98ae0f581e";
+    public static int APP_ID = 21724;
+    public static String APP_HASH = "3e0cb5efcd52300aec5994fdfc5bdc16";
 
     // SafetyNet key for Google Identity SDK, set it to empty to disable
     public static String SAFETYNET_KEY = "";
@@ -48,8 +48,8 @@ public class BuildVars {
         APP_ID = BuildConfig.APP_ID;
         APP_HASH = BuildConfig.APP_HASH;
         if (APP_ID == 0 || APP_ID == 2496 || "3e0cb5ab24683510a8da977bc172b161".equals(APP_HASH)) {
-            APP_ID = 6;
-            APP_HASH = "eb06d4abfb49dc3eeb1aeb98ae0f581e";
+            APP_ID = 21724;
+            APP_HASH = "3e0cb5efcd52300aec5994fdfc5bdc16";
         }
         if (ApplicationLoader.applicationContext != null) {
             SharedPreferences sharedPreferences = ApplicationLoader.applicationContext.getSharedPreferences("systemConfig", Context.MODE_PRIVATE);

@@ -1816,6 +1816,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     private boolean isRequestingFirebaseSms;
     private void fillNextCodeParams(Bundle params, TLRPC.auth_SentCode res, boolean animate) {
         if (res instanceof TLRPC.TL_auth_sentCodePaymentRequired) {
+            if (NekoXConfig.rotateNextPresetApi() && views[VIEW_PHONE_INPUT] instanceof PhoneView) {
+                ((PhoneView) views[VIEW_PHONE_INPUT]).onNextPressed(null);
+                return;
+            }
             final TLRPC.TL_auth_sentCodePaymentRequired auth = (TLRPC.TL_auth_sentCodePaymentRequired) res;
             params.putString("product", auth.store_product);
             params.putString("phoneHash", auth.phone_code_hash);
@@ -6054,9 +6058,45 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                         if (request == BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE) {
                             try {
                                 googleAccount = GoogleSignIn.getSignedInAccountFromIntent(data).getResult(ApiException.class);
+                                if (googleAccount != null && !TextUtils.isEmpty(googleAccount.getEmail())) {
+                                    emailField.setText(googleAccount.getEmail());
+                                }
                                 onNextPressed(null);
                             } catch (ApiException e) {
                                 FileLog.e(e);
+                                try {
+                                    GoogleSignInOptions fallbackOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                                            .requestEmail()
+                                            .build();
+                                    GoogleSignInClient fallbackClient = GoogleSignIn.getClient(getContext(), fallbackOptions);
+                                    NotificationCenter.getGlobalInstance().addObserver(new NotificationCenter.NotificationCenterDelegate() {
+                                        @Override
+                                        public void didReceivedNotification(int id2, int account2, Object... args2) {
+                                            int req2 = (int) args2[0];
+                                            Intent data2 = (Intent) args2[2];
+                                            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.onActivityResultReceived);
+                                            if (req2 == BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE) {
+                                                try {
+                                                    GoogleSignInAccount acc = GoogleSignIn.getSignedInAccountFromIntent(data2).getResult(ApiException.class);
+                                                    if (acc != null && !TextUtils.isEmpty(acc.getEmail())) {
+                                                        emailField.setText(acc.getEmail());
+                                                        googleAccount = acc;
+                                                        onNextPressed(null);
+                                                    }
+                                                } catch (Exception ex) {
+                                                    FileLog.e(ex);
+                                                }
+                                            }
+                                        }
+                                    }, NotificationCenter.onActivityResultReceived);
+                                    fallbackClient.signOut().addOnCompleteListener(cmd -> {
+                                        if (getParentActivity() != null && !getParentActivity().isFinishing()) {
+                                            getParentActivity().startActivityForResult(fallbackClient.getSignInIntent(), BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE);
+                                        }
+                                    });
+                                } catch (Exception ex) {
+                                    FileLog.e(ex);
+                                }
                             }
                         }
                     }
@@ -6148,7 +6188,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             params.putString("email", email);
             params.putBoolean("setup", true);
 
-            if (googleAccount != null) {
+            if (googleAccount != null && !TextUtils.isEmpty(googleAccount.getIdToken())) {
                 TL_account.verifyEmail verifyEmail = new TL_account.verifyEmail();
                 if (activityMode == MODE_CHANGE_LOGIN_EMAIL) {
                     verifyEmail.purpose = new TLRPC.TL_emailVerifyPurposeLoginChange();
@@ -6391,6 +6431,38 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 onNextPressed(null);
                             } catch (ApiException e) {
                                 FileLog.e(e);
+                                try {
+                                    GoogleSignInOptions fallbackOptions = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                                            .requestEmail()
+                                            .build();
+                                    GoogleSignInClient fallbackClient = GoogleSignIn.getClient(getContext(), fallbackOptions);
+                                    NotificationCenter.getGlobalInstance().addObserver(new NotificationCenter.NotificationCenterDelegate() {
+                                        @Override
+                                        public void didReceivedNotification(int id2, int account2, Object... args2) {
+                                            int req2 = (int) args2[0];
+                                            Intent data2 = (Intent) args2[2];
+                                            NotificationCenter.getGlobalInstance().removeObserver(this, NotificationCenter.onActivityResultReceived);
+                                            if (req2 == BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE) {
+                                                try {
+                                                    GoogleSignInAccount acc = GoogleSignIn.getSignedInAccountFromIntent(data2).getResult(ApiException.class);
+                                                    if (acc != null) {
+                                                        googleAccount = acc;
+                                                        onNextPressed(null);
+                                                    }
+                                                } catch (Exception ex) {
+                                                    FileLog.e(ex);
+                                                }
+                                            }
+                                        }
+                                    }, NotificationCenter.onActivityResultReceived);
+                                    fallbackClient.signOut().addOnCompleteListener(cmd -> {
+                                        if (getParentActivity() != null && !getParentActivity().isFinishing()) {
+                                            getParentActivity().startActivityForResult(fallbackClient.getSignInIntent(), BasePermissionsActivity.REQUEST_CODE_SIGN_IN_WITH_GOOGLE);
+                                        }
+                                    });
+                                } catch (Exception ex) {
+                                    FileLog.e(ex);
+                                }
                             }
                         }
                     }
@@ -6891,7 +6963,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 TLRPC.TL_auth_signIn request = new TLRPC.TL_auth_signIn();
                 request.phone_number = requestPhone;
                 request.phone_code_hash = phoneHash;
-                if (googleAccount != null) {
+                if (googleAccount != null && !TextUtils.isEmpty(googleAccount.getIdToken())) {
                     TLRPC.TL_emailVerificationGoogle verification = new TLRPC.TL_emailVerificationGoogle();
                     verification.token = googleAccount.getIdToken();
                     request.email_verification = verification;

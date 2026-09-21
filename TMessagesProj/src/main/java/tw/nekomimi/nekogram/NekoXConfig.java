@@ -40,11 +40,11 @@ public class NekoXConfig {
     public static final int API_TYPE_DEFAULT = 0;
     public static final int API_TYPE_CUSTOM = 3;
 
-    public static final int[] PRESET_APP_IDS = {6, 21724, 4};
+    public static final int[] PRESET_APP_IDS = {21724, 4, 6};
     public static final String[] PRESET_APP_HASHES = {
-            "eb06d4abfb49dc3eeb1aeb98ae0f581e",
             "3e0cb5efcd52300aec5994fdfc5bdc16",
-            "014b35b6184100b085b0d0572f9b5103"
+            "014b35b6184100b085b0d0572f9b5103",
+            "eb06d4abfb49dc3eeb1aeb98ae0f581e"
     };
 
     public static SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekox_config", Context.MODE_PRIVATE);
@@ -75,7 +75,7 @@ public class NekoXConfig {
         if (BuildConfig.APP_ID != 0 && BuildConfig.APP_ID != 2496) {
             return BuildConfig.APP_ID;
         }
-        return 6;
+        return 21724;
     }
 
     public static String currentAppHash() {
@@ -88,7 +88,7 @@ public class NekoXConfig {
         if (!TextUtils.isEmpty(BuildConfig.APP_HASH) && !"8da85b0d0b0e014b35b6184100b085b0".equals(BuildConfig.APP_HASH) && !"3e0cb5ab24683510a8da977bc172b161".equals(BuildConfig.APP_HASH)) {
             return BuildConfig.APP_HASH;
         }
-        return "eb06d4abfb49dc3eeb1aeb98ae0f581e";
+        return "3e0cb5efcd52300aec5994fdfc5bdc16";
     }
 
     public static boolean rotateNextPresetApi() {

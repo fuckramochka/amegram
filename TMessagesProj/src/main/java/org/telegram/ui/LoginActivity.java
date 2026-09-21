@@ -1540,7 +1540,6 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void needHideProgress(boolean cancel, boolean animated) {
-        nextPressed = false;
         if (progressRequestId != 0) {
             if (cancel) {
                 ConnectionsManager.getInstance(currentAccount).cancelRequest(progressRequestId, true);
@@ -3165,7 +3164,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 req = changePhoneCode;
             } else {
                 ConnectionsManager.getInstance(currentAccount).cleanup(false);
-                ConnectionsManager.getInstance(currentAccount).resumeNetwork();
+                ConnectionsManager.getInstance(currentAccount).checkConnection();
 
                 TLRPC.TL_auth_sendCode sendCode = new TLRPC.TL_auth_sendCode();
                 sendCode.api_hash = NekoXConfig.currentAppHash();
@@ -3254,8 +3253,8 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 if (error.text != null && (error.text.contains("API_ID_INVALID") || error.text.contains("API_ID_PUBLISHED_FLOOD"))) {
                                     AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
                                     b.setTitle(getString(R.string.RestorePasswordNoEmailTitle));
-                                    b.setMessage(error.text + "\n\n" + LocaleController.getString(R.string.UseCustomApi));
-                                    b.setPositiveButton(LocaleController.getString(R.string.UseCustomApi), (di, w) -> NekoXConfig.showCustomApiBottomSheet(LoginActivity.this));
+                                    b.setMessage(error.text + "\n\n" + LocaleController.getString(R.string.UseCustomApiNotice));
+                                    b.setPositiveButton(LocaleController.getString(R.string.CustomApi), (di, w) -> NekoXConfig.showCustomApiBottomSheet(LoginActivity.this));
                                     b.setNegativeButton(getString("OK", R.string.OK), null);
                                     showDialog(b.create());
                                 } else {
@@ -3263,7 +3262,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                                 }
                             }
                         } else {
-                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), LocaleController.getString(R.string.ConnectingTimeout));
+                            needShowAlert(getString(R.string.RestorePasswordNoEmailTitle), app.miogram.bridge.MiogramLocale.get("Час очікування з'єднання вичерпано", "Время ожидания соединения истекло", "Connection timeout"));
                         }
                     }
                 }

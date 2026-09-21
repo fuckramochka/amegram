@@ -154,7 +154,7 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         videoContainer.addView(loadingView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         playPauseBtn = new ImageView(context);
-        playPauseBtn.setImageResource(R.drawable.msg_play);
+        playPauseBtn.setImageResource(R.drawable.ic_play);
         playPauseBtn.setColorFilter(0xFFFFFFFF);
         playPauseBtn.setVisibility(View.GONE);
         videoContainer.addView(playPauseBtn, LayoutHelper.createFrame(56, 56, Gravity.CENTER));
@@ -441,5 +441,17 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
             isPlaying = false;
         }
         super.dismiss();
+    }
+
+    public static void sendToSavedMessages(String videoUrl, String videoTitle) {
+        if (TextUtils.isEmpty(videoUrl)) return;
+        int currentAccount = UserConfig.selectedAccount;
+        long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
+        String text = (!TextUtils.isEmpty(videoTitle) ? videoTitle + "\n" : "") + videoUrl;
+        SendMessagesHelper.getInstance(currentAccount).sendMessage(
+                SendMessagesHelper.SendMessageParams.of(text, clientUserId)
+        );
+        MiogramHaptic.success();
+        Toast.makeText(ApplicationLoader.applicationContext, MiogramLocale.get("Збережено в Збережені повідомлення!", "Сохранено в Избранное!", "Saved to Saved Messages!"), Toast.LENGTH_SHORT).show();
     }
 }

@@ -329,4 +329,20 @@ public class AmegramTikTokBridge {
         } catch (Throwable ignored) {
         }
     }
+
+    public static boolean openTikTokMi(Context context) {
+        if (context == null) context = ApplicationLoader.applicationContext;
+        String pkg = getInstalledTikTokPackage(context);
+        if (pkg != null) {
+            try {
+                Intent intent = context.getPackageManager().getLaunchIntentForPackage(pkg);
+                if (intent != null) {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
+                    return true;
+                }
+            } catch (Throwable ignored) {}
+        }
+        return false;
+    }
 }

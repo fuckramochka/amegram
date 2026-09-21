@@ -1064,7 +1064,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
             MessagesController.getInstance(currentAccount).putUsers(encUsers, true);
             if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive()) {
                 for (int a = 0; a < result.size(); a++) {
-                    TLObject obj = result.get(a);
+                    Object obj = result.get(a);
                     long did = 0;
                     if (obj instanceof TLRPC.User) {
                         did = ((TLRPC.User) obj).id;

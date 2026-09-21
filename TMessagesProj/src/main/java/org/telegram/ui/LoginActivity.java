@@ -3251,6 +3251,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             android.app.Dialog d = AlertsCreator.processError(currentAccount, error, LoginActivity.this, req, phoneInputData.phoneNumber);
                             if (d == null) {
                                 if (error.text != null && (error.text.contains("API_ID_INVALID") || error.text.contains("API_ID_PUBLISHED_FLOOD"))) {
+                                    if (NekoXConfig.rotateNextPresetApi()) {
+                                        onNextPressed();
+                                        return;
+                                    }
                                     AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
                                     b.setTitle(getString(R.string.RestorePasswordNoEmailTitle));
                                     b.setMessage(error.text + "\n\n" + LocaleController.getString(R.string.UseCustomApiNotice));
@@ -8538,6 +8542,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     }
                 } else if (error.text != null) {
                     removeObserver();
+                    if ((error.text.contains("API_ID_INVALID") || error.text.contains("API_ID_PUBLISHED_FLOOD")) && NekoXConfig.rotateNextPresetApi()) {
+                        exportLoginToken(show);
+                        return;
+                    }
                     handleError(error.text);
                 }
 

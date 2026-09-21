@@ -47,11 +47,23 @@ public class NekoXConfig {
     public static String customAppHash = preferences.getString("custom_app_hash", "");
 
     public static int currentAppId() {
-        return customApi == API_TYPE_CUSTOM ? customAppId : BuildConfig.APP_ID;
+        if (customApi == API_TYPE_CUSTOM && customAppId != 0 && customAppId != 2496) {
+            return customAppId;
+        }
+        if (BuildConfig.APP_ID == 0 || BuildConfig.APP_ID == 2496) {
+            return 21724;
+        }
+        return BuildConfig.APP_ID;
     }
 
     public static String currentAppHash() {
-        return customApi == API_TYPE_CUSTOM ? customAppHash : BuildConfig.APP_HASH;
+        if (customApi == API_TYPE_CUSTOM && !TextUtils.isEmpty(customAppHash) && !"8da85b0d0b0e014b35b6184100b085b0".equals(customAppHash)) {
+            return customAppHash;
+        }
+        if (TextUtils.isEmpty(BuildConfig.APP_HASH) || "8da85b0d0b0e014b35b6184100b085b0".equals(BuildConfig.APP_HASH)) {
+            return "3e0cb5ab24683510a8da977bc172b161";
+        }
+        return BuildConfig.APP_HASH;
     }
 
     public static void saveCustomApi() {

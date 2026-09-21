@@ -69,11 +69,13 @@ public class NekoXConfig {
                 return customAppId;
             }
         }
-        if (activePresetIndex >= 0 && activePresetIndex < PRESET_APP_IDS.length) {
-            return PRESET_APP_IDS[activePresetIndex];
-        }
+        // Own credentials (local.properties / CI secrets) first — miogram scheme.
+        // Presets stay only as emergency fallback for builds without credentials.
         if (BuildConfig.APP_ID != 0 && BuildConfig.APP_ID != 2496) {
             return BuildConfig.APP_ID;
+        }
+        if (activePresetIndex >= 0 && activePresetIndex < PRESET_APP_IDS.length) {
+            return PRESET_APP_IDS[activePresetIndex];
         }
         return 6;
     }
@@ -82,11 +84,12 @@ public class NekoXConfig {
         if (customApi == API_TYPE_CUSTOM && !TextUtils.isEmpty(customAppHash) && !"8da85b0d0b0e014b35b6184100b085b0".equals(customAppHash) && !"3e0cb5ab24683510a8da977bc172b161".equals(customAppHash)) {
             return customAppHash;
         }
-        if (activePresetIndex >= 0 && activePresetIndex < PRESET_APP_HASHES.length) {
-            return PRESET_APP_HASHES[activePresetIndex];
-        }
+        // Own credentials (local.properties / CI secrets) first — miogram scheme.
         if (!TextUtils.isEmpty(BuildConfig.APP_HASH) && !"8da85b0d0b0e014b35b6184100b085b0".equals(BuildConfig.APP_HASH) && !"3e0cb5ab24683510a8da977bc172b161".equals(BuildConfig.APP_HASH)) {
             return BuildConfig.APP_HASH;
+        }
+        if (activePresetIndex >= 0 && activePresetIndex < PRESET_APP_HASHES.length) {
+            return PRESET_APP_HASHES[activePresetIndex];
         }
         return "eb06d4abfb49dc3eeb1aeb98ae0f581e";
     }

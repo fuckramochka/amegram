@@ -100,6 +100,15 @@ public class MiogramSteamManager {
     private static final String PREFS_NAME = "miogram_steam_prefs";
     private static final String KEY_SELF_STEAM_ID = "self_steam_id";
     private static final String KEY_BROADCAST_ENABLED = "self_steam_broadcast_enabled";
+    private static final String KEY_STEAM_API_KEY = "steam_api_key";
+
+    public String getSteamApiKey() {
+        return getPrefs().getString(KEY_STEAM_API_KEY, "");
+    }
+
+    public void setSteamApiKey(String key) {
+        getPrefs().edit().putString(KEY_STEAM_API_KEY, key != null ? key.trim() : "").apply();
+    }
 
     private final LongSparseArray<SteamProfile> profileCache = new LongSparseArray<>();
     private final LongSparseArray<Long> lastFetchTime = new LongSparseArray<>();
@@ -377,11 +386,24 @@ public class MiogramSteamManager {
             }
         } else if ("in-game".equalsIgnoreCase(onlineState) || (p.stateMessage != null && p.stateMessage.contains("In-Game"))) {
             p.isInGame = true;
-            if (p.stateMessage != null && p.stateMessage.contains("<br/>")) {
-                p.gameName = p.stateMessage.substring(p.stateMessage.indexOf("<br/>") + 5).replace("<![CDATA[", "").replace("]]>", "").trim();
+            if (p.stateMessage != null) {
+                String sm = p.stateMessage;
+                if (sm.contains("<br/>")) {
+                    p.gameName = sm.substring(sm.indexOf("<br/>") + 5);
+                } else if (sm.contains("<br>")) {
+                    p.gameName = sm.substring(sm.indexOf("<br>") + 4);
+                } else if (sm.contains("In-Game: ")) {
+                    p.gameName = sm.substring(sm.indexOf("In-Game: ") + 9);
+                }
+                if (p.gameName != null) {
+                    p.gameName = p.gameName.replace("<![CDATA[", "").replace("]]>", "").replaceAll("<[^>]*>", "").trim();
+                }
             }
         } else {
             p.isInGame = false;
+            p.gameName = "";
+            p.gameId = "";
+            p.gameIconUrl = "";
         }
 
         // If not actively in a match, check most played games to display favorite game

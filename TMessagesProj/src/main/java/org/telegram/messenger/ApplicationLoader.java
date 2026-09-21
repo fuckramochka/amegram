@@ -434,6 +434,7 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         LauncherIconController.tryFixLauncherIconIfNeeded();
         ProxyRotationController.init();
         app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().start();
+        app.miogram.bridge.patch.AmegramPatchManager.getInstance().init(applicationContext);
     }
 
     // Local Push Service, TFoss implementation

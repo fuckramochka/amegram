@@ -4323,17 +4323,32 @@ public class ChatActivityEnterView extends FrameLayout implements
                         var chat = controller.getChat(chatFull.id);
                         if (chat != null && ChatObject.isMegagroup(chat) && chat.creator) {
                             var self = UserConfig.getInstance(currentAccount).getCurrentUser();
+                            if (self != null) {
+                                var rights = chat.admin_rights;
+                                if (rights == null) {
+                                    rights = new TLRPC.TL_chatAdminRights();
+                                    rights.change_info = true;
+                                    rights.post_messages = true;
+                                    rights.edit_messages = true;
+                                    rights.delete_messages = true;
+                                    rights.ban_users = true;
+                                    rights.invite_users = true;
+                                    rights.pin_messages = true;
+                                    rights.add_admins = true;
+                                    rights.manage_call = true;
+                                    rights.manage_topics = true;
+                                    chat.admin_rights = rights;
+                                }
 
-                            if (peer.channel_id == chat.id) {
-                                var rights = chat.admin_rights;
-                                rights.anonymous = true;
-                                var rank = MessagesController.getInstance(currentAccount).getAdminRank(chat.id, self.id);
-                                MessagesController.getInstance(currentAccount).setUserAdminRole(chat.id, self, rights,  rank, false, parentFragment, false, false, null, null);
-                            } else if (peer.user_id == self.id) {
-                                var rights = chat.admin_rights;
-                                rights.anonymous = false;
-                                var rank = MessagesController.getInstance(currentAccount).getAdminRank(chat.id, self.id);
-                                MessagesController.getInstance(currentAccount).setUserAdminRole(chat.id, self, rights,  rank, false, parentFragment, false, false, null, null);
+                                if (peer.channel_id == chat.id) {
+                                    rights.anonymous = true;
+                                    var rank = MessagesController.getInstance(currentAccount).getAdminRank(chat.id, self.id);
+                                    MessagesController.getInstance(currentAccount).setUserAdminRole(chat.id, self, rights, rank, false, parentFragment, false, false, null, null);
+                                } else if (peer.user_id == self.id) {
+                                    rights.anonymous = false;
+                                    var rank = MessagesController.getInstance(currentAccount).getAdminRank(chat.id, self.id);
+                                    MessagesController.getInstance(currentAccount).setUserAdminRole(chat.id, self, rights, rank, false, parentFragment, false, false, null, null);
+                                }
                             }
                         }
 

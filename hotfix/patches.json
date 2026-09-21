@@ -1,0 +1,17 @@
+{
+  "version": "12.11.6",
+  "updated_at": "2026-09-21T13:40:00Z",
+  "patches": [
+    {
+      "id": "fix_chat_enter_npe_01",
+      "min_version": "12.10.336",
+      "max_version": "12.11.6",
+      "name": "Виправлення падіння при виборі відправника",
+      "type": "config",
+      "rules": {
+        "fix_sender_select_npe": true,
+        "steam_live_status_enhanced": true
+      }
+    }
+  ]
+}

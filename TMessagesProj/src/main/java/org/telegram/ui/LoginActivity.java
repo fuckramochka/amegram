@@ -3252,7 +3252,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                             if (d == null) {
                                 if (error.text != null && (error.text.contains("API_ID_INVALID") || error.text.contains("API_ID_PUBLISHED_FLOOD"))) {
                                     if (NekoXConfig.rotateNextPresetApi()) {
-                                        onNextPressed();
+                                        onNextPressed(code);
                                         return;
                                     }
                                     AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());

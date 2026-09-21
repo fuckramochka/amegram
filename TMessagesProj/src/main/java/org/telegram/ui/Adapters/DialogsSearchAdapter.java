@@ -647,9 +647,11 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 if (foundDuplicate) {
                                     continue;
                                 }
+                            long dialog_id = MessageObject.getDialogId(message);
+                            if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive() && !app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, dialog_id)) {
+                                continue;
                             }
                             searchResultMessages.add(msg);
-                            long dialog_id = MessageObject.getDialogId(message);
                             ConcurrentHashMap<Long, Integer> read_max = message.out ? MessagesController.getInstance(currentAccount).dialogs_read_outbox_max : MessagesController.getInstance(currentAccount).dialogs_read_inbox_max;
                             Integer value = read_max.get(dialog_id);
                             if (value != null) {
@@ -1059,6 +1061,24 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                 }
             }
             MessagesController.getInstance(currentAccount).putUsers(encUsers, true);
+            if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive()) {
+                for (int a = 0; a < result.size(); a++) {
+                    TLObject obj = result.get(a);
+                    long did = 0;
+                    if (obj instanceof TLRPC.User) {
+                        did = ((TLRPC.User) obj).id;
+                    } else if (obj instanceof TLRPC.Chat) {
+                        did = -((TLRPC.Chat) obj).id;
+                    } else if (obj instanceof TLRPC.EncryptedChat) {
+                        did = DialogObject.makeEncryptedDialogId(((TLRPC.EncryptedChat) obj).id);
+                    }
+                    if (did != 0 && !app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, did)) {
+                        result.remove(a);
+                        names.remove(a);
+                        a--;
+                    }
+                }
+            }
             searchResult = result;
             searchResultNames = names;
          //   searchContacts = contacts;

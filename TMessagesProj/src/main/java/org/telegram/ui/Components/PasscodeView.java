@@ -942,75 +942,71 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
     }
 
     private void processDone(boolean fingerprint) {
-        if (!fingerprint) {
-            if (SharedConfig.passcodeRetryInMs > 0) {
+        if (fingerprint) {
+            if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isConfigured() || MiogramGate.isConfigured()) {
                 return;
             }
-            String password = "";
-            if (SharedConfig.passcodeType == SharedConfig.PASSCODE_TYPE_PIN) {
-                password = passwordEditText2.getString();
-            } else if (SharedConfig.passcodeType == SharedConfig.PASSCODE_TYPE_PASSWORD) {
-                password = passwordEditText.getText().toString();
-            }
-            if (password.length() == 0) {
-                onPasscodeError();
-                return;
-            }
-            if ("0000".equals(password)) {
-                SharedConfig.passcodeHash = "";
-                SharedConfig.appLocked = false;
-                SharedConfig.saveConfig();
-                PasscodeHelper.clearAll();
-                try {
-                    java.io.File vf = new java.io.File(getContext().getFilesDir(), "miogram.vault");
-                    if (vf.exists()) vf.delete();
-                } catch (Throwable ignore) {}
-                finishUnlock(false);
-                return;
-            }
-            int duressVerdict = app.miogram.bridge.vault.MiogramDoubleBottomManager.checkPasscode(password);
-            if (duressVerdict == app.miogram.bridge.vault.MiogramDoubleBottomManager.VERDICT_REAL) {
-                app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
-                finishUnlock(false);
-                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-                return;
-            } else if (duressVerdict == app.miogram.bridge.vault.MiogramDoubleBottomManager.VERDICT_DURESS) {
-                app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(true);
-                int decoyAccount = app.miogram.bridge.vault.MiogramDoubleBottomManager.getDecoyAccount();
-                if (decoyAccount >= 0 && decoyAccount < UserConfig.MAX_ACCOUNT_COUNT && UserConfig.getInstance(decoyAccount).isClientActivated()) {
-                    MessagesController.getInstance(decoyAccount).loadDialogs(0, -1, 100, true);
-                    if (getContext() instanceof LaunchActivity) {
-                        ((LaunchActivity) getContext()).switchToAccount(decoyAccount, true);
-                    }
-                }
-                if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isPanicLogoutEnabled()) {
-                    for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                        if (a != decoyAccount && UserConfig.getInstance(a).isClientActivated()) {
-                            MessagesController.getInstance(a).performLogout(1);
-                        }
-                    }
-                }
-                finishUnlock(false);
-                AndroidUtilities.runOnUIThread(() -> {
-                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-                    if (decoyAccount >= 0) {
-                        NotificationCenter.getInstance(decoyAccount).postNotificationName(NotificationCenter.dialogsNeedReload);
-                    }
-                }, 150);
-                return;
-            }
-            if (PasscodeHelper.checkPasscode((Activity) getContext(), password)) {
-                app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
-                finishUnlock(false);
-                return;
-            }
-            if (!SharedConfig.checkPasscode(password)) {
-                handleLegacyPasscodeError();
-                return;
-            }
-            app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
+            finishUnlock(fingerprint);
+            return;
         }
-        finishUnlock(fingerprint);
+        if (SharedConfig.passcodeRetryInMs > 0) {
+            return;
+        }
+        String password = "";
+        if (SharedConfig.passcodeType == SharedConfig.PASSCODE_TYPE_PIN) {
+            password = passwordEditText2.getString();
+        } else if (SharedConfig.passcodeType == SharedConfig.PASSCODE_TYPE_PASSWORD) {
+            password = passwordEditText.getText().toString();
+        }
+        if (password.length() == 0) {
+            onPasscodeError();
+            return;
+        }
+        int duressVerdict = app.miogram.bridge.vault.MiogramDoubleBottomManager.checkPasscode(password);
+        if (duressVerdict == app.miogram.bridge.vault.MiogramDoubleBottomManager.VERDICT_REAL) {
+            app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
+            finishUnlock(false);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+            return;
+        } else if (duressVerdict == app.miogram.bridge.vault.MiogramDoubleBottomManager.VERDICT_DURESS) {
+            app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(true);
+            int decoyAccount = app.miogram.bridge.vault.MiogramDoubleBottomManager.getDecoyAccount();
+            if (decoyAccount >= 0 && decoyAccount < UserConfig.MAX_ACCOUNT_COUNT && UserConfig.getInstance(decoyAccount).isClientActivated()) {
+                MessagesController.getInstance(decoyAccount).loadDialogs(0, -1, 100, true);
+                if (getContext() instanceof LaunchActivity) {
+                    ((LaunchActivity) getContext()).switchToAccount(decoyAccount, true);
+                }
+            }
+            if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isPanicLogoutEnabled()) {
+                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                    if (a != decoyAccount && UserConfig.getInstance(a).isClientActivated()) {
+                        MessagesController.getInstance(a).performLogout(1);
+                    }
+                }
+            }
+            finishUnlock(false);
+            AndroidUtilities.runOnUIThread(() -> {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                if (decoyAccount >= 0) {
+                    NotificationCenter.getInstance(decoyAccount).postNotificationName(NotificationCenter.dialogsNeedReload);
+                }
+            }, 150);
+            return;
+        } else if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isConfigured()) {
+            handleLegacyPasscodeError();
+            return;
+        }
+        if (PasscodeHelper.checkPasscode((Activity) getContext(), password)) {
+            app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
+            finishUnlock(false);
+            return;
+        }
+        if (!SharedConfig.checkPasscode(password)) {
+            handleLegacyPasscodeError();
+            return;
+        }
+        app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
+        finishUnlock(false);
     }
 
     private void handleLegacyPasscodeError() {
@@ -1337,7 +1333,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
      * Miogram vault is configured. Proper CryptoObject binding — Этап 2.
      */
     private static boolean biometricAllowedWithMiogram() {
-        return !MiogramGate.isConfigured();
+        return !MiogramGate.isConfigured() && !app.miogram.bridge.vault.MiogramDoubleBottomManager.isConfigured();
     }
 
     public void onShow(boolean fingerprint, boolean animated, int x, int y, Runnable onShow, Runnable onStart) {

@@ -3088,6 +3088,21 @@ public class ChatActivity extends BaseFragment implements
         final long chatId = arguments.getLong("chat_id", 0);
         final long userId = arguments.getLong("user_id", 0);
         final int encId = arguments.getInt("enc_id", 0);
+
+        long targetDialogId = 0;
+        if (chatId != 0) {
+            targetDialogId = -chatId;
+        } else if (userId != 0) {
+            targetDialogId = userId;
+        } else if (encId != 0) {
+            targetDialogId = DialogObject.makeEncryptedDialogId(encId);
+        }
+        if (targetDialogId != 0 && app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive()) {
+            if (!app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, targetDialogId)) {
+                return false;
+            }
+        }
+
         dialogFolderId = arguments.getInt("dialog_folder_id", 0);
         dialogFilterId = arguments.getInt("dialog_filter_id", 0);
         chatMode = arguments.getInt("chatMode", 0);

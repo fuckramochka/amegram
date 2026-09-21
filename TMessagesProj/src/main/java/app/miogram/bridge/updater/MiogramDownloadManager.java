@@ -3,7 +3,9 @@ package app.miogram.bridge.updater;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageInstaller;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -15,7 +17,9 @@ import androidx.core.content.FileProvider;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.Utilities;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -118,7 +122,11 @@ public class MiogramDownloadManager {
         if (ctx == null) ctx = ApplicationLoader.applicationContext;
         File dir = ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
         if (dir == null) dir = ctx.getFilesDir();
-        File apkFile = new File(dir, "miogram_update_v" + version + ".apk");
+        File apkFile = new File(dir, "amegram_update_v" + version + ".apk");
+        if (apkFile.exists() && apkFile.length() > 20 * 1024 * 1024) {
+            return apkFile;
+        }
+        apkFile = new File(dir, "miogram_update_v" + version + ".apk");
         if (apkFile.exists() && apkFile.length() > 20 * 1024 * 1024) {
             return apkFile;
         }
@@ -167,8 +175,8 @@ public class MiogramDownloadManager {
         if (dir == null) dir = ctx.getFilesDir();
         if (!dir.exists()) dir.mkdirs();
 
-        final File apkFile = new File(dir, "miogram_update_v" + version + ".apk");
-        final File partFile = new File(dir, "miogram_update_v" + version + ".apk.part");
+        final File apkFile = new File(dir, "amegram_update_v" + version + ".apk");
+        final File partFile = new File(dir, "amegram_update_v" + version + ".apk.part");
         this.currentApkFile = apkFile;
 
         MiogramUpdateBar.showGlobalBar();
@@ -435,5 +443,115 @@ public class MiogramDownloadManager {
             FileLog.e("MiogramDownloadManager: unattended install failed, falling back to intent", t);
             return false;
         }
+    }
+
+    public static void cleanOldUpdateApks(Context context) {
+        cleanOldUpdateApks(context, false);
+    }
+
+    public static void cleanOldUpdateApks(Context context, boolean forceAll) {
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
+                Context ctx = context != null ? context.getApplicationContext() : ApplicationLoader.applicationContext;
+                if (ctx == null) return;
+
+                PackageManager pm = ctx.getPackageManager();
+                int currentVersionCode = 0;
+                String currentVersionName = BuildVars.BUILD_VERSION_STRING;
+                try {
+                    PackageInfo myInfo = pm.getPackageInfo(ctx.getPackageName(), 0);
+                    currentVersionCode = myInfo.versionCode;
+                    if (myInfo.versionName != null) {
+                        currentVersionName = myInfo.versionName;
+                    }
+                } catch (Throwable ignore) {}
+
+                File[] searchDirs = new File[]{
+                        ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
+                        ctx.getFilesDir(),
+                        ctx.getExternalCacheDir(),
+                        ctx.getCacheDir()
+                };
+
+                MiogramDownloadManager dm = instance;
+                File activeApk = (dm != null && dm.isDownloading) ? dm.currentApkFile : null;
+
+                for (File dir : searchDirs) {
+                    if (dir == null || !dir.exists() || !dir.isDirectory()) continue;
+                    File[] files = dir.listFiles();
+                    if (files == null) continue;
+
+                    for (File file : files) {
+                        if (file == null || !file.isFile()) continue;
+                        String name = file.getName().toLowerCase();
+
+                        boolean isUpdateFile = (name.endsWith(".apk") || name.endsWith(".part")) &&
+                                (name.contains("miogram_update") || name.contains("amegram_update") || name.startsWith("update_") || name.contains("update"));
+
+                        boolean isDownloadDir = dir.equals(ctx.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS));
+                        if (!isUpdateFile && !(isDownloadDir && (name.endsWith(".apk") || name.endsWith(".part")))) {
+                            continue;
+                        }
+
+                        // Skip file currently being downloaded
+                        if (activeApk != null && (file.equals(activeApk) || file.getName().startsWith(activeApk.getName()))) {
+                            continue;
+                        }
+
+                        if (forceAll) {
+                            try {
+                                boolean deleted = file.delete();
+                                FileLog.d("MiogramDownloadManager: force deleted update file: " + file.getName() + " (deleted=" + deleted + ")");
+                            } catch (Exception e) {
+                                FileLog.e("MiogramDownloadManager: failed to delete file: " + file.getName(), e);
+                            }
+                            continue;
+                        }
+
+                        // Check .part file age (clean up abandoned downloads older than 1 hour)
+                        if (name.endsWith(".part")) {
+                            if (System.currentTimeMillis() - file.lastModified() > 60 * 60 * 1000L) {
+                                try {
+                                    file.delete();
+                                    FileLog.d("MiogramDownloadManager: deleted abandoned .part file: " + file.getName());
+                                } catch (Exception ignored) {}
+                            }
+                            continue;
+                        }
+
+                        // For .apk files, check if already installed or obsolete
+                        boolean shouldDelete = false;
+                        try {
+                            PackageInfo archiveInfo = pm.getPackageArchiveInfo(file.getAbsolutePath(), 0);
+                            if (archiveInfo != null) {
+                                if (archiveInfo.packageName == null || archiveInfo.packageName.equals(ctx.getPackageName())) {
+                                    if (currentVersionCode > 0 && archiveInfo.versionCode <= currentVersionCode) {
+                                        shouldDelete = true;
+                                    } else if (currentVersionName != null && !MiogramUpdater.isNewerVersion(currentVersionName, archiveInfo.versionName, null, null)) {
+                                        shouldDelete = true;
+                                    }
+                                }
+                            } else {
+                                // Invalid / corrupted APK
+                                shouldDelete = true;
+                            }
+                        } catch (Throwable t) {
+                            shouldDelete = true;
+                        }
+
+                        if (shouldDelete) {
+                            try {
+                                boolean deleted = file.delete();
+                                FileLog.d("MiogramDownloadManager: deleted obsolete update apk: " + file.getName() + " (deleted=" + deleted + ")");
+                            } catch (Exception e) {
+                                FileLog.e("MiogramDownloadManager: failed to delete apk: " + file.getName(), e);
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable t) {
+                FileLog.e("MiogramDownloadManager: error during cleanOldUpdateApks", t);
+            }
+        });
     }
 }

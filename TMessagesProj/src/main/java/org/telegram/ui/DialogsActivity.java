@@ -11380,16 +11380,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (decoy >= 0 && currentAccount != decoy) {
                     return new ArrayList<>();
                 }
-                if (app.miogram.bridge.vault.MiogramDoubleBottomManager.hasAllowedDialogs(currentAccount)) {
-                    ArrayList<TLRPC.Dialog> filtered = new ArrayList<>();
-                    for (int i = 0; i < list.size(); i++) {
-                        TLRPC.Dialog d = list.get(i);
-                        if (d != null && app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, d.id)) {
-                            filtered.add(d);
-                        }
-                    }
-                    return filtered;
+                if (decoy < 0 && !app.miogram.bridge.vault.MiogramDoubleBottomManager.hasAllowedDialogs(currentAccount)) {
+                    return new ArrayList<>();
                 }
+                ArrayList<TLRPC.Dialog> filtered = new ArrayList<>();
+                for (int i = 0; i < list.size(); i++) {
+                    TLRPC.Dialog d = list.get(i);
+                    if (d != null && app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, d.id)) {
+                        filtered.add(d);
+                    }
+                }
+                return filtered;
             }
             if (app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled() && !frozen) {
                 list = app.miogram.bridge.folders.MiogramSubfolderEngine.applySubfolderFiltering(currentAccount, list);
@@ -11417,16 +11418,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 if (decoy >= 0 && currentAccount != decoy) {
                     return new ArrayList<>();
                 }
-                if (app.miogram.bridge.vault.MiogramDoubleBottomManager.hasAllowedDialogs(currentAccount)) {
-                    ArrayList<TLRPC.Dialog> filtered = new ArrayList<>();
-                    for (int i = 0; i < list.size(); i++) {
-                        TLRPC.Dialog d = list.get(i);
-                        if (d != null && app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, d.id)) {
-                            filtered.add(d);
-                        }
-                    }
-                    return filtered;
+                if (decoy < 0 && !app.miogram.bridge.vault.MiogramDoubleBottomManager.hasAllowedDialogs(currentAccount)) {
+                    return new ArrayList<>();
                 }
+                ArrayList<TLRPC.Dialog> filtered = new ArrayList<>();
+                for (int i = 0; i < list.size(); i++) {
+                    TLRPC.Dialog d = list.get(i);
+                    if (d != null && app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, d.id)) {
+                        filtered.add(d);
+                    }
+                }
+                return filtered;
             }
             return list;
         } else if (dialogsType == DIALOGS_TYPE_ADD_USERS_TO) {

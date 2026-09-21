@@ -39,8 +39,9 @@ public class MiogramInstallReceiver extends BroadcastReceiver {
             }
         } else if (status == PackageInstaller.STATUS_SUCCESS) {
             FileLog.d("MiogramInstallReceiver: installation succeeded unattended!");
+            MiogramDownloadManager.cleanOldUpdateApks(context, true);
             try {
-                Toast.makeText(context, MiogramLocale.get("Miogram успішно оновлено!", "Miogram успешно обновлен!", "Miogram successfully updated!"), Toast.LENGTH_LONG).show();
+                Toast.makeText(context, MiogramLocale.get("Amegram успішно оновлено!", "Amegram успешно обновлен!", "Amegram successfully updated!"), Toast.LENGTH_LONG).show();
             } catch (Exception ignored) {}
         } else {
             String message = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);

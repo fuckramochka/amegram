@@ -94,6 +94,7 @@ public class MiogramUpdater {
             try {
                 Context ctx = ApplicationLoader.applicationContext != null ? ApplicationLoader.applicationContext : context;
                 if (ctx == null) return;
+                MiogramDownloadManager.cleanOldUpdateApks(ctx);
                 SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                 long lastCheck = prefs.getLong(KEY_LAST_CHECK_TIME, 0L);
                 long now = System.currentTimeMillis();

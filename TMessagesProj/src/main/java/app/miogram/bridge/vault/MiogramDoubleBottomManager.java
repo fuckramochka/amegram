@@ -35,6 +35,8 @@ public class MiogramDoubleBottomManager {
     public static final int VERDICT_REAL = 1;
     public static final int VERDICT_DURESS = 2;
 
+    private static final String KEY_DURESS_ACTIVE = "duress_active";
+
     public static volatile boolean isDuressActive = false;
 
     private static SharedPreferences getPrefs() {
@@ -57,11 +59,15 @@ public class MiogramDoubleBottomManager {
     }
 
     public static boolean isDuressActive() {
-        return isDuressActive;
+        if (!isConfigured()) {
+            return false;
+        }
+        return isDuressActive || getPrefs().getBoolean(KEY_DURESS_ACTIVE, false);
     }
 
     public static void setDuressActive(boolean active) {
         isDuressActive = active;
+        getPrefs().edit().putBoolean(KEY_DURESS_ACTIVE, active).apply();
     }
 
     /**
@@ -140,7 +146,7 @@ public class MiogramDoubleBottomManager {
     }
 
     public static boolean isChatAllowed(int account, long dialogId) {
-        if (!isDuressActive) {
+        if (!isDuressActive()) {
             return true;
         }
         int decoy = getDecoyAccount();
@@ -154,7 +160,7 @@ public class MiogramDoubleBottomManager {
             return false;
         }
         if (!hasAllowedDialogs(account)) {
-            return true;
+            return false;
         }
         return getAllowedDialogIds(account).contains(dialogId);
     }

@@ -322,12 +322,16 @@ public class DrawerAccountPickerView extends FrameLayout {
     /** Порядок по {@code loginTime}. */
     public void loadAccounts() {
         accounts.clear();
-        int duressDecoy = app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive()
-                ? app.miogram.bridge.vault.MiogramDoubleBottomManager.getDecoyAccount() : -1;
+        boolean duress = app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive();
+        int duressDecoy = duress ? app.miogram.bridge.vault.MiogramDoubleBottomManager.getDecoyAccount() : -1;
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             if (UserConfig.getInstance(a).isClientActivated()) {
-                if (duressDecoy >= 0 && a != duressDecoy) {
-                    continue;
+                if (duress) {
+                    if (duressDecoy >= 0) {
+                        if (a != duressDecoy) continue;
+                    } else {
+                        if (a != UserConfig.selectedAccount) continue;
+                    }
                 }
                 accounts.add(a);
             }

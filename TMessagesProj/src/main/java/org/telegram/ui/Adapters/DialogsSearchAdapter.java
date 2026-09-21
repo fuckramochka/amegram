@@ -647,6 +647,7 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
                                 if (foundDuplicate) {
                                     continue;
                                 }
+                            }
                             long dialog_id = MessageObject.getDialogId(message);
                             if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive() && !app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, dialog_id)) {
                                 continue;

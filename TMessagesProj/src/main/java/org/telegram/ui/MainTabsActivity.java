@@ -377,6 +377,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         tabsView = new MainTabsLayout(context, resourceProvider);
         tabsView.setClipChildren(false);
+        // Amegram: swallow taps on the pill background itself so they don't fall
+        // through to chats behind it (the wrapper must stay pass-through, see below).
+        tabsView.setOnClickListener(v -> {});
         // В M3 панель без внутренних
         // отступов и без ограничения ширины
         MainTabsUiHelper.applyTabsLayoutStyle(tabsView, dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
@@ -468,7 +471,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
 
         tabsViewWrapper = new FrameLayout(context);
-        tabsViewWrapper.setOnClickListener(v -> {});
+        // Amegram: the wrapper must NOT swallow touches — it is full-width and mostly
+        // transparent around the pill, which created a "dead zone" above/beside the tabs.
+        // Only the pill itself eats background taps (set below on tabsView).
+        tabsViewWrapper.setClickable(false);
+        tabsViewWrapper.setFocusable(false);
         // В M3 панель во всю ширину,
         // высота досчитывается вместе с нижним системным отступом в applyTabsBottomInset
         tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(MainTabsUiHelper.getTabsViewWidth(), MainTabsUiHelper.getTabsViewHeightDp(), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
@@ -1333,7 +1340,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final float factor = animatorTabsVisible.getFloatValue();
 
         tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
-        tabsView.setClickable(factor > 1);
+        // Amegram: keep the pill background swallowing taps while visible.
+        // (factor lives in 0..1, so the old `factor > 1` was dead code that unset it.)
+        tabsView.setClickable(true);
         tabsView.setEnabled(factor > 1);
         tabsView.setAlpha(factor);
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);

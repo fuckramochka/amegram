@@ -563,7 +563,7 @@ public class MiogramUpdater {
             PackageInfo pInfo = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0);
             return pInfo.versionName != null ? pInfo.versionName : BuildVars.BUILD_VERSION_STRING;
         } catch (Exception e) {
-            return BuildVars.BUILD_VERSION_STRING != null ? BuildVars.BUILD_VERSION_STRING : "12.10.1";
+            return BuildVars.BUILD_VERSION_STRING != null ? BuildVars.BUILD_VERSION_STRING : "12.11.0";
         }
     }
 
@@ -577,7 +577,7 @@ public class MiogramUpdater {
         if (c.equalsIgnoreCase(r)) return false;
         if (!c.isEmpty() && !r.isEmpty()) {
             if (c.startsWith(r) || r.startsWith(c)) {
-                // If it's the exact same base release with a commit hash (e.g. 12.10.1-83b6b68 vs 12.10.1), it is up to date
+                // If it's the exact same base release with a commit hash (e.g. 12.11.0-83b6b68 vs 12.11.0), it is up to date
                 return false;
             }
         }
@@ -596,6 +596,24 @@ public class MiogramUpdater {
         // 3. Compare numeric version components
         String[] cParts = c.split("[^0-9]+");
         String[] rParts = r.split("[^0-9]+");
+
+        // Special handling for legacy 12.10.<run> vs 12.11.<run> transition in Amegram:
+        // CI builds were misnamed 12.10.<run> while GitHub release tags were v12.11.<run>.
+        if (cParts.length >= 3 && rParts.length >= 3) {
+            try {
+                int cMajor = Integer.parseInt(cParts[0]);
+                int cMinor = Integer.parseInt(cParts[1]);
+                int cBuild = Integer.parseInt(cParts[2]);
+
+                int rMajor = Integer.parseInt(rParts[0]);
+                int rMinor = Integer.parseInt(rParts[1]);
+                int rBuild = Integer.parseInt(rParts[2]);
+
+                if (cMajor == 12 && rMajor == 12 && cMinor == 10 && rMinor == 11) {
+                    return rBuild > cBuild;
+                }
+            } catch (Exception ignored) {}
+        }
 
         int len = Math.max(cParts.length, rParts.length);
         for (int i = 0; i < len; i++) {

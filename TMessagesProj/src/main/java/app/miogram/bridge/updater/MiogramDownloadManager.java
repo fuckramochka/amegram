@@ -525,7 +525,7 @@ public class MiogramDownloadManager {
                             PackageInfo archiveInfo = pm.getPackageArchiveInfo(file.getAbsolutePath(), 0);
                             if (archiveInfo != null) {
                                 if (archiveInfo.packageName == null || archiveInfo.packageName.equals(ctx.getPackageName())) {
-                                    if (currentVersionCode > 0 && archiveInfo.versionCode <= currentVersionCode) {
+                                    if (currentVersionCode > 0 && archiveInfo.versionCode < currentVersionCode) {
                                         shouldDelete = true;
                                     } else if (currentVersionName != null && !MiogramUpdater.isNewerVersion(currentVersionName, archiveInfo.versionName, null, null)) {
                                         shouldDelete = true;

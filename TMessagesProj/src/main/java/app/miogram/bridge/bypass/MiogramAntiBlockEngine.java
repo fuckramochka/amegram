@@ -121,7 +121,8 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
     private boolean isEngaging = false;
 
     private final Runnable throttleCheckRunnable = () -> {
-        if (!isAutoBypassEnabled() || SharedConfig.isProxyEnabled()) {
+        // OFF means OFF: never auto-engage after an explicit user disable.
+        if (!isAutoBypassEnabled() || isManualProxyOff() || SharedConfig.isProxyEnabled()) {
             return;
         }
         int currentAccount = UserConfig.selectedAccount;
@@ -179,9 +180,9 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
         fetchRemotePoolAsync(false, null);
 
         // Fast path: previous session ended behind a block — re-engage at once
-        // instead of hanging 20s on direct first.
+        // instead of hanging 20s on direct first. Skipped when the user said OFF.
         try {
-            if (prefs.getBoolean("was_blocked", false) && isAutoBypassEnabled() && !SharedConfig.isProxyEnabled()) {
+            if (!isManualProxyOff() && prefs.getBoolean("was_blocked", false) && isAutoBypassEnabled() && !SharedConfig.isProxyEnabled()) {
                 FileLog.d(TAG + ": last session was blocked — engaging bypass immediately at startup");
                 engageFastestBypassServer(false);
             }
@@ -323,6 +324,33 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
 
     public void setAutoBypassEnabled(boolean enabled) {
         prefs.edit().putBoolean("auto_bypass", enabled).apply();
+        // Fresh consent: turning auto-bypass ON lifts a previous manual "OFF means OFF".
+        if (enabled) clearManualProxyOff();
+    }
+
+    /**
+     * True after the user explicitly disabled proxy/bypass. While set, the engine
+     * NEVER auto-engages: OFF means OFF (standard behavior). Cleared only by an
+     * explicit user action (manual connect / re-enabling auto-bypass).
+     */
+    public boolean isManualProxyOff() {
+        try {
+            return prefs.getBoolean("manual_proxy_off", false);
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    private void setManualProxyOff() {
+        try {
+            prefs.edit().putBoolean("manual_proxy_off", true).apply();
+        } catch (Throwable ignore) {}
+    }
+
+    public void clearManualProxyOff() {
+        try {
+            prefs.edit().putBoolean("manual_proxy_off", false).apply();
+        } catch (Throwable ignore) {}
     }
 
     public boolean isDeepDiagnosticsEnabled() {
@@ -509,6 +537,15 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
         } else if (id == NotificationCenter.proxySettingsChanged) {
             AndroidUtilities.cancelRunOnUIThread(throttleCheckRunnable);
             AndroidUtilities.cancelRunOnUIThread(proxyStuckRunnable);
+            // Any transition to proxy-OFF is a user decision (nothing else turns it
+            // off programmatically) — honor it: no auto re-engage afterwards.
+            // Covers both our bypass screen and the stock Telegram proxy settings.
+            try {
+                if (!SharedConfig.isProxyEnabled()) {
+                    setManualProxyOff();
+                    prefs.edit().putBoolean("was_blocked", false).apply();
+                }
+            } catch (Throwable ignore) {}
         } else if (id == NotificationCenter.proxyCheckDone) {
             // Updated ping
             if (args != null && args.length > 0 && args[0] instanceof SharedConfig.ProxyInfo) {
@@ -532,7 +569,7 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
 
         if (!proxyEnabled) {
             if (state == ConnectionsManager.ConnectionStateConnecting) {
-                if (ApplicationLoader.isNetworkOnline() && isAutoBypassEnabled()) {
+                if (ApplicationLoader.isNetworkOnline() && isAutoBypassEnabled() && !isManualProxyOff()) {
                     AndroidUtilities.cancelRunOnUIThread(throttleCheckRunnable);
                     AndroidUtilities.runOnUIThread(throttleCheckRunnable, getDetectionDelayMs());
                 }
@@ -771,8 +808,14 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
 
     /**
      * Disables proxy and returns to direct connection.
+     * Explicit user choice: OFF means OFF — auto-engage stays dormant until the user
+     * manually connects again or re-enables auto-bypass.
      */
     public void disconnectBypass() {
+        setManualProxyOff();
+        try {
+            prefs.edit().putBoolean("was_blocked", false).apply();
+        } catch (Throwable ignore) {}
         AndroidUtilities.runOnUIThread(() -> {
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             preferences.edit().putBoolean("proxy_enabled", false).apply();

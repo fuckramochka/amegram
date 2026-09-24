@@ -166,6 +166,8 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                         MiogramLocale.get("Обхід вимкнено (пряме з'єднання)", "Обход отключен (прямое соединение)", "Bypass disabled (direct connection)")
                 ).show();
             } else {
+                // Explicit user connect: lift "OFF means OFF", auto may manage from now on.
+                engine.clearManualProxyOff();
                 engine.engageFastestBypassServer(true);
             }
             if (view instanceof TextCheckCell) {
@@ -222,6 +224,7 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                 resDialog.setMessage(report);
                 if (isBlocked) {
                     resDialog.setPositiveButton(MiogramLocale.get("Підключити Fake-TLS", "Подключить Fake-TLS", "Connect Fake-TLS"), (d, w) -> {
+                        engine.clearManualProxyOff();
                         engine.engageFastestBypassServer(true);
                         updateRows();
                         if (listAdapter != null) listAdapter.notifyDataSetChanged();
@@ -268,6 +271,7 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
             int index = position - serversStartRow;
             if (index >= 0 && index < currentDisplayServers.size()) {
                 MiogramAntiBlockEngine.BypassServer server = currentDisplayServers.get(index);
+                engine.clearManualProxyOff();
                 engine.activateServer(server, true);
                 updateRows();
                 if (listAdapter != null) listAdapter.notifyDataSetChanged();
@@ -311,6 +315,7 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
         builder.setItems(items.toArray(new CharSequence[0]), (dialog, which) -> {
             int action = actions.get(which);
             if (action == 0) {
+                MiogramAntiBlockEngine.getInstance().clearManualProxyOff();
                 MiogramAntiBlockEngine.getInstance().activateServer(server, true);
             } else if (action == 1) {
                 ConnectionsManager.getInstance(currentAccount).checkProxy(
@@ -533,7 +538,7 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                     if (position == autoBypassRow) {
                         cell.setTextAndValueAndCheck(
                                 MiogramLocale.get("Розумний авто-обхід ТСПУ", "Умный авто-обход ТСПУ", "Smart TSPU Auto-Bypass"),
-                                MiogramLocale.get("Автоматично активувати Fake-TLS при підтвердженні блокування", "Автоматически включать Fake-TLS при подтверждении блокировки", "Engage Fake-TLS when block is confirmed"),
+                                MiogramLocale.get("Автоматично активувати Fake-TLS при підтвердженні блокування. Ручне вимкнення = вимкнено, само не ввімкнеться", "Автоматически включать Fake-TLS при подтверждении блокировки. Ручное отключение = отключено, само не включится", "Engage Fake-TLS when block is confirmed. Manual OFF stays OFF, never re-engages itself"),
                                 engine.isAutoBypassEnabled(),
                                 true,
                                 true

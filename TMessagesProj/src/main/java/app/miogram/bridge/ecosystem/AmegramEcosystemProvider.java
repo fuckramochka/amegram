@@ -237,6 +237,27 @@ public class AmegramEcosystemProvider extends ContentProvider {
                 return res;
             }
 
+            case "getLinkedAccount": {
+                // Lets TikTok MI (or any ecosystem peer) read the linked Amegram-side TikTok profile.
+                Bundle res = new Bundle();
+                try {
+                    AmegramTikTokManager.TikTokUser u = AmegramTikTokManager.getInstance().getSelfUser();
+                    res.putBoolean("linked", u != null);
+                    if (u != null) {
+                        res.putString("username", u.username);
+                        res.putString("nickname", u.nickname);
+                        res.putString("avatar", u.avatarUrl);
+                        res.putLong("followers", u.followersCount);
+                        res.putLong("following", u.followingCount);
+                        res.putLong("likes", u.likesCount);
+                        res.putString("bio", u.bio);
+                    }
+                } catch (Throwable t) {
+                    FileLog.e(t);
+                }
+                return res;
+            }
+
             default:
                 return null;
         }

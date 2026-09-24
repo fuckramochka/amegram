@@ -159,12 +159,20 @@ public class MiogramSubfolderBar extends FrameLayout {
         int activeChildId = MiogramSubfolderEngine.getActiveChildFilterId(currentAccount);
         int activeType = MiogramSubfolderEngine.getActiveSubfolderType(currentAccount);
 
-        // 1. "Усі" pill
-        PillView allPill = new PillView(getContext(), 0, MiogramSubfolderEngine.TYPE_ALL,
-                LocaleController.getString(R.string.FilterAllChats), 0);
-        allPill.setSelectedState(activeChildId == 0 && activeType == MiogramSubfolderEngine.TYPE_ALL);
-        pillViews.add(allPill);
-        pillsContainer.addView(allPill);
+        // Amegram: standard folder tabs already show "All chats" — don't duplicate it here.
+        boolean standardTabsVisible = false;
+        try {
+            standardTabsVisible = dialogsActivity.isFilterTabsVisible();
+        } catch (Throwable ignore) {}
+
+        // 1. "Усі" pill (only when the standard tabs row is hidden)
+        if (!standardTabsVisible) {
+            PillView allPill = new PillView(getContext(), 0, MiogramSubfolderEngine.TYPE_ALL,
+                    LocaleController.getString(R.string.FilterAllChats), 0);
+            allPill.setSelectedState(activeChildId == 0 && activeType == MiogramSubfolderEngine.TYPE_ALL);
+            pillViews.add(allPill);
+            pillsContainer.addView(allPill);
+        }
 
         // 2. Child filters for this parent
         if (hasChildFilters) {

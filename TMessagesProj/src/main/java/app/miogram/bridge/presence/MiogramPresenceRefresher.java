@@ -72,10 +72,12 @@ public class MiogramPresenceRefresher {
         boolean needSteam = false;
         boolean needGithub = false;
         boolean needRoblox = false;
+        boolean needTiktok = false;
         try {
             needSteam = MiogramSteamManager.getInstance().isLinked();
             needGithub = MiogramGitHubManager.getInstance().isLinked();
             needRoblox = MiogramRobloxManager.getInstance().isLinked();
+            needTiktok = app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().isLinked();
         } catch (Throwable ignore) {}
 
         // Spotify broadcasts stop if the runtime receiver was never armed in
@@ -109,7 +111,13 @@ public class MiogramPresenceRefresher {
                 MiogramRobloxManager.getInstance().refreshSelf(p -> pushIfChanged());
             } catch (Throwable ignore) {}
         }
-        if (!needSteam && !needGithub && !needRoblox) {
+        if (needTiktok) {
+            // Amegram: refresh TikTok stats at most once a day (throttled inside refreshSelf).
+            try {
+                app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().refreshSelf(false, u -> pushIfChanged());
+            } catch (Throwable ignore) {}
+        }
+        if (!needSteam && !needGithub && !needRoblox && !needTiktok) {
             // Spotify-only snapshot (local state, no network fetch needed).
             pushIfChanged();
         }

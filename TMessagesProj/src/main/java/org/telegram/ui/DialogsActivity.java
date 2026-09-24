@@ -7120,6 +7120,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private boolean scrollBarVisible = true;
 
+    /** Amegram: lets MiogramSubfolderBar avoid duplicating the "All chats" tab. */
+    public boolean isFilterTabsVisible() {
+        return filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE;
+    }
+
     private void showScrollbars(boolean show) {
         if (viewPages == null || scrollBarVisible == show) {
             return;
@@ -7158,7 +7163,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 int stableId = filterTabsView.getCurrentTabStableId();
                 boolean selectWithStableId = false;
                 if (id != filterTabsView.getDefaultTabId() && id >= filters.size()) {
-                    filterTabsView.resetTabId();
+                filterTabsView.resetTabId();
+
+                // Amegram: standard tabs hidden -> subfolder bar must re-evaluate pills
+                if (subfolderBar != null) {
+                    subfolderBar.onTabsUpdated();
+                }
                     selectWithStableId = true;
                 }
                 filterTabsView.removeTabs();

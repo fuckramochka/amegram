@@ -334,6 +334,14 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
             app.miogram.bridge.presence.MiogramPresenceRefresher.start();
             app.miogram.bridge.presence.MiogramPresenceRefresher.pushIfChanged();
         } catch (Throwable ignore) {}
+        // Amegram: silent TikTok self-binding (cloud snapshot -> TikTok MI -> watched video)
+        // + full stats pull. Never shows UI; throttled internally.
+        try {
+            app.miogram.bridge.ecosystem.AmegramTikTokBridge.initWatchingReceiver(applicationContext);
+        } catch (Throwable ignore) {}
+        try {
+            app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().tryAutoBind(null);
+        } catch (Throwable ignore) {}
 
         MediaController.getInstance();
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account

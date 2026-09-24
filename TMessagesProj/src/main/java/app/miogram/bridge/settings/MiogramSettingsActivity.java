@@ -276,10 +276,21 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                                 false
                         );
                     } else if (position == tiktokEcosystemRow) {
-                        boolean installed = app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(getParentActivity());
+                        // Amegram: "Connected" means the account is actually linked, not just app installed.
+                        boolean linked = app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().isLinked();
+                        String value;
+                        if (linked) {
+                            String uname = app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().getLinkedUsername();
+                            value = !uname.isEmpty() ? "@" + uname
+                                    : MiogramLocale.get("Підключено", "Подключено", "Connected");
+                        } else if (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(getParentActivity())) {
+                            value = MiogramLocale.get("Апка є, акаунт ні", "Приложение есть, аккаунт нет", "App only");
+                        } else {
+                            value = MiogramLocale.get("Вимкнено", "Отключено", "Off");
+                        }
                         cell.setTextAndValueAndIcon(
                                 MiogramLocale.get("TikTok MI Екосистема", "TikTok MI Экосистема", "TikTok MI Ecosystem"),
-                                installed ? MiogramLocale.get("Підключено", "Подключено", "Connected") : MiogramLocale.get("Вимкнено", "Отключено", "Off"),
+                                value,
                                 R.drawable.msg_fave,
                                 true
                         );

@@ -190,6 +190,234 @@ public class AmegramTikTokManager {
         MiogramCloudPresence.syncSelfToCloud(0);
     }
 
+    // ------------------------------------------------------------- Automatic binding
+
+    private static final String KEY_LAST_AUTOBIND = "tiktok_last_autobind";
+    private static final long AUTOBIND_INTERVAL_MS = 12 * 60 * 60 * 1000L; // 12 hours
+    private static final long STATS_STALE_MS = 24 * 60 * 60 * 1000L; // refresh stats at most once a day
+    private static volatile boolean autoBindRunning = false;
+
+    private static void runDone(Runnable done) {
+        if (done == null) return;
+        try {
+            AndroidUtilities.runOnUIThread(done);
+        } catch (Throwable ignore) {
+            try { done.run(); } catch (Throwable ignore2) {}
+        }
+    }
+
+    /**
+     * Silent self-binding: tries cloud snapshot -> TikTok MI IPC -> watched-video author,
+     * then pulls full public stats. Never shows UI, never overwrites an existing link
+     * except to refresh its stats. Throttled to once per {@link #AUTOBIND_INTERVAL_MS}.
+     */
+    public void tryAutoBind(Runnable done) {
+        try {
+            long last = getPrefs().getLong(KEY_LAST_AUTOBIND, 0L);
+            if (System.currentTimeMillis() - last < AUTOBIND_INTERVAL_MS) {
+                if (isLinked()) refreshSelf(false, u -> runDone(done));
+                else runDone(done);
+                return;
+            }
+        } catch (Throwable ignore) {}
+        if (autoBindRunning) { runDone(done); return; }
+        autoBindRunning = true;
+
+        if (isLinked()) {
+            stampAutobind();
+            autoBindRunning = false;
+            refreshSelf(false, u -> runDone(done));
+            return;
+        }
+
+        long selfId = 0;
+        try {
+            selfId = org.telegram.messenger.UserConfig.getInstance(
+                    org.telegram.messenger.UserConfig.selectedAccount).getClientUserId();
+        } catch (Throwable ignore) {}
+        final long fSelfId = selfId;
+
+        // 1. Cloud snapshot (another device may have linked already) — restore happens inside.
+        if (fSelfId != 0) {
+            try {
+                app.miogram.bridge.badge.MiogramSupabaseBridge.fetchUserPresence(fSelfId, presence -> {
+                    if (isLinked()) {
+                        stampAutobind();
+                        autoBindRunning = false;
+                        refreshSelf(false, u -> runDone(done));
+                    } else {
+                        bindFromLocalSources(done);
+                    }
+                });
+                return;
+            } catch (Throwable t) {
+                FileLog.e("AmegramTikTokManager: cloud autobind error", t);
+            }
+        }
+        bindFromLocalSources(done);
+    }
+
+    private void stampAutobind() {
+        try {
+            getPrefs().edit().putLong(KEY_LAST_AUTOBIND, System.currentTimeMillis()).apply();
+        } catch (Throwable ignore) {}
+    }
+
+    /** Steps 2-3 of auto-bind: TikTok MI app IPC, then watched-video author fallback. */
+    private void bindFromLocalSources(Runnable done) {
+        Utilities.globalQueue.postRunnable(() -> {
+            boolean bound = false;
+            // 2. Ask the installed TikTok MI app who is logged in (forward-compatible IPC).
+            try {
+                Context ctx = ApplicationLoader.applicationContext;
+                android.os.Bundle acc = AmegramTikTokBridge.queryTikTokMiAccount(ctx);
+                if (acc != null) {
+                    String u = cleanUsername(acc.getString("username", ""));
+                    if (!TextUtils.isEmpty(u)) {
+                        setLinkedProfile(u,
+                                acc.getString("nickname", ""),
+                                acc.getString("avatar", ""),
+                                acc.getLong("followers", 0),
+                                acc.getLong("following", 0),
+                                acc.getLong("likes", 0),
+                                acc.getString("bio", ""));
+                        bound = true;
+                    }
+                }
+            } catch (Throwable t) {
+                FileLog.e("AmegramTikTokManager: MI IPC autobind error", t);
+            }
+            // 3. Fallback: username parsed from the last watched TikTok URL.
+            if (!bound) {
+                try {
+                    AmegramTikTokBridge.WatchingVideo w = AmegramTikTokBridge.getCurrentlyWatching();
+                    if (w != null && w.isRecent() && !TextUtils.isEmpty(w.url)) {
+                        java.util.regex.Matcher m = java.util.regex.Pattern
+                                .compile("/@([a-zA-Z0-9_.-]+)").matcher(w.url);
+                        if (m.find()) {
+                            String u = cleanUsername(m.group(1));
+                            if (!TextUtils.isEmpty(u)) {
+                                setLinkedProfile(u, "", "", 0, 0, 0, "");
+                                bound = true;
+                            }
+                        }
+                    }
+                } catch (Throwable t) {
+                    FileLog.e("AmegramTikTokManager: watching autobind error", t);
+                }
+            }
+            stampAutobind();
+            autoBindRunning = false;
+            if (bound) {
+                refreshSelf(true, u -> runDone(done));
+            } else {
+                runDone(done);
+            }
+        });
+    }
+
+    /**
+     * Pulls full public stats for the linked username (tikwm user/info, oEmbed fallback)
+     * and persists them + pushes to cloud. Skips network when stats are fresh
+     * unless {@code force} is true.
+     */
+    public void refreshSelf(boolean force, UserCallback callback) {
+        final String username = getLinkedUsername();
+        if (TextUtils.isEmpty(username)) {
+            if (callback != null) callback.onUserLoaded(null);
+            return;
+        }
+        try {
+            long lastUpdated = getPrefs().getLong(KEY_LAST_UPDATED, 0L);
+            if (!force && System.currentTimeMillis() - lastUpdated < STATS_STALE_MS) {
+                TikTokUser cached = getSelfUser();
+                if (callback != null) {
+                    final TikTokUser fCached = cached;
+                    AndroidUtilities.runOnUIThread(() -> callback.onUserLoaded(fCached));
+                }
+                return;
+            }
+        } catch (Throwable ignore) {}
+
+        Utilities.globalQueue.postRunnable(() -> {
+            TikTokUser fresh = fetchFullProfile(username);
+            if (fresh != null) {
+                TikTokUser prev = getSelfUser();
+                String nickname = !TextUtils.isEmpty(fresh.nickname) ? fresh.nickname
+                        : (prev != null ? prev.nickname : "");
+                String avatar = !TextUtils.isEmpty(fresh.avatarUrl) ? fresh.avatarUrl
+                        : (prev != null ? prev.avatarUrl : "");
+                String bio = !TextUtils.isEmpty(fresh.bio) ? fresh.bio
+                        : (prev != null ? prev.bio : "");
+                long followers = fresh.followersCount > 0 ? fresh.followersCount
+                        : (prev != null ? prev.followersCount : 0);
+                long following = fresh.followingCount > 0 ? fresh.followingCount
+                        : (prev != null ? prev.followingCount : 0);
+                long likes = fresh.likesCount > 0 ? fresh.likesCount
+                        : (prev != null ? prev.likesCount : 0);
+                setLinkedProfile(username, nickname, avatar, followers, following, likes, bio);
+            }
+            final TikTokUser result = getSelfUser();
+            AndroidUtilities.runOnUIThread(() -> {
+                if (callback != null) callback.onUserLoaded(result);
+            });
+        });
+    }
+
+    /** Full public profile via tikwm user/info, with oEmbed nickname fallback. Never throws. */
+    private TikTokUser fetchFullProfile(String username) {
+        final String clean = cleanUsername(username);
+        if (TextUtils.isEmpty(clean)) return null;
+        TikTokUser user = new TikTokUser();
+        user.username = clean;
+        boolean gotStats = false;
+        try {
+            String apiUrl = "https://www.tikwm.com/api/user/info?unique_id=" + URLEncoder.encode(clean, "UTF-8");
+            HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(8000);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+            if (conn.getResponseCode() == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                StringBuilder sb = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) sb.append(line);
+                reader.close();
+                JSONObject root = new JSONObject(sb.toString());
+                JSONObject data = root.optJSONObject("data");
+                JSONObject u = data != null ? data.optJSONObject("user") : null;
+                if (u != null) {
+                    user.nickname = u.optString("nickname", "");
+                    user.avatarUrl = u.optString("avatarLarger", u.optString("avatarMedium",
+                            u.optString("avatarThumb", "")));
+                    user.bio = u.optString("signature", "");
+                    user.followersCount = u.optLong("followerCount", u.optLong("follower_count", 0));
+                    user.followingCount = u.optLong("followingCount", u.optLong("following_count", 0));
+                    user.likesCount = u.optLong("heartCount", u.optLong("heart_count",
+                            u.optLong("totalFavorited", 0)));
+                    gotStats = user.followersCount > 0 || user.likesCount > 0
+                            || !TextUtils.isEmpty(user.nickname);
+                }
+            }
+        } catch (Throwable t) {
+            FileLog.e("AmegramTikTokManager: tikwm stats error", t);
+        }
+        if (!gotStats) {
+            // Fallback: official oEmbed gives at least the verified display name.
+            final TikTokUser[] holder = new TikTokUser[1];
+            final java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+            resolvePublicProfile(clean, u -> { holder[0] = u; latch.countDown(); });
+            try { latch.await(10, java.util.concurrent.TimeUnit.SECONDS); } catch (Throwable ignore) {}
+            if (holder[0] != null && !TextUtils.isEmpty(holder[0].nickname)) {
+                user.nickname = holder[0].nickname;
+                return user;
+            }
+            if (!gotStats && TextUtils.isEmpty(user.nickname)) return null;
+        }
+        return user;
+    }
+
     public static String cleanUsername(String username) {
         if (TextUtils.isEmpty(username)) return "";
         String clean = username.trim();
@@ -332,6 +560,9 @@ public class AmegramTikTokManager {
             String avatar = etAvatar.getText().toString().trim();
 
             setLinkedProfile(u, nick, avatar, followers, 0, likes, "");
+            // Amegram: auto-fetch full public stats (nickname/avatar/followers/likes)
+            // so the user doesn't have to type numbers by hand.
+            refreshSelf(true, null);
             MiogramHaptic.success();
             Toast.makeText(context, MiogramLocale.get("Акаунт TikTok MI підключено!", "Аккаунт TikTok MI подключен!", "TikTok MI account connected!"), Toast.LENGTH_SHORT).show();
 

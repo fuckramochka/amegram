@@ -53,6 +53,10 @@ public class AmegramTikTokBridge {
 
     public static final String ACTION_TIKTOKMI_THEME = "mi.tiktokmi.ACTION_THEME_CHANGED";
     public static final String ACTION_TIKTOK_WATCHING = "app.amegram.ACTION_TIKTOK_WATCHING";
+    /** Broadcast the mod can send to ask TikTok MI for the logged-in account. */
+    public static final String ACTION_TIKTOKMI_ACCOUNT_REQUEST = "app.amegram.ACTION_ACCOUNT_SYNC";
+    /** Extra key for a custom TikTok MI mod package (e.g. a fork build). */
+    public static final String KEY_CUSTOM_TIKTOK_PACKAGE = "tiktok_custom_package";
 
     private static final Pattern VIDEO_ID_PATTERN = Pattern.compile("/video/(\\d+)");
     private static final Pattern USER_PATTERN = Pattern.compile("/@([a-zA-Z0-9_.-]+)");
@@ -155,6 +159,9 @@ public class AmegramTikTokBridge {
      */
     public static boolean isTikTokMiInstalled(Context context) {
         if (context == null) context = ApplicationLoader.applicationContext;
+        if (context == null) return false;
+        String custom = getCustomTikTokPackage();
+        if (!TextUtils.isEmpty(custom) && isPackageInstalled(context, custom)) return true;
         PackageManager pm = context.getPackageManager();
         for (String pkg : TIKTOK_PACKAGES) {
             try {
@@ -166,11 +173,74 @@ public class AmegramTikTokBridge {
         return false;
     }
 
+    private static boolean isPackageInstalled(Context context, String pkg) {
+        try {
+            context.getPackageManager().getPackageInfo(pkg, 0);
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    /** Custom TikTok MI mod package name (empty = none). Set from settings or auto-detect. */
+    public static String getCustomTikTokPackage() {
+        try {
+            return getPrefs(null).getString(KEY_CUSTOM_TIKTOK_PACKAGE, "");
+        } catch (Throwable ignore) {
+            return "";
+        }
+    }
+
+    public static void setCustomTikTokPackage(String pkg) {
+        try {
+            getPrefs(null).edit().putString(KEY_CUSTOM_TIKTOK_PACKAGE,
+                    pkg != null ? pkg.trim() : "").apply();
+        } catch (Throwable ignore) {}
+    }
+
+    /**
+     * Asks the installed TikTok MI app for the currently logged-in account.
+     * Forward-compatible: returns null on MI builds that don't expose it yet —
+     * callers must fall back to cloud snapshot / manual link.
+     * Expected keys: username, nickname, avatar, followers, following, likes, bio.
+     */
+    public static Bundle queryTikTokMiAccount(Context context) {
+        if (context == null) context = ApplicationLoader.applicationContext;
+        if (context == null) return null;
+        String installed = getInstalledTikTokPackage(context);
+        String[] authorities;
+        if (installed != null) {
+            authorities = new String[]{installed + ".ecosystem", "app.amegram.ecosystem", "mi.tiktokmi.ecosystem"};
+        } else {
+            authorities = new String[]{"app.amegram.ecosystem", "mi.tiktokmi.ecosystem"};
+        }
+        for (String auth : authorities) {
+            try {
+                Uri uri = Uri.parse("content://" + auth);
+                Bundle res = context.getContentResolver().call(uri, "getAccount", null, null);
+                if (res != null && !TextUtils.isEmpty(res.getString("username", ""))) {
+                    return res;
+                }
+            } catch (Throwable ignored) {
+            }
+        }
+        // Nudge MI builds that listen for explicit account requests.
+        try {
+            Intent req = new Intent(ACTION_TIKTOKMI_ACCOUNT_REQUEST);
+            req.setPackage(installed != null ? installed : "com.zhiliaoapp.musically");
+            context.sendBroadcast(req);
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
     /**
      * Gets the active installed TikTok package name.
      */
     public static String getInstalledTikTokPackage(Context context) {
         if (context == null) context = ApplicationLoader.applicationContext;
+        if (context == null) return null;
+        String custom = getCustomTikTokPackage();
+        if (!TextUtils.isEmpty(custom) && isPackageInstalled(context, custom)) return custom;
         PackageManager pm = context.getPackageManager();
         for (String pkg : TIKTOK_PACKAGES) {
             try {

@@ -47,6 +47,9 @@ public class MiogramUpdater {
 
     private static final String PREFS_NAME = "miogram_updater_prefs";
     private static final String KEY_LAST_SEEN_TAG = "last_seen_tag";
+    private static final String KEY_LAST_SEEN_TIME = "last_seen_time";
+    /** Dismissed update re-prompts after this long instead of never. */
+    private static final long DISMISS_SNOOZE_MS = 3L * 24 * 60 * 60 * 1000L; // 3 days
     private static final String KEY_UPDATE_CHANNEL = "update_channel"; // "beta" (default) | "stable"
     private static final String KEY_CHANNEL_CHOICE_VERSION = "channel_choice_version";
     private static final String KEY_PROMO_VERSION = "channel_promo_version";
@@ -81,6 +84,8 @@ public class MiogramUpdater {
 
     private static final String KEY_LAST_CHECK_TIME = "last_check_timestamp";
     private static final long CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L; // 24 hours cooldown
+    private static final String KEY_LAST_ENTRY_CHECK = "last_entry_check_timestamp";
+    private static final long ENTRY_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000L; // 12 hours cooldown
     private static volatile boolean autoUpdateStarted = false;
 
     /**
@@ -101,7 +106,8 @@ public class MiogramUpdater {
                 if (now - lastCheck < CHECK_INTERVAL_MS) {
                     return; // Skip if checked within the last 24 hours
                 }
-                prefs.edit().putLong(KEY_LAST_CHECK_TIME, now).apply();
+                // NOTE: last_check_timestamp is stamped only AFTER the check finishes
+                // (see performBackgroundCheck) so offline/failed runs don't burn the 24h window.
                 performBackgroundCheck();
             } catch (Exception e) {
                 FileLog.e(e);
@@ -110,10 +116,20 @@ public class MiogramUpdater {
     }
 
     /**
-     * Checks for updates immediately upon entry/unlock.
+     * Checks for updates immediately upon entry/unlock/resume (throttled to 12h).
      * Silent if on the latest version; presents update bottom sheet if a newer version is found.
      */
     public static void checkOnEntry(Context context) {
+        try {
+            if (ApplicationLoader.applicationContext != null) {
+                SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                long lastEntry = prefs.getLong(KEY_LAST_ENTRY_CHECK, 0L);
+                if (System.currentTimeMillis() - lastEntry < ENTRY_CHECK_INTERVAL_MS) {
+                    return;
+                }
+                prefs.edit().putLong(KEY_LAST_ENTRY_CHECK, System.currentTimeMillis()).apply();
+            }
+        } catch (Throwable ignore) {}
         Utilities.globalQueue.postRunnable(() -> {
             try {
                 performBackgroundCheck();
@@ -392,13 +408,25 @@ public class MiogramUpdater {
         if (fragment == null) return;
 
         fetchLatestRelease((hasUpdate, version, changelog, apkUrl) -> {
+            // Stamp the 24h cooldown only after a check actually ran (success or not),
+            // never before the network call — offline/killed runs must not burn the window.
+            try {
+                if (ApplicationLoader.applicationContext != null) {
+                    ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                            .edit().putLong(KEY_LAST_CHECK_TIME, System.currentTimeMillis()).apply();
+                }
+            } catch (Throwable ignore) {}
             if (hasUpdate) {
                 SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
                 String lastSeen = prefs.getString(KEY_LAST_SEEN_TAG, "");
-                if (version != null && version.equalsIgnoreCase(lastSeen)) {
+                long lastSeenTime = prefs.getLong(KEY_LAST_SEEN_TIME, 0L);
+                boolean dismissed = version != null && version.equalsIgnoreCase(lastSeen);
+                // "Later" snoozes the prompt instead of silencing it forever: re-prompt after 3 days.
+                if (dismissed && System.currentTimeMillis() - lastSeenTime < DISMISS_SNOOZE_MS) {
                     return; // Already notified the user about this specific release
                 }
-                prefs.edit().putString(KEY_LAST_SEEN_TAG, version).apply();
+                prefs.edit().putString(KEY_LAST_SEEN_TAG, version)
+                        .putLong(KEY_LAST_SEEN_TIME, System.currentTimeMillis()).apply();
 
                 new Handler(Looper.getMainLooper()).post(() -> {
                     LaunchActivity currentAct = LaunchActivity.instance;
@@ -573,12 +601,19 @@ public class MiogramUpdater {
         String c = currentVersion != null ? currentVersion.replace("v", "").replace("V", "").trim() : "";
         String r = remoteVersion.trim();
 
-        // 1. Exact match or prefix match
+        // 1. Exact match
         if (c.equalsIgnoreCase(r)) return false;
+        // Same base release with a commit-hash suffix (e.g. 12.11.0-83b6b68 vs 12.11.0)
+        // is up to date — but a LONGER NUMERIC component (12.11.1 vs 12.11.12) is newer.
         if (!c.isEmpty() && !r.isEmpty()) {
             if (c.startsWith(r) || r.startsWith(c)) {
-                // If it's the exact same base release with a commit hash (e.g. 12.11.0-83b6b68 vs 12.11.0), it is up to date
-                return false;
+                String longer = c.length() >= r.length() ? c : r;
+                String shorter = c.length() >= r.length() ? r : c;
+                String rest = longer.substring(shorter.length());
+                if (rest.isEmpty() || !Character.isDigit(rest.charAt(0))) {
+                    return false;
+                }
+                // else: numeric continuation (e.g. ".12", "2") -> fall through to numeric compare
             }
         }
 

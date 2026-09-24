@@ -7257,6 +7257,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             MonetHelper.refreshMonetThemeIfChanged();
         }
         checkWasMutedByAdmin(true);
+        // Amegram: entry update check also for users without app passcode (throttled inside).
+        try {
+            app.miogram.bridge.updater.MiogramUpdater.checkOnEntry(this);
+        } catch (Throwable ignore) {}
         //FileLog.d("UI resume time = " + (SystemClock.elapsedRealtime() - ApplicationLoader.startTime));
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.startAllHeavyOperations, 4096);
         MediaController.getInstance().setFeedbackView(feedbackView = actionBarLayout.getView(), true);

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.media.AudioManager;
 import android.net.Uri;
 import android.os.SystemClock;
 import android.text.TextUtils;
@@ -213,7 +214,12 @@ public class MiogramSpotifyManager {
             if (playingBool != null) {
                 isPlaying = playingBool;
             } else if (ACTION_METADATA_CHANGED.equals(action) && !TextUtils.isEmpty(track)) {
-                isPlaying = true;
+                boolean musicActive = false;
+                try {
+                    AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+                    musicActive = am != null && am.isMusicActive();
+                } catch (Throwable ignore) {}
+                isPlaying = musicActive;
             }
 
             saveStateToPrefs();
@@ -505,7 +511,20 @@ public class MiogramSpotifyManager {
     }
 
     public boolean isPlaying() {
-        return isPlaying && !TextUtils.isEmpty(currentTrack);
+        if (!isPlaying || TextUtils.isEmpty(currentTrack)) {
+            return false;
+        }
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx != null) {
+            try {
+                AudioManager am = (AudioManager) ctx.getSystemService(Context.AUDIO_SERVICE);
+                if (am != null && !am.isMusicActive()) {
+                    isPlaying = false;
+                    return false;
+                }
+            } catch (Throwable ignore) {}
+        }
+        return true;
     }
 
     public boolean hasTrack() {
@@ -740,9 +759,9 @@ public class MiogramSpotifyManager {
 
     public boolean isAutoTransferEnabled() {
         Context ctx = ApplicationLoader.applicationContext;
-        if (ctx == null) return true;
+        if (ctx == null) return false;
         return ctx.getSharedPreferences("miogram_spotify", Context.MODE_PRIVATE)
-                .getBoolean(PREF_AUTO_TRANSFER, true);
+                .getBoolean(PREF_AUTO_TRANSFER, false);
     }
 
     public void setAutoTransferEnabled(boolean enabled) {

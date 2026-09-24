@@ -1,7 +1,7 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="OpenExtera" translatable="false">Miogram</string>
-    <string name="OpenExteraInfo">Розширені функції Miogram</string>
+    <string name="OpenExtera" translatable="false">Amegram</string>
+    <string name="OpenExteraInfo">Розширені функції Amegram</string>
 
     <string name="OpenExteraChats">Чати</string>
 
@@ -13,7 +13,7 @@
     <string name="OpenExteraLinks">Посилання</string>
     <string name="OpenExteraSource">Вихідний код</string>
 
-    <string name="OpenExteraPreferences">Налаштування Miogram</string>
+    <string name="OpenExteraPreferences">Налаштування Amegram</string>
     <string name="OpenExteraDesignSection">Дизайн</string>
     <string name="OpenExteraDesigner">Іконки та дизайн</string>
     <string name="OpenExteraDesignStudio">Студія дизайну</string>

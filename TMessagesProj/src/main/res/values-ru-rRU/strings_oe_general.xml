@@ -58,25 +58,25 @@
     <!-- Settings Management -->
     <string name="OEGeneralExportEtgSettings">Экспорт</string>
     <string name="OEGeneralImportEtgSettings">Импорт</string>
-    <string name="OEGeneralEtgSettingsInfo">Miogram обменивается настройками через файлы .mio. Переносится только то, что есть в обоих приложениях, остальное остаётся как было.</string>
+    <string name="OEGeneralEtgSettingsInfo">Amegram обменивается настройками через файлы .ame. Переносится только то, что есть в обоих приложениях, остальное остаётся как было.</string>
     <string name="OEGeneralImportEtgConfirm">Настроек в файле: %1$d. Текущие значения будут заменены.</string>
-    <string name="OEGeneralImportEtgEmpty">В файле нет настроек Miogram.</string>
+    <string name="OEGeneralImportEtgEmpty">В файле нет настроек Amegram.</string>
     <string name="OEGeneralImportEtgDone">Импортировано настроек: %1$d</string>
     <string name="OEGeneralResetSettings">Сброс настроек</string>
-    <string name="OEGeneralResetSettingsInfo">Все настройки Miogram вернутся к значениям по умолчанию.</string>
-    <string name="OEGeneralResetSettingsDone">Настройки Miogram сброшены.</string>
+    <string name="OEGeneralResetSettingsInfo">Все настройки Amegram вернутся к значениям по умолчанию.</string>
+    <string name="OEGeneralResetSettingsDone">Настройки Amegram сброшены.</string>
     <string name="OEGeneralDeleteAccount">Удалить аккаунт</string>
     <string name="DeepLFormalityDefault">Тон: как есть</string>
     <string name="DeepLFormalityInformal">Тон: неформальный</string>
     <string name="DeepLFormalityFormal">Тон: формальный</string>
     <string name="OEGeneralSavePathInfoFolder">Файлы сохраняются в Downloads/%1$s. Только буквы, цифры, пробел, точка, дефис и подчёркивание.</string>
-    <string name="OEGeneralNagramHeader">Miogram</string>
-    <string name="OEGeneralNagramSettings">Настройки Miogram</string>
-    <string name="OEGeneralNagramSettingsInfo">Добавляет в общий список настроек строку с настройками Miogram — форка, на котором собран Miogram. Смотреть там стоит только то, для чего у Miogram нет своего экрана.</string>
-    <string name="OEGeneralAyuMoments">Быстрый доступ к Mio Moments</string>
-    <string name="OEGeneralAyuMomentsHideTitle">Скрыть Mio Moments?</string>
+    <string name="OEGeneralNagramHeader">Amegram</string>
+    <string name="OEGeneralNagramSettings">Настройки Ame</string>
+    <string name="OEGeneralNagramSettingsInfo">Добавляет в общий список настроек строку с расширенными настройками Ame. Смотреть там стоит только то, для чего у Amegram нет своего экрана.</string>
+    <string name="OEGeneralAyuMoments">Быстрый доступ к Ame Moments</string>
+    <string name="OEGeneralAyuMomentsHideTitle">Скрыть Ame Moments?</string>
     <string name="OEGeneralAyuMomentsHideMessage">Настройки исчезнут с этого экрана. Сами функции продолжат работать, пока вы их не выключите.</string>
-    <string name="OEGeneralAyuMomentsDisableAll">Отключить все функции Mio Moments</string>
+    <string name="OEGeneralAyuMomentsDisableAll">Отключить все функции Ame Moments</string>
     <string name="OEGeneralAyuMomentsWipe">Удалить базу сохранённых сообщений</string>
     <string name="OEBottomNavigationModeFloating">Плавающая</string>
     <string name="OEGeneralLastFm">Last.fm</string>
@@ -107,5 +107,5 @@
     <string name="OEGeneralMapProvider">Провайдер карт</string>
     <string name="OEGeneralMapPreview">Превью локаций</string>
     <string name="OEGeneralMapDriftingFix">Исправлять смещение карты</string>
-    <string name="OECrashTitle">Miogram аварийно завершился</string>
+    <string name="OECrashTitle">Amegram аварийно завершился</string>
 </resources>

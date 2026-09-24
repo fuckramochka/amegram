@@ -57,10 +57,11 @@ public class TranscribeHelper {
     private static final Gson gson = new Gson();
     private static final ExecutorService executorService = Executors.newCachedThreadPool();
     public static final int TRANSCRIBE_AUTO = 0;
-    // public static final int TRANSCRIBE_PREMIUM = 1;
+    public static final int TRANSCRIBE_PREMIUM = 1;
     public static final int TRANSCRIBE_WORKERSAI = 2;
     public static final int TRANSCRIBE_GEMINI = 3;
     public static final int TRANSCRIBE_OPENAI = 4;
+    public static final int TRANSCRIBE_LOCAL = 5;
     private static final String GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s";
     private static final String GEMINI_PROMPT = """
     Your task is to transcribe the provided voice/audio message with high accuracy, preserving the speaker's emotional state, intensity, and tone directly in the text formatting:
@@ -90,8 +91,17 @@ public class TranscribeHelper {
 
     public static boolean useTranscribeAI(int account) {
         int provider = NaConfig.INSTANCE.getTranscribeProvider().Int();
-        return provider == TRANSCRIBE_WORKERSAI || provider == TRANSCRIBE_GEMINI || provider == TRANSCRIBE_OPENAI ||
-                (!UserConfig.getInstance(account).isPremium() && provider == TRANSCRIBE_AUTO);
+        if (provider == TRANSCRIBE_PREMIUM) {
+            return false;
+        }
+        if (provider == TRANSCRIBE_GEMINI || provider == TRANSCRIBE_LOCAL || provider == TRANSCRIBE_OPENAI || provider == TRANSCRIBE_WORKERSAI) {
+            return true;
+        }
+        boolean isPremium = UserConfig.getInstance(account).isPremium();
+        if (isPremium) {
+            return app.miogram.bridge.ai.AmegramTranscriptionPrefs.isPreferAmegramForPremium();
+        }
+        return true;
     }
 
     private static EditTextBoldCursor createAndSetupEditText(Context context, Theme.ResourcesProvider resourcesProvider, String initialText, String hintText, int imeOptions, boolean requestFocus) {
@@ -383,7 +393,17 @@ public class TranscribeHelper {
     }
 
     public static void sendRequest(String path, boolean video, BiConsumer<String, Exception> callback) {
-        requestGeminiAi(path, video, callback);
+        int provider = NaConfig.INSTANCE.getTranscribeProvider().Int();
+        if (provider == TRANSCRIBE_LOCAL) {
+            app.miogram.bridge.ai.AmegramLocalTranscriber.transcribe(path, video, callback);
+        } else if (provider == TRANSCRIBE_OPENAI) {
+            requestOpenAiCompatible(path, video, callback);
+        } else if (provider == TRANSCRIBE_WORKERSAI) {
+            requestWorkersAi(path, video, callback);
+        } else {
+            // TRANSCRIBE_GEMINI or TRANSCRIBE_AUTO
+            requestGeminiAi(path, video, callback);
+        }
     }
 
     
@@ -402,10 +422,10 @@ public class TranscribeHelper {
         return cleaned;
     }
 
-    private static void requestGeminiAi(String path, boolean video, BiConsumer<String, Exception> callback) {
+    public static void requestGeminiAi(String path, boolean video, BiConsumer<String, Exception> callback) {
         String apiKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
         if (TextUtils.isEmpty(apiKey)) {
-            callback.accept(null, new Exception("Введіть ключ Gemini у «Налаштування Miogram -> Miogram AI» (безкоштовно на aistudio.google.com)"));
+            callback.accept(null, new Exception("Введіть ключ Gemini у «Налаштування Amegram -> Amegram AI» (безкоштовно на aistudio.google.com)"));
             return;
         }
         String customPrompt = NaConfig.INSTANCE.getTranscribeProviderGeminiPrompt().String();

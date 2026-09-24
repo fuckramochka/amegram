@@ -191,23 +191,6 @@ public class MiogramLrcModel {
                 }
             }
 
-            long currentLineTime = lines.get(best).timeMs;
-            long elapsedSinceLine = currentMs - currentLineTime;
-
-            if (best < lines.size() - 1) {
-                long nextLineTime = lines.get(best + 1).timeMs;
-                long gapToNext = nextLineTime - currentLineTime;
-                // If there's a long break (e.g. guitar solo / bridge > 6s) and we're 5s past current line, deactivate
-                if (gapToNext > 6000L && elapsedSinceLine > 5000L) {
-                    return -1;
-                }
-            } else {
-                // Last line in song: deactivate if more than 7s passed
-                if (elapsedSinceLine > 7000L) {
-                    return -1;
-                }
-            }
-
             return best;
         }
 

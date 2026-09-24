@@ -54,7 +54,7 @@
     <string name="DeepLFormalityDefault">语气：随原文</string>
     <string name="DeepLFormalityInformal">语气：非正式</string>
     <string name="DeepLFormalityFormal">语气：正式</string>
-    <string name="OEGeneralNagramHeader">Miogram</string>
+    <string name="OEGeneralNagramHeader">Amegram</string>
     <string name="OEGeneralNagramSettings">Miogram 设置</string>
     <string name="OEGeneralNagramSettingsInfo">在主设置列表中添加一项，用于打开 Miogram 的设置 —— Miogram 正是基于这个分支构建的。只有 Miogram 没有单独界面的选项才值得去那里查看。</string>
     <string name="OEGeneralAyuMoments">Mio Moments 快捷入口</string>

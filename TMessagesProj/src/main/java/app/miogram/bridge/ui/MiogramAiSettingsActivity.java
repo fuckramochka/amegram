@@ -52,6 +52,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
 
     private int headerFeaturesRow;
     private int voiceTranscribeInfoRow;
+    private int transcribePreferForPremiumRow;
     private int piiMaskRow;
     private int featuresInfoRow;
 
@@ -80,6 +81,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
 
         headerFeaturesRow = addRow();
         voiceTranscribeInfoRow = addRow();
+        transcribePreferForPremiumRow = addRow();
         piiMaskRow = addRow();
         featuresInfoRow = addRow();
     }
@@ -151,6 +153,14 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://aistudio.google.com/app/apikey"));
                 getParentActivity().startActivity(browserIntent);
             } catch (Exception ignored) {}
+        } else if (position == voiceTranscribeInfoRow) {
+            showTranscribeProviderPicker();
+        } else if (position == transcribePreferForPremiumRow) {
+            boolean next = !app.miogram.bridge.ai.AmegramTranscriptionPrefs.isPreferAmegramForPremium();
+            app.miogram.bridge.ai.AmegramTranscriptionPrefs.setPreferAmegramForPremium(next);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(next);
+            }
         } else if (position == piiMaskRow) {
             boolean next = !piiMaskEnabled();
             prefs().edit().putBoolean("pii_mask", next).apply();
@@ -158,6 +168,22 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                 ((TextCheckCell) view).setChecked(next);
             }
         }
+    }
+
+    private void showTranscribeProviderPicker() {
+        Context ctx = getParentActivity();
+        if (ctx == null) return;
+        String[] labels = app.miogram.bridge.ai.AmegramTranscriptionPrefs.getProviderLabels();
+        int[] values = app.miogram.bridge.ai.AmegramTranscriptionPrefs.getProviderValues();
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+        builder.setTitle(MiogramLocale.get("Розпізнавання голосу", "Распознавание голоса", "Voice Transcription Engine"));
+        builder.setItems(labels, (dialog, which) -> {
+            app.miogram.bridge.ai.AmegramTranscriptionPrefs.setProvider(values[which]);
+            if (listAdapter != null) listAdapter.notifyItemChanged(voiceTranscribeInfoRow);
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     private void showCompanionPicker() {
@@ -275,7 +301,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                 return TYPE_SETTINGS;
             } else if (position == openCompanionRow || position == getKeyRow) {
                 return TYPE_TEXT;
-            } else if (position == companionBottomTabRow || position == piiMaskRow) {
+            } else if (position == companionBottomTabRow || position == piiMaskRow || position == transcribePreferForPremiumRow) {
                 return TYPE_CHECK;
             } else if (position == companionInfoRow || position == aiInfoRow || position == featuresInfoRow || position == hardwareInfoRow) {
                 return TYPE_INFO_PRIVACY;
@@ -316,8 +342,8 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == modelRow) {
                         cell.setTextAndValue(MiogramLocale.get("Модель ШІ", "Модель ИИ", "AI Model"), savedModel(), true);
                     } else if (position == voiceTranscribeInfoRow) {
-                        cell.setTextAndValue(MiogramLocale.get("Розшифровка аудіо та кружечків", "Расшифровка аудио и кружочков", "Voice & Video Notes"),
-                                MiogramLocale.get("Увімкнено (Gemini Multimodal)", "Включено (Gemini Multimodal)", "Enabled (Gemini Multimodal)"), false);
+                        cell.setTextAndValue(MiogramLocale.get("Розпізнавання голосу", "Распознавание голоса", "Voice Transcription"),
+                                app.miogram.bridge.ai.AmegramTranscriptionPrefs.getProviderTitle(app.miogram.bridge.ai.AmegramTranscriptionPrefs.getProvider()), true);
                     }
                     break;
                 }
@@ -335,6 +361,9 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                     if (position == companionBottomTabRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Замінити вкладку «Контакти» на ШІ", "Заменить вкладку «Контакты» на ИИ", "Replace «Contacts» tab with AI"),
                                 app.miogram.bridge.ai.companion.MiogramCompanionPrefs.isContactsReplacedWithAi(), false);
+                    } else if (position == transcribePreferForPremiumRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Надавати перевагу Amegram для TG Premium", "Предпочитать Amegram для TG Premium", "Prefer Amegram over TG Premium"),
+                                app.miogram.bridge.ai.AmegramTranscriptionPrefs.isPreferAmegramForPremium(), false);
                     } else if (position == piiMaskRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Приховувати персональні дані (PII Shield)", "Скрывать личные данные (PII Shield)", "Protect Personal Data (PII Shield)"), piiMaskEnabled(), false);
                     }

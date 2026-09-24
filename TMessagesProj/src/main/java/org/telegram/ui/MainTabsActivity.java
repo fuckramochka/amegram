@@ -337,6 +337,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         blur3_updateColors();
         checkContactsTabBadge();
         checkUnreadCount(true);
+        checkUi_tabsPosition();
 
         showAccountChangeHint();
     }
@@ -360,6 +361,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         super.onPause();
         if (accountSwitchHint != null) {
             accountSwitchHint.hide();
+        }
+        if (updateLayoutWrapper != null) {
+            updateLayoutWrapper.setVisibility(View.GONE);
         }
     }
 
@@ -1130,13 +1134,25 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         insetRight = systemInsets.right;
 
         navigationBarHeight = systemInsets.bottom;
-        final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
+        final int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+        final boolean isImeVisible = imeHeight > 0;
+        final boolean isRootScreen = LaunchActivity.instance == null || LaunchActivity.instance.getMainFragmentsStackSize() <= 1;
+
+        final boolean isUpdateLayoutVisible = updateLayoutWrapper != null && updateLayoutWrapper.isUpdateLayoutVisible() && !isImeVisible && isRootScreen;
+        if (updateLayoutWrapper != null) {
+            updateLayoutWrapper.setVisibility(isUpdateLayoutVisible ? View.VISIBLE : View.GONE);
+        }
         final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
-        updateLayoutWrapper.setPadding(0, 0, 0, navigationBarHeight);
+        final boolean hideTabs = NaConfig.INSTANCE.getHideBottomNavigationBar().Bool();
+        final int tabsHeight = hideTabs ? 0 : dp(MainTabsUiHelper.getTabsViewHeightDp());
+
+        if (updateLayoutWrapper != null) {
+            updateLayoutWrapper.setPadding(0, 0, 0, hideTabs ? navigationBarHeight : 0);
+        }
 
         ViewGroup.MarginLayoutParams lp;
         {
-            final int height = navigationBarHeight + updateLayoutHeight + (NaConfig.INSTANCE.getHideBottomNavigationBar().Bool() ? 0 : dp(MainTabsUiHelper.getTabsViewHeightDp()));
+            final int height = navigationBarHeight + updateLayoutHeight + tabsHeight;
             lp = (ViewGroup.MarginLayoutParams) fadeView.getLayoutParams();
             if (lp.height != height) {
                 lp.height = height;
@@ -1144,7 +1160,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
         {
-            int bottomMargin = isUpdateLayoutVisible ? (navigationBarHeight + updateLayoutHeight) : 0;
+            int bottomMargin = navigationBarHeight + tabsHeight + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
             if (tabletLayout) {
                 bottomMargin = Math.max(bottomMargin, navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
             }
@@ -1161,7 +1177,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         // уходит внутрь панели, а обёртка его не держит
         MainTabsUiHelper.applyTabsBottomInset(tabsView, tabsViewWrapper, navigationBarHeight, systemInsets.left, systemInsets.right);
 
-        final WindowInsetsCompat consumed = isUpdateLayoutVisible ?
+        final WindowInsetsCompat consumed = (isUpdateLayoutVisible && hideTabs) ?
             insets.inset(0, 0, 0, navigationBarHeight) : insets;
 
         checkUi_tabsPosition();
@@ -1295,23 +1311,40 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     private void checkUi_tabsPosition() {
         if (tabsView == null) return;
-        if (NaConfig.INSTANCE.getHideBottomNavigationBar().Bool()) {
+        final boolean hideTabs = NaConfig.INSTANCE.getHideBottomNavigationBar().Bool();
+        if (hideTabs) {
             tabsView.setVisibility(View.GONE);
+            if (updateLayoutWrapper != null) {
+                final boolean isRootScreen = LaunchActivity.instance == null || LaunchActivity.instance.getMainFragmentsStackSize() <= 1;
+                final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible() && isRootScreen;
+                updateLayoutWrapper.setTranslationY(0);
+                updateLayoutWrapper.setVisibility(isUpdateLayoutVisible ? View.VISIBLE : View.GONE);
+            }
             return;
         }
-        final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible();
-        final int updateLayoutHeight = isUpdateLayoutVisible ? dp(UpdateLayoutWrapper.HEIGHT) : 0;
-        final int normalY = -(updateLayoutHeight);
+
+        final int normalY = 0;
         final int hiddenY = normalY + dp(MainTabsHelper.isMainTabsHideTitleStyle() ? 30 : 40);
 
         final float factor = animatorTabsVisible.getFloatValue();
-        final float scale = lerp(0.85f, 1f, factor);
 
         tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
         tabsView.setClickable(factor > 1);
         tabsView.setEnabled(factor > 1);
         tabsView.setAlpha(factor);
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+
+        if (updateLayoutWrapper != null) {
+            final boolean isRootScreen = LaunchActivity.instance == null || LaunchActivity.instance.getMainFragmentsStackSize() <= 1;
+            final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible() && isRootScreen;
+            if (isUpdateLayoutVisible) {
+                int tabsTotalHeight = tabsViewWrapper.getMeasuredHeight() > 0 ? tabsViewWrapper.getMeasuredHeight() : (dp(MainTabsUiHelper.getTabsViewHeightDp()) + navigationBarHeight);
+                float tabsY = tabsViewWrapper.getTranslationY();
+                updateLayoutWrapper.setTranslationY(-tabsTotalHeight + tabsY);
+                updateLayoutWrapper.setAlpha(factor);
+                updateLayoutWrapper.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+            }
+        }
     }
 
     private void checkUi_callTabVisible(boolean callTabsVisible, boolean animated) {

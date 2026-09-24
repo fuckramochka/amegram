@@ -54,7 +54,7 @@
     <string name="DeepLFormalityDefault">Ton: jak w oryginale</string>
     <string name="DeepLFormalityInformal">Ton: nieformalny</string>
     <string name="DeepLFormalityFormal">Ton: formalny</string>
-    <string name="OEGeneralNagramHeader">Miogram</string>
+    <string name="OEGeneralNagramHeader">Amegram</string>
     <string name="OEGeneralNagramSettings">Ustawienia Miogram</string>
     <string name="OEGeneralNagramSettingsInfo">Dodaje do głównej listy ustawień pozycję otwierającą ustawienia Miogram — forka, na którym zbudowany jest Miogram. Warto tam zaglądać tylko po te opcje, dla których Miogram nie ma własnego ekranu.</string>
     <string name="OEGeneralAyuMoments">Szybki dostęp do Mio Moments</string>

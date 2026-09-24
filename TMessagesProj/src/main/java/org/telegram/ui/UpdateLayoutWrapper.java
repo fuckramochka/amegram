@@ -42,12 +42,13 @@ public class UpdateLayoutWrapper extends ViewGroup {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         final boolean layoutVisible = isUpdateLayoutVisible();
         final int width = MeasureSpec.getSize(widthMeasureSpec);
-        final int height = layoutVisible ? (dp(HEIGHT) + getPaddingBottom()) : 0;
+        final int contentH = layoutVisible ? dp(HEIGHT) : 0;
+        final int totalH = layoutVisible ? (contentH + getPaddingBottom()) : 0;
 
-        setMeasuredDimension(width, height);
+        setMeasuredDimension(width, totalH);
 
         final int measureSpecW = MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY);
-        final int measureSpecH = MeasureSpec.makeMeasureSpec(height, MeasureSpec.EXACTLY);
+        final int measureSpecH = MeasureSpec.makeMeasureSpec(contentH, MeasureSpec.EXACTLY);
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
             child.measure(measureSpecW, measureSpecH);
@@ -61,9 +62,10 @@ public class UpdateLayoutWrapper extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
+        final int contentH = dp(HEIGHT);
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
-            child.layout(0, 0, child.getMeasuredWidth(), child.getMeasuredHeight());
+            child.layout(0, 0, child.getMeasuredWidth(), contentH);
         }
     }
 

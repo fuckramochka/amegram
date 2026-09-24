@@ -192,6 +192,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             getString(R.string.TranscribeProviderWorkersAI),
             getString(R.string.TranscribeProviderGemini),
             getString(R.string.TranscribeProviderOpenAI),
+            app.miogram.bridge.MiogramLocale.get("Amegram Local (Офлайн нейромережа ⚡)", "Amegram Local (Офлайн нейросеть ⚡)", "Amegram Local (On-Device Neural STT ⚡)"),
     }, null));
     private final AbstractConfigCell transcribeProviderCfCredentialsRow = cellGroup.appendCell(new ConfigCellCustom("CloudflareCredentials", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell transcribeProviderGeminiApiKeyRow = cellGroup.appendCell(new ConfigCellCustom("LlmProviderGeminiKey", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));

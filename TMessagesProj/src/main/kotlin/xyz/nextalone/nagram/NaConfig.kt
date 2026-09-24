@@ -181,7 +181,7 @@ object NaConfig {
         addConfig(
             "CustomTitle",
             ConfigItem.configTypeString,
-            "Miogram"
+            "Amegram"
         )
     val dateOfForwardedMsg =
         addConfig(

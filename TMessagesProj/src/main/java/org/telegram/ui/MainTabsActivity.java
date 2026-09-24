@@ -1167,11 +1167,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
         {
-            // Amegram: floating pill tabs overlay the content (fragments already pad
-            // internally via getDockedTabsPadding/getListViewFloatingTabsPadding) —
-            // reserving tabsHeight here too double-counts and leaves a black hole.
-            final boolean tabsOverlay = MainTabsLayout.isBottomNavigationFloating();
-            int bottomMargin = navigationBarHeight + (tabsOverlay ? 0 : tabsHeight) + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
+            // Amegram: bottom tabs are a floating glass pill in every mode, fragments
+            // already clear the pill internally where needed — reserving tabsHeight
+            // here (d6604120e) double-counted and left a black hole. Reverted.
+            int bottomMargin = navigationBarHeight + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
             if (tabletLayout) {
                 bottomMargin = Math.max(bottomMargin, navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
             }

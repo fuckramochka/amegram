@@ -15277,7 +15277,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (communityId != 0) {
             return navigationBarHeight + dp(12 + 48 + 12);
         } else {
-            return navigationBarHeight + getDockedTabsPadding() + getListViewFloatingTabsPadding();
+            // Amegram: bottom tabs are a floating glass pill in every mode — the chat
+            // list runs full height underneath it (like before bottom tabs existed).
+            // UndoView/hints/FAB keep their own offsets above the pill.
+            return navigationBarHeight;
         }
     }
 

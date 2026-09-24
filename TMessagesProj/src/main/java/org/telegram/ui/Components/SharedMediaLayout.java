@@ -9347,7 +9347,7 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                 if (did == profileActivity.getUserConfig().getClientUserId()) {
                     req.flags |= 4;
                     req.saved_peer_id = profileActivity.getMessagesController().getInputPeer(topicId);
-                } else {
+                } else if (topicId > 1) {
                     req.flags |= 2;
                     req.top_msg_id = (int) topicId;
                 }

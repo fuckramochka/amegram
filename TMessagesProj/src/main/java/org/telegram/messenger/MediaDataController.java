@@ -4012,7 +4012,7 @@ public class MediaDataController extends BaseController {
                     if (dialogId == getUserConfig().getClientUserId() || getMessagesStorage().isMonoForum(queryWithDialog)) {
                         req.saved_peer_id = getMessagesController().getInputPeer(replyMessageId);
                         req.flags |= 4;
-                    } else {
+                    } else if (replyMessageId > 1) {
                         req.top_msg_id = (int) replyMessageId;
                         req.flags |= 2;
                     }
@@ -4098,7 +4098,7 @@ public class MediaDataController extends BaseController {
             if (queryWithDialog == getUserConfig().getClientUserId() || getMessagesStorage().isMonoForum(queryWithDialog)) {
                 req.saved_peer_id = getMessagesController().getInputPeer(lastReplyMessageId);
                 req.flags |= 4;
-            } else {
+            } else if (lastReplyMessageId > 1) {
                 req.top_msg_id = (int) lastReplyMessageId;
                 req.flags |= 2;
             }
@@ -4282,7 +4282,7 @@ public class MediaDataController extends BaseController {
                 if (dialogId == getUserConfig().getClientUserId()) {
                     req.saved_peer_id = getMessagesController().getInputPeer(topicId);
                     req.flags |= 4;
-                } else {
+                } else if (topicId > 1) {
                     req.top_msg_id = (int) topicId;
                     req.flags |= 2;
                 }
@@ -4350,7 +4350,7 @@ public class MediaDataController extends BaseController {
                         if (dialogId == getUserConfig().getClientUserId()) {
                             req.saved_peer_id = getMessagesController().getInputPeer(topicId);
                             req.flags |= 4;
-                        } else {
+                        } else if (topicId > 1) {
                             req.top_msg_id = (int) topicId;
                             req.flags |= 1;
                         }
@@ -4462,7 +4462,7 @@ public class MediaDataController extends BaseController {
                 if (dialogId == getUserConfig().getClientUserId()) {
                     req.saved_peer_id = getMessagesController().getInputPeer(topicId);
                     req.flags |= 4;
-                } else {
+                } else if (topicId > 1) {
                     req.top_msg_id = (int) topicId;
                     req.flags |= 1;
                 }

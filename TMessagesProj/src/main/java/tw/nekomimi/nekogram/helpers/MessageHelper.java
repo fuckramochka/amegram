@@ -673,7 +673,7 @@ public class MessageHelper extends BaseController {
             if (isMonoForum) {
                 req.saved_peer_id = getMessagesController().getInputPeer(replyMessageId);
                 req.flags |= 4;
-            } else {
+            } else if (replyMessageId > 1) {
                 req.top_msg_id = replyMessageId;
                 req.flags |= 2;
             }

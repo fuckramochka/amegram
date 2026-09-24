@@ -51737,7 +51737,7 @@ public class ChatActivity extends BaseFragment implements
             TLRPC.TL_messages_getUnreadMentions req = new TLRPC.TL_messages_getUnreadMentions();
             req.peer = inputPeer;
             req.limit = 1;
-            if (isTopic) {
+            if (isTopic && threadMessageId > 1) {
                 req.top_msg_id = (int) threadMessageId;
                 req.flags |= 1;
             }

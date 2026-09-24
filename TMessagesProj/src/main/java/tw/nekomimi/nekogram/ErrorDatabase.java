@@ -16,7 +16,7 @@ public class ErrorDatabase {
     }
 
     public static void showErrorToast(TLObject method, String text) {
-        if (text.equals("FILE_REFERENCE_EXPIRED")) {
+        if (text.equals("FILE_REFERENCE_EXPIRED") || text.equals("TOP_MSG_ID_NOT_SUPPORTED")) {
             return;
         }
         AndroidUtilities.runOnUIThread(() -> Toast.makeText(ApplicationLoader.applicationContext, getMethodName(method) + ": " + text, Toast.LENGTH_SHORT).show());

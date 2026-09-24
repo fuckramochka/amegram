@@ -473,7 +473,10 @@ public class MiogramMusicSearchActivity extends BaseFragment {
             TLRPC.Message syntheticMsg = new TLRPC.TL_message();
             syntheticMsg.id = (int) targetTopicId;
             syntheticMsg.dialog_id = targetDialogId;
-            syntheticMsg.flags = TLRPC.MESSAGE_FLAG_TOPIC_MESSAGE;
+            syntheticMsg.reply_to = new TLRPC.TL_messageReplyHeader();
+            syntheticMsg.reply_to.reply_to_top_id = (int) targetTopicId;
+            syntheticMsg.reply_to.reply_to_msg_id = (int) targetTopicId;
+            syntheticMsg.reply_to.forum_topic = true;
             replyToTopMsg = new MessageObject(currentAccount, syntheticMsg, false, false);
         }
         SendMessageChatArguments chatArgs = targetChatActivity != null ? targetChatActivity.getMessageChatSendParams() : null;

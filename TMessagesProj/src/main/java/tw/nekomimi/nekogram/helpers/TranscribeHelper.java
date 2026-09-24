@@ -399,7 +399,8 @@ public class TranscribeHelper {
         } else if (provider == TRANSCRIBE_OPENAI) {
             requestOpenAiCompatible(path, video, callback);
         } else if (provider == TRANSCRIBE_WORKERSAI) {
-            requestWorkersAi(path, video, callback);
+            // Legacy WorkersAI backend was removed (see e243a129e) — fall back to Gemini.
+            requestGeminiAi(path, video, callback);
         } else {
             // TRANSCRIBE_GEMINI or TRANSCRIBE_AUTO
             requestGeminiAi(path, video, callback);

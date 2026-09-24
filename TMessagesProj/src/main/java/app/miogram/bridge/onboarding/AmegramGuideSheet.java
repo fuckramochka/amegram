@@ -492,7 +492,7 @@ public class AmegramGuideSheet extends BottomSheet {
 
         final boolean[] checked = new boolean[]{initialChecked};
         ImageView checkView = new ImageView(context);
-        checkView.setImageResource(checked[0] ? R.drawable.msg_check : R.drawable.msg_round_check_active);
+        checkView.setImageResource(checked[0] ? R.drawable.msg_check : R.drawable.round_check2);
         checkView.setColorFilter(new PorterDuffColorFilter(checked[0] ? 0xFF34C759 : 0x44FFFFFF, PorterDuff.Mode.SRC_IN));
         card.addView(checkView, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL, 10, 0, 0, 0));
 

@@ -14157,7 +14157,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
                     break;
                 case VIEW_TYPE_CHANNEL:
-                    view = new ProfileChannelCell(ProfileActivity.this) {
+                    view = new ProfileChannelCell(mContext, ProfileActivity.this) {
                         @Override
                         public int processColor(int color) {
                             return dontApplyPeerColor(color, false);

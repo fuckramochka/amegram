@@ -15294,10 +15294,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private int getListViewFloatingTabsPadding() {
-        if (commentView != null || !hasMainTabs || !MainTabsLayout.isBottomNavigationFloating()) {
-            return 0;
-        }
-        return dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp());
+        // Amegram: floating pill tabs overlay the content — the chat list runs full
+        // height underneath the glass pill (like before bottom tabs existed), so no
+        // black dead zone. The FAB keeps its own offset above the pill, the fade
+        // becomes a scrim over content instead of a slab over emptiness.
+        return 0;
     }
 
     @Override

@@ -101,7 +101,8 @@ public class AmegramTikTokBridge {
     }
 
     public static boolean isThemeSyncEnabled() {
-        return getPrefs(null).getBoolean(KEY_THEME_SYNC, true);
+        // Amegram: theme sync with TikTok MI is OFF by default — no silent re-theming.
+        return getPrefs(null).getBoolean(KEY_THEME_SYNC, false);
     }
 
     public static void setThemeSyncEnabled(boolean enabled) {

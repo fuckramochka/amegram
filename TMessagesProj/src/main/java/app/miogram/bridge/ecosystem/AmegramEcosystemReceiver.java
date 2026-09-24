@@ -37,6 +37,8 @@ public class AmegramEcosystemReceiver extends BroadcastReceiver {
 
         switch (action) {
             case ACTION_THEME_CHANGED: {
+                // Amegram: ignore incoming theme pushes unless the user explicitly enabled sync.
+                if (!AmegramTikTokBridge.isThemeSyncEnabled()) break;
                 int accent = intent.getIntExtra("accent", 0);
                 boolean dark = intent.getBooleanExtra("dark", true);
                 boolean amoled = intent.getBooleanExtra("amoled", false);

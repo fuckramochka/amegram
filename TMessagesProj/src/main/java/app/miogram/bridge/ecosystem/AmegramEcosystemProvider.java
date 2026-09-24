@@ -143,6 +143,8 @@ public class AmegramEcosystemProvider extends ContentProvider {
             }
 
             case "setTheme": {
+                // Amegram: ignore remote theme pushes unless the user explicitly enabled sync.
+                if (!AmegramTikTokBridge.isThemeSyncEnabled()) return null;
                 if (extras == null) return null;
                 final int accent = extras.getInt("accent", 0);
                 final boolean dark = extras.getBoolean("dark", true);

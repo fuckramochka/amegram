@@ -11613,7 +11613,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private void hideFloatingButton(boolean hide, boolean byScroll) {
-        final boolean hideByScroll = hide;
         if (NaConfig.INSTANCE.getDisableDialogsFloatingButton().Bool()) {
             floatingForceVisible = false;
             hide = true;
@@ -11627,9 +11626,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         floatingButtonHidden = hide;
-        if (byScroll) {
-            mainTabsHiddenByScroll = MainTabsLayout.isBottomNavigationFloating() && hideByScroll;
-        }
+        // Amegram: never hide the bottom tabs on scroll — the tabs+fade+update stack
+        // animating in/out on every scroll direction change is the bottom flicker.
+        // Only the floating action button hides by scroll (stock behavior).
         updateFloatingButtonVisibility(true);
         checkUi_mainTabsVisible();
 

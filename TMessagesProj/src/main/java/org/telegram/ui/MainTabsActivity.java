@@ -1160,7 +1160,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
         {
-            int bottomMargin = navigationBarHeight + tabsHeight + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
+            // Amegram: floating pill tabs overlay the content (fragments already pad
+            // internally via getDockedTabsPadding/getListViewFloatingTabsPadding) —
+            // reserving tabsHeight here too double-counts and leaves a black hole.
+            final boolean tabsOverlay = MainTabsLayout.isBottomNavigationFloating();
+            int bottomMargin = navigationBarHeight + (tabsOverlay ? 0 : tabsHeight) + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
             if (tabletLayout) {
                 bottomMargin = Math.max(bottomMargin, navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
             }

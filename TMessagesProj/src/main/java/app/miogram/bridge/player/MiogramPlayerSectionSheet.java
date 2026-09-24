@@ -74,6 +74,11 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
 
     public MiogramPlayerSectionSheet(Context context, Theme.ResourcesProvider resourcesProvider,
                                      MiogramModernPlayerLayout playerLayout, String section) {
+        this(context, resourcesProvider, playerLayout, section, false);
+    }
+
+    public MiogramPlayerSectionSheet(Context context, Theme.ResourcesProvider resourcesProvider,
+                                     MiogramModernPlayerLayout playerLayout, String section, boolean standalone) {
         super(context, false, resourcesProvider);
         this.playerLayout = playerLayout;
         this.currentSection = section != null ? section : "controls";
@@ -121,29 +126,31 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
         subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         subtitleView.setTextColor(subTextColor);
         subtitleView.setGravity(Gravity.CENTER);
-        root.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+        root.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, standalone ? 8 : 14));
 
-        android.widget.HorizontalScrollView tabScroll = new android.widget.HorizontalScrollView(context);
-        tabScroll.setHorizontalScrollBarEnabled(false);
-        tabScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        LinearLayout tabRow = new LinearLayout(context);
-        tabRow.setOrientation(LinearLayout.HORIZONTAL);
-        tabRow.setGravity(Gravity.CENTER_VERTICAL);
-        for (String s : allSections) {
-            TextView tab = new TextView(context);
-            tab.setText(sectionTitle(s));
-            tab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            tab.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(6), AndroidUtilities.dp(12), AndroidUtilities.dp(6));
-            tab.setGravity(Gravity.CENTER);
-            tab.setOnClickListener(v -> {
-                MiogramHaptic.select(v);
-                switchSection(s, context);
-            });
-            sectionTabButtons.add(tab);
-            tabRow.addView(tab, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+        if (!standalone) {
+            android.widget.HorizontalScrollView tabScroll = new android.widget.HorizontalScrollView(context);
+            tabScroll.setHorizontalScrollBarEnabled(false);
+            tabScroll.setOverScrollMode(View.OVER_SCROLL_NEVER);
+            LinearLayout tabRow = new LinearLayout(context);
+            tabRow.setOrientation(LinearLayout.HORIZONTAL);
+            tabRow.setGravity(Gravity.CENTER_VERTICAL);
+            for (String s : allSections) {
+                TextView tab = new TextView(context);
+                tab.setText(sectionTitle(s));
+                tab.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+                tab.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(6), AndroidUtilities.dp(12), AndroidUtilities.dp(6));
+                tab.setGravity(Gravity.CENTER);
+                tab.setOnClickListener(v -> {
+                    MiogramHaptic.select(v);
+                    switchSection(s, context);
+                });
+                sectionTabButtons.add(tab);
+                tabRow.addView(tab, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+            }
+            tabScroll.addView(tabRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            root.addView(tabScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
         }
-        tabScroll.addView(tabRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-        root.addView(tabScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
 
         contentContainer = new LinearLayout(context);
         contentContainer.setOrientation(LinearLayout.VERTICAL);

@@ -134,6 +134,9 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
 
         // 5. Roblox Card
         buildRobloxCard(context);
+
+        // 6. TikTok MI Card
+        buildTikTokCard(context);
     }
 
     private LinearLayout createCardContainer(Context context) {
@@ -269,6 +272,7 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
             btnUnlink.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
                 gm.setLinkedUsername("");
+                app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
                 buildCards();
                 notifyChanged();
             });
@@ -332,6 +336,7 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
             btnUnlink.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
                 dm.setLinkedUserId("");
+                app.miogram.bridge.presence.MiogramCloudPresence.syncSelfToCloud(0);
                 buildCards();
                 notifyChanged();
             });
@@ -505,6 +510,80 @@ public class MiogramConnectedAppsSheet extends BottomSheet {
             btnUnlink.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
                 rm.unlink();
+                buildCards();
+                notifyChanged();
+            });
+            actions.addView(btnUnlink, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 0, 0));
+        }
+    }
+
+    // TIKTOK MI
+    private void buildTikTokCard(Context context) {
+        LinearLayout card = createCardContainer(context);
+        cardsContainer.addView(card, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        app.miogram.bridge.ecosystem.AmegramTikTokManager tm = app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance();
+        boolean linked = tm.isLinked();
+
+        LinearLayout headerRow = new LinearLayout(context);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        headerRow.setGravity(Gravity.CENTER_VERTICAL);
+        card.addView(headerRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
+
+        TextView name = new TextView(context);
+        name.setText("TikTok MI");
+        name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        name.setTypeface(AndroidUtilities.bold());
+        name.setTextColor(0xFF00F2FE);
+        headerRow.addView(name, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
+
+        TextView badge = createStatusBadge(context, linked);
+        headerRow.addView(badge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        TextView desc = new TextView(context);
+        desc.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        desc.setTextColor(0xAAFFFFFF);
+        desc.setSingleLine(true);
+        desc.setEllipsize(TextUtils.TruncateAt.END);
+        if (linked) {
+            String statsStr = "@" + tm.getLinkedUsername();
+            if (tm.getFollowersCount() > 0) {
+                statsStr += " • " + app.miogram.bridge.ecosystem.AmegramTikTokManager.formatCount(tm.getFollowersCount()) + " " + MiogramLocale.get("підписників", "подписчиков", "followers");
+            }
+            if (tm.getLikesCount() > 0) {
+                statsStr += " • " + app.miogram.bridge.ecosystem.AmegramTikTokManager.formatCount(tm.getLikesCount()) + " " + MiogramLocale.get("вподобань", "лайков", "likes");
+            }
+            desc.setText(statsStr);
+        } else {
+            desc.setText(MiogramLocale.get(
+                    "Прив'язка профілю TikTok, статистика та статус",
+                    "Привязка профиля TikTok, статистика и статус",
+                    "Link TikTok profile, stats & live presence"
+            ));
+        }
+        card.addView(desc, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        LinearLayout actions = new LinearLayout(context);
+        actions.setOrientation(LinearLayout.HORIZONTAL);
+        card.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        TextView btnManage = createButton(context, linked
+                ? MiogramLocale.get("Налаштувати", "Настроить", "Configure")
+                : MiogramLocale.get("Підключити", "Подключить", "Connect"), 0x3300F2FE, 0xFF00F2FE);
+        btnManage.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            tm.showLinkDialog(context, () -> {
+                buildCards();
+                notifyChanged();
+            });
+        });
+        actions.addView(btnManage, LayoutHelper.createLinear(0, 34, 1f, 0, 0, linked ? 6 : 0, 0));
+
+        if (linked) {
+            TextView btnUnlink = createButton(context, MiogramLocale.get("Відв'язати", "Отвязать", "Unlink"), 0x22FF4B4B, 0xFFFF6B6B);
+            btnUnlink.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                tm.unlink();
                 buildCards();
                 notifyChanged();
             });

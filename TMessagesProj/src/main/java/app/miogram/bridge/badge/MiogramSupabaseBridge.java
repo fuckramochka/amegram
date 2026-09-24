@@ -601,6 +601,13 @@ public class MiogramSupabaseBridge {
                             presence = app.miogram.bridge.presence.MiogramCloudPresence.extractPresence(userId, clientVer);
                             if (presence != null) {
                                 app.miogram.bridge.presence.MiogramCloudPresence.putPresence(userId, presence);
+                                long selfUserId = 0;
+                                try {
+                                    selfUserId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+                                } catch (Throwable ignore) {}
+                                if (selfUserId != 0 && selfUserId == userId) {
+                                    restoreLocalManagersFromPresence(presence);
+                                }
                             }
                         }
                         break;
@@ -617,6 +624,41 @@ public class MiogramSupabaseBridge {
                 if (callback != null) callback.run(res);
             });
         });
+    }
+
+    private static void restoreLocalManagersFromPresence(app.miogram.bridge.presence.MiogramCloudPresence presence) {
+        if (presence == null) return;
+        try {
+            // Steam
+            if (!TextUtils.isEmpty(presence.steamId) && !app.miogram.bridge.steam.MiogramSteamManager.getInstance().isLinked()) {
+                app.miogram.bridge.steam.MiogramSteamManager.getInstance().setLinkedSteamId(presence.steamId);
+            }
+            // GitHub
+            if (!TextUtils.isEmpty(presence.githubUser) && !app.miogram.bridge.github.MiogramGitHubManager.getInstance().isLinked()) {
+                app.miogram.bridge.github.MiogramGitHubManager.getInstance().setLinkedUsername(presence.githubUser);
+            }
+            // Discord
+            if (!TextUtils.isEmpty(presence.discordId) && !app.miogram.bridge.discord.MiogramDiscordManager.getInstance().isLinked()) {
+                app.miogram.bridge.discord.MiogramDiscordManager.getInstance().setLinkedUserId(presence.discordId);
+            }
+            // Spotify
+            if (!TextUtils.isEmpty(presence.spotifyUser) && !"live".equals(presence.spotifyUser) && !app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().isLinked()) {
+                app.miogram.bridge.spotify.MiogramSpotifyManager.getInstance().setLinkedUsername(presence.spotifyUser);
+            }
+            // Roblox
+            if (!TextUtils.isEmpty(presence.robloxUser) && !app.miogram.bridge.roblox.MiogramRobloxManager.getInstance().isLinked()) {
+                app.miogram.bridge.roblox.MiogramRobloxManager.getInstance().setLinkedUsername(presence.robloxUser, null);
+            }
+            // TikTok
+            if (!TextUtils.isEmpty(presence.tiktokUser) && !app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().isLinked()) {
+                app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().restoreFromCloud(
+                        presence.tiktokUser, presence.tiktokName, presence.tiktokAvatar,
+                        presence.tiktokFollowers, presence.tiktokFollowing, presence.tiktokLikes
+                );
+            }
+        } catch (Throwable t) {
+            FileLog.e("MiogramSupabaseBridge: restoreLocalManagers error", t);
+        }
     }
 
     private static long lastSyncErrorDialogTime = 0;

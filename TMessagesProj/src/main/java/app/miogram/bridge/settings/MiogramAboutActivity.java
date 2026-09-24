@@ -185,10 +185,11 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
     }
 
     private String aboutText() {
+        String codename = MiogramLocale.get("«Ніді Кодер Бек»", "«Ниди Кодер Бек»", "“Needy Koder Beck”");
         return MiogramLocale.get(
-                "Amegram — кастомний Telegram-клієнт: хмарне сховище, плагіни, юзербот, присутність (Steam, Spotify, Discord, GitHub), ШІ-супутниці Аме та KAngel, теми і обхід блокувань.\n\nРозробка: @dkramochka, відкрито і по живому — новини, баги та ідеї летять у @" + CHANNEL_USERNAME + ".\n\nНародився 1 вересня 2026 — живе вже " + ageText() + ".",
-                "Amegram — кастомный Telegram-клиент: облачное хранилище, плагины, юзербот, присутствие (Steam, Spotify, Discord, GitHub), ИИ-спутницы Аме и KAngel, темы и обход блокировок.\n\nРазработка: @dkramochka, открыто и вживую — новости, баги и идеи летят в @" + CHANNEL_USERNAME + ".\n\nРодился 1 сентября 2026 — живёт уже " + ageText() + ".",
-                "Amegram is a custom Telegram client: cloud vault, plugins, userbot, presence (Steam, Spotify, Discord, GitHub), AI companions Ame & KAngel, themes and anti-block.\n\nBuilt by @dkramochka in the open — news, bugs and ideas live in @" + CHANNEL_USERNAME + ".\n\nBorn September 1, 2026 — alive for " + ageText() + "."
+                "Amegram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " " + codename + " — кастомний Telegram-клієнт: хмарне сховище, плагіни, юзербот, присутність (TikTok MI, Steam, Spotify, Discord, GitHub), ШІ-супутниці Аме та KAngel, теми і обхід блокувань.\n\nРозробка: @dkramochka, відкрито і по живому — новини, баги та ідеї летять у @" + CHANNEL_USERNAME + ".\n\nНародився 1 вересня 2026 — живе вже " + ageText() + ".",
+                "Amegram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " " + codename + " — кастомный Telegram-клиент: облачное хранилище, плагины, юзербот, присутствие (TikTok MI, Steam, Spotify, Discord, GitHub), ИИ-спутницы Аме и KAngel, темы и обход блокировок.\n\nРазработка: @dkramochka, открыто и вживую — новости, баги и идеи летят в @" + CHANNEL_USERNAME + ".\n\nРодился 1 сентября 2026 — живёт уже " + ageText() + ".",
+                "Amegram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " " + codename + " — custom Telegram client: cloud vault, plugins, userbot, presence (TikTok MI, Steam, Spotify, Discord, GitHub), AI companions Ame & KAngel, themes and anti-block.\n\nBuilt by @dkramochka in the open — news, bugs and ideas live in @" + CHANNEL_USERNAME + ".\n\nBorn September 1, 2026 — alive for " + ageText() + "."
         );
     }
 

@@ -40,6 +40,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
     // Group 1: Кастом, аудіо та функціонал
     private int headerCustomRow;
+    private int guideRow;
     private int visualsRow;
     private int playerEditRow;
     private int badgeStudioRow;
@@ -75,6 +76,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
         // Оформлення
         headerCustomRow = addRow();
+        guideRow = addRow();
         visualsRow = addRow();
         playerEditRow = addRow();
         badgeStudioRow = addRow();
@@ -105,7 +107,9 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     @Override
     public void onItemClick(View view, int position, float x, float y) {
         // Оформлення
-        if (position == visualsRow) {
+        if (position == guideRow) {
+            new app.miogram.bridge.onboarding.AmegramGuideSheet(getParentActivity(), false).show();
+        } else if (position == visualsRow) {
             presentFragment(new MiogramVisualsActivity());
         } else if (position == playerEditRow) {
             try {
@@ -238,7 +242,13 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
                     // Оформлення
-                    if (position == visualsRow) {
+                    if (position == guideRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Гід знайомства з Amegram ໒꒱", "Знакомство с Amegram ໒꒱", "Amegram Welcome Guide ໒꒱"),
+                                R.drawable.msg_bot,
+                                true
+                        );
+                    } else if (position == visualsRow) {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Зовнішній вигляд", "Внешний вид", "Appearance"),
                                 R.drawable.msg_theme,
@@ -353,7 +363,8 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                         );
                     } else if (position == updaterRow) {
                         String branch = MiogramUpdater.getUpdateChannelName();
-                        String ver = "v" + BuildVars.BUILD_VERSION_STRING + " (" + branch + ")";
+                        String codename = MiogramLocale.get("Ніді Кодер Бек", "Ниди Кодер Бек", "Needy Koder Beck");
+                        String ver = "v" + BuildVars.BUILD_VERSION_STRING + " · " + codename;
                         cell.setTextAndValueAndIcon(
                                 MiogramLocale.get("Оновлення", "Обновления", "Updates"),
                                 ver,

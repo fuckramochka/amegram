@@ -29,6 +29,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AudioPlayerAlert;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 
 import app.miogram.bridge.MiogramLocale;
@@ -198,6 +199,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         backgroundBlurView = new ImageView(context);
         backgroundBlurView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         addView(backgroundBlurView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        backgroundBlurView.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("background", true);
+            return true;
+        });
         captureBlurBackground();
 
         updateBackgroundShape(0f);
@@ -375,6 +381,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             MiogramHaptic.tap(v);
             openFullscreenFromCover();
         });
+        compactCoverWrapper.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("cover", true);
+            return true;
+        });
         compactCoverWrapper.setContentDescription(MiogramLocale.get("Обкладинка, відкрити плеєр", "Обложка, открыть плеер", "Cover art, open player"));  
         compactInfoContainer.addView(compactCoverWrapper, LayoutHelper.createLinear(115, 115, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 10));
 
@@ -390,6 +401,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         compactTitleView.setOnClickListener(v -> {
             if (alert != null) alert.setFullScreen(true, true);
         });
+        compactTitleView.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("text", true);
+            return true;
+        });
         compactInfoContainer.addView(compactTitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 2));
 
         compactAuthorView = new TextView(context);
@@ -399,6 +415,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         compactAuthorView.setSingleLine(true);
         compactAuthorView.setEllipsize(TextUtils.TruncateAt.END);
         compactAuthorView.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), 0);
+        compactAuthorView.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("text", true);
+            return true;
+        });
         compactInfoContainer.addView(compactAuthorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
         compactActiveLyricView = new TextView(context);
@@ -411,6 +432,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         compactActiveLyricView.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(4), AndroidUtilities.dp(14), AndroidUtilities.dp(4));
         compactActiveLyricView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(14), ColorUtils.setAlphaComponent(accentColor, 26)));
         compactActiveLyricView.setVisibility(View.GONE);
+        compactActiveLyricView.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("lyrics", true);
+            return true;
+        });
         compactActiveLyricView.setOnClickListener(v -> {
             MiogramHaptic.select(v);
             showLyrics(false);
@@ -433,6 +459,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         fullscreenCoverBox.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(8), AndroidUtilities.dp(20), AndroidUtilities.dp(8));
 
         fullscreenCoverHolder = new FrameLayout(context);
+        fullscreenCoverHolder.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("cover", true);
+            return true;
+        });
         if (Build.VERSION.SDK_INT >= 21) {
             fullscreenCoverHolder.setElevation(AndroidUtilities.dp(16));
             fullscreenCoverHolder.setOutlineProvider(new ViewOutlineProvider() {
@@ -462,6 +493,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         fullscreenTitleView.setEllipsize(TextUtils.TruncateAt.MARQUEE);
         fullscreenTitleView.setSelected(true);
         fullscreenTitleView.setHorizontallyScrolling(true);
+        fullscreenTitleView.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("text", true);
+            return true;
+        });
         fullscreenTextCol.addView(fullscreenTitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         fullscreenAuthorView = new TextView(context);
@@ -469,6 +505,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         fullscreenAuthorView.setTextColor(0xB3FFFFFF);
         fullscreenAuthorView.setSingleLine(true);
         fullscreenAuthorView.setEllipsize(TextUtils.TruncateAt.END);
+        fullscreenAuthorView.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("text", true);
+            return true;
+        });
         fullscreenTextCol.addView(fullscreenAuthorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
         fullscreenTitleRow.addView(fullscreenTextCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
@@ -598,6 +639,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         floatCustomizeBtn.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
             setEditMode(true);
+        });
+        floatCustomizeBtn.setOnLongClickListener(v -> {
+            MiogramHaptic.select(v);
+            openSectionSheet("background", false);
+            return true;
         });
         addView(bottomSection, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
         // Dock the floating button and adjust centerContainer dynamically based on bottomSection height
@@ -780,6 +826,9 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             // Cover: corner radius & shadow elevation
             int coverRadius = MiogramPlayerPrefs.getCoverCornerRadius();
             int coverElev = MiogramPlayerPrefs.getCoverElevation();
+            if (coverView instanceof BackupImageView) {
+                ((BackupImageView) coverView).setRoundRadius(AndroidUtilities.dp(coverRadius));
+            }
             if (compactCoverWrapper != null && android.os.Build.VERSION.SDK_INT >= 21) {
                 compactCoverWrapper.setElevation(AndroidUtilities.dp(coverElev));
                 compactCoverWrapper.invalidateOutline();
@@ -926,6 +975,9 @@ public class MiogramModernPlayerLayout extends FrameLayout {
 
     public void setCoverView(View cover) {
         this.coverView = cover;
+        if (coverView instanceof BackupImageView) {
+            ((BackupImageView) coverView).setRoundRadius(AndroidUtilities.dp(MiogramPlayerPrefs.getCoverCornerRadius()));
+        }
         updateCoverAttachment();
     }
 
@@ -935,6 +987,9 @@ public class MiogramModernPlayerLayout extends FrameLayout {
 
     private void updateCoverAttachment() {
         if (coverView == null) return;
+        if (coverView instanceof BackupImageView) {
+            ((BackupImageView) coverView).setRoundRadius(AndroidUtilities.dp(MiogramPlayerPrefs.getCoverCornerRadius()));
+        }
         if (coverView.getParent() instanceof ViewGroup) {
             ((ViewGroup) coverView.getParent()).removeView(coverView);
         }
@@ -987,6 +1042,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
             int insertIndex = seekbarContainer.indexOfChild(timersRow);
             if (insertIndex < 0) insertIndex = seekbarContainer.getChildCount();
             seekbarContainer.addView(seekBar, insertIndex, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 30));
+            seekbarContainer.setOnLongClickListener(v -> {
+                MiogramHaptic.select(v);
+                openSectionSheet("seekbar", true);
+                return true;
+            });
         }
 
         if (timersRow != null) {
@@ -1014,6 +1074,11 @@ public class MiogramModernPlayerLayout extends FrameLayout {
 
         if (mainControlsRow != null) {
             mainControlsRow.removeAllViews();
+            mainControlsRow.setOnLongClickListener(v -> {
+                MiogramHaptic.select(v);
+                openSectionSheet("controls", true);
+                return true;
+            });
             int buttonColor = getThemedColor(Theme.key_player_button);
             if (buttonColor == 0) buttonColor = 0xFF888888;
             int accentColor = getThemeAccentColor();
@@ -2078,10 +2143,14 @@ public class MiogramModernPlayerLayout extends FrameLayout {
         return alert;
     }
 
-    /** Opens ONLY the tapped element's panel — never the full sheet. */
+    /** Opens ONLY the tapped element's panel — never the full sheet by default. */
     public void openSectionSheet(String section) {
+        openSectionSheet(section, true);
+    }
+
+    public void openSectionSheet(String section, boolean standalone) {
         try {
-            new MiogramPlayerSectionSheet(getContext(), resourcesProvider, MiogramModernPlayerLayout.this, section).show();
+            new MiogramPlayerSectionSheet(getContext(), resourcesProvider, MiogramModernPlayerLayout.this, section, standalone).show();
         } catch (Throwable ignore) {}
     }
 

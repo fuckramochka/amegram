@@ -43,6 +43,12 @@ public class MiogramCloudPresence {
     public String robloxGame = "";
     public String robloxUniverse = "";
     public int robloxState = -1;
+    public String tiktokUser = "";
+    public String tiktokName = "";
+    public String tiktokAvatar = "";
+    public long tiktokFollowers = 0;
+    public long tiktokFollowing = 0;
+    public long tiktokLikes = 0;
     public String playerPreset = "";
     public long lastUpdated = 0;
 
@@ -63,6 +69,7 @@ public class MiogramCloudPresence {
                 !TextUtils.isEmpty(spotifyTrack) ||
                 !TextUtils.isEmpty(robloxUser) ||
                 !TextUtils.isEmpty(robloxId) ||
+                !TextUtils.isEmpty(tiktokUser) ||
                 (!TextUtils.isEmpty(playerPreset) && !app.miogram.bridge.player.MiogramPlayerPrefs.PRESET_DEFAULT.equals(playerPreset));
     }
 
@@ -101,6 +108,12 @@ public class MiogramCloudPresence {
             if (!TextUtils.isEmpty(robloxGame)) obj.put("rbg", robloxGame);
             if (!TextUtils.isEmpty(robloxUniverse)) obj.put("rbgi", robloxUniverse);
             if (robloxState >= 0) obj.put("rbs", robloxState);
+            if (!TextUtils.isEmpty(tiktokUser)) obj.put("tu", tiktokUser);
+            if (!TextUtils.isEmpty(tiktokName)) obj.put("tn", tiktokName);
+            if (!TextUtils.isEmpty(tiktokAvatar)) obj.put("ta", tiktokAvatar);
+            if (tiktokFollowers > 0) obj.put("tf", tiktokFollowers);
+            if (tiktokFollowing > 0) obj.put("tfg", tiktokFollowing);
+            if (tiktokLikes > 0) obj.put("tl", tiktokLikes);
             if (!TextUtils.isEmpty(playerPreset)) obj.put("pp", playerPreset);
         } catch (Throwable t) {
             FileLog.e(t);
@@ -129,6 +142,12 @@ public class MiogramCloudPresence {
         p.robloxGame = obj.optString("rbg", obj.optString("roblox_game", ""));
         p.robloxUniverse = obj.optString("rbgi", obj.optString("roblox_universe", ""));
         p.robloxState = obj.optInt("rbs", obj.optInt("roblox_state", -1));
+        p.tiktokUser = obj.optString("tu", obj.optString("tiktok_user", ""));
+        p.tiktokName = obj.optString("tn", obj.optString("tiktok_name", ""));
+        p.tiktokAvatar = obj.optString("ta", obj.optString("tiktok_avatar", ""));
+        p.tiktokFollowers = obj.optLong("tf", obj.optLong("tiktok_followers", 0));
+        p.tiktokFollowing = obj.optLong("tfg", obj.optLong("tiktok_following", 0));
+        p.tiktokLikes = obj.optLong("tl", obj.optLong("tiktok_likes", 0));
         p.playerPreset = obj.optString("pp", "");
         p.lastUpdated = System.currentTimeMillis();
         return p;
@@ -217,6 +236,16 @@ public class MiogramCloudPresence {
                     p.robloxUniverse = String.valueOf(rp.universeId);
                 }
             }
+        }
+
+        if (app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().isActiveFor(userId)) {
+            app.miogram.bridge.ecosystem.AmegramTikTokManager tm = app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance();
+            p.tiktokUser = tm.getLinkedUsername();
+            p.tiktokName = tm.getNickname();
+            p.tiktokAvatar = tm.getAvatarUrl();
+            p.tiktokFollowers = tm.getFollowersCount();
+            p.tiktokFollowing = tm.getFollowingCount();
+            p.tiktokLikes = tm.getLikesCount();
         }
 
         p.playerPreset = app.miogram.bridge.player.MiogramPlayerPrefs.getLayoutPreset();

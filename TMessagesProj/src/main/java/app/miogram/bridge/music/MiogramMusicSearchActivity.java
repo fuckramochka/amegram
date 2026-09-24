@@ -27,9 +27,12 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
+import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessageChatArguments;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.ActionBarMenu;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -69,20 +72,33 @@ public class MiogramMusicSearchActivity extends BaseFragment {
     }
 
     private long targetDialogId;
+    private long targetTopicId;
     private ChatActivity targetChatActivity;
 
     public MiogramMusicSearchActivity() {
-        this(0, null);
+        this(0, 0L, null);
     }
 
     public MiogramMusicSearchActivity(long dialogId, ChatActivity chatActivity) {
+        this(dialogId, chatActivity != null ? chatActivity.getTopicId() : 0L, chatActivity);
+    }
+
+    public MiogramMusicSearchActivity(long dialogId, long topicId, ChatActivity chatActivity) {
         super();
         this.targetDialogId = dialogId;
+        this.targetTopicId = topicId;
         this.targetChatActivity = chatActivity;
+        if (this.targetTopicId == 0 && chatActivity != null) {
+            this.targetTopicId = chatActivity.getTopicId();
+        }
     }
 
     public static MiogramMusicSearchActivity createForChat(long dialogId, ChatActivity chatActivity) {
         return new MiogramMusicSearchActivity(dialogId, chatActivity);
+    }
+
+    public static MiogramMusicSearchActivity createForChat(long dialogId, long topicId, ChatActivity chatActivity) {
+        return new MiogramMusicSearchActivity(dialogId, topicId, chatActivity);
     }
 
     private EditText searchEditText;
@@ -450,10 +466,24 @@ public class MiogramMusicSearchActivity extends BaseFragment {
     public void sendTrackToChat(MiogramMusicTrack track, ProgressBar loadingBar, ImageView sendButton) {
         if (track == null || targetDialogId == 0) return;
 
+        MessageObject replyToTopMsg = null;
+        if (targetChatActivity != null && targetChatActivity.getThreadMessage() != null) {
+            replyToTopMsg = targetChatActivity.getThreadMessage();
+        } else if (targetTopicId != 0) {
+            TLRPC.Message syntheticMsg = new TLRPC.TL_message();
+            syntheticMsg.id = (int) targetTopicId;
+            syntheticMsg.dialog_id = targetDialogId;
+            syntheticMsg.flags = TLRPC.MESSAGE_FLAG_TOPIC_MESSAGE;
+            replyToTopMsg = new MessageObject(currentAccount, syntheticMsg, false, false);
+        }
+        SendMessageChatArguments chatArgs = targetChatActivity != null ? targetChatActivity.getMessageChatSendParams() : null;
+
         if (track.telegramMessage != null) {
             ArrayList<MessageObject> forwardList = new ArrayList<>();
             forwardList.add(track.telegramMessage);
-            SendMessagesHelper.getInstance(currentAccount).sendMessage(forwardList, targetDialogId, true, true, true, 0, 0L);
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(
+                    forwardList, targetDialogId, true, true, true, 0, replyToTopMsg, -1, 0L
+            );
             Toast.makeText(getParentActivity() != null ? getParentActivity() : getContext(),
                     MiogramLocale.get("Трек надіслано в чат", "Трек отправлен в чат", "Track sent to chat"),
                     Toast.LENGTH_SHORT).show();
@@ -463,9 +493,13 @@ public class MiogramMusicSearchActivity extends BaseFragment {
 
         if (track.source == MiogramMusicTrack.Source.YOUTUBE_MUSIC) {
             String text = "🎵 " + track.getDisplayArtist() + " — " + track.getDisplayTitle() + "\n" + (track.streamUrl != null ? track.streamUrl : "");
-            SendMessagesHelper.getInstance(currentAccount).sendMessage(
-                    SendMessagesHelper.SendMessageParams.of(text, targetDialogId, null, null, null, true, null, null, null, true, 0, 0, null, false)
+            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(
+                    text, targetDialogId, null, replyToTopMsg, null, true, null, null, null, true, 0, 0, null, false
             );
+            if (chatArgs != null) {
+                params.sendMessageChatArguments = chatArgs;
+            }
+            SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
             Toast.makeText(getParentActivity() != null ? getParentActivity() : getContext(),
                     MiogramLocale.get("Трек надіслано в чат", "Трек отправлен в чат", "Track sent to chat"),
                     Toast.LENGTH_SHORT).show();
@@ -482,8 +516,8 @@ public class MiogramMusicSearchActivity extends BaseFragment {
                     null,
                     "audio/mpeg",
                     targetDialogId,
-                    null, null, null, null, null,
-                    true, 0, null, null, false
+                    null, replyToTopMsg, null, null, null,
+                    true, 0, null, chatArgs, false
             );
             Toast.makeText(getParentActivity() != null ? getParentActivity() : getContext(),
                     MiogramLocale.get("Трек надіслано в чат", "Трек отправлен в чат", "Track sent to chat"),
@@ -494,6 +528,9 @@ public class MiogramMusicSearchActivity extends BaseFragment {
 
         if (loadingBar != null) loadingBar.setVisibility(View.VISIBLE);
         if (sendButton != null) sendButton.setVisibility(View.GONE);
+
+        final MessageObject finalReplyToTopMsg = replyToTopMsg;
+        final SendMessageChatArguments finalChatArgs = chatArgs;
 
         MiogramMusicSearchEngine.fastInstallTrack(getParentActivity() != null ? getParentActivity() : getContext(), track, currentAccount, new MiogramMusicSearchEngine.InstallCallback() {
             @Override
@@ -513,8 +550,8 @@ public class MiogramMusicSearchActivity extends BaseFragment {
                         null,
                         "audio/mpeg",
                         targetDialogId,
-                        null, null, null, null, null,
-                        true, 0, null, null, false
+                        null, finalReplyToTopMsg, null, null, null,
+                        true, 0, null, finalChatArgs, false
                 );
                 Toast.makeText(getParentActivity() != null ? getParentActivity() : getContext(),
                         MiogramLocale.get("Трек надіслано в чат", "Трек отправлен в чат", "Track sent to chat"),

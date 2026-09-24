@@ -861,7 +861,10 @@ public class MiogramLyricsView extends FrameLayout {
                 holder.transText.setVisibility(View.GONE);
             }
 
-            holder.underline.setBackgroundColor(accent);
+            int customActive = MiogramPlayerPrefs.getLyricsActiveColor();
+            int activeHighlight = customActive != 0 ? customActive : accent;
+
+            holder.underline.setBackgroundColor(activeHighlight);
 
             int baseSize = MiogramPlayerPrefs.getLyricsFontSize();
             boolean glow = MiogramPlayerPrefs.isLyricsActiveGlow();
@@ -872,7 +875,7 @@ public class MiogramLyricsView extends FrameLayout {
                 holder.mainText.setAlpha(1.0f);
                 holder.mainText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, baseSize + 3);
                 if (glow) {
-                    holder.mainText.setShadowLayer(AndroidUtilities.dp(8), 0, 0, accent);
+                    holder.mainText.setShadowLayer(AndroidUtilities.dp(8), 0, 0, activeHighlight);
                 } else {
                     holder.mainText.setShadowLayer(0, 0, 0, 0);
                 }

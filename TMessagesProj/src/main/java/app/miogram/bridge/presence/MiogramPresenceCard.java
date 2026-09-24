@@ -355,9 +355,15 @@ public class MiogramPresenceCard extends FrameLayout {
                     activeServices.add(SERVICE_ROBLOX);
                 }
             }
+            if (!TextUtils.isEmpty(presence.tiktokUser)) {
+                if (!activeServices.contains(SERVICE_TIKTOK)) {
+                    activeServices.add(SERVICE_TIKTOK);
+                }
+            }
         }
 
-        if (isSelf && (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(getContext())
+        if (isSelf && (app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().isLinked()
+                || app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(getContext())
                 || app.miogram.bridge.ecosystem.AmegramTikTokBridge.getCurrentlyWatching() != null)) {
             if (!activeServices.contains(SERVICE_TIKTOK)) {
                 activeServices.add(SERVICE_TIKTOK);
@@ -411,8 +417,9 @@ public class MiogramPresenceCard extends FrameLayout {
                 activeServices.add(SERVICE_ROBLOX);
             }
         }
-        if (isSelf && (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(getContext())
-                || app.miogram.bridge.ecosystem.AmegramTikTokBridge.getCurrentlyWatching() != null)) {
+        if (app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().isActiveFor(ownerId)
+                || (isSelf && (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(getContext())
+                || app.miogram.bridge.ecosystem.AmegramTikTokBridge.getCurrentlyWatching() != null))) {
             if (!activeServices.contains(SERVICE_TIKTOK)) {
                 activeServices.add(SERVICE_TIKTOK);
             }
@@ -1401,19 +1408,49 @@ public class MiogramPresenceCard extends FrameLayout {
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
 
+        String username = "";
+        String nickname = "";
+        String avatarUrl = "";
+        long followers = 0;
+        long following = 0;
+        long likes = 0;
+
+        if (isSelf) {
+            app.miogram.bridge.ecosystem.AmegramTikTokManager.TikTokUser u = app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().getSelfUser();
+            if (u != null) {
+                username = u.username;
+                nickname = u.nickname;
+                avatarUrl = u.avatarUrl;
+                followers = u.followersCount;
+                following = u.followingCount;
+                likes = u.likesCount;
+            }
+        } else if (cloudPresence != null && !TextUtils.isEmpty(cloudPresence.tiktokUser)) {
+            username = cloudPresence.tiktokUser;
+            nickname = cloudPresence.tiktokName;
+            avatarUrl = cloudPresence.tiktokAvatar;
+            followers = cloudPresence.tiktokFollowers;
+            following = cloudPresence.tiktokFollowing;
+            likes = cloudPresence.tiktokLikes;
+        }
+
+        boolean hasProfile = !TextUtils.isEmpty(username);
+
         app.miogram.bridge.ecosystem.AmegramTikTokBridge.WatchingVideo watching =
-                app.miogram.bridge.ecosystem.AmegramTikTokBridge.getCurrentlyWatching();
+                isSelf ? app.miogram.bridge.ecosystem.AmegramTikTokBridge.getCurrentlyWatching() : null;
         boolean hasVideo = watching != null && !TextUtils.isEmpty(watching.url) && watching.isRecent();
 
         LinearLayout contentRow = new LinearLayout(context);
         contentRow.setOrientation(LinearLayout.HORIZONTAL);
         contentRow.setGravity(Gravity.CENTER_VERTICAL);
-        root.addView(contentRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+        root.addView(contentRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
         BackupImageView artwork = new BackupImageView(context);
         artwork.setClipToOutline(true);
-        artwork.setRoundRadius(AndroidUtilities.dp(10));
-        if (hasVideo && !TextUtils.isEmpty(watching.coverUrl)) {
+        artwork.setRoundRadius(AndroidUtilities.dp(12));
+        if (!TextUtils.isEmpty(avatarUrl)) {
+            artwork.setImage(ImageLocation.getForPath(avatarUrl), "100_100", null, 0, null);
+        } else if (hasVideo && !TextUtils.isEmpty(watching.coverUrl)) {
             artwork.setImage(ImageLocation.getForPath(watching.coverUrl), "100_100", null, 0, null);
         } else {
             artwork.setImageResource(R.drawable.msg_media);
@@ -1425,7 +1462,9 @@ public class MiogramPresenceCard extends FrameLayout {
         contentRow.addView(texts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
         TextView title = new TextView(context);
-        String titleText = hasVideo && !TextUtils.isEmpty(watching.title) ? watching.title : "TikTok MI";
+        String titleText = hasProfile
+                ? (!TextUtils.isEmpty(nickname) ? nickname : "@" + username)
+                : (hasVideo && !TextUtils.isEmpty(watching.title) ? watching.title : "TikTok MI");
         title.setText(Emoji.replaceEmoji(titleText, title.getPaint().getFontMetricsInt(), false));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         title.setTypeface(AndroidUtilities.bold());
@@ -1435,56 +1474,107 @@ public class MiogramPresenceCard extends FrameLayout {
         texts.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextView subtitle = new TextView(context);
-        String authorText = hasVideo && !TextUtils.isEmpty(watching.author)
-                ? ("@" + watching.author + " • " + MiogramLocale.get("Зараз дивлюсь", "Сейчас смотрю", "Watching now"))
-                : (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(context)
+        String subText;
+        if (hasProfile) {
+            subText = "@" + username + " • TikTok MI";
+        } else if (hasVideo && !TextUtils.isEmpty(watching.author)) {
+            subText = "@" + watching.author + " • " + MiogramLocale.get("Зараз дивлюсь", "Сейчас смотрю", "Watching now");
+        } else {
+            subText = app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(context)
                     ? MiogramLocale.get("Мод TikTok MI підключено", "Мод TikTok MI подключен", "TikTok MI Mod Connected")
-                    : MiogramLocale.get("Перегляд відео без реклами", "Просмотр видео без рекламы", "Ad-free video playback"));
-        subtitle.setText(authorText);
+                    : MiogramLocale.get("Перегляд відео без реклами", "Просмотр видео без рекламы", "Ad-free video playback");
+        }
+        subtitle.setText(subText);
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         subtitle.setTextColor(0xFF00F2FE);
         subtitle.setSingleLine(true);
         subtitle.setEllipsize(TextUtils.TruncateAt.END);
         texts.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
+        // Stats Row (followers, following, likes)
+        if (hasProfile && (followers > 0 || likes > 0 || following > 0)) {
+            LinearLayout statsRow = new LinearLayout(context);
+            statsRow.setOrientation(LinearLayout.HORIZONTAL);
+            statsRow.setGravity(Gravity.CENTER_VERTICAL);
+            root.addView(statsRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+
+            if (followers > 0) {
+                statsRow.addView(createStatChip(context, app.miogram.bridge.ecosystem.AmegramTikTokManager.formatCount(followers), MiogramLocale.get("підписників", "подписчиков", "followers"), 0xFF00F2FE));
+            }
+            if (likes > 0) {
+                statsRow.addView(createStatChip(context, app.miogram.bridge.ecosystem.AmegramTikTokManager.formatCount(likes), MiogramLocale.get("вподобань", "лайков", "likes"), 0xFFFE2C55));
+            }
+            if (following > 0) {
+                statsRow.addView(createStatChip(context, app.miogram.bridge.ecosystem.AmegramTikTokManager.formatCount(following), MiogramLocale.get("підписок", "подписок", "following"), 0xFFFFFFFF));
+            }
+        }
+
         // Action buttons
         LinearLayout actions = new LinearLayout(context);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         root.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        if (hasProfile) {
+            final String finalUser = username;
+            TextView btnOpenProfile = createButton(context, MiogramLocale.get("Профіль", "Профиль", "Profile"), 0xFFFE2C55, 0xFFFFFFFF);
+            btnOpenProfile.setOnClickListener(v -> {
+                MiogramHaptic.click(v);
+                app.miogram.bridge.ecosystem.AmegramTikTokBridge.openInTikTokMi(context, "https://www.tiktok.com/@" + finalUser);
+            });
+            actions.addView(btnOpenProfile, LayoutHelper.createLinear(0, 34, 1.1f, 0, 0, 6, 0));
+        }
+
         if (hasVideo) {
-            TextView btnPlay = createButton(context, MiogramLocale.get("Дивитись", "Смотреть", "Watch"), 0xFFFE2C55, 0xFFFFFFFF);
+            TextView btnPlay = createButton(context, MiogramLocale.get("Дивитись", "Смотреть", "Watch"), 0x3300F2FE, 0xFF00F2FE);
             final String videoUrl = watching.url;
             btnPlay.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
                 app.miogram.bridge.ecosystem.AmegramTikTokPlayer.show(context, videoUrl);
             });
-            actions.addView(btnPlay, LayoutHelper.createLinear(0, 36, 1.2f, 0, 0, 6, 0));
+            actions.addView(btnPlay, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 6, 0));
         }
 
-        if (app.miogram.bridge.ecosystem.AmegramTikTokBridge.isTikTokMiInstalled(context)) {
-            TextView btnOpenApp = createButton(context, "TikTok MI", 0x3300F2FE, 0xFF00F2FE);
-            btnOpenApp.setOnClickListener(v -> {
+        if (isSelf) {
+            TextView btnManage = createButton(context, hasProfile
+                    ? MiogramLocale.get("Налаштувати", "Настроить", "Configure")
+                    : MiogramLocale.get("Підключити", "Подключить", "Connect"), 0x2AFFFFFF, 0xFFD2DBE3);
+            btnManage.setOnClickListener(v -> {
                 MiogramHaptic.click(v);
-                app.miogram.bridge.ecosystem.AmegramTikTokBridge.openTikTokMi(context);
+                app.miogram.bridge.ecosystem.AmegramTikTokManager.getInstance().showLinkDialog(context, this::refreshActiveServices);
             });
-            actions.addView(btnOpenApp, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 6, 0));
+            actions.addView(btnManage, LayoutHelper.createLinear(0, 34, 1f, 0, 0, 0, 0));
         }
-
-        TextView btnShare = createButton(context, MiogramLocale.get("Поділитися", "Поделиться", "Share"), 0x2AFFFFFF, 0xFFD2DBE3);
-        final boolean fHasVideo = hasVideo;
-        final String fVideoUrl = hasVideo ? watching.url : null;
-        final String fVideoTitle = hasVideo ? watching.title : null;
-        btnShare.setOnClickListener(v -> {
-            MiogramHaptic.click(v);
-            if (fHasVideo && fVideoUrl != null) {
-                app.miogram.bridge.ecosystem.AmegramTikTokPlayer.sendToSavedMessages(fVideoUrl, fVideoTitle);
-            } else {
-                app.miogram.bridge.ecosystem.AmegramTikTokBridge.openTikTokMi(context);
-            }
-        });
-        actions.addView(btnShare, LayoutHelper.createLinear(0, 36, 1f, 0, 0, 0, 0));
 
         return root;
+    }
+
+    private View createStatChip(Context context, String value, String label, int accentColor) {
+        LinearLayout chip = new LinearLayout(context);
+        chip.setOrientation(LinearLayout.HORIZONTAL);
+        chip.setGravity(Gravity.CENTER_VERTICAL);
+        chip.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(3), AndroidUtilities.dp(8), AndroidUtilities.dp(3));
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(0x18FFFFFF);
+        bg.setCornerRadius(AndroidUtilities.dp(8));
+        chip.setBackground(bg);
+
+        TextView valTv = new TextView(context);
+        valTv.setText(value);
+        valTv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        valTv.setTypeface(AndroidUtilities.bold());
+        valTv.setTextColor(accentColor);
+        chip.addView(valTv);
+
+        TextView lblTv = new TextView(context);
+        lblTv.setText(" " + label);
+        lblTv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        lblTv.setTextColor(0xAAFFFFFF);
+        chip.addView(lblTv);
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.rightMargin = AndroidUtilities.dp(6);
+        chip.setLayoutParams(lp);
+        return chip;
     }
 }

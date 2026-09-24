@@ -443,6 +443,13 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         currentAccount = UserConfig.selectedAccount;
         app.miogram.bridge.migration.AmegramMigrationConsumer.runMigrationIfAvailable(this, null);
         AndroidUtilities.runOnUIThread(() -> app.miogram.bridge.updater.MiogramUpdater.initAutoUpdate(this), 3500);
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                if (UserConfig.getInstance(currentAccount).isClientActivated() && !app.miogram.bridge.ai.companion.MiogramCompanionPrefs.hasCompletedOnboarding()) {
+                    new app.miogram.bridge.onboarding.AmegramGuideSheet(LaunchActivity.this, false).show();
+                }
+            } catch (Throwable ignore) {}
+        }, 1800);
         app.miogram.bridge.plugins.MiogramInAppNotifications.getInstance().register();
         app.miogram.bridge.performance.MiogramFpsController.applyToWindow(this);
         registerReceiver(batteryReceiver, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));

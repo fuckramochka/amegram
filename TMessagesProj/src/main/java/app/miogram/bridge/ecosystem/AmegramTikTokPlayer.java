@@ -69,12 +69,20 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
     private ImageView playPauseBtn;
     private TextView titleView;
     private TextView authorView;
+    private TextView followBtn;
+    private TextView likeBtn;
+    private TextView commentBtn;
+    private LinearLayout statsBar;
     private BackupImageView coverView;
 
     private String resolvedVideoUrl;
     private String videoTitle = "";
     private String videoAuthor = "";
     private String coverUrl = "";
+    private String videoId = "";
+    private long videoLikes = 0;
+    private long videoComments = 0;
+    private boolean isLiked = false;
     private File cachedVideoFile;
     private boolean isPlaying = false;
     private boolean isSurfaceReady = false;
@@ -110,7 +118,6 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         header.setGravity(Gravity.CENTER_VERTICAL);
         content.addView(header, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
 
-        // Aesthetic TikTok pill badge
         TextView badge = new TextView(context);
         badge.setText("TIKTOK MI • IN-APP PLAYER");
         badge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
@@ -130,7 +137,7 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         // 2. Video View Container (9:16 vertical ratio max height)
         int screenW = AndroidUtilities.displaySize.x;
         int screenH = AndroidUtilities.displaySize.y;
-        int videoH = (int) Math.min(screenH * 0.52f, AndroidUtilities.dp(380));
+        int videoH = (int) Math.min(screenH * 0.54f, AndroidUtilities.dp(390));
 
         videoContainer = new FrameLayout(context);
         GradientDrawable videoBg = new GradientDrawable();
@@ -138,7 +145,7 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         videoBg.setCornerRadius(AndroidUtilities.dp(16));
         videoContainer.setBackground(videoBg);
         videoContainer.setClipToOutline(true);
-        content.addView(videoContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, videoH, 0, 0, 0, 12));
+        content.addView(videoContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, videoH, 0, 0, 0, 10));
 
         surfaceView = new SurfaceView(context);
         surfaceView.getHolder().addCallback(this);
@@ -171,23 +178,75 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
             }
         });
 
-        // 3. Info texts: Author + Title
+        // 3. Stats & Reactions Bar (Likes, Comments)
+        statsBar = new LinearLayout(context);
+        statsBar.setOrientation(LinearLayout.HORIZONTAL);
+        statsBar.setGravity(Gravity.CENTER_VERTICAL);
+        content.addView(statsBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+
+        likeBtn = createChipButton(context, "♥ 0", 0x22FE2C55, 0xFFFE2C55);
+        likeBtn.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            isLiked = !isLiked;
+            videoLikes += isLiked ? 1 : -1;
+            if (videoLikes < 0) videoLikes = 0;
+            updateStats();
+            if (isLiked) {
+                Toast.makeText(getContext(), MiogramLocale.get("Вподобано! Синхронізація з акаунтом TikTok MI...", "Лайкнуто! Синхронизация с аккаунтом TikTok MI...", "Liked! Syncing with TikTok MI..."), Toast.LENGTH_SHORT).show();
+                AmegramTikTokBridge.openInTikTokMi(getContext(), originalUrl);
+            }
+        });
+        statsBar.addView(likeBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, 0, 0, 8, 0));
+
+        commentBtn = createChipButton(context, "💬 0", 0x1A00F2FE, 0xFF00F2FE);
+        commentBtn.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            AmegramTikTokCommentsSheet.show(getContext(), originalUrl);
+        });
+        statsBar.addView(commentBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30));
+
+        // 4. Author row with Follow button
+        LinearLayout authorRow = new LinearLayout(context);
+        authorRow.setOrientation(LinearLayout.HORIZONTAL);
+        authorRow.setGravity(Gravity.CENTER_VERTICAL);
+        content.addView(authorRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 2));
+
         authorView = new TextView(context);
-        authorView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        authorView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
         authorView.setTextColor(0xFF00F2FE);
         authorView.setTypeface(AndroidUtilities.bold());
         authorView.setSingleLine(true);
         authorView.setEllipsize(TextUtils.TruncateAt.END);
-        content.addView(authorView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 2));
+        authorRow.addView(authorView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
+        followBtn = new TextView(context);
+        followBtn.setText(MiogramLocale.get("+ Підписатися", "+ Подписаться", "+ Follow"));
+        followBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
+        followBtn.setTypeface(AndroidUtilities.bold());
+        followBtn.setTextColor(0xFFFFFFFF);
+        followBtn.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(4));
+        GradientDrawable fBg = new GradientDrawable();
+        fBg.setColor(0xFFFE2C55);
+        fBg.setCornerRadius(AndroidUtilities.dp(8));
+        followBtn.setBackground(fBg);
+        ScaleStateListAnimator.apply(followBtn, 0.035f, 1.4f);
+        followBtn.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            if (!TextUtils.isEmpty(videoAuthor)) {
+                AmegramTikTokBridge.openInTikTokMi(getContext(), "https://www.tiktok.com/@" + videoAuthor);
+            }
+        });
+        authorRow.addView(followBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        // 5. Title
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
         titleView.setTextColor(0xFFFFFFFF);
         titleView.setMaxLines(2);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
-        content.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+        content.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 12));
 
-        // 4. Action buttons: Save to TG, Download, Open in TT MI
+        // 6. Action buttons: Save to TG, Download, Open in TT MI
         LinearLayout actions = new LinearLayout(context);
         actions.setOrientation(LinearLayout.HORIZONTAL);
         content.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -279,6 +338,9 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
                         JSONObject authorObj = data.optJSONObject("author");
                         videoAuthor = authorObj != null ? authorObj.optString("unique_id", "creator") : "creator";
                         coverUrl = data.optString("cover", "");
+                        videoLikes = data.optLong("digg_count", 0);
+                        videoComments = data.optLong("comment_count", 0);
+                        videoId = data.optString("id", "");
 
                         // Cache video file for smooth playback & instant sharing
                         File cacheDir = FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE);
@@ -324,6 +386,7 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         coverView.setVisibility(View.GONE);
         authorView.setText("@" + videoAuthor);
         titleView.setText(!TextUtils.isEmpty(videoTitle) ? videoTitle : MiogramLocale.get("Відео TikTok MI", "Видео TikTok MI", "TikTok MI Video"));
+        updateStats();
 
         if (cachedVideoFile == null || !cachedVideoFile.exists() || !isSurfaceReady) {
             return;
@@ -337,14 +400,68 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
             mediaPlayer.setDisplay(surfaceView.getHolder());
             mediaPlayer.setDataSource(cachedVideoFile.getAbsolutePath());
             mediaPlayer.setLooping(true);
+            mediaPlayer.setOnVideoSizeChangedListener((mp, width, height) -> adjustVideoSize(width, height));
             mediaPlayer.prepareAsync();
             mediaPlayer.setOnPreparedListener(mp -> {
+                adjustVideoSize(mp.getVideoWidth(), mp.getVideoHeight());
                 mp.start();
                 isPlaying = true;
             });
         } catch (Throwable t) {
             FileLog.e("AmegramTikTokPlayer: playback error", t);
         }
+    }
+
+    private void adjustVideoSize(int videoW, int videoH) {
+        if (videoW <= 0 || videoH <= 0 || videoContainer == null) return;
+        try {
+            int screenW = AndroidUtilities.displaySize.x - AndroidUtilities.dp(32);
+            int maxH = (int) Math.min(AndroidUtilities.displaySize.y * 0.58f, AndroidUtilities.dp(440));
+            float aspect = (float) videoW / (float) videoH;
+            int targetH = (int) (screenW / aspect);
+            int targetW = screenW;
+            if (targetH > maxH) {
+                targetH = maxH;
+                targetW = (int) (targetH * aspect);
+            }
+            LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) videoContainer.getLayoutParams();
+            if (lp != null) {
+                lp.width = targetW;
+                lp.height = targetH;
+                lp.gravity = Gravity.CENTER_HORIZONTAL;
+                videoContainer.setLayoutParams(lp);
+            }
+        } catch (Throwable ignore) {}
+    }
+
+    private void updateStats() {
+        if (likeBtn != null) {
+            String lText = (isLiked ? "♥ " : "♡ ") + (videoLikes > 0 ? AmegramTikTokManager.formatCount(videoLikes) : "0");
+            likeBtn.setText(lText);
+            likeBtn.setTextColor(isLiked ? 0xFFFF3B30 : 0xFFFE2C55);
+        }
+        if (commentBtn != null) {
+            String cText = "💬 " + (videoComments > 0 ? AmegramTikTokManager.formatCount(videoComments) : "0");
+            commentBtn.setText(cText);
+        }
+    }
+
+    private TextView createChipButton(Context context, String text, int bgColor, int textColor) {
+        TextView btn = new TextView(context);
+        btn.setText(text);
+        btn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+        btn.setTypeface(AndroidUtilities.bold());
+        btn.setTextColor(textColor);
+        btn.setGravity(Gravity.CENTER);
+        btn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(bgColor);
+        bg.setCornerRadius(AndroidUtilities.dp(10));
+        btn.setBackground(bg);
+
+        ScaleStateListAnimator.apply(btn, 0.035f, 1.4f);
+        return btn;
     }
 
     private void saveToSavedMessages() {

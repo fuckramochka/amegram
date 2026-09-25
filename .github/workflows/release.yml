@@ -7,7 +7,6 @@ on:
     paths-ignore:
       - 'docs/**'
       - 'website/**'
-      - 'miosite/**'
       - '*.md'
       - 'supabase_schema.sql'
   workflow_dispatch:

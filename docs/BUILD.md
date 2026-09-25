@@ -1,13 +1,13 @@
-# Miogram Build & Compilation Guide
+# Amegram Build & Compilation Guide
 
-> **Miogram / Міограм** · Developer Build Guide  
-> Author: **[@dkramochka](https://t.me/dkramochka)**
+> **Amegram / Амеграм** · Developer Build Guide  
+> Author: **[@dkamegram](https://t.me/dkamegram)**
 
 ---
 
 ## 1. Environment & Prerequisites
 
-To build Miogram for Android from source, your development workstation requires:
+To build Amegram for Android from source, your development workstation requires:
 
 * **Operating System:** Linux (Ubuntu 22.04+ recommended), macOS (Apple Silicon or Intel), or Windows 10/11 with WSL2 / PowerShell.
 * **Java Development Kit (JDK):** **JDK 21** (Eclipse Temurin or OpenJDK).
@@ -31,7 +31,7 @@ To build Miogram for Android from source, your development workstation requires:
 
 Starting with Android 15, devices support and enforce **16 KB memory page sizes**. Binaries compiled with legacy 4 KB alignment will crash immediately on newer kernel environments.
 
-Miogram explicitly sets linker flags in `TMessagesProj/jni/CMakeLists.txt`:
+Amegram explicitly sets linker flags in `TMessagesProj/jni/CMakeLists.txt`:
 ```cmake
 set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,max-page-size=16384")
 ```
@@ -48,8 +48,8 @@ Ensure all `LOAD` segment `Align` values are `0x4000` (16384 bytes).
 
 ### 3.1. Clone Repository (With Submodules)
 ```bash
-git clone --recursive https://github.com/fuckramochka/miogram.git
-cd miogram
+git clone --recursive https://github.com/fuckramochka/amegram.git
+cd amegram
 ```
 
 ### 3.2. Local Properties Configuration

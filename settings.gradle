@@ -25,5 +25,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "exteraless"
+rootProject.name = "amegram"
 include ':TMessagesProj'

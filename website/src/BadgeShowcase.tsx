@@ -87,7 +87,7 @@ export const BADGES: BadgeInfo[] = [
     code: '10 — PREMIUM',
     name: 'Королівська корона',
     tag: 'royal ascension',
-    lore: 'Королівська золота корона, сяючий німб та янтарні крила з нагрудними шевронами. Відзнака визнання найвищих досягнень та статусу в Miogram.',
+    lore: 'Королівська золота корона, сяючий німб та янтарні крила з нагрудними шевронами. Відзнака визнання найвищих досягнень та статусу в Amegram.',
     bloomColor: 'rgba(255, 215, 0, 0.35)',
   },
 ];
@@ -316,7 +316,7 @@ export default function BadgeShowcase() {
     <section className="badges-section container section" id="badges" aria-labelledby="badges-heading">
       <div className="catalog-window badges-window">
         <div className="window-bar">
-          <span>✧ miogram_badges.exe</span>
+          <span>✧ amegram_badges.exe</span>
           <span className="catalog-bar-note">10 pixel badges collection</span>
         </div>
 
@@ -329,7 +329,7 @@ export default function BadgeShowcase() {
               </h2>
             </div>
             <p>
-              Відкривай та обирай свій стиль у спільноті Miogram.<br />
+              Відкривай та обирай свій стиль у спільноті Amegram.<br />
               Хмарна синхронізація Supabase миттєво показує твій бейдж усім співрозмовникам.
             </p>
           </div>
@@ -384,7 +384,7 @@ export default function BadgeShowcase() {
 
           <div className="badges-footer-note">
             <span className="status-dot" style={{ background: '#10b981', boxShadow: '0 0 8px #10b981' }} />
-            <span>Усі 10 стилів доступні в Android-клієнті MioGram через Supabase Cloud Sync</span>
+            <span>Усі 10 стилів доступні в Android-клієнті Amegram через Supabase Cloud Sync</span>
           </div>
         </div>
       </div>

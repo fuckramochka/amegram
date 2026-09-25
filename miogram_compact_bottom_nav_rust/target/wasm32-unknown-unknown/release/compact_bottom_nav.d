@@ -1,1 +1,0 @@
-C:\Users\crime\Documents\Default\ Project\exteraless\miogram_compact_bottom_nav_rust\target\wasm32-unknown-unknown\release\compact_bottom_nav.wasm: C:\Users\crime\Documents\Default\ Project\exteraless\miogram_compact_bottom_nav_rust\src\lib.rs

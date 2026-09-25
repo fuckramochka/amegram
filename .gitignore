@@ -46,6 +46,9 @@ miogram.jpg
 node_modules/
 dist/
 
+# Rust - тільки збірка target/, сорси Cargo.toml/lock лишаються
+**/target/
+
 CustomProfile_java_src/
 *.mp4
 !TMessagesProj/src/main/assets/musordrop.mp4

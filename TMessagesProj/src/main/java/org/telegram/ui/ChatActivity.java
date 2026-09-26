@@ -36904,7 +36904,7 @@ public class ChatActivity extends BaseFragment implements
             boolean includeMedia = (which == 0 || which == 2);
             boolean uploadToVault = (which == 2);
 
-            Toast.makeText(getParentActivity(), app.miogram.bridge.MiogramLocale.get("Початок експорту...", "Начало экспорта...", "Starting export..."), Toast.LENGTH_SHORT).show();
+            android.widget.Toast.makeText(getParentActivity(), app.miogram.bridge.MiogramLocale.get("Початок експорту...", "Начало экспорта...", "Starting export..."), android.widget.Toast.LENGTH_SHORT).show();
 
             app.miogram.bridge.localizer.MiogramDataLocalizerEngine.exportChatToAmagram(
                     currentAccount,
@@ -36924,13 +36924,13 @@ public class ChatActivity extends BaseFragment implements
                                     "Экспортировано " + totalMessages + " сообщ. (" + deletedCount + " удаленных, " + mediaCount + " медиа) в:\n" + (archiveFile != null ? archiveFile.getName() : ".amagram"),
                                     "Exported " + totalMessages + " msgs (" + deletedCount + " deleted, " + mediaCount + " media) to:\n" + (archiveFile != null ? archiveFile.getName() : ".amagram")
                             );
-                            Toast.makeText(getParentActivity(), msg, Toast.LENGTH_LONG).show();
+                            android.widget.Toast.makeText(getParentActivity(), msg, android.widget.Toast.LENGTH_LONG).show();
                         }
 
                         @Override
                         public void onError(String error) {
                             if (getParentActivity() == null) return;
-                            Toast.makeText(getParentActivity(), app.miogram.bridge.MiogramLocale.get("Помилка експорту: ", "Ошибка экспорта: ", "Export error: ") + error, Toast.LENGTH_SHORT).show();
+                            android.widget.Toast.makeText(getParentActivity(), app.miogram.bridge.MiogramLocale.get("Помилка експорту: ", "Ошибка экспорта: ", "Export error: ") + error, android.widget.Toast.LENGTH_SHORT).show();
                         }
                     }
             );

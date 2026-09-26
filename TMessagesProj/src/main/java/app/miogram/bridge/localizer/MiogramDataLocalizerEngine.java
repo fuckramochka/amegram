@@ -132,7 +132,7 @@ public class MiogramDataLocalizerEngine {
                                 msgObj.put("fromId", message.from_id != null ? message.from_id.user_id : 0);
                                 msgObj.put("message", message.message != null ? message.message : "");
 
-                                boolean isDeleted = message.deleted || message.ayuDeleted;
+                                boolean isDeleted = message.ayuDeleted;
                                 if (isDeleted) {
                                     deletedCount++;
                                 }

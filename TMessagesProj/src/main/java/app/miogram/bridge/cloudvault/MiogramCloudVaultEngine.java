@@ -15,6 +15,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ChatObject;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.TopicsController;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.tgnet.ConnectionsManager;
@@ -559,8 +560,8 @@ public class MiogramCloudVaultEngine {
                     TLRPC.Updates updates = (TLRPC.Updates) response;
                     MessagesController.getInstance(currentAccount).processUpdates(updates, false);
                     for (TLRPC.Update u : updates.updates) {
-                        if (u instanceof TLRPC.TL_updateNewChannelMessage) {
-                            TLRPC.TL_updateNewChannelMessage uncm = (TLRPC.TL_updateNewChannelMessage) u;
+                        if (u instanceof TL_update.TL_updateNewChannelMessage) {
+                            TL_update.TL_updateNewChannelMessage uncm = (TL_update.TL_updateNewChannelMessage) u;
                             if (uncm.message != null && uncm.message.action instanceof TLRPC.TL_messageActionTopicCreate) {
                                 topicId = uncm.message.id;
                             }

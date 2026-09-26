@@ -121,7 +121,7 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
     private boolean isEngaging = false;
 
     private final Runnable throttleCheckRunnable = () -> {
-        if (!isAutoBypassEnabled() || SharedConfig.isProxyEnabled()) {
+        if (!isAutoBypassEnabled() || SharedConfig.isProxyEnabled() || MessagesController.getGlobalMainSettings().getBoolean("user_manually_disabled_proxy", false)) {
             return;
         }
         int currentAccount = UserConfig.selectedAccount;
@@ -181,7 +181,7 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
         // Fast path: previous session ended behind a block — re-engage at once
         // instead of hanging 20s on direct first.
         try {
-            if (prefs.getBoolean("was_blocked", false) && isAutoBypassEnabled() && !SharedConfig.isProxyEnabled()) {
+            if (prefs.getBoolean("was_blocked", false) && isAutoBypassEnabled() && !SharedConfig.isProxyEnabled() && !MessagesController.getGlobalMainSettings().getBoolean("user_manually_disabled_proxy", false)) {
                 FileLog.d(TAG + ": last session was blocked — engaging bypass immediately at startup");
                 engageFastestBypassServer(false);
             }
@@ -742,6 +742,7 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
             if (!added.secret.isEmpty()) {
                 editor.putBoolean("proxy_enabled_calls", false);
             }
+            editor.putBoolean("user_manually_disabled_proxy", false);
             editor.apply();
 
             SharedConfig.currentProxy = added;

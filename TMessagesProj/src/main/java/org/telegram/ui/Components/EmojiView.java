@@ -1673,9 +1673,31 @@ public class EmojiView extends FrameLayout implements
                 ImageViewEmoji viewEmoji = (ImageViewEmoji) view;
 
                 if (viewEmoji.isRecent) {
-                    RecyclerListView.ViewHolder holder = emojiGridView.findContainingViewHolder(view);
-                    if (holder != null && holder.getAdapterPosition() <= getRecentEmoji().size()) {
-                        delegate.onClearEmojiRecent();
+                    final String code = (String) viewEmoji.getTag();
+                    if (code != null && getContext() != null) {
+                        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getContext(), resourcesProvider);
+                        builder.setTitle(code);
+                        CharSequence[] options = new CharSequence[] {
+                            app.miogram.bridge.MiogramLocale.get("Видалити з недавніх", "Удалить из недавних", "Remove from recents"),
+                            app.miogram.bridge.MiogramLocale.get("Очистити всі недавні", "Очистить все недавние", "Clear all recents")
+                        };
+                        builder.setItems(options, (dialog, which) -> {
+                            if (which == 0) {
+                                Emoji.removeRecentEmoji(code);
+                                if (lastRecentArray != null) {
+                                    lastRecentArray.remove(code);
+                                    lastRecentCount = lastRecentArray.size();
+                                }
+                                Emoji.sortEmoji();
+                                Emoji.saveRecentEmoji();
+                                if (emojiAdapter != null) {
+                                    emojiAdapter.notifyDataSetChanged();
+                                }
+                            } else if (which == 1) {
+                                delegate.onClearEmojiRecent();
+                            }
+                        });
+                        builder.show();
                     }
                     emojiGridView.clearTouchesFor(view);
                     return true;

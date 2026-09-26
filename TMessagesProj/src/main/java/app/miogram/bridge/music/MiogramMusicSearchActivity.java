@@ -41,11 +41,16 @@ import org.telegram.ui.Components.EmptyTextProgressView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
+import android.net.Uri;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.telegram.ui.ActionBar.AlertDialog;
 import app.miogram.bridge.MiogramLocale;
+import app.miogram.bridge.cloudvault.MiogramCloudVaultEngine;
 import app.miogram.bridge.customui.MiogramHaptic;
 
 public class MiogramMusicSearchActivity extends BaseFragment {
@@ -54,7 +59,7 @@ public class MiogramMusicSearchActivity extends BaseFragment {
         ALL("Усі джерела", "Все источники", "All Sources"),
         TELEGRAM("Telegram Cloud", "Telegram Cloud", "Telegram Cloud"),
         YOUTUBE_MUSIC("YouTube Music", "YouTube Music", "YouTube Music"),
-        DEEZER("Deezer HQ", "Deezer HQ", "Deezer HQ"),
+        DEEZER("Deezer", "Deezer", "Deezer"),
         ITUNES("iTunes Store", "iTunes Store", "iTunes Store"),
         JAMENDO("Jamendo HQ", "Jamendo HQ", "Jamendo HQ");
 
@@ -533,6 +538,121 @@ public class MiogramMusicSearchActivity extends BaseFragment {
         });
     }
 
+    private void showTrackOptionsMenu(MiogramMusicTrack track) {
+        if (track == null || getParentActivity() == null) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(track.getDisplayArtist() + " — " + track.getDisplayTitle());
+
+        ArrayList<String> items = new ArrayList<>();
+        ArrayList<Integer> actions = new ArrayList<>();
+
+        items.add(MiogramLocale.get("Слухати", "Слушать", "Play"));
+        actions.add(1);
+
+        items.add(MiogramLocale.get("Завантажити трек", "Скачать трек", "Download track"));
+        actions.add(2);
+
+        items.add(MiogramLocale.get("Завантажити текст пісні (.lrc)", "Скачать текст песни (.lrc)", "Download lyrics (.lrc)"));
+        actions.add(3);
+
+        items.add(MiogramLocale.get("Копіювати назву", "Скопировать название", "Copy title"));
+        actions.add(4);
+
+        if (MiogramCloudVaultEngine.hasVault(currentAccount)) {
+            items.add(MiogramLocale.get("Зберегти в Cloud Vault", "Сохранить в Cloud Vault", "Save to Cloud Vault"));
+            actions.add(5);
+        }
+
+        builder.setItems(items.toArray(new CharSequence[0]), (d, which) -> {
+            int action = actions.get(which);
+            if (action == 1) {
+                if (track.source == MiogramMusicTrack.Source.YOUTUBE_MUSIC && track.streamUrl != null) {
+                    org.telegram.messenger.browser.Browser.openUrl(getParentActivity(), track.streamUrl);
+                } else if (track.telegramMessage != null) {
+                    stopActivePlayer();
+                    MediaController.getInstance().playMessage(track.telegramMessage);
+                    if (adapter != null) adapter.notifyDataSetChanged();
+                } else if (track.streamUrl != null) {
+                    playStreamTrack(track);
+                }
+            } else if (action == 2) {
+                if (track.source == MiogramMusicTrack.Source.YOUTUBE_MUSIC) {
+                    if (track.streamUrl != null) {
+                        org.telegram.messenger.browser.Browser.openUrl(getParentActivity(), track.streamUrl);
+                    }
+                    return;
+                }
+                track.isDownloading = true;
+                if (adapter != null) adapter.notifyDataSetChanged();
+                MiogramMusicSearchEngine.fastInstallTrack(getParentActivity(), track, currentAccount, new MiogramMusicSearchEngine.InstallCallback() {
+                    @Override
+                    public void onProgress(float progress) {
+                        track.downloadProgress = progress;
+                    }
+
+                    @Override
+                    public void onSuccess(File localFile) {
+                        track.isDownloading = false;
+                        track.isInstalled = true;
+                        track.localFile = localFile;
+                        if (adapter != null) adapter.notifyDataSetChanged();
+                        Toast.makeText(getParentActivity(), MiogramLocale.get("Трек збережено!", "Трек сохранён!", "Track saved!"), Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        track.isDownloading = false;
+                        if (adapter != null) adapter.notifyDataSetChanged();
+                        Toast.makeText(getParentActivity(), MiogramLocale.get("Помилка завантаження", "Ошибка загрузки", "Download error"), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else if (action == 3) {
+                Toast.makeText(getParentActivity(), MiogramLocale.get("Пошук тексту пісні...", "Поиск текста песни...", "Fetching lyrics..."), Toast.LENGTH_SHORT).show();
+                MiogramMusicSearchEngine.fetchLyrics(track.getDisplayArtist(), track.getDisplayTitle(), track.durationSeconds, new MiogramMusicSearchEngine.LyricsCallback() {
+                    @Override
+                    public void onLyrics(String syncedLrc, String plainLyrics) {
+                        String content = (syncedLrc != null && !syncedLrc.isEmpty()) ? syncedLrc : plainLyrics;
+                        if (content != null && !content.isEmpty()) {
+                            track.lyrics = content;
+                            File targetDir = MiogramMusicSearchEngine.getTargetMusicDir(getParentActivity());
+                            String cleanName = track.getDisplayArtist() + " - " + track.getDisplayTitle() + ".lrc";
+                            cleanName = cleanName.replaceAll("[\\\\/:*?\"<>|]", "_");
+                            File lrcFile = new File(targetDir, cleanName);
+                            try {
+                                FileOutputStream fos = new FileOutputStream(lrcFile);
+                                fos.write(content.getBytes(StandardCharsets.UTF_8));
+                                fos.flush();
+                                fos.close();
+                                Toast.makeText(getParentActivity(), MiogramLocale.get("Текст пісні збережено у файлі .lrc!", "Текст песни сохранён в .lrc!", "Lyrics saved as .lrc!"), Toast.LENGTH_SHORT).show();
+                            } catch (Throwable t) {
+                                Toast.makeText(getParentActivity(), MiogramLocale.get("Помилка збереження", "Ошибка сохранения", "Save error"), Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(getParentActivity(), MiogramLocale.get("Текст пісні не знайдено", "Текст песни не найден", "Lyrics not found"), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Toast.makeText(getParentActivity(), MiogramLocale.get("Текст пісні не знайдено", "Текст песни не найден", "Lyrics not found"), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            } else if (action == 4) {
+                AndroidUtilities.addToClipboard(track.getDisplayArtist() + " - " + track.getDisplayTitle());
+                Toast.makeText(getParentActivity(), MiogramLocale.get("Скопійовано в буфер", "Скопировано в буфер", "Copied to clipboard"), Toast.LENGTH_SHORT).show();
+            } else if (action == 5) {
+                if (track.localFile != null && track.localFile.exists()) {
+                    long vaultChatId = MiogramCloudVaultEngine.getVaultChatId(currentAccount);
+                    MiogramCloudVaultEngine.uploadFileToVault(currentAccount, vaultChatId, 0, Uri.fromFile(track.localFile), track.localFile.getName(), track.localFile.length(), "audio/mpeg", null);
+                    Toast.makeText(getParentActivity(), MiogramLocale.get("Збережено в Cloud Vault", "Сохранено в Cloud Vault", "Saved to Cloud Vault"), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(getParentActivity(), MiogramLocale.get("Спочатку завантажте трек", "Сначала скачайте трек", "Download the track first"), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        showDialog(builder.create());
+    }
+
     private class TrackCell extends FrameLayout {
 
         private final BackupImageView coverView;
@@ -594,13 +714,13 @@ public class MiogramMusicSearchActivity extends BaseFragment {
 
             infoCol.addView(subRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 3, 0, 0));
 
-            int rightPadding = targetDialogId != 0 ? 128 : 88;
+            int rightPadding = targetDialogId != 0 ? 132 : 92;
             addView(infoCol, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 64, 0, rightPadding, 0));
 
             // Right action buttons
             LinearLayout actionsRow = new LinearLayout(context);
             actionsRow.setOrientation(LinearLayout.HORIZONTAL);
-            actionsRow.setGravity(Gravity.CENTER_VERTICAL);
+            actionsRow.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
 
             // Play Button
             playBtn = new ImageView(context);
@@ -652,38 +772,38 @@ public class MiogramMusicSearchActivity extends BaseFragment {
                         return;
                     }
                     if (!currentTrack.isDownloading && !currentTrack.isInstalled) {
-                    final MiogramMusicTrack targetTrack = currentTrack;
-                    targetTrack.isDownloading = true;
-                    downloadBtn.setVisibility(View.GONE);
-                    progressBar.setVisibility(View.VISIBLE);
+                        final MiogramMusicTrack targetTrack = currentTrack;
+                        targetTrack.isDownloading = true;
+                        downloadBtn.setVisibility(View.GONE);
+                        progressBar.setVisibility(View.VISIBLE);
 
-                    MiogramMusicSearchEngine.fastInstallTrack(context, targetTrack, currentAccount, new MiogramMusicSearchEngine.InstallCallback() {
-                        @Override
-                        public void onProgress(float progress) {
-                            targetTrack.downloadProgress = progress;
-                        }
+                        MiogramMusicSearchEngine.fastInstallTrack(context, targetTrack, currentAccount, new MiogramMusicSearchEngine.InstallCallback() {
+                            @Override
+                            public void onProgress(float progress) {
+                                targetTrack.downloadProgress = progress;
+                            }
 
-                        @Override
-                        public void onSuccess(File localFile) {
-                            targetTrack.isDownloading = false;
-                            targetTrack.isInstalled = true;
-                            targetTrack.localFile = localFile;
-                            if (adapter != null) adapter.notifyDataSetChanged();
-                            Toast.makeText(context, MiogramLocale.get("Трек збережено у 'Збережені' та папку Музика!", "Трек сохранён в 'Избранное' и папку Музыка!", "Saved to Cloud & Device Music!"), Toast.LENGTH_LONG).show();
-                        }
+                            @Override
+                            public void onSuccess(File localFile) {
+                                targetTrack.isDownloading = false;
+                                targetTrack.isInstalled = true;
+                                targetTrack.localFile = localFile;
+                                if (adapter != null) adapter.notifyDataSetChanged();
+                                Toast.makeText(context, MiogramLocale.get("Трек збережено у 'Збережені' та папку Музика!", "Трек сохранён в 'Избранное' и папку Музыка!", "Saved to Cloud & Device Music!"), Toast.LENGTH_LONG).show();
+                            }
 
-                        @Override
-                        public void onError(String error) {
-                            targetTrack.isDownloading = false;
-                            if (adapter != null) adapter.notifyDataSetChanged();
-                            Toast.makeText(context, MiogramLocale.get("Помилка завантаження", "Ошибка загрузки", "Download error") + (error != null ? ": " + error : ""), Toast.LENGTH_SHORT).show();
-                        }
-                    });
+                            @Override
+                            public void onError(String error) {
+                                targetTrack.isDownloading = false;
+                                if (adapter != null) adapter.notifyDataSetChanged();
+                                Toast.makeText(context, MiogramLocale.get("Помилка завантаження", "Ошибка загрузки", "Download error") + (error != null ? ": " + error : ""), Toast.LENGTH_SHORT).show();
+                            }
+                        });
                     }
                 }
             });
 
-            actionsRow.addView(downloadContainer, LayoutHelper.createLinear(36, 36));
+            actionsRow.addView(downloadContainer, LayoutHelper.createLinear(36, 36, 0, 0, targetDialogId != 0 ? 4 : 0, 0));
 
             // Send to Chat Button (if opened from chat)
             if (targetDialogId != 0) {
@@ -707,7 +827,7 @@ public class MiogramMusicSearchActivity extends BaseFragment {
                     sendTrackToChat(currentTrack, sendProgressBar, sendBtn);
                 });
 
-                actionsRow.addView(sendContainer, LayoutHelper.createLinear(36, 36, 4, 0, 0, 0));
+                actionsRow.addView(sendContainer, LayoutHelper.createLinear(36, 36));
 
                 setOnClickListener(v -> {
                     MiogramHaptic.tap(v);
@@ -716,7 +836,18 @@ public class MiogramMusicSearchActivity extends BaseFragment {
             } else {
                 sendBtn = null;
                 sendProgressBar = null;
+
+                setOnClickListener(v -> {
+                    MiogramHaptic.tap(v);
+                    playBtn.performClick();
+                });
             }
+
+            setOnLongClickListener(v -> {
+                MiogramHaptic.tap(v);
+                showTrackOptionsMenu(currentTrack);
+                return true;
+            });
 
             addView(actionsRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL | Gravity.RIGHT));
         }
@@ -730,15 +861,18 @@ public class MiogramMusicSearchActivity extends BaseFragment {
             boolean isPlaying = (currentlyPlayingTrack == track && activePlayer != null && activePlayer.isPlaying());
             playBtn.setImageResource(isPlaying ? R.drawable.ic_pause : R.drawable.ic_play);
             playBtn.setContentDescription(isPlaying
-                    ? MiogramLocale.get("Пауза", "Пауза", "Pause")
-                    : MiogramLocale.get("Слухати", "Слушать", "Preview"));
+                ? MiogramLocale.get("Пауза", "Пауза", "Pause")
+                : MiogramLocale.get("Слухати", "Слушать", "Preview"));
 
             if (track.source != null) {
                 badgeView.setText(track.source.label);
                 GradientDrawable gd = new GradientDrawable();
                 gd.setCornerRadius(AndroidUtilities.dp(4));
-                gd.setColor(track.source.badgeColor);
+                int color = track.source.badgeColor;
+                int bgColor = (color & 0x00FFFFFF) | 0x22000000;
+                gd.setColor(bgColor);
                 badgeView.setBackground(gd);
+                badgeView.setTextColor(color);
                 badgeView.setVisibility(View.VISIBLE);
             } else {
                 badgeView.setVisibility(View.GONE);

@@ -109,4 +109,30 @@ public final class PythonBridge {
     public static void reloadSettingsScreen(String pluginId) {
         controller().reloadSettingsScreen(pluginId);
     }
+
+    // ---------- локализация / переопределение строк через плагины ----------
+
+    public static void setStringOverride(String key, String value) {
+        app.miogram.bridge.localizer.MiogramLocalizerEngine.setOverride(key, value);
+    }
+
+    public static String getStringOverride(String key) {
+        return app.miogram.bridge.localizer.MiogramLocalizerEngine.getOverride(key);
+    }
+
+    public static void removeStringOverride(String key) {
+        app.miogram.bridge.localizer.MiogramLocalizerEngine.removeOverride(key);
+    }
+
+    public static void clearStringOverrides() {
+        app.miogram.bridge.localizer.MiogramLocalizerEngine.clearAll();
+    }
+
+    public static String exportStringOverrides() {
+        return app.miogram.bridge.localizer.MiogramLocalizerEngine.exportToJson();
+    }
+
+    public static int importStringOverrides(String json) {
+        return app.miogram.bridge.localizer.MiogramLocalizerEngine.importFromJson(json);
+    }
 }

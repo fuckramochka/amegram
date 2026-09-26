@@ -508,6 +508,7 @@ public class ChatActivity extends BaseFragment implements
     private final static int nkbtn_report = 2041;
     private final static int nkbtn_clearDeleted = 2100;
     private final static int nkbtn_viewDeleted = 2101;
+    private final static int nkbtn_exportAmagram = 2102;
     private final static int OPTION_SAVE_TO_VAULT = 9981;
     private final static int OPTION_INSTALL_USERBOT_MODULE = 9982;
 
@@ -5281,6 +5282,7 @@ public class ChatActivity extends BaseFragment implements
             if (hideTitleItem != null) chatMenuSecondaryItems.add(hideTitleItem);
             if (NaConfig.INSTANCE.getChatMenuItemViewDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(nkbtn_viewDeleted, R.drawable.msg_view_file, getString(R.string.ViewDeleted)));
             if (NaConfig.INSTANCE.getChatMenuItemClearDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(nkbtn_clearDeleted, R.drawable.msg_clear, getString(R.string.ClearDeleted)));
+            chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(nkbtn_exportAmagram, R.drawable.msg_archive, app.miogram.bridge.MiogramLocale.get("Експорт чату (.amagram)", "Экспорт чата (.amagram)", "Export Chat (.amagram)")));
             if (!isTopic) {
                 if (NaConfig.INSTANCE.getChatMenuItemDeleteOwnMessages().Bool() && (ChatObject.isMegagroup(currentChat) || currentChat != null && !ChatObject.isChannel(currentChat))) {
                     chatMenuSecondaryItems.add(headerItem.lazilyAddSubItem(nkheaderbtn_zibi, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteAllFromSelf)));
@@ -33081,9 +33083,11 @@ public class ChatActivity extends BaseFragment implements
 
             // Miogram Cloud Vault: Save to Cloud option
             if (message != null && (message.messageOwner != null && message.messageOwner.media != null && !(message.messageOwner.media instanceof TLRPC.TL_messageMediaEmpty) || message.getDocument() != null || message.isPhoto() || message.isVideo() || message.isMusic() || message.isVoice() || message.isRoundVideo())) {
-                items.add(app.miogram.bridge.MiogramLocale.get("Зберегти в хмару", "Сохранить в облако", "Save to Cloud Vault"));
-                options.add(OPTION_SAVE_TO_VAULT);
-                icons.add(R.drawable.cloud);
+                if (app.miogram.bridge.cloudvault.MiogramCloudVaultEngine.hasVault(currentAccount)) {
+                    items.add(app.miogram.bridge.MiogramLocale.get("Зберегти в хмару", "Сохранить в облако", "Save to Cloud Vault"));
+                    options.add(OPTION_SAVE_TO_VAULT);
+                    icons.add(R.drawable.cloud);
+                }
             }
 
             // Miogram Heroku Userbot: 1-Tap Module Install
@@ -36814,6 +36818,62 @@ public class ChatActivity extends BaseFragment implements
         selectedObjectGroup = null;
         selectedObjectToEditCaption = null;
         closeMenu(!preserveDim);
+    }
+
+    private void showExportAmagramDialog() {
+        if (getParentActivity() == null) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(app.miogram.bridge.MiogramLocale.get("Експорт чату (.amagram)", "Экспорт чата (.amagram)", "Export Chat (.amagram)"));
+        builder.setMessage(app.miogram.bridge.MiogramLocale.get(
+                "Створити повну резервну копію історії з видаленими повідомленнями та медіа?",
+                "Создать полную резервную копию истории с удаленными сообщениями и медиа?",
+                "Create a full backup archive of chat history including deleted messages and media?"
+        ));
+
+        ArrayList<String> options = new ArrayList<>();
+        options.add(app.miogram.bridge.MiogramLocale.get("Зберегти на пристрій (з медіа)", "Сохранить на устройство (с медиа)", "Save to Device (with media)"));
+        options.add(app.miogram.bridge.MiogramLocale.get("Зберегти на пристрій (тільки текст)", "Сохранить на устройство (только текст)", "Save to Device (text only)"));
+        if (app.miogram.bridge.cloudvault.MiogramCloudVaultEngine.hasVault(currentAccount)) {
+            options.add(app.miogram.bridge.MiogramLocale.get("Зберегти у Cloud Vault (з медіа)", "Сохранить в Cloud Vault (с медиа)", "Save to Cloud Vault (with media)"));
+        }
+
+        builder.setItems(options.toArray(new CharSequence[0]), (dialog, which) -> {
+            boolean includeMedia = (which == 0 || which == 2);
+            boolean uploadToVault = (which == 2);
+
+            Toast.makeText(getParentActivity(), app.miogram.bridge.MiogramLocale.get("Початок експорту...", "Начало экспорта...", "Starting export..."), Toast.LENGTH_SHORT).show();
+
+            app.miogram.bridge.localizer.MiogramDataLocalizerEngine.exportChatToAmagram(
+                    currentAccount,
+                    dialog_id,
+                    includeMedia,
+                    uploadToVault,
+                    new app.miogram.bridge.localizer.MiogramDataLocalizerEngine.BackupCallback() {
+                        @Override
+                        public void onProgress(int current, int total, String status) {
+                        }
+
+                        @Override
+                        public void onSuccess(File archiveFile, int totalMessages, int deletedCount, int mediaCount) {
+                            if (getParentActivity() == null) return;
+                            String msg = app.miogram.bridge.MiogramLocale.get(
+                                    "Експортовано " + totalMessages + " повід. (" + deletedCount + " видалених, " + mediaCount + " медіа) у:\n" + (archiveFile != null ? archiveFile.getName() : ".amagram"),
+                                    "Экспортировано " + totalMessages + " сообщ. (" + deletedCount + " удаленных, " + mediaCount + " медиа) в:\n" + (archiveFile != null ? archiveFile.getName() : ".amagram"),
+                                    "Exported " + totalMessages + " msgs (" + deletedCount + " deleted, " + mediaCount + " media) to:\n" + (archiveFile != null ? archiveFile.getName() : ".amagram")
+                            );
+                            Toast.makeText(getParentActivity(), msg, Toast.LENGTH_LONG).show();
+                        }
+
+                        @Override
+                        public void onError(String error) {
+                            if (getParentActivity() == null) return;
+                            Toast.makeText(getParentActivity(), app.miogram.bridge.MiogramLocale.get("Помилка експорту: ", "Ошибка экспорта: ", "Export error: ") + error, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+            );
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     private void saveSelectedMessageToVault(final MessageObject message) {
@@ -48131,6 +48191,8 @@ public class ChatActivity extends BaseFragment implements
             }
         } else if (id == nkbtn_viewDeleted) {
             presentFragment(new AyuViewDeleted(dialog_id));
+        } else if (id == nkbtn_exportAmagram) {
+            showExportAmagramDialog();
         } else if (id == nkbtn_bookmarks_manager) {
             presentFragment(new BookmarksActivity(dialog_id));
         } else if (id == nkheaderbtn_upgrade) {

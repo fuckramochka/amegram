@@ -817,6 +817,20 @@ public class MiogramMusicSearchEngine {
                             // Scan into Android MediaStore
                             MediaScannerConnection.scanFile(context, new String[]{destFile.getAbsolutePath()}, new String[]{"audio/mpeg"}, null);
 
+                            // Auto-fetch & save synced lyrics (.lrc)
+                            fetchLyrics(track.getDisplayArtist(), track.getDisplayTitle(), track.durationSeconds, new LyricsCallback() {
+                                @Override
+                                public void onLyrics(String syncedLrc, String plainLyrics) {
+                                    String content = (syncedLrc != null && !syncedLrc.isEmpty()) ? syncedLrc : plainLyrics;
+                                    if (content != null && !content.isEmpty()) {
+                                        track.lyrics = content;
+                                        saveLyricsFile(destFile, content);
+                                    }
+                                }
+                                @Override
+                                public void onError(String error) {}
+                            });
+
                             AndroidUtilities.runOnUIThread(() -> {
                                 track.isDownloading = false;
                                 track.isInstalled = true;
@@ -878,6 +892,20 @@ public class MiogramMusicSearchEngine {
                     // Scan MediaStore
                     MediaScannerConnection.scanFile(context, new String[]{destFile.getAbsolutePath()}, new String[]{"audio/mpeg"}, null);
 
+                    // Auto-fetch & save synced lyrics (.lrc)
+                    fetchLyrics(track.getDisplayArtist(), track.getDisplayTitle(), track.durationSeconds, new LyricsCallback() {
+                        @Override
+                        public void onLyrics(String syncedLrc, String plainLyrics) {
+                            String content = (syncedLrc != null && !syncedLrc.isEmpty()) ? syncedLrc : plainLyrics;
+                            if (content != null && !content.isEmpty()) {
+                                track.lyrics = content;
+                                saveLyricsFile(destFile, content);
+                            }
+                        }
+                        @Override
+                        public void onError(String error) {}
+                    });
+
                     AndroidUtilities.runOnUIThread(() -> {
                         track.isDownloading = false;
                         track.isInstalled = true;
@@ -900,6 +928,66 @@ public class MiogramMusicSearchEngine {
 
         track.isDownloading = false;
         if (callback != null) callback.onError("No stream or download link available");
+    }
+
+    public interface LyricsCallback {
+        void onLyrics(String syncedLrc, String plainLyrics);
+        void onError(String error);
+    }
+
+    public static void fetchLyrics(String artist, String title, int duration, LyricsCallback callback) {
+        Utilities.globalQueue.postRunnable(() -> {
+            try {
+                String query = "https://lrclib.net/api/get?artist_name=" + URLEncoder.encode(artist != null ? artist : "", "UTF-8")
+                        + "&track_name=" + URLEncoder.encode(title != null ? title : "", "UTF-8");
+                if (duration > 0) {
+                    query += "&duration=" + duration;
+                }
+                URL url = new URL(query);
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestProperty("User-Agent", "Amegram/1.0 (Android; https://github.com/fuckramochka/amegram)");
+                conn.setConnectTimeout(6000);
+                conn.setReadTimeout(6000);
+                int code = conn.getResponseCode();
+                if (code == 200) {
+                    BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
+                    StringBuilder sb = new StringBuilder();
+                    String line;
+                    while ((line = br.readLine()) != null) sb.append(line).append("\n");
+                    br.close();
+                    JSONObject json = new JSONObject(sb.toString());
+                    String synced = json.optString("syncedLyrics", null);
+                    String plain = json.optString("plainLyrics", null);
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (callback != null) callback.onLyrics(synced, plain);
+                    });
+                    return;
+                }
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (callback != null) callback.onError("Lyrics not found");
+            });
+        });
+    }
+
+    public static File saveLyricsFile(File audioFile, String lrcContent) {
+        if (audioFile == null || lrcContent == null || lrcContent.isEmpty()) return null;
+        try {
+            String name = audioFile.getName();
+            int idx = name.lastIndexOf('.');
+            String base = idx > 0 ? name.substring(0, idx) : name;
+            File lrcFile = new File(audioFile.getParentFile(), base + ".lrc");
+            FileOutputStream fos = new FileOutputStream(lrcFile);
+            fos.write(lrcContent.getBytes(StandardCharsets.UTF_8));
+            fos.flush();
+            fos.close();
+            return lrcFile;
+        } catch (Throwable t) {
+            FileLog.e(t);
+            return null;
+        }
     }
 
     private static String normalize(String s) {

@@ -27,7 +27,8 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.CheckBoxCell;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
-import org.telegram.ui.FilterCreateActivity;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,7 +39,7 @@ import app.miogram.bridge.MiogramLocale;
  * Miogram Subfolder & Smart Category Engine.
  * Provides hierarchical folder grouping (e.g. "Work / Dev"),
  * smart type filters (Personal, Groups, Channels, Bots, Unread),
- * and quick 1-tap subfolder creation syncing with Telegram cloud.
+ * and client-side local subfolders without burning Telegram server limits.
  */
 public class MiogramSubfolderEngine {
 
@@ -60,6 +61,7 @@ public class MiogramSubfolderEngine {
 
     private static final ConcurrentHashMap<Integer, Integer> activeParentTabMap = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, Integer> activeChildFilterMap = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<Integer, Integer> activeLocalSubfolderIdMap = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<Integer, Integer> activeSubfolderTypeMap = new ConcurrentHashMap<>();
 
     private static SharedPreferences getPrefs() {
@@ -133,9 +135,132 @@ public class MiogramSubfolderEngine {
         activeSubfolderTypeMap.put(currentAccount, type);
     }
 
+    public static int getActiveLocalSubfolderId(int currentAccount) {
+        Integer val = activeLocalSubfolderIdMap.get(currentAccount);
+        return val != null ? val : 0;
+    }
+
+    public static void setActiveLocalSubfolderId(int currentAccount, int id) {
+        activeLocalSubfolderIdMap.put(currentAccount, id);
+    }
+
     public static void resetActiveSubfolder(int currentAccount) {
         activeChildFilterMap.put(currentAccount, 0);
+        activeLocalSubfolderIdMap.put(currentAccount, 0);
         activeSubfolderTypeMap.put(currentAccount, TYPE_ALL);
+    }
+
+    public static class LocalSubfolder {
+        public int id;
+        public int parentFilterId;
+        public String name;
+        public int flags;
+        public ArrayList<Long> dialogIds = new ArrayList<>();
+
+        public JSONObject toJson() {
+            try {
+                JSONObject obj = new JSONObject();
+                obj.put("id", id);
+                obj.put("parentFilterId", parentFilterId);
+                obj.put("name", name);
+                obj.put("flags", flags);
+                JSONArray arr = new JSONArray();
+                for (Long did : dialogIds) {
+                    arr.put(did);
+                }
+                obj.put("dialogIds", arr);
+                return obj;
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        public static LocalSubfolder fromJson(JSONObject obj) {
+            try {
+                LocalSubfolder s = new LocalSubfolder();
+                s.id = obj.getInt("id");
+                s.parentFilterId = obj.optInt("parentFilterId", 0);
+                s.name = obj.getString("name");
+                s.flags = obj.optInt("flags", 0);
+                JSONArray arr = obj.optJSONArray("dialogIds");
+                if (arr != null) {
+                    for (int i = 0; i < arr.length(); i++) {
+                        s.dialogIds.add(arr.getLong(i));
+                    }
+                }
+                return s;
+            } catch (Exception e) {
+                return null;
+            }
+        }
+    }
+
+    public static ArrayList<LocalSubfolder> getLocalSubfolders(int currentAccount) {
+        ArrayList<LocalSubfolder> list = new ArrayList<>();
+        String json = getPrefs().getString("local_subfolders_" + currentAccount, "[]");
+        try {
+            JSONArray arr = new JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                LocalSubfolder s = LocalSubfolder.fromJson(arr.getJSONObject(i));
+                if (s != null) {
+                    list.add(s);
+                }
+            }
+        } catch (Exception ignore) {}
+        return list;
+    }
+
+    public static void saveLocalSubfolders(int currentAccount, ArrayList<LocalSubfolder> list) {
+        JSONArray arr = new JSONArray();
+        for (LocalSubfolder s : list) {
+            JSONObject obj = s.toJson();
+            if (obj != null) {
+                arr.put(obj);
+            }
+        }
+        getPrefs().edit().putString("local_subfolders_" + currentAccount, arr.toString()).apply();
+    }
+
+    public static ArrayList<LocalSubfolder> getLocalSubfoldersForParent(int currentAccount, int parentFilterId) {
+        ArrayList<LocalSubfolder> all = getLocalSubfolders(currentAccount);
+        ArrayList<LocalSubfolder> res = new ArrayList<>();
+        for (LocalSubfolder s : all) {
+            if (s.parentFilterId == parentFilterId) {
+                res.add(s);
+            }
+        }
+        return res;
+    }
+
+    public static LocalSubfolder getLocalSubfolderById(int currentAccount, int id) {
+        for (LocalSubfolder s : getLocalSubfolders(currentAccount)) {
+            if (s.id == id) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    public static void deleteLocalSubfolder(BaseFragment fragment, int currentAccount, int id, Runnable onDeleted) {
+        ArrayList<LocalSubfolder> all = getLocalSubfolders(currentAccount);
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id == id) {
+                all.remove(i);
+                break;
+            }
+        }
+        saveLocalSubfolders(currentAccount, all);
+        if (getActiveLocalSubfolderId(currentAccount) == id) {
+            resetActiveSubfolder(currentAccount);
+        }
+        if (onDeleted != null) {
+            onDeleted.run();
+        }
+        try {
+            if (fragment != null) {
+                BulletinFactory.of(fragment).createSimpleBulletin(R.raw.filter_reorder, MiogramLocale.get("Підпапку видалено", "Подпапка удалена", "Subfolder deleted")).show();
+            }
+        } catch (Exception ignore) {}
     }
 
     public static String getParentName(String fullName) {
@@ -228,6 +353,43 @@ public class MiogramSubfolderEngine {
         return true;
     }
 
+    public static boolean matchesLocalSubfolder(int currentAccount, TLRPC.Dialog d, LocalSubfolder subfolder) {
+        if (d == null || subfolder == null) return false;
+        if (subfolder.dialogIds != null && subfolder.dialogIds.contains(d.id)) {
+            return true;
+        }
+        int flags = subfolder.flags;
+        if (flags == 0) return true;
+        MessagesController mc = MessagesController.getInstance(currentAccount);
+        if (mc == null) return false;
+
+        boolean isUser = DialogObject.isUserDialog(d.id);
+        boolean isChat = DialogObject.isChatDialog(d.id);
+
+        if (isUser) {
+            TLRPC.User user = mc.getUser(d.id);
+            if (user != null) {
+                if (user.bot) {
+                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_BOTS) != 0) return true;
+                } else if (user.contact) {
+                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CONTACTS) != 0) return true;
+                } else {
+                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_NON_CONTACTS) != 0) return true;
+                }
+            }
+        } else if (isChat) {
+            TLRPC.Chat chat = mc.getChat(-d.id);
+            if (chat != null) {
+                if (ChatObject.isChannel(chat) && !ChatObject.isMegagroup(chat)) {
+                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_CHANNELS) != 0) return true;
+                } else {
+                    if ((flags & MessagesController.DIALOG_FILTER_FLAG_GROUPS) != 0) return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public static ArrayList<TLRPC.Dialog> applySubfolderFiltering(int currentAccount, ArrayList<TLRPC.Dialog> baseList) {
         if (!isSubfoldersEnabled() || baseList == null) {
             return baseList;
@@ -241,6 +403,21 @@ public class MiogramSubfolderEngine {
             MessagesController.DialogFilter childFilter = mc.dialogFiltersById.get(childFilterId);
             if (childFilter != null && childFilter.dialogs != null) {
                 sourceList = childFilter.dialogs;
+            }
+        }
+
+        int activeLocalId = getActiveLocalSubfolderId(currentAccount);
+        if (activeLocalId > 0) {
+            LocalSubfolder subfolder = getLocalSubfolderById(currentAccount, activeLocalId);
+            if (subfolder != null) {
+                ArrayList<TLRPC.Dialog> localFiltered = new ArrayList<>();
+                for (int i = 0; i < sourceList.size(); i++) {
+                    TLRPC.Dialog d = sourceList.get(i);
+                    if (d != null && matchesLocalSubfolder(currentAccount, d, subfolder)) {
+                        localFiltered.add(d);
+                    }
+                }
+                sourceList = localFiltered;
             }
         }
 
@@ -351,43 +528,22 @@ public class MiogramSubfolderEngine {
             if (cbBots.isChecked()) flags |= MessagesController.DIALOG_FILTER_FLAG_BOTS;
             if (flags == 0) flags = MessagesController.DIALOG_FILTER_FLAG_ALL_CHATS;
 
-            String fullName = !TextUtils.isEmpty(parentName) ? (parentName + " / " + name) : name;
+            LocalSubfolder sub = new LocalSubfolder();
+            sub.id = (int) (System.currentTimeMillis() % 1000000000L);
+            sub.parentFilterId = parentFilter != null ? parentFilter.id : 0;
+            sub.name = name;
+            sub.flags = flags;
 
-            MessagesController mc = fragment.getMessagesController();
-            MessagesController.DialogFilter newFilter = new MessagesController.DialogFilter();
-            newFilter.id = 2;
-            while (mc.dialogFiltersById.get(newFilter.id) != null) {
-                newFilter.id++;
+            ArrayList<LocalSubfolder> all = getLocalSubfolders(currentAccount);
+            all.add(sub);
+            saveLocalSubfolders(currentAccount, all);
+
+            if (onCreated != null) {
+                onCreated.run();
             }
-            newFilter.name = fullName;
-            newFilter.flags = flags;
-
-            FilterCreateActivity.saveFilterToServer(
-                newFilter,
-                flags,
-                null,
-                fullName,
-                null,
-                false,
-                -1,
-                new ArrayList<>(),
-                new ArrayList<>(),
-                new LongSparseIntArray(),
-                true,
-                false,
-                true,
-                true,
-                false,
-                fragment,
-                () -> {
-                    if (onCreated != null) {
-                        onCreated.run();
-                    }
-                }
-            );
 
             try {
-                BulletinFactory.of(fragment).createSimpleBulletin(R.raw.filter_reorder, "Підпапку '" + name + "' створено").show();
+                BulletinFactory.of(fragment).createSimpleBulletin(R.raw.filter_reorder, MiogramLocale.get("Підпапку '", "Подпапка '", "Subfolder '") + name + MiogramLocale.get("' створено", "' создана", "' created")).show();
             } catch (Exception ignore) {}
         });
 

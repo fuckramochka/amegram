@@ -149,9 +149,13 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
             pluginsDir.mkdirs();
             String lastCopiedVersion = preferences.getString("builtin_plugins_version", "");
             boolean isAppUpdate = !org.telegram.messenger.BuildVars.BUILD_VERSION_STRING.equals(lastCopiedVersion);
+            java.util.Set<String> deletedBuiltins = preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet());
             String[] assets = appContext.getAssets().list("plugins");
             if (assets != null) {
                 for (String name : assets) {
+                    if (deletedBuiltins != null && deletedBuiltins.contains(name)) {
+                        continue;
+                    }
                     File target = new File(pluginsDir, name);
                     if (!target.exists() || target.length() == 0 || isAppUpdate) {
                         try (java.io.InputStream is = appContext.getAssets().open("plugins/" + name);
@@ -292,6 +296,24 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         } else {
             preferences.edit().remove("plugin_pinned_" + id).apply();
         }
+    }
+
+    public boolean isPluginActive(String idOrName) {
+        if (!isEngineEnabled() || idOrName == null) {
+            return false;
+        }
+        synchronized (this) {
+            Plugin p = plugins.get(idOrName);
+            if (p != null) {
+                return p.enabled && p.loaded;
+            }
+            for (Plugin plugin : plugins.values()) {
+                if (plugin != null && (idOrName.equalsIgnoreCase(plugin.id) || idOrName.equalsIgnoreCase(plugin.name))) {
+                    return plugin.enabled && plugin.loaded;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean hasPluginExtension(String name) {
@@ -888,6 +910,12 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
                 }
                 p.enabled = enable;
                 preferences.edit().putBoolean(PluginsConstants.KEY_PLUGIN_ENABLED_PREFIX + id, enable).apply();
+                try {
+                    java.util.Set<String> deleted = new java.util.HashSet<>(preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet()));
+                    if (deleted.remove(dest.getName()) || deleted.remove(id) || (p.name != null && deleted.remove(p.name))) {
+                        preferences.edit().putStringSet("deleted_builtin_plugins", deleted).apply();
+                    }
+                } catch (Throwable ignore) {}
                 // Согласие пользователя записывает диалог установки (PluginPermissions.setGranted).
                 // Если он этого не сделал, запись всё равно должна появиться: без неё
                 // свежепоставленный плагин уедет в режим совместимости, где ему дают всё.
@@ -946,6 +974,15 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         if (prefsFile.exists()) {
             prefsFile.delete();
         }
+        try {
+            java.util.Set<String> deleted = new java.util.HashSet<>(preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet()));
+            deleted.add(f.getName());
+            if (p.name != null) {
+                deleted.add(p.name);
+            }
+            deleted.add(id);
+            preferences.edit().putStringSet("deleted_builtin_plugins", deleted).apply();
+        } catch (Throwable ignore) {}
         return f.delete();
     }
 

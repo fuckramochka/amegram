@@ -11220,8 +11220,26 @@ public class ChatActivityEnterView extends FrameLayout implements
         };
         recordPanel.setClipChildren(false);
         recordPanel.setVisibility(GONE);
-        messageEditTextContainer.addView(recordPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, DEFAULT_HEIGHT));
-        recordPanel.setOnTouchListener((v, event) -> true);
+        recordPanel.setOnTouchListener(new View.OnTouchListener() {
+            private float startX, startY;
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    startX = event.getX();
+                    startY = event.getY();
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    if (Math.abs(event.getX() - startX) < dp(15) && Math.abs(event.getY() - startY) < dp(15)) {
+                        if (recordCircle != null && recordCircle.isSendButtonVisible()) {
+                            if (messageEditText != null) {
+                                messageEditText.requestFocus();
+                                openKeyboard();
+                            }
+                        }
+                    }
+                }
+                return true;
+            }
+        });
         recordPanel.addView(slideText = new SlideTextView(getContext()), LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.NO_GRAVITY, 45, 0, 0, 0));
 
         recordTimeContainer = new LinearLayout(getContext());

@@ -651,7 +651,11 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         ArrayList<TLRPC.TL_forumTopic> topics = tc.getTopics(vaultChatId);
         cachedTopics.clear();
         if (topics != null) {
-            cachedTopics.addAll(topics);
+            for (TLRPC.TL_forumTopic t : topics) {
+                if (t != null && !MiogramCloudVaultEngine.isSystemHiddenTopic(t.title)) {
+                    cachedTopics.add(t);
+                }
+            }
         }
         refreshTopicPills();
     }

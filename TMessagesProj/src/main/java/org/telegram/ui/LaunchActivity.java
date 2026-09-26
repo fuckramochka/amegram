@@ -445,8 +445,14 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         AndroidUtilities.runOnUIThread(() -> app.miogram.bridge.updater.MiogramUpdater.initAutoUpdate(this), 3500);
         AndroidUtilities.runOnUIThread(() -> {
             try {
-                if (UserConfig.getInstance(currentAccount).isClientActivated() && !app.miogram.bridge.ai.companion.MiogramCompanionPrefs.hasCompletedOnboarding()) {
-                    new app.miogram.bridge.onboarding.AmegramGuideSheet(LaunchActivity.this, false).show();
+                if (UserConfig.getInstance(currentAccount).isClientActivated()) {
+                    String ver = org.telegram.messenger.BuildVars.BUILD_VERSION_STRING;
+                    String shownGuideVer = app.miogram.bridge.ai.companion.MiogramCompanionPrefs.getGuideShownVersion();
+                    if (!ver.equals(shownGuideVer)) {
+                        new app.miogram.bridge.onboarding.AmegramGuideSheet(LaunchActivity.this, false).show();
+                    } else if (app.miogram.bridge.plugins.MiogramPluginsMarket.shouldPromptOnboarding(LaunchActivity.this)) {
+                        new app.miogram.bridge.plugins.MiogramPluginsOnboardingSheet(LaunchActivity.this).show();
+                    }
                 }
             } catch (Throwable ignore) {}
         }, 1800);

@@ -274,6 +274,15 @@ public class MiogramPluginCatalogAlert extends BottomSheet {
     }
 
     private void showError(String err) {
+        appendBuiltinPlugins();
+        if (!allPlugins.isEmpty()) {
+            loadingBar.setVisibility(View.GONE);
+            errorContainer.setVisibility(View.GONE);
+            itemsContainer.setVisibility(View.VISIBLE);
+            buildCategoryTabs();
+            filterAndRender();
+            return;
+        }
         loadingBar.setVisibility(View.GONE);
         itemsContainer.setVisibility(View.GONE);
         errorContainer.setVisibility(View.VISIBLE);
@@ -282,6 +291,29 @@ public class MiogramPluginCatalogAlert extends BottomSheet {
                 "Не удалось загрузить каталог с GitHub.\nОшибка: ",
                 "Failed to load catalog from GitHub.\nError: "
         ) + err);
+    }
+
+    private void appendBuiltinPlugins() {
+        for (app.miogram.bridge.plugins.MiogramPluginsMarket.MarketPluginEntry entry : app.miogram.bridge.plugins.MiogramPluginsMarket.getCatalog()) {
+            boolean already = false;
+            for (CatalogPlugin p : allPlugins) {
+                if (entry.id.equalsIgnoreCase(p.id)) {
+                    already = true;
+                    break;
+                }
+            }
+            if (!already) {
+                CatalogPlugin cp = new CatalogPlugin();
+                cp.id = entry.id;
+                cp.name = entry.title;
+                cp.version = "1.0.0";
+                cp.author = "@fuckramochka";
+                cp.description = entry.getDescription();
+                cp.category = entry.category;
+                cp.downloadUrl = "builtin://" + entry.assetName;
+                allPlugins.add(cp);
+            }
+        }
     }
 
     private void parseAndDisplayCatalog(String json) {
@@ -312,10 +344,9 @@ public class MiogramPluginCatalogAlert extends BottomSheet {
             }
         } catch (Throwable t) {
             FileLog.e(t);
-            showError(t.getMessage());
-            return;
         }
 
+        appendBuiltinPlugins();
         buildCategoryTabs();
         filterAndRender();
     }
@@ -520,6 +551,18 @@ public class MiogramPluginCatalogAlert extends BottomSheet {
     private void downloadAndInstall(CatalogPlugin item, TextView button, ProgressBar spin) {
         if (activity.isFinishing()) return;
         MiogramHaptic.tap(button);
+
+        String effectiveUrl = item.getEffectiveDownloadUrl();
+        if (effectiveUrl != null && effectiveUrl.startsWith("builtin://")) {
+            String assetName = effectiveUrl.substring("builtin://".length());
+            for (app.miogram.bridge.plugins.MiogramPluginsMarket.MarketPluginEntry entry : app.miogram.bridge.plugins.MiogramPluginsMarket.getCatalog()) {
+                if (entry.assetName.equalsIgnoreCase(assetName) || entry.id.equalsIgnoreCase(item.id)) {
+                    app.miogram.bridge.plugins.MiogramPluginsMarket.installPlugin(activity, entry);
+                    filterAndRender();
+                    return;
+                }
+            }
+        }
 
         button.setVisibility(View.INVISIBLE);
         spin.setVisibility(View.VISIBLE);

@@ -146,34 +146,37 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
     private void copyBuiltinPlugins() {
         try {
             File pluginsDir = getPluginsDir();
-            pluginsDir.mkdirs();
+            if (!pluginsDir.exists()) {
+                pluginsDir.mkdirs();
+                // Brand new installation: do NOT download/copy plugins by default.
+                // The user will be prompted via MiogramPluginsOnboardingSheet to select which plugins they want.
+                preferences.edit().putString("builtin_plugins_version", org.telegram.messenger.BuildVars.BUILD_VERSION_STRING).apply();
+                return;
+            }
             String lastCopiedVersion = preferences.getString("builtin_plugins_version", "");
             boolean isAppUpdate = !org.telegram.messenger.BuildVars.BUILD_VERSION_STRING.equals(lastCopiedVersion);
-            java.util.Set<String> deletedBuiltins = preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet());
-            String[] assets = appContext.getAssets().list("plugins");
-            if (assets != null) {
-                for (String name : assets) {
-                    if (deletedBuiltins != null && deletedBuiltins.contains(name)) {
-                        continue;
-                    }
-                    File target = new File(pluginsDir, name);
-                    if (!target.exists() || target.length() == 0 || isAppUpdate) {
-                        try (java.io.InputStream is = appContext.getAssets().open("plugins/" + name);
-                             java.io.FileOutputStream fos = new java.io.FileOutputStream(target)) {
-                            byte[] buf = new byte[8192];
-                            int len;
-                            while ((len = is.read(buf)) != -1) {
-                                fos.write(buf, 0, len);
+            if (isAppUpdate) {
+                // On app update, only refresh plugins that the user already chose to have installed
+                String[] assets = appContext.getAssets().list("plugins");
+                if (assets != null) {
+                    for (String name : assets) {
+                        File target = new File(pluginsDir, name);
+                        if (target.exists() && target.length() > 0) {
+                            try (java.io.InputStream is = appContext.getAssets().open("plugins/" + name);
+                                 java.io.FileOutputStream fos = new java.io.FileOutputStream(target)) {
+                                byte[] buf = new byte[8192];
+                                int len;
+                                while ((len = is.read(buf)) != -1) {
+                                    fos.write(buf, 0, len);
+                                }
                             }
                         }
                     }
                 }
-            }
-            if (isAppUpdate) {
                 preferences.edit().putString("builtin_plugins_version", org.telegram.messenger.BuildVars.BUILD_VERSION_STRING).apply();
             }
         } catch (Throwable t) {
-            FileLog.e("PluginsController: failed to copy builtin plugins", t);
+            FileLog.e("PluginsController: failed to update builtin plugins", t);
         }
     }
 

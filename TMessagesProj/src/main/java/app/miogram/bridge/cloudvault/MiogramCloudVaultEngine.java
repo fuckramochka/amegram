@@ -508,6 +508,7 @@ public class MiogramCloudVaultEngine {
                     setVaultChatId(currentAccount, chatId);
 
                     // Create starter forum topics
+                    createTopic(currentAccount, chatId, "Загальне", 0x4CAF50);
                     createTopic(currentAccount, chatId, "Документи", 0x3390EC);
                     createTopic(currentAccount, chatId, "Медіа", 0xE53935);
                     createTopic(currentAccount, chatId, "Архіви", 0xFB8C00);

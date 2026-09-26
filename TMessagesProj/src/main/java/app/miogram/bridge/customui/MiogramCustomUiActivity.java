@@ -110,6 +110,16 @@ public class MiogramCustomUiActivity extends BaseFragment {
         headerModules.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         content.addView(headerModules);
 
+        // 0. Ame Profile XML Code & Community Topic
+        TextCell rowAmeProfile = new TextCell(context);
+        rowAmeProfile.setTextAndValue(MiogramLocale.get("Аме профіль (XML-код)", "Аме профиль (XML-код)", "Ame Profile (XML code)"), MiogramLocale.get("Експорт, імпорт та вітка @dkamegram", "Экспорт, импорт и ветка @dkamegram", "Export, import & topic"), true);
+        rowAmeProfile.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        rowAmeProfile.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            new app.miogram.bridge.ameprofile.MiogramAmeProfileSheet(getParentActivity() != null ? getParentActivity() : context).show();
+        });
+        content.addView(rowAmeProfile);
+
         // 1. Bubbles (Extra Features)
         TextCell rowBubbles = new TextCell(context);
         rowBubbles.setTextAndValue(MiogramLocale.get("Додаткові функції (Пухирці)", "Дополнительные функции (Пузырьки)", "Extra features (Bubbles)"), MiogramLocale.get("Повідомлення", "Сообщения", "Messages"), true);

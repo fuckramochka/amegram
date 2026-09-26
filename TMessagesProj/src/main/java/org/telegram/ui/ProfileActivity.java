@@ -2915,6 +2915,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     app.miogram.bridge.customui.MiogramCustomUiActivity.ExtraFeaturesSheet.show(getParentActivity() != null ? getParentActivity() : getContext());
                 } else if (id == 13303815) {
                     app.miogram.bridge.badge.MiogramBadgeGrantSheet.show(getParentActivity() != null ? getParentActivity() : getContext(), userId);
+                } else if (id == 13303816) {
+                    new app.miogram.bridge.ameprofile.MiogramAmeProfileSheet(getParentActivity() != null ? getParentActivity() : getContext()).show();
                 } else if (id == edit_info) {
                     presentFragment(new UserInfoActivity());
                 } else if (id == edit_color) {
@@ -12809,6 +12811,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 otherItem.addSubItem(13303809, R.drawable.msg_theme, app.miogram.bridge.MiogramLocale.get("Оформити профіль", "Оформить профиль", "Customize profile"));
                 otherItem.addSubItem(13303812, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Всі налаштування оформлення", "Все настройки оформления", "All appearance settings"));
+                otherItem.addSubItem(13303816, R.drawable.msg_edit, app.miogram.bridge.MiogramLocale.get("Аме профіль (XML)", "Аме профиль (XML)", "Ame Profile (XML)"));
                 if (app.miogram.bridge.badge.MiogramBadgeGrantSheet.canGrantBadges()) {
                     otherItem.addSubItem(13303815, R.drawable.msg_premium_liststar, app.miogram.bridge.MiogramLocale.get("Видати бейдж", "Выдать бейдж", "Grant Badge"));
                 }

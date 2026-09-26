@@ -41,6 +41,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
     private int headerModeRow;
     private int discordUiRow;
     private int customUiRow;
+    private int ameProfileXmlRow;
     private int ameVibeRow;
     private int activeLyricsLineRow;
     private int modeInfoRow;
@@ -74,6 +75,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         headerModeRow = addRow();
         discordUiRow = addRow();
         customUiRow = addRow();
+        ameProfileXmlRow = addRow();
         ameVibeRow = addRow();
         activeLyricsLineRow = addRow();
         modeInfoRow = addRow();
@@ -127,6 +129,8 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
             showLayoutModeDialog();
         } else if (position == customUiRow) {
             presentFragment(new app.miogram.bridge.customui.MiogramCustomUiActivity());
+        } else if (position == ameProfileXmlRow) {
+            new app.miogram.bridge.ameprofile.MiogramAmeProfileSheet(getParentActivity() != null ? getParentActivity() : getContext()).show();
         } else if (position == ameVibeRow) {
             boolean next = !ameVibeEnabled();
             MiogramVisualsPrefs.saveBool(getSafeContext(), "ame_vibe_enabled", next);
@@ -356,7 +360,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         app.miogram.bridge.divine.MiogramDivineEngine.Preset current = app.miogram.bridge.divine.MiogramDivineEngine.getCurrentPreset(getSafeContext());
                         cell.setTextAndValue(MiogramLocale.get("Пресет оформлення", "Пресет оформления", "Layout Preset"), app.miogram.bridge.divine.MiogramDivineEngine.getPresetTitle(current), true);
                     } else if (position == customUiRow) {
-                        cell.setTextAndValue(MiogramLocale.get("Кастомний профіль (Custom Profile)", "Кастомный профиль (Custom Profile)", "Custom Profile Studio"), MiogramLocale.get("Відкрити студію", "Открыть студию", "Open Studio"), true);
+                        cell.setTextAndValue(MiogramLocale.get("Аме профіль (Кастомізація)", "Аме профиль (Кастомизация)", "Ame Profile Studio"), MiogramLocale.get("Відкрити студію", "Открыть студию", "Open Studio"), true);
+                    } else if (position == ameProfileXmlRow) {
+                        cell.setTextAndValue(MiogramLocale.get("Аме профіль (XML-код)", "Аме профиль (XML-код)", "Ame Profile (XML code)"), MiogramLocale.get("Експорт та вітка", "Экспорт и ветка", "Export & topic"), true);
                     } else if (position == glassIntensityRow) {
                         cell.setTextAndValue(MiogramLocale.get("Інтенсивність скла", "Интенсивность стекла", "Glass Intensity"), intensityPercent() + "%", false);
                     } else if (position == avatarCornersRow) {

@@ -55,12 +55,22 @@ public class MiogramCompanionPrefs {
         getPrefs().edit().putBoolean(KEY_REPLACE_CONTACTS, replaced).apply();
     }
 
+    private static final String KEY_GUIDE_SHOWN_VERSION = "guide_shown_version";
+
     public static boolean hasCompletedOnboarding() {
         return getPrefs().getBoolean(KEY_ONBOARDING_COMPLETED, false);
     }
 
     public static void setOnboardingCompleted(boolean completed) {
         getPrefs().edit().putBoolean(KEY_ONBOARDING_COMPLETED, completed).apply();
+    }
+
+    public static String getGuideShownVersion() {
+        return getPrefs().getString(KEY_GUIDE_SHOWN_VERSION, "");
+    }
+
+    public static void setGuideShownVersion(String version) {
+        getPrefs().edit().putString(KEY_GUIDE_SHOWN_VERSION, version).apply();
     }
 
     public static int getAffection() {

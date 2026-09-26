@@ -229,6 +229,11 @@ public class MiogramCloudVaultActivity extends BaseFragment {
     @Override
     public void onResume() {
         super.onResume();
+        long vaultChatId = MiogramCloudVaultEngine.getVaultChatId(currentAccount);
+        if (MiogramCloudVaultEngine.isSavedMessagesVault(currentAccount, vaultChatId)) {
+            migrateVaultToForumChat();
+            return;
+        }
         updateVaultVisibility();
         if (MiogramCloudVaultEngine.hasVault(currentAccount)) {
             loadTopicsFromTelegram();
@@ -306,41 +311,25 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         desc.setLineSpacing(AndroidUtilities.dp(3), 1.15f);
         onboardingLayout.addView(desc, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 24));
 
-        // 1-Tap Use Saved Messages Button
-        TextView savedBtn = new TextView(context);
-        savedBtn.setText(MiogramLocale.get("Підключити «Збережене» (1 тап)", "Подключить «Избранное» (1 тап)", "Use Saved Messages (1 Tap)"));
-        savedBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        savedBtn.setTypeface(AndroidUtilities.bold());
-        savedBtn.setTextColor(Color.WHITE);
-        savedBtn.setGravity(Gravity.CENTER);
-
-        GradientDrawable savedBtnBg = new GradientDrawable();
-        savedBtnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        savedBtnBg.setCornerRadius(AndroidUtilities.dp(12));
-        savedBtn.setBackground(savedBtnBg);
-        savedBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(14), AndroidUtilities.dp(20), AndroidUtilities.dp(14));
-        savedBtn.setOnClickListener(v -> useSavedMessagesAsVault());
-        onboardingLayout.addView(savedBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 10));
-
-        // Create Supergroup Button
+        // 1-Tap Create Forum Supergroup with Topics
         TextView createBtn = new TextView(context);
-        createBtn.setText(MiogramLocale.get("Створити окрему супергрупу", "Создать отдельную супергруппу", "Create Dedicated Supergroup"));
-        createBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        createBtn.setText(MiogramLocale.get("Створити сховище з топіками (1 тап)", "Создать хранилище с топиками (1 тап)", "Create Vault with Topics (1 Tap)"));
+        createBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         createBtn.setTypeface(AndroidUtilities.bold());
-        createBtn.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        createBtn.setTextColor(Color.WHITE);
         createBtn.setGravity(Gravity.CENTER);
 
         GradientDrawable createBtnBg = new GradientDrawable();
-        createBtnBg.setStroke(AndroidUtilities.dp(1), Theme.getColor(Theme.key_featuredStickers_addButton));
+        createBtnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         createBtnBg.setCornerRadius(AndroidUtilities.dp(12));
         createBtn.setBackground(createBtnBg);
-        createBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(12));
+        createBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(14), AndroidUtilities.dp(20), AndroidUtilities.dp(14));
         createBtn.setOnClickListener(v -> createVaultAutomatically());
-        onboardingLayout.addView(createBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 10));
+        onboardingLayout.addView(createBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 12));
 
         // Link existing chat button
         TextView linkBtn = new TextView(context);
-        linkBtn.setText(MiogramLocale.get("Прив'язати існуючу групу", "Привязать существующую группу", "Link Existing Group"));
+        linkBtn.setText(MiogramLocale.get("Прив'язати існуючу групу чи форум", "Привязать существующую группу или форум", "Link Existing Group or Forum"));
         linkBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f);
         linkBtn.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         linkBtn.setGravity(Gravity.CENTER);
@@ -1100,28 +1089,55 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(MiogramLocale.get("Підключення Miogram Cloud Vault", "Подключение Miogram Cloud Vault", "Connect Miogram Cloud Vault"));
         builder.setMessage(MiogramLocale.get(
-                "Оберіть спосіб хмарного сховища:\n\n• «Збережене» (Saved Messages) — працює миттєво, без обмежень прав та лімітів Telegram.\n• Форум-супергрупа — окрема приватна група з темами-папками.",
-                "Выберите способ облачного хранилища:\n\n• «Избранное» (Saved Messages) — работает мгновенно, без ограничений прав и лимитов Telegram.\n• Форум-супергруппа — отдельная приватная группа с темами-папками.",
-                "Choose your vault storage method:\n\n• Saved Messages — works instantly, 100% private, without channel creation limits.\n• Forum Supergroup — separate private group with folder topics."
+                "Для завантаження файлів необхідно створити персональне сховище — зашифровану форум-супергрупу з топіками (Загальне, Медіа, Документи, Архіви).",
+                "Для загрузки файлов необходимо создать персональное хранилище — зашифрованную форум-супергруппу с топиками (Общее, Медиа, Документы, Архивы).",
+                "To upload files, a personal vault is required — an encrypted forum supergroup with topics (General, Media, Documents, Archives)."
         ));
-        builder.setPositiveButton(MiogramLocale.get("«Збережене»", "«Избранное»", "Saved Messages"), (d, w) -> useSavedMessagesAsVault());
-        builder.setNeutralButton(MiogramLocale.get("Форум-група", "Форум-група", "Forum Group"), (d, w) -> createVaultAutomatically());
+        builder.setPositiveButton(MiogramLocale.get("Створити форум-сховище", "Создать форум-хранилище", "Create Forum Vault"), (d, w) -> createVaultAutomatically());
+        builder.setNeutralButton(MiogramLocale.get("Прив'язати ID", "Привязать ID", "Link ID"), (d, w) -> showLinkExistingDialog());
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
         showDialog(builder.create());
     }
 
-    private void useSavedMessagesAsVault() {
-        long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
-        if (clientUserId == 0) return;
-        MiogramCloudVaultEngine.setVaultChatId(currentAccount, clientUserId);
-        if (getParentActivity() != null) {
-            Toast.makeText(getParentActivity(), MiogramLocale.get("Сховище підключено до «Збережене»!", "Хранилище подключено к «Избранное»!", "Vault connected to Saved Messages!"), Toast.LENGTH_SHORT).show();
-        }
-        updateVaultVisibility();
-        updateSubtitle();
-        loadTopicsFromTelegram();
-        filterAndReloadFiles();
-        syncFromCloud();
+    private void migrateVaultToForumChat() {
+        if (getParentActivity() == null) return;
+        final AlertDialog progressDialog = new AlertDialog(getParentActivity(), 3);
+        progressDialog.setMessage(MiogramLocale.get(
+                "Міграція сховища у форум-чат з топіками...",
+                "Миграция хранилища в форум-чат с топиками...",
+                "Migrating vault to forum chat with topics..."
+        ));
+        progressDialog.setCanceledOnTouchOutside(false);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        MiogramCloudVaultEngine.createVaultSupergroup(this, currentAccount, new MiogramCloudVaultEngine.VaultCreatedCallback() {
+            @Override
+            public void onCreated(long chatId) {
+                progressDialog.dismiss();
+                Toast.makeText(getParentActivity(), MiogramLocale.get(
+                        "Сховище успішно мігровано у форум-чат з топіками!",
+                        "Хранилище успешно мигрировано в форум-чат с топиками!",
+                        "Vault successfully migrated to forum chat with topics!"
+                ), Toast.LENGTH_LONG).show();
+                updateVaultVisibility();
+                loadTopicsFromTelegram();
+                filterAndReloadFiles();
+            }
+
+            @Override
+            public void onError(String message) {
+                progressDialog.dismiss();
+                Toast.makeText(getParentActivity(), MiogramLocale.get(
+                        "Помилка міграції: " + message,
+                        "Ошибка миграции: " + message,
+                        "Migration error: " + message
+                ), Toast.LENGTH_SHORT).show();
+                updateVaultVisibility();
+                loadTopicsFromTelegram();
+                filterAndReloadFiles();
+            }
+        });
     }
 
     private void createVaultAutomatically() {
@@ -1145,10 +1161,11 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             @Override
             public void onError(String message) {
                 progressDialog.dismiss();
-                // Telegram account limits or restrictions prevent channel creation -> fallback to Saved Messages seamlessly
-                long clientUserId = UserConfig.getInstance(currentAccount).getClientUserId();
-                MiogramCloudVaultEngine.setVaultChatId(currentAccount, clientUserId);
-                Toast.makeText(getParentActivity(), MiogramLocale.get("Підключено до «Збережене» як сховище за замовчуванням!", "Подключено к «Избранное» как хранилище по умолчанию!", "Connected to Saved Messages as default storage!"), Toast.LENGTH_LONG).show();
+                Toast.makeText(getParentActivity(), MiogramLocale.get(
+                        "Помилка створення форум-чату: " + message,
+                        "Ошибка создания форум-чата: " + message,
+                        "Failed to create forum chat: " + message
+                ), Toast.LENGTH_LONG).show();
                 updateVaultVisibility();
                 loadTopicsFromTelegram();
                 filterAndReloadFiles();

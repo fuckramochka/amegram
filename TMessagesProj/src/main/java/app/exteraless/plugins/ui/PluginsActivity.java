@@ -71,6 +71,7 @@ public class PluginsActivity extends BaseFragment {
 
     private static final int ID_ENGINE_TOGGLE = -1;
     private static final int ID_MIOPLUGIN_FOLDER = -2;
+    private static final int ID_MARKET_CATALOG = -3;
 
     private static final int REQUEST_CODE_PICK_PLUGIN = 9781;
     private static final int REQUEST_CODE_PICK_FOLDER = 9782;
@@ -274,6 +275,9 @@ public class PluginsActivity extends BaseFragment {
         items.add(UItem.asButton(ID_MIOPLUGIN_FOLDER, R.drawable.msg_folders,
                 app.miogram.bridge.MiogramLocale.get("Папка mioplugin (автоімпорт)", "Папка mioplugin (автоимпорт)", "mioplugin folder (auto-import)"),
                 folderLabel != null ? folderLabel : app.miogram.bridge.MiogramLocale.get("не вибрано — натисни", "не выбрана — нажми", "not set — tap")));
+        items.add(UItem.asButton(ID_MARKET_CATALOG, R.drawable.baseline_stars_24,
+                app.miogram.bridge.MiogramLocale.get("Завантажити з маркету", "Загрузить из маркета", "Download from Market"),
+                app.miogram.bridge.MiogramLocale.get("Каталог плагінів ໒꒱", "Каталог плагинов ໒꒱", "Plugins Catalog ໒꒱")));
         items.add(UItem.asSpace(dp(8)));
 
         List<Plugin> visible = visiblePlugins();
@@ -480,6 +484,12 @@ public class PluginsActivity extends BaseFragment {
         }
         if (item.id == ID_MIOPLUGIN_FOLDER) {
             onMiopluginFolderRow();
+            return;
+        }
+        if (item.id == ID_MARKET_CATALOG) {
+            if (getParentActivity() != null) {
+                new MiogramPluginCatalogAlert(getParentActivity()).show();
+            }
             return;
         }
         // По карточке кликов не ждём: у неё свои кнопки и свой тумблер.

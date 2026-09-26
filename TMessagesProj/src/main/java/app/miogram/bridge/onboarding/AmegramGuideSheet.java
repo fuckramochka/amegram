@@ -3,20 +3,16 @@ package app.miogram.bridge.onboarding;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
-import android.os.Build;
-import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
-import android.widget.EditText;
+import android.widget.CheckBox;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -27,8 +23,11 @@ import android.widget.Toast;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.browser.Browser;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
@@ -36,24 +35,31 @@ import org.telegram.ui.Components.LayoutHelper;
 import java.util.ArrayList;
 import java.util.List;
 
+import app.exteraless.plugins.ui.MiogramPluginCatalogAlert;
 import app.miogram.bridge.MiogramLocale;
-import app.miogram.bridge.ai.MiogramAiService;
 import app.miogram.bridge.ai.companion.MiogramCompanionPrefs;
+import app.miogram.bridge.ameprofile.MiogramAmeProfileEngine;
+import app.miogram.bridge.ameprofile.MiogramAmeProfileSheet;
+import app.miogram.bridge.cloudvault.MiogramCloudVaultEngine;
 import app.miogram.bridge.customui.MiogramHaptic;
-import app.miogram.bridge.player.MiogramPlayerPrefs;
+import app.miogram.bridge.flags.MiogramFlags;
+import app.miogram.bridge.plugins.MiogramPluginsMarket;
+import app.miogram.bridge.ui.MiogramVisualsPrefs;
+import app.miogram.bridge.ui.discord.MiogramDiscordLayout;
 
 /**
- * First Launch & Onboarding Guide for Amegram.
- * Interactive wizard featuring:
- * - Step 1: Persona selection (Ame-chan ໒꒱ vs OMGkawaiiAngel ✧†) with reactive character sprite.
- * - Step 2: Recommended initial settings (Theme, Title Marquee, Player cover radius, music cache).
- * - Step 3: Google Gemini AI Companion API key prompt with direct link to Google AI Studio.
- * - Step 4: Ecosystem & connected platforms overview (TikTok MI, Steam, Discord, Spotify, GitHub).
- * - Intuitive controls: "Пропустити все", "Пропустити крок", "Далі", "Завершити".
+ * Modern First Launch & Update Guide for Amegram.
+ * Triggered strictly ONCE per install/update.
+ * Highlights Amegram's core features:
+ * - Step 0: Persona Selection (Ame vs KAngel)
+ * - Step 1: Аме Профіль (Live XML profile styling & community topic sharing)
+ * - Step 2: Хмарне Сховище у Топіках (AES-256 Forum Supergroup with folder topics)
+ * - Step 3: Плагіни та Маркет (Opt-in plugins selection: Boykisser, PetPet, Custom Profile WASM, Localizer)
+ * - Step 4: Discord UI & Рідке Скло (Discord server layout & AGSL liquid glass)
  */
 public class AmegramGuideSheet extends BottomSheet {
 
-    private static final int TOTAL_STEPS = 4;
+    private static final int TOTAL_STEPS = 5;
     private int currentStep = 0;
 
     private boolean selectedAme = true;
@@ -68,7 +74,10 @@ public class AmegramGuideSheet extends BottomSheet {
     private FrameLayout stepContentContainer;
     private TextView skipStepBtn;
     private TextView nextStepBtn;
-    private EditText apiKeyInput;
+
+    // Plugins selection state
+    private final List<CheckBox> pluginCheckBoxes = new ArrayList<>();
+    private final List<MiogramPluginsMarket.MarketPluginEntry> pluginEntries = new ArrayList<>();
 
     public AmegramGuideSheet(Context context, boolean needFocus) {
         super(context, needFocus);
@@ -105,7 +114,7 @@ public class AmegramGuideSheet extends BottomSheet {
         dragHandle.setBackground(handleBg);
         root.addView(dragHandle, LayoutHelper.createLinear(38, 5, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 10));
 
-        // Top Navigation Bar: Title/Progress on left, "Пропустити все" on right
+        // Top Navigation Bar
         LinearLayout topBar = new LinearLayout(context);
         topBar.setOrientation(LinearLayout.HORIZONTAL);
         topBar.setGravity(Gravity.CENTER_VERTICAL);
@@ -145,18 +154,18 @@ public class AmegramGuideSheet extends BottomSheet {
 
         characterSpriteView = new ImageView(context);
         characterSpriteView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        characterBox.addView(characterSpriteView, LayoutHelper.createLinear(88, 88, Gravity.CENTER_VERTICAL));
+        characterBox.addView(characterSpriteView, LayoutHelper.createLinear(80, 80, Gravity.CENTER_VERTICAL));
 
         speechBubbleView = new TextView(context);
-        speechBubbleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        speechBubbleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
         speechBubbleView.setTextColor(textColor);
         speechBubbleView.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(4), 0);
-        speechBubbleView.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
+        speechBubbleView.setLineSpacing(AndroidUtilities.dp(2), 1.05f);
         characterBox.addView(speechBubbleView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
 
-        root.addView(characterBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+        root.addView(characterBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
-        // Dynamic Step Content Area (inside ScrollView so it always fits)
+        // Dynamic Step Content Area
         ScrollView contentScrollView = new ScrollView(context);
         contentScrollView.setVerticalScrollBarEnabled(false);
         stepContentContainer = new FrameLayout(context);
@@ -167,7 +176,7 @@ public class AmegramGuideSheet extends BottomSheet {
         LinearLayout bottomBar = new LinearLayout(context);
         bottomBar.setOrientation(LinearLayout.HORIZONTAL);
         bottomBar.setGravity(Gravity.CENTER_VERTICAL);
-        bottomBar.setPadding(0, AndroidUtilities.dp(14), 0, 0);
+        bottomBar.setPadding(0, AndroidUtilities.dp(12), 0, 0);
 
         skipStepBtn = new TextView(context);
         skipStepBtn.setText(MiogramLocale.get("Пропустити крок", "Пропустить шаг", "Skip step"));
@@ -213,7 +222,7 @@ public class AmegramGuideSheet extends BottomSheet {
             d.setCornerRadius(AndroidUtilities.dp(3));
             if (i == currentStep) {
                 d.setColor(accentColor);
-                dot.setLayoutParams(new LinearLayout.LayoutParams(AndroidUtilities.dp(20), AndroidUtilities.dp(6)));
+                dot.setLayoutParams(new LinearLayout.LayoutParams(AndroidUtilities.dp(18), AndroidUtilities.dp(6)));
             } else {
                 d.setColor(0x44FFFFFF);
                 dot.setLayoutParams(new LinearLayout.LayoutParams(AndroidUtilities.dp(6), AndroidUtilities.dp(6)));
@@ -229,10 +238,10 @@ public class AmegramGuideSheet extends BottomSheet {
         if (characterSpriteView == null) return;
         ObjectAnimator bounce = ObjectAnimator.ofPropertyValuesHolder(
                 characterSpriteView,
-                PropertyValuesHolder.ofFloat(View.SCALE_X, 0.82f, 1.08f, 1.0f),
-                PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.82f, 1.08f, 1.0f)
+                PropertyValuesHolder.ofFloat(View.SCALE_X, 0.85f, 1.08f, 1.0f),
+                PropertyValuesHolder.ofFloat(View.SCALE_Y, 0.85f, 1.08f, 1.0f)
         );
-        bounce.setDuration(400);
+        bounce.setDuration(350);
         bounce.setInterpolator(new OvershootInterpolator(1.4f));
         bounce.start();
     }
@@ -258,13 +267,16 @@ public class AmegramGuideSheet extends BottomSheet {
                 renderStepPersona(context);
                 break;
             case 1:
-                renderStepSettings(context);
+                renderStepAmeProfile(context);
                 break;
             case 2:
-                renderStepApiKey(context);
+                renderStepCloudVault(context);
                 break;
             case 3:
-                renderStepEcosystem(context);
+                renderStepPlugins(context);
+                break;
+            case 4:
+                renderStepDiscordAndGlass(context);
                 break;
         }
 
@@ -283,13 +295,13 @@ public class AmegramGuideSheet extends BottomSheet {
     private void renderStepPersona(Context context) {
         String speech = selectedAme
                 ? MiogramLocale.get(
-                "Привіт! Я Аме ໒꒱. Допоможу тобі налаштувати затишний Amegram, знайти треки або просто побалакати.",
-                "Привет! Я Аме ໒꒱. Помогу настроить уютный Amegram, найти треки или просто поболтать.",
-                "Hi! I'm Ame ໒꒱. I'll help you set up cozy Amegram, find tracks or just hang out.")
+                "Привіт! Я Аме ໒꒱. Допоможу тобі налаштувати затишний Amegram, розібратися з фішками та персоналізувати клієнт.",
+                "Привет! Я Аме ໒꒱. Помогу настроить уютный Amegram, разобраться с фишками и персонализировать клиент.",
+                "Hi! I'm Ame ໒꒱. I'll help you set up cozy Amegram, explore key features, and customize your app.")
                 : MiogramLocale.get(
-                "†Внеси пожертву у світлі!† Я Кангель ✧. Зробимо твій клієнт найяскравішим та найшвидшим у Всесвіті!",
-                "†Вознеси молитву во славу!† Я Кангель ✧. Сделаем твой клиент самым ярким и быстрым во Вселенной!",
-                "†Pray to the light!† I am KAngel ✧. Let's make your client the brightest and fastest in the universe!");
+                "†Внеси пожертву у світлі!† Я Кангель ✧. Зробимо твій клієнт найяскравішим та найпотужнішим у Всесвіті!",
+                "†Вознеси молитву во славу!† Я Кангель ✧. Сделаем твой клиент самым ярким и мощным во Вселенной!",
+                "†Pray to the light!† I am KAngel ✧. Let's make your client the brightest and most powerful in the universe!");
 
         updateCharacterState(
                 selectedAme ? R.drawable.miogram_ai_ame_happy : R.drawable.miogram_ai_kangel_happy,
@@ -304,7 +316,7 @@ public class AmegramGuideSheet extends BottomSheet {
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(textColor);
-        title.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(12));
+        title.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(12));
         layout.addView(title);
 
         LinearLayout cardsRow = new LinearLayout(context);
@@ -358,7 +370,7 @@ public class AmegramGuideSheet extends BottomSheet {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
         card.setGravity(Gravity.CENTER_HORIZONTAL);
-        card.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14));
+        card.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
 
         GradientDrawable bg = new GradientDrawable();
         bg.setCornerRadius(AndroidUtilities.dp(16));
@@ -374,11 +386,11 @@ public class AmegramGuideSheet extends BottomSheet {
         ImageView avatar = new ImageView(context);
         avatar.setImageResource(avatarRes);
         avatar.setScaleType(ImageView.ScaleType.FIT_CENTER);
-        card.addView(avatar, LayoutHelper.createLinear(54, 54, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 8));
+        card.addView(avatar, LayoutHelper.createLinear(50, 50, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
 
         TextView nameView = new TextView(context);
         nameView.setText(name);
-        nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
         nameView.setTypeface(AndroidUtilities.bold());
         nameView.setTextColor(isSelected ? accentColor : textColor);
         nameView.setGravity(Gravity.CENTER);
@@ -389,11 +401,11 @@ public class AmegramGuideSheet extends BottomSheet {
         subView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         subView.setTextColor(subTextColor);
         subView.setGravity(Gravity.CENTER);
-        card.addView(subView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+        card.addView(subView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
 
         TextView descView = new TextView(context);
         descView.setText(desc);
-        descView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+        descView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10.5f);
         descView.setTextColor(ColorUtils.setAlphaComponent(textColor, 180));
         descView.setGravity(Gravity.CENTER);
         card.addView(descView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -402,18 +414,18 @@ public class AmegramGuideSheet extends BottomSheet {
     }
 
     /**
-     * STEP 1: Recommended Initial Settings (Visuals & Player)
+     * STEP 1: Аме Профіль & Вітка Спільноти
      */
-    private void renderStepSettings(Context context) {
+    private void renderStepAmeProfile(Context context) {
         String speech = selectedAme
                 ? MiogramLocale.get(
-                "Тут я зібрала найкращі візуальні налаштування Amegram: плавний плеєр, обкладинки та текст пісень.",
-                "Здесь я собрала лучшие визуальные настройки Amegram: плавный плеер, обложки и текст песен.",
-                "Here are the best visual tweaks for Amegram: smooth player, rounded covers, synced lyrics.")
+                "Твій профіль тепер живий! Редагуй кожну деталь через чистий XML-код або публікуй його у вітку @dkamegram, щоб інші могли встановити твій вигляд.",
+                "Твой профиль теперь живой! Редактируй каждую деталь через чистый XML-код или публикуй его в ветку @dkamegram, чтобы другие могли установить твой вид.",
+                "Your profile is alive! Customize everything via clean live XML, export it, or share in our community topic so others can use your style.")
                 : MiogramLocale.get(
-                "†Сяйво естетики!† Обери радіус карток, біжучий рядок та насолоджуйся топовим дизайном!",
-                "†Сияние эстетики!† Выбери радиус карточек, бегущую строку и наслаждайся топовым дизайном!",
-                "†Aesthetic glow!† Pick cover curve, marquee text and enjoy stellar design!");
+                "†Божественний стиль!† Ховай зайві рядки, налаштовуй неонові рамки, кольори та імпортуй готові XML-дизайни з нашої вітки!",
+                "†Божественный стиль!† Скрывай лишние строки, настраивай неоновые рамки, цвета и импортируй готовые XML-дизайны из нашей ветки!",
+                "†Aesthetic perfection!† Hide elements, customize glowing rings, colors, or import ready-to-use XML profiles from our community topic!");
 
         updateCharacterState(
                 selectedAme ? R.drawable.miogram_ai_ame_talk : R.drawable.miogram_ai_kangel_pray,
@@ -424,38 +436,315 @@ public class AmegramGuideSheet extends BottomSheet {
         layout.setOrientation(LinearLayout.VERTICAL);
 
         TextView title = new TextView(context);
-        title.setText(MiogramLocale.get("Рекомендовані перші налаштування", "Рекомендуемые первые настройки", "Recommended initial settings"));
+        title.setText(MiogramLocale.get("Аме профіль & XML-дизайн ໒꒱", "Аме профиль & XML-дизайн ໒꒱", "Ame Profile & Live XML ໒꒱"));
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(textColor);
-        title.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(10));
+        title.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(8));
         layout.addView(title);
 
-        // Setting 1: Player Cover Corner Radius Preset (Rounded Modern)
+        // Preview Card
+        LinearLayout codeCard = new LinearLayout(context);
+        codeCard.setOrientation(LinearLayout.VERTICAL);
+        codeCard.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+        GradientDrawable cardBg = new GradientDrawable();
+        cardBg.setColor(cardBgColor);
+        cardBg.setCornerRadius(AndroidUtilities.dp(14));
+        codeCard.setBackground(cardBg);
+
+        TextView xmlPreview = new TextView(context);
+        xmlPreview.setText(
+                "<ame-profile version=\"1.0\">\n" +
+                "  <banner mode=\"blur\" alpha=\"85\" />\n" +
+                "  <avatar shape=\"circle\" ring-pulse=\"true\" />\n" +
+                "  <visibility hide-phone=\"true\" />\n" +
+                "</ame-profile>"
+        );
+        xmlPreview.setTypeface(Typeface.MONOSPACE);
+        xmlPreview.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        xmlPreview.setTextColor(0xFF80D8FF);
+        codeCard.addView(xmlPreview);
+
+        TextView expText = new TextView(context);
+        expText.setText(MiogramLocale.get(
+                "• Прямий експорт та імпорт конфігурації у форматі XML\n• Можливість ховати номер, юзернейм або біо\n• Обмін профілями у вітці спільноти",
+                "• Прямой экспорт и импорт конфигурации в формате XML\n• Возможность скрывать номер, юзернейм или био\n• Обмен профилями в ветке сообщества",
+                "• Direct XML configuration export & import\n• Hide phone, username or bio rows seamlessly\n• Profile sharing in community topic"
+        ));
+        expText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        expText.setTextColor(textColor);
+        expText.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(4));
+        codeCard.addView(expText);
+
+        layout.addView(codeCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        // Action Buttons Row
+        LinearLayout btnRow = new LinearLayout(context);
+        btnRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        TextView openXmlBtn = new TextView(context);
+        openXmlBtn.setText(MiogramLocale.get("Відкрити Аме профіль", "Открыть Аме профиль", "Open Ame Profile"));
+        openXmlBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        openXmlBtn.setTypeface(AndroidUtilities.bold());
+        openXmlBtn.setTextColor(Color.WHITE);
+        openXmlBtn.setGravity(Gravity.CENTER);
+        GradientDrawable openXmlBg = new GradientDrawable();
+        openXmlBg.setColor(accentColor);
+        openXmlBg.setCornerRadius(AndroidUtilities.dp(12));
+        openXmlBtn.setBackground(openXmlBg);
+        openXmlBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
+        openXmlBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            new MiogramAmeProfileSheet(context).show();
+        });
+        btnRow.addView(openXmlBtn, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1.0f));
+
+        TextView topicBtn = new TextView(context);
+        topicBtn.setText(MiogramLocale.get("Вітка @dkamegram", "Ветка @dkamegram", "Topic @dkamegram"));
+        topicBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        topicBtn.setTypeface(AndroidUtilities.bold());
+        topicBtn.setTextColor(textColor);
+        topicBtn.setGravity(Gravity.CENTER);
+        GradientDrawable topicBg = new GradientDrawable();
+        topicBg.setColor(ColorUtils.blendARGB(cardBgColor, 0xFFFFFFFF, 0.1f));
+        topicBg.setCornerRadius(AndroidUtilities.dp(12));
+        topicBtn.setBackground(topicBg);
+        topicBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
+        topicBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            Browser.openUrl(context, MiogramAmeProfileEngine.COMMUNITY_TOPIC_URL);
+        });
+        btnRow.addView(topicBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
+
+        layout.addView(btnRow);
+        stepContentContainer.addView(layout);
+    }
+
+    /**
+     * STEP 2: Хмарне Сховище у Топіках
+     */
+    private void renderStepCloudVault(Context context) {
+        String speech = selectedAme
+                ? MiogramLocale.get(
+                "Більше ніякого безладу! Хмарне сховище створює приватний форум-чат, де всі файли шифруються AES-256 і акуратно сортуються по топіках.",
+                "Больше никакого беспорядка! Облачное хранилище создает приватный форум-чат, где файлы шифруются AES-256 и сортируются по топикам.",
+                "No more mess in Saved Messages! Cloud Vault creates a private forum chat where files are encrypted via AES-256 and sorted into topics.")
+                : MiogramLocale.get(
+                "†Нескінченна приватна хмара!† Файли будь-якого розміру нарізаються на чанки і зберігаються в окремих темах без витрати пам'яті телефону!",
+                "†Бесконечное приватное облако!† Файлы любого размера нарезаются на чанки и хранятся в отдельных темах без траты памяти телефона!",
+                "†Unlimited private vault!† Files of any size are chunked and secured in forum topics with zero local disk footprint!");
+
+        updateCharacterState(
+                selectedAme ? R.drawable.miogram_ai_ame_happy : R.drawable.miogram_ai_kangel_happy,
+                speech
+        );
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        TextView title = new TextView(context);
+        title.setText(MiogramLocale.get("Хмарне сховище у топіках", "Облачное хранилище в топиках", "Cloud Vault in Forum Topics"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(textColor);
+        title.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(8));
+        layout.addView(title);
+
+        String[] topicNames = {"Загальне", "Медіа", "Документи", "Архіви"};
+        String[] topicDescs = {
+                MiogramLocale.get("Швидкі замітки та довільні файли", "Быстрые заметки и любые файлы", "Quick notes & mixed files"),
+                MiogramLocale.get("Фотографії, музика та повні відео", "Фотографии, музыка и видео", "Photos, music & full videos"),
+                MiogramLocale.get("Робочі документи, проекти та код", "Рабочие документы, проекты и код", "Office documents & project code"),
+                MiogramLocale.get("ZIP/TAR архіви з безпечною нарізкою", "ZIP/TAR архивы с нарезкой на чанки", "ZIP/TAR multi-part archives")
+        };
+        int[] colors = {0xFF4CAF50, 0xFFE53935, 0xFF3390EC, 0xFFFB8C00};
+
+        for (int i = 0; i < topicNames.length; i++) {
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
+            GradientDrawable bg = new GradientDrawable();
+            bg.setColor(cardBgColor);
+            bg.setCornerRadius(AndroidUtilities.dp(12));
+            row.setBackground(bg);
+
+            View dot = new View(context);
+            GradientDrawable dotBg = new GradientDrawable();
+            dotBg.setShape(GradientDrawable.OVAL);
+            dotBg.setColor(colors[i]);
+            dot.setBackground(dotBg);
+            row.addView(dot, LayoutHelper.createLinear(10, 10, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+
+            LinearLayout col = new LinearLayout(context);
+            col.setOrientation(LinearLayout.VERTICAL);
+
+            TextView nView = new TextView(context);
+            nView.setText(topicNames[i]);
+            nView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            nView.setTypeface(AndroidUtilities.bold());
+            nView.setTextColor(textColor);
+            col.addView(nView);
+
+            TextView dView = new TextView(context);
+            dView.setText(topicDescs[i]);
+            dView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+            dView.setTextColor(subTextColor);
+            col.addView(dView);
+
+            row.addView(col, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+            layout.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+        }
+
+        stepContentContainer.addView(layout);
+    }
+
+    /**
+     * STEP 3: Плагіни та Маркет (Опціональний вибір)
+     */
+    private void renderStepPlugins(Context context) {
+        String speech = selectedAme
+                ? MiogramLocale.get(
+                "Плагіни тепер тільки за твоїм бажанням! Ознайомся зі списком і вибери лише те, що тобі потрібно, або завантаж розширення пізніше з Маркету.",
+                "Плагины теперь только по твоему желанию! Ознакомься со списком и выбери лишь то, что нужно, или установи расширения позже из Маркета.",
+                "Plugins are now strictly opt-in! Select which ones you want installed right now, or download them later from the in-app Market.")
+                : MiogramLocale.get(
+                "†Повний контроль розширень!† Boykisser, PetPet, Custom Profile чи Localizer — увімкни улюблені фішки в один тап!",
+                "†Полный контроль расширений!† Boykisser, PetPet, Custom Profile или Localizer — включи любимые фишки в один тап!",
+                "†Complete plugin freedom!† Boykisser, PetPet, Custom Profile or Localizer — enable your favorite extensions with 1 tap!");
+
+        updateCharacterState(
+                selectedAme ? R.drawable.miogram_ai_ame_talk : R.drawable.miogram_ai_kangel_happy,
+                speech
+        );
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        TextView title = new TextView(context);
+        title.setText(MiogramLocale.get("Плагіни та Маркет ໒꒱", "Плагины и Маркет ໒꒱", "Plugins & Market ໒꒱"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(textColor);
+        title.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(8));
+        layout.addView(title);
+
+        pluginCheckBoxes.clear();
+        pluginEntries.clear();
+        pluginEntries.addAll(MiogramPluginsMarket.getCatalog());
+
+        for (int i = 0; i < pluginEntries.size(); i++) {
+            MiogramPluginsMarket.MarketPluginEntry entry = pluginEntries.get(i);
+            boolean already = MiogramPluginsMarket.isInstalled(entry);
+
+            LinearLayout card = new LinearLayout(context);
+            card.setOrientation(LinearLayout.HORIZONTAL);
+            card.setGravity(Gravity.CENTER_VERTICAL);
+            card.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
+
+            GradientDrawable cardBg = new GradientDrawable();
+            cardBg.setColor(cardBgColor);
+            cardBg.setCornerRadius(AndroidUtilities.dp(12));
+            card.setBackground(cardBg);
+
+            LinearLayout textCol = new LinearLayout(context);
+            textCol.setOrientation(LinearLayout.VERTICAL);
+
+            TextView nameText = new TextView(context);
+            nameText.setText(entry.title + " (" + entry.category + ")");
+            nameText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            nameText.setTypeface(AndroidUtilities.bold());
+            nameText.setTextColor(textColor);
+            textCol.addView(nameText);
+
+            TextView descText = new TextView(context);
+            descText.setText(entry.getDescription());
+            descText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
+            descText.setTextColor(subTextColor);
+            textCol.addView(descText);
+
+            card.addView(textCol, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1.0f));
+
+            CheckBox cb = new CheckBox(context);
+            cb.setChecked(already);
+            card.addView(cb, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 6, 0, 0, 0));
+            pluginCheckBoxes.add(cb);
+
+            card.setOnClickListener(v -> {
+                MiogramHaptic.select(v);
+                cb.setChecked(!cb.isChecked());
+            });
+
+            layout.addView(card, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+        }
+
+        // Button to open full market
+        TextView marketBtn = new TextView(context);
+        marketBtn.setText(MiogramLocale.get("Відкрити Маркет плагінів ໒꒱", "Открыть Маркет плагинов ໒꒱", "Open Plugins Market ໒꒱"));
+        marketBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        marketBtn.setTypeface(AndroidUtilities.bold());
+        marketBtn.setTextColor(accentColor);
+        marketBtn.setGravity(Gravity.CENTER);
+        marketBtn.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(6), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
+        marketBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            new MiogramPluginCatalogAlert(getParentActivity() != null ? getParentActivity() : null).show();
+        });
+        layout.addView(marketBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
+
+        stepContentContainer.addView(layout);
+    }
+
+    /**
+     * STEP 4: Discord UI & Рідке Скло (AGSL)
+     */
+    private void renderStepDiscordAndGlass(Context context) {
+        String speech = selectedAme
+                ? MiogramLocale.get(
+                "Насолоджуйся фірмовим стилем: вигляд серверів Discord із зручними бічними каналами та надзвичайно плавне рідке скло AGSL.",
+                "Наслаждайся фирменным стилем: вид серверов Discord с удобными боковыми каналами и потрясающе плавное жидкое стекло AGSL.",
+                "Experience our signature aesthetics: Discord server navigation and real-time AGSL liquid glassmorphism.")
+                : MiogramLocale.get(
+                "†Кібер-естетика майбутнього!† Вмикай магію рідкого скла, Discord-тему та насолоджуйся топовою швидкістю!",
+                "†Кибер-эстетика будущего!† Включай магию жидкого стекла, Discord-тему и наслаждайся топовой скоростью!",
+                "†Futuristic cyber aesthetic!† Turn on liquid frosted glass, Discord theme and enjoy supreme smoothness!");
+
+        updateCharacterState(
+                selectedAme ? R.drawable.miogram_ai_ame_talk : R.drawable.miogram_ai_kangel_pray,
+                speech
+        );
+
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+
+        TextView title = new TextView(context);
+        title.setText(MiogramLocale.get("Інтерфейс Discord & Рідке скло", "Интерфейс Discord & Жидкое стекло", "Discord UI & Liquid Frosted Glass"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(textColor);
+        title.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(8));
+        layout.addView(title);
+
+        // Feature 1: Discord UI
         layout.addView(createSettingToggleCard(
                 context,
-                MiogramLocale.get("Закруглені обкладинки плеєра (20dp)", "Закруглённые обложки плеера (20dp)", "Rounded player covers (20dp)"),
-                MiogramLocale.get("Сучасний стиль із м'якими кутами замість гострих квадратів", "Современный стиль с мягкими углами вместо острых", "Modern aesthetic with soft corners"),
-                MiogramPlayerPrefs.getCoverCornerRadius() >= 16,
-                enabled -> MiogramPlayerPrefs.setCoverCornerRadius(enabled ? 20 : 6)
+                MiogramLocale.get("Інтерфейс у стилі Discord", "Интерфейс в стиле Discord", "Discord-style Interface"),
+                MiogramLocale.get("Зручна бічна панель серверів та вертикальний список каналів", "Удобная боковая панель серверов и каналов", "Server sidebar and vertical channels layout"),
+                MiogramDiscordLayout.isDiscordUiEnabled(),
+                enabled -> MiogramDiscordLayout.setDiscordUiEnabled(enabled)
         ));
 
-        // Setting 2: Marquee scrolling title
+        // Feature 2: AGSL Liquid Glass
         layout.addView(createSettingToggleCard(
                 context,
-                MiogramLocale.get("Біжучий рядок для довгих назв треків", "Бегущая строка для длинных названий треков", "Marquee scrolling for track titles"),
-                MiogramLocale.get("Назва пісні плавно прокручується без обрізання", "Название трека плавно скроллится без обрезки", "Long track names scroll smoothly"),
-                MiogramPlayerPrefs.isTitleMarqueeEnabled(),
-                MiogramPlayerPrefs::setTitleMarqueeEnabled
-        ));
-
-        // Setting 3: Synced Lyrics Glow
-        layout.addView(createSettingToggleCard(
-                context,
-                MiogramLocale.get("Неонове сяйво активного рядка тексту пісні", "Неоновое свечение активной строки караоке", "Neon glow on active lyrics line"),
-                MiogramLocale.get("М'яке підсвічування тексту в такт музиці", "Мягкая подсветка текста в такт музыке", "Soft glowing aura on singing lines"),
-                MiogramPlayerPrefs.isLyricsActiveGlow(),
-                MiogramPlayerPrefs::setLyricsActiveGlow
+                MiogramLocale.get("Ефект рідкого скла AGSL", "Эффект жидкого стекла AGSL", "AGSL Liquid Frosted Glass"),
+                MiogramLocale.get("Глибоке шейдерне розмиття та світлові відблиски на панелях", "Глубокое шейдерное размытие и блики на панелях", "Real-time AGSL blur and specular glass reflections"),
+                MiogramVisualsPrefs.loadBool(context, "agsl_enabled", true),
+                enabled -> {
+                    MiogramFlags.setSpatialDecoration(enabled);
+                    MiogramVisualsPrefs.saveBool(context, "agsl_enabled", enabled);
+                }
         ));
 
         stepContentContainer.addView(layout);
@@ -513,198 +802,20 @@ public class AmegramGuideSheet extends BottomSheet {
         void onToggle(boolean enabled);
     }
 
-    /**
-     * STEP 2: Gemini AI API Key Prompt
-     */
-    private void renderStepApiKey(Context context) {
-        String speech = selectedAme
-                ? MiogramLocale.get(
-                "Щоб я могла розпізнавати голосові, писати тобі та виконувати дії, введи безкоштовний ключ Gemini!",
-                "Чтобы я могла распознавать голосовые, писать тебе и выполнять действия, введи бесплатный ключ Gemini!",
-                "To let me transcribe voice notes, chat with you and run tools, add a free Gemini key!")
-                : MiogramLocale.get(
-                "†Божественний розум!† Ключ Gemini живить мій інтелект і стріми. Візьми його безкоштовно в Google AI Studio!",
-                "†Божественный разум!† Ключ Gemini питает мой интеллект и стримы. Получи его бесплатно в Google AI Studio!",
-                "†Divine intelligence!† Gemini key powers my intellect and streams. Grab one free in Google AI Studio!");
-
-        updateCharacterState(
-                selectedAme ? R.drawable.miogram_ai_ame_game : R.drawable.miogram_ai_kangel_happy,
-                speech
-        );
-
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-
-        TextView title = new TextView(context);
-        title.setText(MiogramLocale.get("Ключ Gemini для ШІ-супутниці", "Ключ Gemini для ИИ-спутницы", "Gemini Key for AI Companion"));
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        title.setTypeface(AndroidUtilities.bold());
-        title.setTextColor(textColor);
-        title.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
-        layout.addView(title);
-
-        TextView desc = new TextView(context);
-        desc.setText(MiogramLocale.get(
-                "Google надає безкоштовні API-ключі без обмеження за часом для особистого користування. Ключ зберігається лише на твоєму пристрої.",
-                "Google предоставляет бесплатные API-ключи без ограничения по времени. Ключ хранится только на твоём устройстве.",
-                "Google provides free Gemini API keys for personal use. Keys are kept securely on your device."
-        ));
-        desc.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        desc.setTextColor(subTextColor);
-        desc.setPadding(0, 0, 0, AndroidUtilities.dp(12));
-        layout.addView(desc);
-
-        // Action button to open Google AI Studio
-        TextView getKeyBtn = new TextView(context);
-        getKeyBtn.setText(MiogramLocale.get("🌐 Отримати ключ (Google AI Studio)", "🌐 Получить ключ (Google AI Studio)", "🌐 Get Key (Google AI Studio)"));
-        getKeyBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        getKeyBtn.setTypeface(AndroidUtilities.bold());
-        getKeyBtn.setTextColor(accentColor);
-        getKeyBtn.setGravity(Gravity.CENTER);
-        GradientDrawable getKeyBg = new GradientDrawable();
-        getKeyBg.setColor(ColorUtils.blendARGB(cardBgColor, accentColor, 0.15f));
-        getKeyBg.setCornerRadius(AndroidUtilities.dp(12));
-        getKeyBg.setStroke(AndroidUtilities.dp(1), ColorUtils.setAlphaComponent(accentColor, 100));
-        getKeyBtn.setBackground(getKeyBg);
-        getKeyBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
-        getKeyBtn.setOnClickListener(v -> {
-            MiogramHaptic.tap(v);
-            try {
-                Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://aistudio.google.com/app/apikey"));
-                context.startActivity(browserIntent);
-            } catch (Throwable ignore) {}
-        });
-        layout.addView(getKeyBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
-
-        // Input field
-        apiKeyInput = new EditText(context);
-        apiKeyInput.setHint(MiogramLocale.get("Встав ключ (AIzaSy...)", "Вставь ключ (AIzaSy...)", "Paste key (AIzaSy...)"));
-        apiKeyInput.setHintTextColor(0x66FFFFFF);
-        apiKeyInput.setTextColor(0xFFFFFFFF);
-        apiKeyInput.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        apiKeyInput.setSingleLine(true);
-        apiKeyInput.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
-        GradientDrawable inputBg = new GradientDrawable();
-        inputBg.setColor(cardBgColor);
-        inputBg.setCornerRadius(AndroidUtilities.dp(12));
-        inputBg.setStroke(AndroidUtilities.dp(1), 0x33FFFFFF);
-        apiKeyInput.setBackground(inputBg);
-
-        String currentKey = MiogramAiService.getApiKey();
-        if (!TextUtils.isEmpty(currentKey)) {
-            apiKeyInput.setText(currentKey);
-        }
-        layout.addView(apiKeyInput, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
-
-        if (MiogramAiService.hasApiKey()) {
-            TextView statusOk = new TextView(context);
-            statusOk.setText(MiogramLocale.get("✓ Ключ вже налаштовано і готовий до роботи!", "✓ Ключ уже настроен и готов к работе!", "✓ API Key is already configured and ready!"));
-            statusOk.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            statusOk.setTextColor(0xFF34C759);
-            statusOk.setPadding(AndroidUtilities.dp(4), 0, 0, 0);
-            layout.addView(statusOk);
-        }
-
-        stepContentContainer.addView(layout);
-    }
-
-    /**
-     * STEP 3: Connected Ecosystem & Finish
-     */
-    private void renderStepEcosystem(Context context) {
-        String speech = selectedAme
-                ? MiogramLocale.get(
-                "Все готово! Amegram тепер підключено до нашого хмарного мосту та екосистеми. Ласкаво просимо ໒꒱",
-                "Всё готово! Amegram теперь подключён к нашему облачному мосту и экосистеме. Добро пожаловать ໒꒱",
-                "All done! Amegram is connected to our cloud bridge and ecosystem. Welcome aboard ໒꒱")
-                : MiogramLocale.get(
-                "†БЛАГОСЛОВЕННЯ!† Твій Amegram на повній потужності! Сяй разом зі мною у всесвіті!",
-                "†БЛАГОСЛОВЕНИЕ!† Твой Amegram на полной мощности! Сияй вместе со мной во вселенной!",
-                "†BLESSING!† Your Amegram is at full power! Shine with me in the cyberspace!");
-
-        updateCharacterState(
-                selectedAme ? R.drawable.miogram_ai_ame_happy : R.drawable.miogram_ai_kangel_happy,
-                speech
-        );
-
-        LinearLayout layout = new LinearLayout(context);
-        layout.setOrientation(LinearLayout.VERTICAL);
-
-        TextView title = new TextView(context);
-        title.setText(MiogramLocale.get("Єдина екосистема Amegram", "Единая экосистема Amegram", "Amegram Connected Ecosystem"));
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        title.setTypeface(AndroidUtilities.bold());
-        title.setTextColor(textColor);
-        title.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(8));
-        layout.addView(title);
-
-        layout.addView(createServiceItem(
-                context,
-                "TikTok MI",
-                MiogramLocale.get("Оригінальні відео 9:16 HD, лайки, підписки та коментарі прямо в клієнті.",
-                        "Оригинальные видео 9:16 HD, лайки, подписки и комментарии прямо в клиенте.",
-                        "Native 9:16 HD videos, likes, subscriptions and comments in-app.")
-        ));
-
-        layout.addView(createServiceItem(
-                context,
-                "Steam, Discord, Spotify & GitHub",
-                MiogramLocale.get("Хмарне збереження статусів, присутність у реальному часі та авто-відновлення.",
-                        "Облачное сохранение статусов, присутствие в реальном времени и авто-восстановление.",
-                        "Cloud presence persistence, real-time rich presence and auto-recovery.")
-        ));
-
-        layout.addView(createServiceItem(
-                context,
-                "YouTube Music & Пошук треків",
-                MiogramLocale.get("Миттєве завантаження у 'Збережені' та пряма відправка в топіки форумів.",
-                        "Мгновенное скачивание в 'Избранное' и прямая отправка в топики форумов.",
-                        "Instant download to Cloud and direct routing to forum topics.")
-        ));
-
-        stepContentContainer.addView(layout);
-    }
-
-    private LinearLayout createServiceItem(Context context, String name, String desc) {
-        LinearLayout row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(cardBgColor);
-        bg.setCornerRadius(AndroidUtilities.dp(12));
-        row.setBackground(bg);
-
-        LinearLayout col = new LinearLayout(context);
-        col.setOrientation(LinearLayout.VERTICAL);
-
-        TextView nameView = new TextView(context);
-        nameView.setText(name);
-        nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
-        nameView.setTypeface(AndroidUtilities.bold());
-        nameView.setTextColor(textColor);
-        col.addView(nameView);
-
-        TextView descView = new TextView(context);
-        descView.setText(desc);
-        descView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
-        descView.setTextColor(subTextColor);
-        col.addView(descView);
-
-        row.addView(col, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
-        lp.bottomMargin = AndroidUtilities.dp(8);
-        row.setLayoutParams(lp);
-        return row;
-    }
-
     private void handleNextAction() {
-        if (currentStep == 2 && apiKeyInput != null) {
-            String entered = apiKeyInput.getText() != null ? apiKeyInput.getText().toString().trim() : "";
-            if (!TextUtils.isEmpty(entered)) {
-                MiogramAiService.setApiKey(entered);
-                Toast.makeText(getContext(), MiogramLocale.get("Ключ Gemini збережено!", "Ключ Gemini сохранён!", "Gemini key saved!"), Toast.LENGTH_SHORT).show();
+        if (currentStep == 3) {
+            // Apply selected plugins from step 3
+            Context context = getContext();
+            for (int i = 0; i < pluginEntries.size(); i++) {
+                if (i < pluginCheckBoxes.size()) {
+                    MiogramPluginsMarket.MarketPluginEntry entry = pluginEntries.get(i);
+                    CheckBox cb = pluginCheckBoxes.get(i);
+                    if (cb.isChecked()) {
+                        MiogramPluginsMarket.installPlugin(context, entry);
+                    } else if (MiogramPluginsMarket.isInstalled(entry)) {
+                        MiogramPluginsMarket.uninstallPlugin(entry);
+                    }
+                }
             }
         }
 
@@ -724,7 +835,9 @@ public class AmegramGuideSheet extends BottomSheet {
     }
 
     private void finishOnboarding() {
+        MiogramCompanionPrefs.setGuideShownVersion(BuildVars.BUILD_VERSION_STRING);
         MiogramCompanionPrefs.setOnboardingCompleted(true);
+        MiogramPluginsMarket.markOnboardingDone(getContext());
         dismiss();
     }
 }

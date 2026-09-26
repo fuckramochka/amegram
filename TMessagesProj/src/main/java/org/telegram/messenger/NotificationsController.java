@@ -5641,6 +5641,7 @@ public class NotificationsController extends BaseController implements Notificat
                     .setContentIntent(contentIntent)
                     .extend(wearableExtender)
                     .setSortKey(String.valueOf(Long.MAX_VALUE - date))
+                    .setOnlyAlertOnce(true)
                     .setCategory(NotificationCompat.CATEGORY_MESSAGE);
 
             try {

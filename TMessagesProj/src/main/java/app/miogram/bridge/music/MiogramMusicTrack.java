@@ -10,7 +10,7 @@ public class MiogramMusicTrack {
     public enum Source {
         TELEGRAM("Telegram Cloud", 0xFF0088CC),
         YOUTUBE_MUSIC("YouTube Music", 0xFFFF0000),
-        DEEZER("Deezer HQ", 0xFFFF0055),
+        DEEZER("Deezer", 0xFF8E24AA),
         ITUNES("iTunes / Apple", 0xFFFA2D48),
         JAMENDO("Jamendo HQ", 0xFF9B59B6),
         AUDIUS("Audius Hi-Fi", 0xFFCC33CC);
@@ -36,6 +36,7 @@ public class MiogramMusicTrack {
     public Source source;
     public MessageObject telegramMessage;
     public File localFile;
+    public String lyrics;
 
     // Download state tracking
     public boolean isDownloading = false;

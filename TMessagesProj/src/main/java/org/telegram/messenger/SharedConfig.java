@@ -1478,6 +1478,10 @@ public class SharedConfig {
             enable = false;
         }
 
+        try {
+            tw.nekomimi.nekogram.utils.ProxyUtil.onUserToggledProxy(enable);
+        } catch (Throwable ignore) {}
+
         SharedPreferences preferences = MessagesController.getGlobalMainSettings();
         preferences.edit().putBoolean("proxy_enabled", enable).apply();
 

@@ -530,6 +530,48 @@ public class MiogramCloudVaultEngine {
         });
     }
 
+    public static void getOrCreateSystemTopic(int currentAccount, long chatId, String title, Utilities.Callback<Integer> callback) {
+        if (chatId == 0) {
+            if (callback != null) callback.run(0);
+            return;
+        }
+        TopicsController tc = MessagesController.getInstance(currentAccount).getTopicsController();
+        ArrayList<TLRPC.TL_forumTopic> topics = tc.getTopics(chatId);
+        if (topics != null) {
+            for (TLRPC.TL_forumTopic t : topics) {
+                if (t != null && title.equalsIgnoreCase(t.title)) {
+                    if (callback != null) callback.run(t.id);
+                    return;
+                }
+            }
+        }
+        TL_forum.TL_messages_createForumTopic req = new TL_forum.TL_messages_createForumTopic();
+        req.peer = MessagesController.getInstance(currentAccount).getInputPeer(-chatId);
+        req.title = title;
+        req.random_id = Utilities.random.nextLong();
+        req.icon_color = 0x607D8B;
+        req.flags |= 1;
+
+        ConnectionsManager.getInstance(currentAccount).sendRequest(req, (response, error) -> {
+            AndroidUtilities.runOnUIThread(() -> {
+                int topicId = 0;
+                if (response instanceof TLRPC.Updates) {
+                    TLRPC.Updates updates = (TLRPC.Updates) response;
+                    MessagesController.getInstance(currentAccount).processUpdates(updates, false);
+                    for (TLRPC.Update u : updates.updates) {
+                        if (u instanceof TLRPC.TL_updateNewChannelMessage) {
+                            TLRPC.TL_updateNewChannelMessage uncm = (TLRPC.TL_updateNewChannelMessage) u;
+                            if (uncm.message != null && uncm.message.action instanceof TLRPC.TL_messageActionTopicCreate) {
+                                topicId = uncm.message.id;
+                            }
+                        }
+                    }
+                }
+                if (callback != null) callback.run(topicId);
+            });
+        });
+    }
+
     // --- Memory Cache & File Registry ---
 
     public static void registerFile(MiogramCloudVaultFile file) {
@@ -539,10 +581,20 @@ public class MiogramCloudVaultEngine {
         }
     }
 
+    public static boolean isSystemHiddenTopic(String title) {
+        if (title == null) return false;
+        String t = title.trim();
+        return t.startsWith("__") || t.startsWith(".") || t.startsWith("[hidden]") || t.startsWith("[system]") || t.startsWith("#sys");
+    }
+
     public static ArrayList<MiogramCloudVaultFile> getFilesForTopic(long topicId) {
         ArrayList<MiogramCloudVaultFile> list = new ArrayList<>();
         for (MiogramCloudVaultFile f : memoryFiles.values()) {
-            if (topicId == 0 || f.topicId == topicId) {
+            if (topicId == 0) {
+                if (!isSystemHiddenTopic(f.topicName)) {
+                    list.add(f);
+                }
+            } else if (f.topicId == topicId) {
                 list.add(f);
             }
         }

@@ -3854,7 +3854,21 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         }
         req.add_to_recent = addToRecent;
         if (addToRecent && addedReaction != null) {
-            MediaDataController.getInstance(currentAccount).recentReactions.add(0, ReactionsUtils.toTLReaction(addedReaction));
+            TLRPC.Reaction tlReaction = ReactionsUtils.toTLReaction(addedReaction);
+            if (tlReaction != null) {
+                ArrayList<TLRPC.Reaction> list = MediaDataController.getInstance(currentAccount).getRecentReactions();
+                for (int i = 0; i < list.size(); i++) {
+                    TLRPC.Reaction r = list.get(i);
+                    if (ReactionsUtils.compare(r, tlReaction)) {
+                        list.remove(i);
+                        break;
+                    }
+                }
+                list.add(0, tlReaction);
+                while (list.size() > 50) {
+                    list.remove(list.size() - 1);
+                }
+            }
         }
         if (visibleReactions != null && !visibleReactions.isEmpty()) {
             for (int i = 0; i < visibleReactions.size(); i++ ) {

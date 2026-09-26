@@ -10833,6 +10833,14 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (userId == 0) return;
         TLRPC.User user = getMessagesController().getUser(userId);
         boolean isSelf = user != null && UserObject.isUserSelf(user);
+        if (app.exteraless.plugins.PluginsController.getInstance().isPluginActive("Custom Profile")) {
+            hasSteamCard = false;
+            updateRowsIds();
+            if (listAdapter != null) {
+                listAdapter.notifyDataSetChanged();
+            }
+            return;
+        }
         if (isSelf) {
             hasSteamCard = true;
             this.steamProfile = MiogramSteamManager.getInstance().getSelfProfile();
@@ -10858,6 +10866,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         app.miogram.bridge.badge.MiogramSupabaseBridge.fetchUserPresence(userId, presence -> {
+            if (app.exteraless.plugins.PluginsController.getInstance().isPluginActive("Custom Profile")) {
+                hasSteamCard = false;
+                return;
+            }
             if (presence != null && presence.isAnyLinked()) {
                 hasSteamCard = true;
                 if (!TextUtils.isEmpty(presence.steamId)) {
@@ -11066,7 +11078,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 musicCardSectionRow = rowCount++;
             }
 
-            if (hasSteamCard) {
+            if (hasSteamCard && !app.exteraless.plugins.PluginsController.getInstance().isPluginActive("Custom Profile")) {
                 steamCardRow = rowCount++;
             }
 

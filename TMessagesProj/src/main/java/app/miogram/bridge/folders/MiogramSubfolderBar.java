@@ -114,7 +114,16 @@ public class MiogramSubfolderBar extends FrameLayout {
         for (int i = 0; i < pillViews.size(); i++) {
             PillView pv = pillViews.get(i);
             int count = 0;
-            if (pv.childFilterId > 0) {
+            if (pv.localSubfolder != null) {
+                for (int j = 0; j < baseList.size(); j++) {
+                    TLRPC.Dialog d = baseList.get(j);
+                    if (d != null && MiogramSubfolderEngine.matchesLocalSubfolder(currentAccount, d, pv.localSubfolder)) {
+                        if (d.unread_count > 0 || d.unread_mentions_count > 0 || d.unread_reactions_count > 0 || d.unread_mark || (mc != null && mc.getDialogUnreadCount(d) > 0)) {
+                            count++;
+                        }
+                    }
+                }
+            } else if (pv.childFilterId > 0) {
                 MessagesController.DialogFilter cf = mc.dialogFiltersById.get(pv.childFilterId);
                 if (cf != null) {
                     count = cf.unreadCount;
@@ -143,6 +152,9 @@ public class MiogramSubfolderBar extends FrameLayout {
             parentFilter = filters.get(currentParentTabId);
         }
 
+        ArrayList<MiogramSubfolderEngine.LocalSubfolder> localSubfolders = MiogramSubfolderEngine.getLocalSubfoldersForParent(currentAccount, parentFilter != null ? parentFilter.id : 0);
+        boolean hasLocalSubfolders = localSubfolders != null && !localSubfolders.isEmpty();
+
         ArrayList<MessagesController.DialogFilter> childFilters = null;
         if (parentFilter != null) {
             childFilters = MiogramSubfolderEngine.getChildFiltersForParent(currentAccount, parentFilter);
@@ -150,13 +162,14 @@ public class MiogramSubfolderBar extends FrameLayout {
         boolean hasChildFilters = childFilters != null && !childFilters.isEmpty();
         boolean showSmart = MiogramSubfolderEngine.isSmartFiltersEnabled();
 
-        if (!hasChildFilters && !showSmart) {
+        if (!hasLocalSubfolders && !hasChildFilters && !showSmart) {
             setVisibility(View.GONE);
             return;
         }
         setVisibility(View.VISIBLE);
 
         int activeChildId = MiogramSubfolderEngine.getActiveChildFilterId(currentAccount);
+        int activeLocalId = MiogramSubfolderEngine.getActiveLocalSubfolderId(currentAccount);
         int activeType = MiogramSubfolderEngine.getActiveSubfolderType(currentAccount);
 
         // Amegram: standard folder tabs already show "All chats" — don't duplicate it here.
@@ -169,18 +182,30 @@ public class MiogramSubfolderBar extends FrameLayout {
         if (!standardTabsVisible) {
             PillView allPill = new PillView(getContext(), 0, MiogramSubfolderEngine.TYPE_ALL,
                     LocaleController.getString(R.string.FilterAllChats), 0);
-            allPill.setSelectedState(activeChildId == 0 && activeType == MiogramSubfolderEngine.TYPE_ALL);
+            allPill.setSelectedState(activeChildId == 0 && activeLocalId == 0 && activeType == MiogramSubfolderEngine.TYPE_ALL);
             pillViews.add(allPill);
             pillsContainer.addView(allPill);
         }
 
-        // 2. Child filters for this parent
+        // 2. Local subfolders for this parent
+        if (hasLocalSubfolders) {
+            for (int i = 0; i < localSubfolders.size(); i++) {
+                MiogramSubfolderEngine.LocalSubfolder ls = localSubfolders.get(i);
+                PillView cp = new PillView(getContext(), 0, MiogramSubfolderEngine.TYPE_ALL, ls.name, R.drawable.msg_folders);
+                cp.setSelectedState(activeLocalId == ls.id);
+                cp.setLocalSubfolder(ls);
+                pillViews.add(cp);
+                pillsContainer.addView(cp);
+            }
+        }
+
+        // 3. Child filters for this parent (legacy cloud filters)
         if (hasChildFilters) {
             for (int i = 0; i < childFilters.size(); i++) {
                 MessagesController.DialogFilter cf = childFilters.get(i);
                 String childTitle = MiogramSubfolderEngine.getChildName(cf.name);
                 PillView cp = new PillView(getContext(), cf.id, MiogramSubfolderEngine.TYPE_ALL, childTitle, R.drawable.msg_folders);
-                cp.setSelectedState(activeChildId == cf.id);
+                cp.setSelectedState(activeChildId == cf.id && activeLocalId == 0);
                 cp.setDialogFilter(cf);
                 pillViews.add(cp);
                 pillsContainer.addView(cp);
@@ -234,8 +259,20 @@ public class MiogramSubfolderBar extends FrameLayout {
         if (dialogsActivity == null) return;
         int currentAccount = dialogsActivity.getCurrentAccount();
 
-        boolean alreadyActive = (pill.childFilterId == MiogramSubfolderEngine.getActiveChildFilterId(currentAccount)
-                && pill.subfolderType == MiogramSubfolderEngine.getActiveSubfolderType(currentAccount));
+        boolean alreadyActive;
+        if (pill.localSubfolder != null) {
+            alreadyActive = (pill.localSubfolder.id == MiogramSubfolderEngine.getActiveLocalSubfolderId(currentAccount));
+            MiogramSubfolderEngine.setActiveLocalSubfolderId(currentAccount, pill.localSubfolder.id);
+            MiogramSubfolderEngine.setActiveChildFilterId(currentAccount, 0);
+            MiogramSubfolderEngine.setActiveSubfolderType(currentAccount, MiogramSubfolderEngine.TYPE_ALL);
+        } else {
+            alreadyActive = (pill.childFilterId == MiogramSubfolderEngine.getActiveChildFilterId(currentAccount)
+                    && pill.subfolderType == MiogramSubfolderEngine.getActiveSubfolderType(currentAccount)
+                    && MiogramSubfolderEngine.getActiveLocalSubfolderId(currentAccount) == 0);
+            MiogramSubfolderEngine.setActiveLocalSubfolderId(currentAccount, 0);
+            MiogramSubfolderEngine.setActiveChildFilterId(currentAccount, pill.childFilterId);
+            MiogramSubfolderEngine.setActiveSubfolderType(currentAccount, pill.subfolderType);
+        }
 
         if (alreadyActive) {
             dialogsActivity.onSubfolderChanged();
@@ -248,9 +285,6 @@ public class MiogramSubfolderBar extends FrameLayout {
             }
         } catch (Exception ignore) {}
 
-        MiogramSubfolderEngine.setActiveChildFilterId(currentAccount, pill.childFilterId);
-        MiogramSubfolderEngine.setActiveSubfolderType(currentAccount, pill.subfolderType);
-
         for (int i = 0; i < pillViews.size(); i++) {
             PillView pv = pillViews.get(i);
             pv.setSelectedState(pv == pill);
@@ -260,6 +294,34 @@ public class MiogramSubfolderBar extends FrameLayout {
     }
 
     private void onPillLongClicked(PillView pill) {
+        if (pill.localSubfolder != null) {
+            Context context = getContext();
+            AlertDialog.Builder builder = new AlertDialog.Builder(context);
+            builder.setTitle(pill.localSubfolder.name);
+            CharSequence[] items = new CharSequence[]{app.miogram.bridge.MiogramLocale.get("Видалити підпапку", "Удалить подпапку", "Delete subfolder")};
+            builder.setItems(items, (dialog, which) -> {
+                AlertDialog.Builder delBuilder = new AlertDialog.Builder(context);
+                delBuilder.setTitle(app.miogram.bridge.MiogramLocale.get("Видалити підпапку?", "Удалить подпапку?", "Delete subfolder?"));
+                delBuilder.setMessage(app.miogram.bridge.MiogramLocale.get("Ви дійсно хочете видалити локальну підпапку '", "Вы действительно хотите удалить локальную подпапку '", "Do you want to delete local subfolder '") + pill.localSubfolder.name + "'?");
+                delBuilder.setPositiveButton(app.miogram.bridge.MiogramLocale.get("Видалити", "Удалить", "Delete"), (d, w) -> {
+                    int currentAccount = dialogsActivity.getCurrentAccount();
+                    MiogramSubfolderEngine.deleteLocalSubfolder(dialogsActivity, currentAccount, pill.localSubfolder.id, () -> {
+                        dialogsActivity.onSubfolderChanged();
+                        refreshPills();
+                    });
+                });
+                delBuilder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                AlertDialog alert = delBuilder.create();
+                alert.show();
+                TextView btn = (TextView) alert.getButton(AlertDialog.BUTTON_POSITIVE);
+                if (btn != null) {
+                    btn.setTextColor(getColor(Theme.key_text_RedBold));
+                }
+            });
+            builder.show();
+            return;
+        }
+
         if (pill.dialogFilter == null || dialogsActivity == null) return;
         Context context = getContext();
         AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -303,6 +365,7 @@ public class MiogramSubfolderBar extends FrameLayout {
         final int childFilterId;
         final int subfolderType;
         MessagesController.DialogFilter dialogFilter;
+        MiogramSubfolderEngine.LocalSubfolder localSubfolder;
 
         private final ImageView iconView;
         private final TextView titleView;
@@ -371,6 +434,10 @@ public class MiogramSubfolderBar extends FrameLayout {
 
         public void setDialogFilter(MessagesController.DialogFilter filter) {
             this.dialogFilter = filter;
+        }
+
+        public void setLocalSubfolder(MiogramSubfolderEngine.LocalSubfolder subfolder) {
+            this.localSubfolder = subfolder;
         }
 
         public void setSelectedState(boolean selected) {

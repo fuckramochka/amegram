@@ -79,12 +79,32 @@ object ProxyUtil {
             capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
     }
 
+    @JvmStatic
+    fun onUserToggledProxy(enabled: Boolean) {
+        if (!enabled) {
+            proxyAutoDisabled = false
+            MessagesController.getGlobalMainSettings().edit()
+                .putBoolean("user_manually_disabled_proxy", true)
+                .apply()
+        } else {
+            MessagesController.getGlobalMainSettings().edit()
+                .putBoolean("user_manually_disabled_proxy", false)
+                .apply()
+        }
+    }
+
     private fun applyProxyDisableConditions(disable: Boolean) {
+        val userManuallyDisabled = MessagesController.getGlobalMainSettings()
+            .getBoolean("user_manually_disabled_proxy", false)
         if (disable) {
             if (!SharedConfig.isProxyEnabled() || SharedConfig.currentProxy == null) return
             proxyAutoDisabled = true
             SharedConfig.setProxyEnable(false)
         } else {
+            if (userManuallyDisabled) {
+                proxyAutoDisabled = false
+                return
+            }
             if (!proxyAutoDisabled) return
             proxyAutoDisabled = false
             if (SharedConfig.isProxyEnabled() || SharedConfig.currentProxy == null) return

@@ -9666,6 +9666,19 @@ public class MediaDataController extends BaseController {
         });
     }
 
+    public void removeRecentReaction(TLRPC.Reaction reaction) {
+        if (reaction == null) return;
+        for (int i = 0; i < recentReactions.size(); i++) {
+            TLRPC.Reaction r = recentReactions.get(i);
+            if (org.telegram.ui.Components.Reactions.ReactionsUtils.compare(r, reaction)) {
+                recentReactions.remove(i);
+                break;
+            }
+        }
+        SharedPreferences recentReactionsPref = ApplicationLoader.applicationContext.getSharedPreferences("recent_reactions_" + currentAccount, Context.MODE_PRIVATE);
+        saveReactionsToPref(recentReactionsPref, recentReactionsPref.getLong("hash", 0), recentReactions);
+    }
+
     public ArrayList<TLRPC.Reaction> getTopReactions() {
         return topReactions;
     }

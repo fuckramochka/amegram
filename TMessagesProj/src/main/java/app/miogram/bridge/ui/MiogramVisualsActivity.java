@@ -41,6 +41,8 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
     private int headerModeRow;
     private int discordUiRow;
     private int customUiRow;
+    private int htmlProfileToggleRow;
+    private int htmlProfileStudioRow;
     private int ameVibeRow;
     private int activeLyricsLineRow;
     private int modeInfoRow;
@@ -74,6 +76,12 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         headerModeRow = addRow();
         discordUiRow = addRow();
         customUiRow = addRow();
+        htmlProfileToggleRow = addRow();
+        if (app.miogram.bridge.htmlprofile.MiogramHtmlProfileEngine.isEnabled()) {
+            htmlProfileStudioRow = addRow();
+        } else {
+            htmlProfileStudioRow = -1;
+        }
         ameVibeRow = addRow();
         activeLyricsLineRow = addRow();
         modeInfoRow = addRow();
@@ -127,6 +135,13 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
             showLayoutModeDialog();
         } else if (position == customUiRow) {
             app.miogram.bridge.customui.MiogramCustomUiActivity.ExtraFeaturesSheet.show(getParentActivity() != null ? getParentActivity() : getContext());
+        } else if (position == htmlProfileToggleRow) {
+            boolean next = !app.miogram.bridge.htmlprofile.MiogramHtmlProfileEngine.isEnabled();
+            app.miogram.bridge.htmlprofile.MiogramHtmlProfileEngine.setEnabled(next);
+            updateRows();
+            listAdapter.notifyDataSetChanged();
+        } else if (position == htmlProfileStudioRow) {
+            presentFragment(new app.miogram.bridge.htmlprofile.MiogramHtmlProfileActivity());
         } else if (position == ameVibeRow) {
             boolean next = !ameVibeEnabled();
             MiogramVisualsPrefs.saveBool(getSafeContext(), "ame_vibe_enabled", next);
@@ -307,6 +322,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
             if (position == headerModeRow || position == headerGlassRow || position == headerAvatarsRow || position == headerUiRow) {
                 return TYPE_HEADER;
             } else if (position == ameVibeRow || position == activeLyricsLineRow
+                    || position == htmlProfileToggleRow
                     || position == glassToggleRow || position == singleCornerRadiusRow
                     || position == senderMiniAvatarsRow || position == squareFabRow) {
                 return TYPE_CHECK;
@@ -334,7 +350,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_CHECK: {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == ameVibeRow) {
+                    if (position == htmlProfileToggleRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Відображати HTML-картки в профілях", "Отображать HTML-карточки в профилях", "Display HTML Profile Cards"), app.miogram.bridge.htmlprofile.MiogramHtmlProfileEngine.isEnabled(), true);
+                    } else if (position == ameVibeRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Вайб Needy Streamer Overload (Ame-chan)", "Вайб Needy Streamer Overload (Ame-chan)", "Needy Streamer Overload Aesthetic (Ame-chan)"), ameVibeEnabled(), true);
                     } else if (position == activeLyricsLineRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Активний рядок тексту в плеєрі", "Активная строка текста в плеере", "Active lyric line in player"), activeLyricsLineEnabled(), true);
@@ -357,6 +375,8 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndValue(MiogramLocale.get("Пресет оформлення", "Пресет оформления", "Layout Preset"), app.miogram.bridge.divine.MiogramDivineEngine.getPresetTitle(current), true);
                     } else if (position == customUiRow) {
                         cell.setTextAndValue(MiogramLocale.get("Кастомний профіль (Custom Profile)", "Кастомный профиль (Custom Profile)", "Custom Profile & Layout"), MiogramLocale.get("Налаштувати", "Настроить", "Configure"), true);
+                    } else if (position == htmlProfileStudioRow) {
+                        cell.setTextAndValue(MiogramLocale.get("Студія мого HTML-профілю", "Студия моего HTML-профиля", "My HTML Profile Studio"), MiogramLocale.get("Редагувати", "Редактировать", "Edit Code"), true);
                     } else if (position == glassIntensityRow) {
                         cell.setTextAndValue(MiogramLocale.get("Інтенсивність скла", "Интенсивность стекла", "Glass Intensity"), intensityPercent() + "%", false);
                     } else if (position == avatarCornersRow) {

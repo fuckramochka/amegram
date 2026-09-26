@@ -324,6 +324,12 @@ public class MiogramCloudVaultEngine {
         return chunkFiles;
     }
 
+    public static void uploadFileToVault(int currentAccount, long vaultChatId, int topicId, Uri uri, String fileName, long size, String mimeType, Object dummy) {
+        if (uri == null) return;
+        File file = new File(uri.getPath());
+        uploadFileToVault(currentAccount, file, fileName, mimeType, null, null, null);
+    }
+
     public static void uploadFileToVault(int currentAccount, File file, String fileName, String mimeType, ProgressCallback callback, Utilities.Callback<MiogramCloudVaultFile> onComplete, Utilities.Callback<String> onError) {
         long vaultChatId = getVaultChatId(currentAccount);
         if (vaultChatId == 0) {

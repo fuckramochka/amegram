@@ -229,12 +229,11 @@ public class MiogramDataLocalizerEngine {
                     MiogramCloudVaultEngine.getOrCreateSystemTopic(currentAccount, vaultChatId, "__localizer_backups", topicId -> {
                         MiogramCloudVaultEngine.uploadFileToVault(
                                 currentAccount,
-                                vaultChatId,
-                                topicId,
-                                Uri.fromFile(finalArchive),
+                                finalArchive,
                                 finalArchive.getName(),
-                                finalArchive.length(),
                                 "application/zip",
+                                null,
+                                null,
                                 null
                         );
                         AndroidUtilities.runOnUIThread(() -> {

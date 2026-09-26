@@ -155,6 +155,8 @@ public class MiogramSubfolderEngine {
         public int parentFilterId;
         public String name;
         public int flags;
+        public int color;
+        public String icon;
         public ArrayList<Long> dialogIds = new ArrayList<>();
 
         public JSONObject toJson() {
@@ -164,6 +166,8 @@ public class MiogramSubfolderEngine {
                 obj.put("parentFilterId", parentFilterId);
                 obj.put("name", name);
                 obj.put("flags", flags);
+                obj.put("color", color);
+                obj.put("icon", icon != null ? icon : "");
                 JSONArray arr = new JSONArray();
                 for (Long did : dialogIds) {
                     arr.put(did);
@@ -182,6 +186,8 @@ public class MiogramSubfolderEngine {
                 s.parentFilterId = obj.optInt("parentFilterId", 0);
                 s.name = obj.getString("name");
                 s.flags = obj.optInt("flags", 0);
+                s.color = obj.optInt("color", 0);
+                s.icon = obj.optString("icon", "");
                 JSONArray arr = obj.optJSONArray("dialogIds");
                 if (arr != null) {
                     for (int i = 0; i < arr.length(); i++) {
@@ -193,6 +199,18 @@ public class MiogramSubfolderEngine {
                 return null;
             }
         }
+    }
+
+    public static void updateLocalSubfolder(int currentAccount, LocalSubfolder subfolder) {
+        if (subfolder == null) return;
+        ArrayList<LocalSubfolder> all = getLocalSubfolders(currentAccount);
+        for (int i = 0; i < all.size(); i++) {
+            if (all.get(i).id == subfolder.id) {
+                all.set(i, subfolder);
+                break;
+            }
+        }
+        saveLocalSubfolders(currentAccount, all);
     }
 
     public static ArrayList<LocalSubfolder> getLocalSubfolders(int currentAccount) {

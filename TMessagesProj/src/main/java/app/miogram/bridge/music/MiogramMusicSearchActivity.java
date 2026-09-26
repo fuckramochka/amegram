@@ -682,8 +682,7 @@ public class MiogramMusicSearchActivity extends BaseFragment {
                 Toast.makeText(getParentActivity(), MiogramLocale.get("Скопійовано в буфер", "Скопировано в буфер", "Copied to clipboard"), Toast.LENGTH_SHORT).show();
             } else if (action == 5) {
                 if (track.localFile != null && track.localFile.exists()) {
-                    long vaultChatId = MiogramCloudVaultEngine.getVaultChatId(currentAccount);
-                    MiogramCloudVaultEngine.uploadFileToVault(currentAccount, vaultChatId, 0, Uri.fromFile(track.localFile), track.localFile.getName(), track.localFile.length(), "audio/mpeg", null);
+                    MiogramCloudVaultEngine.uploadFileToVault(currentAccount, track.localFile, track.localFile.getName(), "audio/mpeg", null, null, null);
                     Toast.makeText(getParentActivity(), MiogramLocale.get("Збережено в Cloud Vault", "Сохранено в Cloud Vault", "Saved to Cloud Vault"), Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(getParentActivity(), MiogramLocale.get("Спочатку завантажте трек", "Сначала скачайте трек", "Download the track first"), Toast.LENGTH_SHORT).show();

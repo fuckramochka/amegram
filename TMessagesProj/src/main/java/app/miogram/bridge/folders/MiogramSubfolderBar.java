@@ -298,24 +298,74 @@ public class MiogramSubfolderBar extends FrameLayout {
             Context context = getContext();
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
             builder.setTitle(pill.localSubfolder.name);
-            CharSequence[] items = new CharSequence[]{app.miogram.bridge.MiogramLocale.get("Видалити підпапку", "Удалить подпапку", "Delete subfolder")};
+            CharSequence[] items = new CharSequence[]{
+                    app.miogram.bridge.MiogramLocale.get("Змінити колір", "Изменить цвет", "Change color"),
+                    app.miogram.bridge.MiogramLocale.get("Перейменувати", "Переименовать", "Rename"),
+                    app.miogram.bridge.MiogramLocale.get("Видалити підпапку", "Удалить подпапку", "Delete subfolder")
+            };
             builder.setItems(items, (dialog, which) -> {
-                AlertDialog.Builder delBuilder = new AlertDialog.Builder(context);
-                delBuilder.setTitle(app.miogram.bridge.MiogramLocale.get("Видалити підпапку?", "Удалить подпапку?", "Delete subfolder?"));
-                delBuilder.setMessage(app.miogram.bridge.MiogramLocale.get("Ви дійсно хочете видалити локальну підпапку '", "Вы действительно хотите удалить локальную подпапку '", "Do you want to delete local subfolder '") + pill.localSubfolder.name + "'?");
-                delBuilder.setPositiveButton(app.miogram.bridge.MiogramLocale.get("Видалити", "Удалить", "Delete"), (d, w) -> {
-                    int currentAccount = dialogsActivity.getCurrentAccount();
-                    MiogramSubfolderEngine.deleteLocalSubfolder(dialogsActivity, currentAccount, pill.localSubfolder.id, () -> {
-                        dialogsActivity.onSubfolderChanged();
+                int currentAccount = dialogsActivity.getCurrentAccount();
+                if (which == 0) {
+                    // Color picker
+                    String[] colors = new String[]{
+                            app.miogram.bridge.MiogramLocale.get("Стандартний синій", "Стандартный синий", "Default Blue"),
+                            app.miogram.bridge.MiogramLocale.get("Фіолетовий", "Фиолетовый", "Electric Purple"),
+                            app.miogram.bridge.MiogramLocale.get("Смарагдовий", "Изумрудный", "Emerald Green"),
+                            app.miogram.bridge.MiogramLocale.get("Помаранчевий", "Оранжевый", "Sunset Orange"),
+                            app.miogram.bridge.MiogramLocale.get("Багряний", "Багряный", "Crimson Red"),
+                            app.miogram.bridge.MiogramLocale.get("Неоновий ціан", "Неоновый циан", "Cyber Cyan"),
+                            app.miogram.bridge.MiogramLocale.get("Рожевий", "Розовый", "Rose Pink")
+                    };
+                    int[] colorValues = new int[]{0, 0xFF8E24AA, 0xFF00897B, 0xFFF57C00, 0xFFE53935, 0xFF00ACC1, 0xFFD81B60};
+
+                    AlertDialog.Builder colorBuilder = new AlertDialog.Builder(context);
+                    colorBuilder.setTitle(app.miogram.bridge.MiogramLocale.get("Колір підпапки", "Цвет подпапки", "Subfolder Color"));
+                    colorBuilder.setItems(colors, (d, colorIndex) -> {
+                        pill.localSubfolder.color = colorValues[colorIndex];
+                        MiogramSubfolderEngine.updateLocalSubfolder(currentAccount, pill.localSubfolder);
                         refreshPills();
                     });
-                });
-                delBuilder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
-                AlertDialog alert = delBuilder.create();
-                alert.show();
-                TextView btn = (TextView) alert.getButton(AlertDialog.BUTTON_POSITIVE);
-                if (btn != null) {
-                    btn.setTextColor(getColor(Theme.key_text_RedBold));
+                    colorBuilder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                    colorBuilder.show();
+                } else if (which == 1) {
+                    // Rename
+                    AlertDialog.Builder renameBuilder = new AlertDialog.Builder(context);
+                    renameBuilder.setTitle(app.miogram.bridge.MiogramLocale.get("Перейменувати", "Переименовать", "Rename"));
+                    org.telegram.ui.Components.EditTextBoldCursor et = new org.telegram.ui.Components.EditTextBoldCursor(context);
+                    et.setText(pill.localSubfolder.name);
+                    et.setSelection(et.getText().length());
+                    LinearLayout l = new LinearLayout(context);
+                    l.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(8), AndroidUtilities.dp(20), AndroidUtilities.dp(8));
+                    l.addView(et, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                    renameBuilder.setView(l);
+                    renameBuilder.setPositiveButton(LocaleController.getString(R.string.Done), (d, w) -> {
+                        String newName = et.getText().toString().trim();
+                        if (!TextUtils.isEmpty(newName)) {
+                            pill.localSubfolder.name = newName;
+                            MiogramSubfolderEngine.updateLocalSubfolder(currentAccount, pill.localSubfolder);
+                            refreshPills();
+                        }
+                    });
+                    renameBuilder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                    renameBuilder.show();
+                } else if (which == 2) {
+                    // Delete
+                    AlertDialog.Builder delBuilder = new AlertDialog.Builder(context);
+                    delBuilder.setTitle(app.miogram.bridge.MiogramLocale.get("Видалити підпапку?", "Удалить подпапку?", "Delete subfolder?"));
+                    delBuilder.setMessage(app.miogram.bridge.MiogramLocale.get("Ви дійсно хочете видалити локальну підпапку '", "Вы действительно хотите удалить локальную подпапку '", "Do you want to delete local subfolder '") + pill.localSubfolder.name + "'?");
+                    delBuilder.setPositiveButton(app.miogram.bridge.MiogramLocale.get("Видалити", "Удалить", "Delete"), (d, w) -> {
+                        MiogramSubfolderEngine.deleteLocalSubfolder(dialogsActivity, currentAccount, pill.localSubfolder.id, () -> {
+                            dialogsActivity.onSubfolderChanged();
+                            refreshPills();
+                        });
+                    });
+                    delBuilder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+                    AlertDialog alert = delBuilder.create();
+                    alert.show();
+                    TextView btn = (TextView) alert.getButton(AlertDialog.BUTTON_POSITIVE);
+                    if (btn != null) {
+                        btn.setTextColor(getColor(Theme.key_text_RedBold));
+                    }
                 }
             });
             builder.show();
@@ -443,6 +493,9 @@ public class MiogramSubfolderBar extends FrameLayout {
         public void setSelectedState(boolean selected) {
             this.isSelected = selected;
             int accentColor = getColor(Theme.key_chats_actionBackground);
+            if (localSubfolder != null && localSubfolder.color != 0) {
+                accentColor = localSubfolder.color;
+            }
 
             GradientDrawable bg = new GradientDrawable();
             bg.setCornerRadius(AndroidUtilities.dp(15));

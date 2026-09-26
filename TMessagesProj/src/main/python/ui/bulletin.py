@@ -190,3 +190,9 @@ class BulletinHelper:
             except Exception:
                 return factory.createDownloadBulletin(file_type_enum)
         _show(make, "Saved to downloads")
+
+
+def show_bulletin(text, fragment=None):
+    """Convenience helper to show a simple bulletin message."""
+    BulletinHelper.show_info(str(text), fragment)
+

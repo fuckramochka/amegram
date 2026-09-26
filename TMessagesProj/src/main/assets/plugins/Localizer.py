@@ -4,92 +4,93 @@ Allows dynamic interface string customization, override, and localization withou
 """
 
 from base_plugin import BasePlugin
-from ui.settings import Header, Input, Switch, Text, Divider
-from app.exteraless.plugins import PythonBridge
-from ui.alert import show_alert
-from ui.bulletin import show_bulletin
-import json
+from ui.settings import Header, Input, Text, Divider
+from ui.bulletin import BulletinHelper
+from ui.alert import AlertDialogBuilder
+from java import jclass
+
+PythonBridge = jclass("app.exteraless.plugins.PythonBridge")
 
 __id__ = "localizer"
-__name__ = "String Localizer"
-__version__ = "1.0.0"
+__name__ = "Локалізатор (Localizer)"
+__version__ = "1.1.0"
 __author__ = "Amegram Team"
-__description__ = "Dynamically inspect, override, export, and localize any UI string in the app."
+__description__ = "Динамічний переклад, заміна та експорт будь-яких рядків інтерфейсу в реальному часі."
 __icon__ = "outline_translate_24"
+__app_version__ = ">=12.5.1"
+__sdk_version__ = ">=1.4.0"
 
 
 class LocalizerPlugin(BasePlugin):
 
     def on_plugin_load(self):
-        PythonBridge.log(self.id, "Localizer plugin loaded successfully")
+        PythonBridge.log("localizer", "Localizer plugin loaded successfully")
 
     def on_plugin_unload(self):
-        PythonBridge.log(self.id, "Localizer plugin unloaded")
+        PythonBridge.log("localizer", "Localizer plugin unloaded")
 
     def create_settings(self):
-        items = [
-            Header(text="String Overrides"),
+        return [
+            Header(text="Переозначення рядків (String Overrides)"),
             Input(
                 key="override_target_key",
-                text="String Key (Resource ID or Locale Key)",
+                text="Ключ рядка (ID або системний ключ)",
                 default="AppName",
-                subtext="e.g. AppName, Settings, Chats, Cancel"
+                subtext="Наприклад: AppName, Settings, Chats, Cancel, Delete, etc."
             ),
             Input(
                 key="override_custom_text",
-                text="Custom String Value",
+                text="Кастомний текст",
                 default="Amegram",
-                subtext="Text to display instead of default translation"
+                subtext="Текст, який показуватиметься замість стандартного"
             ),
             Text(
-                text="Apply String Override",
-                subtext="Save custom translation for specified key",
+                text="Застосувати заміну рядка",
+                subtext="Зберегти та активувати кастомний рядок у додатку",
                 accent=True,
                 on_click=self._apply_override
             ),
             Text(
-                text="Reset Key Override",
-                subtext="Remove override for specified key",
+                text="Скинути заміну для цього ключа",
+                subtext="Повернути оригінальний рядок для обраного ключа",
                 on_click=self._remove_override
             ),
-            Divider(text="Backup & Restore"),
+            Divider(text="Резервне копіювання та очищення"),
             Text(
-                text="Export Overrides to JSON",
-                subtext="Copy all custom strings as JSON",
+                text="Експортувати заміни в JSON",
+                subtext="Показати всі активні заміни у форматі JSON",
                 on_click=self._export_json
             ),
             Text(
-                text="Clear All Custom Strings",
-                subtext="Revert all localized string overrides",
+                text="Очистити всі кастомні рядки",
+                subtext="Повернути всі оригінальні локалізації",
                 red=True,
                 on_click=self._clear_all
             ),
         ]
-        return items
 
-    def _apply_override(self):
-        from plugin_settings import get_setting
-        key = get_setting(self.id, "override_target_key", "AppName")
-        val = get_setting(self.id, "override_custom_text", "")
+    def _apply_override(self, view=None):
+        key = self.get_setting("override_target_key", "AppName")
+        val = self.get_setting("override_custom_text", "")
         if key and val:
             PythonBridge.setStringOverride(str(key).strip(), str(val).strip())
-            show_bulletin(text=f"Override applied for '{key}'!")
+            BulletinHelper.show_success(f"Замінено: '{key}' → '{val}'")
         else:
-            show_alert("Error", "Please provide both key and custom text.")
+            BulletinHelper.show_error("Вкажіть і ключ, і кастомний текст!")
 
-    def _remove_override(self):
-        from plugin_settings import get_setting
-        key = get_setting(self.id, "override_target_key", "")
+    def _remove_override(self, view=None):
+        key = self.get_setting("override_target_key", "")
         if key:
             PythonBridge.removeStringOverride(str(key).strip())
-            show_bulletin(text=f"Override removed for '{key}'")
+            BulletinHelper.show_info(f"Скинуто заміну для '{key}'")
         else:
-            show_alert("Error", "Specify key to remove.")
+            BulletinHelper.show_error("Вкажіть ключ для скидання!")
 
-    def _export_json(self):
+    def _export_json(self, view=None):
         data = PythonBridge.exportStringOverrides()
-        show_alert("Exported JSON", data or "{}")
+        builder = AlertDialogBuilder()
+        builder.set_title("Експорт рядків").set_message(str(data or "{}")).set_positive_button("OK", None).show()
 
-    def _clear_all(self):
+    def _clear_all(self, view=None):
         PythonBridge.clearStringOverrides()
-        show_bulletin(text="All string overrides cleared!")
+        BulletinHelper.show_success("Усі замінені рядки очищено!")

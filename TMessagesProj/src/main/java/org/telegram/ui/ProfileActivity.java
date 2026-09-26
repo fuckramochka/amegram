@@ -705,7 +705,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int musicCardRow;
     private int musicCardSectionRow;
     private int steamCardRow = -1;
-    private int htmlProfileRow = -1;
     private int bottomPaddingRow;
     private int infoHeaderRow;
     private int infoHeaderRowEmpty;
@@ -10968,7 +10967,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         musicCardRow = -1;
         musicCardSectionRow = -1;
         steamCardRow = -1;
-        htmlProfileRow = -1;
         infoHeaderRow = -1;
         infoHeaderRowEmpty = -1;
         infoEndRowEmpty = -1;
@@ -11080,16 +11078,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 musicCardSectionRow = rowCount++;
             }
 
-            if (hasSteamCard && !app.exteraless.plugins.PluginsController.getInstance().isPluginActive("Custom Profile")) {
+            if (hasSteamCard) {
                 steamCardRow = rowCount++;
-            }
-
-            if (app.miogram.bridge.htmlprofile.MiogramHtmlProfileEngine.isEnabled()) {
-                boolean isSelf = UserObject.isUserSelf(user);
-                String userHtml = app.miogram.bridge.htmlprofile.MiogramHtmlProfileEngine.getCustomHtmlForUser(user.id);
-                if (isSelf || !android.text.TextUtils.isEmpty(userHtml)) {
-                    htmlProfileRow = rowCount++;
-                }
             }
 
             if (UserObject.isUserSelf(user) && !myProfile) {
@@ -13929,8 +13919,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 VIEW_TYPE_EMPTY2 = 31,
                 VIEW_TYPE_TEXT2 = 32,
                 VIEW_TYPE_LINKED_COMMUNITY = 33,
-                VIEW_TYPE_STEAM = 34,
-                VIEW_TYPE_HTML_PROFILE = 35;
+                VIEW_TYPE_STEAM = 34;
 
         private Context mContext;
 
@@ -14041,12 +14030,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 case VIEW_TYPE_STEAM: {
                     app.miogram.bridge.presence.MiogramPresenceCard card = new app.miogram.bridge.presence.MiogramPresenceCard(mContext, resourcesProvider);
-                    view = card;
-                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
-                    break;
-                }
-                case VIEW_TYPE_HTML_PROFILE: {
-                    app.miogram.bridge.htmlprofile.MiogramHtmlProfileCard card = new app.miogram.bridge.htmlprofile.MiogramHtmlProfileCard(mContext, resourcesProvider);
                     view = card;
                     view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
@@ -15069,14 +15052,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     }
                     break;
-                case VIEW_TYPE_HTML_PROFILE:
-                    if (holder.itemView instanceof app.miogram.bridge.htmlprofile.MiogramHtmlProfileCard) {
-                        app.miogram.bridge.htmlprofile.MiogramHtmlProfileCard htmlCard = (app.miogram.bridge.htmlprofile.MiogramHtmlProfileCard) holder.itemView;
-                        TLRPC.User u = getMessagesController().getUser(userId);
-                        boolean isSelfUser = u != null && UserObject.isUserSelf(u);
-                        htmlCard.bind(userId, isSelfUser);
-                    }
-                    break;
                 case VIEW_TYPE_VERSION:
                     ((TextInfoPrivacyCell) holder.itemView).setText(AndroidUtil.getVersionText());
                     break;
@@ -15210,7 +15185,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             int type = holder.getItemViewType();
             return type != VIEW_TYPE_HEADER && type != VIEW_TYPE_DIVIDER && type != VIEW_TYPE_SHADOW &&
                     type != VIEW_TYPE_EMPTY && type != VIEW_TYPE_EMPTY2 && type != VIEW_TYPE_HEADER_EMPTY && type != VIEW_TYPE_BOTTOM_PADDING && type != VIEW_TYPE_SHARED_MEDIA &&
-                    type != 9 && type != 10 && type != VIEW_TYPE_BOT_APP && type != VIEW_TYPE_TEXT2 && type != VIEW_TYPE_MUSIC && type != VIEW_TYPE_STEAM && type != VIEW_TYPE_HTML_PROFILE;
+                    type != 9 && type != 10 && type != VIEW_TYPE_BOT_APP && type != VIEW_TYPE_TEXT2 && type != VIEW_TYPE_MUSIC && type != VIEW_TYPE_STEAM;
         }
 
         @Override
@@ -15264,8 +15239,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return VIEW_TYPE_MUSIC;
             } else if (position == steamCardRow) {
                 return VIEW_TYPE_STEAM;
-            } else if (position == htmlProfileRow) {
-                return VIEW_TYPE_HTML_PROFILE;
             } else if (position == emptyRow) {
                 return VIEW_TYPE_EMPTY;
             } else if (position == emptyRow2) {
@@ -16715,7 +16688,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             put(++pointer, musicCardRow, sparseIntArray);
             put(++pointer, musicCardSectionRow, sparseIntArray);
             put(++pointer, steamCardRow, sparseIntArray);
-            put(++pointer, htmlProfileRow, sparseIntArray);
             put(++pointer, emptyRow, sparseIntArray);
             put(++pointer, emptyRow2, sparseIntArray);
             put(++pointer, bottomPaddingRow, sparseIntArray);

@@ -280,10 +280,6 @@ public class MiogramPresenceCard extends FrameLayout {
     };
 
     public void bindUser(long userId, boolean isSelf) {
-        if (app.exteraless.plugins.PluginsController.getInstance().isPluginActive("Custom Profile")) {
-            setVisibility(View.GONE);
-            return;
-        }
         this.currentUserId = userId;
         this.isSelf = isSelf;
 

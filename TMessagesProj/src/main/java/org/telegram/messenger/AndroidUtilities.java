@@ -1922,6 +1922,18 @@ public class AndroidUtilities {
         if (pathString.endsWith(".attheme")) {
             return false;
         }
+        try {
+            if (ApplicationLoader.applicationContext != null) {
+                File cacheDir = ApplicationLoader.applicationContext.getCacheDir();
+                if (cacheDir != null && (pathString.startsWith(cacheDir.getAbsolutePath()) || pathString.startsWith(cacheDir.getCanonicalPath()))) {
+                    return false;
+                }
+                File extCacheDir = ApplicationLoader.applicationContext.getExternalCacheDir();
+                if (extCacheDir != null && (pathString.startsWith(extCacheDir.getAbsolutePath()) || pathString.startsWith(extCacheDir.getCanonicalPath()))) {
+                    return false;
+                }
+            }
+        } catch (Exception ignore) {}
         return pathString != null && pathString.toLowerCase().contains("/data/data/" + ApplicationLoader.applicationContext.getPackageName());
     }
 

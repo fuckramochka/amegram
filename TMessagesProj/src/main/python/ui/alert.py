@@ -342,3 +342,16 @@ class AlertDialogBuilder:
             return self._dialog.getButton(int(which))
         except Exception:
             return None
+
+
+AlertBuilder = AlertDialogBuilder
+
+
+def show_alert(title, message, button="OK", on_click=None):
+    """Convenience helper to show a simple AlertDialog with a message."""
+    builder = AlertDialogBuilder()
+    builder.set_title(str(title)).set_message(str(message))
+    builder.set_positive_button(str(button), on_click)
+    builder.show()
+    return builder
+

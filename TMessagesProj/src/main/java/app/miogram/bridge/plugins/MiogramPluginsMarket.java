@@ -116,10 +116,9 @@ public class MiogramPluginsMarket {
         }
     }
 
-    public static boolean installPlugin(Context context, MarketPluginEntry entry) {
+    public static boolean copyPluginFile(Context context, MarketPluginEntry entry) {
         if (context == null) context = ApplicationLoader.applicationContext;
         if (context == null || entry == null) return false;
-
         try {
             File pluginsDir = PluginsController.getInstance().getPluginsDir();
             if (!pluginsDir.exists()) pluginsDir.mkdirs();
@@ -133,16 +132,14 @@ public class MiogramPluginsMarket {
                     fos.write(buf, 0, len);
                 }
             }
-
-            PluginsController.getInstance().rescanAndLoadEnabled();
             return true;
         } catch (Throwable t) {
-            FileLog.e("MiogramPluginsMarket: failed to install plugin " + entry.id, t);
+            FileLog.e("MiogramPluginsMarket: failed to copy plugin " + entry.id, t);
             return false;
         }
     }
 
-    public static boolean uninstallPlugin(MarketPluginEntry entry) {
+    public static boolean deletePluginFile(MarketPluginEntry entry) {
         if (entry == null) return false;
         try {
             File pluginsDir = PluginsController.getInstance().getPluginsDir();
@@ -151,12 +148,35 @@ public class MiogramPluginsMarket {
                 target.delete();
             }
             PluginsController.getInstance().uninstallPlugin(entry.id);
-            PluginsController.getInstance().rescanAndLoadEnabled();
             return true;
         } catch (Throwable t) {
-            FileLog.e("MiogramPluginsMarket: failed to uninstall plugin " + entry.id, t);
+            FileLog.e("MiogramPluginsMarket: failed to delete plugin " + entry.id, t);
             return false;
         }
+    }
+
+    public static boolean installPlugin(Context context, MarketPluginEntry entry) {
+        boolean ok = copyPluginFile(context, entry);
+        if (ok) {
+            try {
+                PluginsController.getInstance().rescanAndLoadEnabled();
+            } catch (Throwable t) {
+                FileLog.e("MiogramPluginsMarket: failed to rescan after install", t);
+            }
+        }
+        return ok;
+    }
+
+    public static boolean uninstallPlugin(MarketPluginEntry entry) {
+        boolean ok = deletePluginFile(entry);
+        if (ok) {
+            try {
+                PluginsController.getInstance().rescanAndLoadEnabled();
+            } catch (Throwable t) {
+                FileLog.e("MiogramPluginsMarket: failed to rescan after uninstall", t);
+            }
+        }
+        return ok;
     }
 
     public static boolean shouldPromptOnboarding(Context context) {

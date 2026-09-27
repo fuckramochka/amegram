@@ -175,38 +175,76 @@ public class MiogramCustomUiPrefs {
         }
     }
 
+    public static boolean isCustomProfilePluginActive() {
+        try {
+            app.exteraless.plugins.Plugin p = app.exteraless.plugins.PluginsController.getInstance().getPlugin("custom_profile");
+            return p != null && p.enabled && p.loaded;
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    public static void resetBrokenCpbMasks() {
+        try {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String tag = keyTag();
+                cpb.edit()
+                        .remove(tag + "_banner_blend")
+                        .remove(tag + "_banner_blend_radius")
+                        .remove(tag + "_banner_fade")
+                        .remove(tag + "_banner_fade_radius")
+                        .remove(tag + "_banner_fade_angle")
+                        .remove(tag + "_grad_type")
+                        .remove(tag + "_grad_dir")
+                        .remove("banner_blend")
+                        .remove("banner_blend_radius")
+                        .remove("banner_fade")
+                        .remove("banner_fade_radius")
+                        .remove("banner_fade_angle")
+                        .remove("grad_type")
+                        .remove("grad_dir")
+                        .apply();
+            }
+        } catch (Throwable ignore) {}
+    }
+
     // --- Core Read/Write helpers ---
 
     public static boolean getBool(String key, boolean def) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            String val = cpb.getString(fullKey, null);
-            if (val == null) {
-                val = cpb.getString(key, null);
-            }
-            if (val != null) {
-                val = val.trim();
-                if ("1".equals(val) || "true".equalsIgnoreCase(val)) return true;
-                if ("0".equals(val) || "false".equalsIgnoreCase(val)) return false;
-            }
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getBoolean(key, def);
+        }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                String val = cpb.getString(fullKey, null);
+                if (val == null) {
+                    val = cpb.getString(key, null);
+                }
+                if (val != null) {
+                    val = val.trim();
+                    if ("1".equals(val) || "true".equalsIgnoreCase(val)) return true;
+                    if ("0".equals(val) || "false".equalsIgnoreCase(val)) return false;
+                }
+            }
         }
         return def;
     }
 
     public static void setBool(String key, boolean val) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            cpb.edit().putString(fullKey, val ? "1" : "0").apply();
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null) {
             local.edit().putBoolean(key, val).apply();
+        }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                cpb.edit().putString(fullKey, val ? "1" : "0").apply();
+            }
         }
         invalidateHotBool(key);
     }
@@ -247,95 +285,107 @@ public class MiogramCustomUiPrefs {
     }
 
     public static int getInt(String key, int def) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            String val = cpb.getString(fullKey, null);
-            if (val == null) {
-                val = cpb.getString(key, null);
-            }
-            if (val != null) {
-                try {
-                    return Integer.parseInt(val.trim());
-                } catch (Throwable ignore) {}
-            }
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getInt(key, def);
+        }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                String val = cpb.getString(fullKey, null);
+                if (val == null) {
+                    val = cpb.getString(key, null);
+                }
+                if (val != null) {
+                    try {
+                        return Integer.parseInt(val.trim());
+                    } catch (Throwable ignore) {}
+                }
+            }
         }
         return def;
     }
 
     public static void setInt(String key, int val) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            cpb.edit().putString(fullKey, Integer.toString(val)).apply();
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null) {
             local.edit().putInt(key, val).apply();
         }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                cpb.edit().putString(fullKey, Integer.toString(val)).apply();
+            }
+        }
     }
 
     public static int getColor(String key, int def) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            String val = cpb.getString(fullKey, null);
-            if (val == null) {
-                val = cpb.getString(key, null);
-            }
-            if (val != null) {
-                return parseColor(val, def);
-            }
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getInt(key, def);
+        }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                String val = cpb.getString(fullKey, null);
+                if (val == null) {
+                    val = cpb.getString(key, null);
+                }
+                if (val != null) {
+                    return parseColor(val, def);
+                }
+            }
         }
         return def;
     }
 
     public static void setColor(String key, int color) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            cpb.edit().putString(fullKey, hex(color)).apply();
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null) {
             local.edit().putInt(key, color).apply();
         }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                cpb.edit().putString(fullKey, hex(color)).apply();
+            }
+        }
     }
 
     public static String getString(String key, String def) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            String val = cpb.getString(fullKey, null);
-            if (val == null) {
-                val = cpb.getString(key, null);
-            }
-            if (val != null) return val;
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getString(key, def);
+        }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                String val = cpb.getString(fullKey, null);
+                if (val == null) {
+                    val = cpb.getString(key, null);
+                }
+                if (val != null) return val;
+            }
         }
         return def;
     }
 
     public static void setString(String key, String val) {
-        SharedPreferences cpb = getCpbPrefs();
-        if (cpb != null) {
-            String fullKey = keyTag() + "_" + key;
-            cpb.edit().putString(fullKey, val).apply();
-        }
         SharedPreferences local = getLocalPrefs();
         if (local != null) {
             local.edit().putString(key, val).apply();
+        }
+        if (!isCustomProfilePluginActive()) {
+            SharedPreferences cpb = getCpbPrefs();
+            if (cpb != null) {
+                String fullKey = keyTag() + "_" + key;
+                cpb.edit().putString(fullKey, val).apply();
+            }
         }
     }
 

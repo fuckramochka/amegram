@@ -171,7 +171,7 @@ public class AmegramGuideSheet extends BottomSheet {
         contentScrollView.setVerticalScrollBarEnabled(false);
         stepContentContainer = new FrameLayout(context);
         contentScrollView.addView(stepContentContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        root.addView(contentScrollView, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, 0, 1.0f));
+        root.addView(contentScrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
 
         // Bottom Action Bar: [Пропустити крок] | [Далі / Завершити]
         LinearLayout bottomBar = new LinearLayout(context);
@@ -809,21 +809,55 @@ public class AmegramGuideSheet extends BottomSheet {
         void onToggle(boolean enabled);
     }
 
-    private void handleNextAction() {
-        if (currentStep == 3) {
-            // Apply selected plugins from step 3
-            Context context = getContext();
-            for (int i = 0; i < pluginEntries.size(); i++) {
-                if (i < pluginCheckBoxes.size()) {
-                    MiogramPluginsMarket.MarketPluginEntry entry = pluginEntries.get(i);
-                    CheckBox cb = pluginCheckBoxes.get(i);
-                    if (cb.isChecked()) {
-                        MiogramPluginsMarket.installPlugin(context, entry);
-                    } else if (MiogramPluginsMarket.isInstalled(entry)) {
-                        MiogramPluginsMarket.uninstallPlugin(entry);
-                    }
+    private void applySelectedPlugins() {
+        Context context = getContext();
+        if (context == null) context = org.telegram.messenger.ApplicationLoader.applicationContext;
+        final Context finalCtx = context;
+        final List<MiogramPluginsMarket.MarketPluginEntry> toInstall = new ArrayList<>();
+        final List<MiogramPluginsMarket.MarketPluginEntry> toUninstall = new ArrayList<>();
+
+        for (int i = 0; i < pluginEntries.size(); i++) {
+            if (i < pluginCheckBoxes.size()) {
+                MiogramPluginsMarket.MarketPluginEntry entry = pluginEntries.get(i);
+                CheckBox cb = pluginCheckBoxes.get(i);
+                boolean isChecked = cb != null && cb.isChecked();
+                boolean installed = MiogramPluginsMarket.isInstalled(entry);
+                if (isChecked && !installed) {
+                    toInstall.add(entry);
+                } else if (!isChecked && installed) {
+                    toUninstall.add(entry);
                 }
             }
+        }
+
+        if (toInstall.isEmpty() && toUninstall.isEmpty()) {
+            return;
+        }
+
+        org.telegram.messenger.Utilities.globalQueue.postRunnable(() -> {
+            for (MiogramPluginsMarket.MarketPluginEntry entry : toInstall) {
+                MiogramPluginsMarket.copyPluginFile(finalCtx, entry);
+            }
+            for (MiogramPluginsMarket.MarketPluginEntry entry : toUninstall) {
+                MiogramPluginsMarket.deletePluginFile(entry);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    app.exteraless.plugins.PluginsController.getInstance().rescanAndLoadEnabled();
+                } catch (Throwable t) {
+                    org.telegram.messenger.FileLog.e("AmegramGuideSheet: rescan failed", t);
+                }
+            });
+        });
+    }
+
+    private void handleNextAction() {
+        try {
+            if (currentStep == 3) {
+                applySelectedPlugins();
+            }
+        } catch (Throwable t) {
+            org.telegram.messenger.FileLog.e("AmegramGuideSheet: error handling next step", t);
         }
 
         if (currentStep < TOTAL_STEPS - 1) {

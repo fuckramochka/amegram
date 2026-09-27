@@ -22,12 +22,14 @@ import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
 import app.miogram.bridge.MiogramLocale;
+import app.miogram.bridge.customui.MiogramCustomUiPrefs;
 
 /**
  * Modern interactive BottomSheet for "Аме профіль" (Ame Profile):
@@ -81,6 +83,54 @@ public class MiogramAmeProfileSheet extends BottomSheet {
         subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         subtitle.setLineSpacing(AndroidUtilities.dp(2), 1.15f);
         root.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+
+        if (MiogramCustomUiPrefs.isCustomProfilePluginActive()) {
+            LinearLayout warningCard = new LinearLayout(context);
+            warningCard.setOrientation(LinearLayout.VERTICAL);
+            warningCard.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
+            GradientDrawable warnBg = new GradientDrawable();
+            warnBg.setColor(0x33FF9800);
+            warnBg.setStroke(AndroidUtilities.dp(1), 0x88FF9800);
+            warnBg.setCornerRadius(AndroidUtilities.dp(10));
+            warningCard.setBackground(warnBg);
+
+            TextView warnText = new TextView(context);
+            warnText.setText(MiogramLocale.get(
+                    "⚠️ Плагін Custom Profile зараз активний і керує оформленням. Щоб увімкнути чистий нативний Аме профіль або прибрати артефакти смуг, вимкніть Custom Profile.",
+                    "⚠️ Плагин Custom Profile сейчас активен и управляет оформлением. Чтобы включить чистый нативный Аме профиль или убрать полосы, отключите Custom Profile.",
+                    "⚠️ Custom Profile plugin is active. To enable pure native Ame Profile or remove stripe artifacts, disable Custom Profile."
+            ));
+            warnText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            warnText.setTextColor(0xFFFFE082);
+            warnText.setLineSpacing(AndroidUtilities.dp(2), 1.1f);
+            warningCard.addView(warnText);
+
+            TextView fixBtn = new TextView(context);
+            fixBtn.setText(MiogramLocale.get("Вимкнути плагін Custom Profile ໒꒱", "Отключить плагин Custom Profile ໒꒱", "Disable Custom Profile plugin ໒꒱"));
+            fixBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+            fixBtn.setTypeface(AndroidUtilities.bold());
+            fixBtn.setTextColor(Color.WHITE);
+            fixBtn.setGravity(Gravity.CENTER);
+            fixBtn.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(6), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
+            GradientDrawable fixBg = new GradientDrawable();
+            fixBg.setColor(0xFFE65100);
+            fixBg.setCornerRadius(AndroidUtilities.dp(8));
+            fixBtn.setBackground(fixBg);
+            fixBtn.setOnClickListener(v -> {
+                try {
+                    MiogramCustomUiPrefs.resetBrokenCpbMasks();
+                    app.exteraless.plugins.PluginsController.getInstance().setPluginEnabled("custom_profile", false);
+                    warningCard.setVisibility(View.GONE);
+                    Toast.makeText(context, MiogramLocale.get("Плагін Custom Profile вимкнено! Нативний Аме профіль активовано.", "Плагин Custom Profile отключен! Нативный Аме профиль активирован.", "Custom Profile disabled! Ame Profile active."), Toast.LENGTH_SHORT).show();
+                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                } catch (Throwable ignore) {}
+            });
+            LinearLayout.LayoutParams flp = new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
+            flp.topMargin = AndroidUtilities.dp(8);
+            warningCard.addView(fixBtn, flp);
+
+            root.addView(warningCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
+        }
 
         // XML Code Editor Frame
         FrameLayout editorCard = new FrameLayout(context);
@@ -145,6 +195,7 @@ public class MiogramAmeProfileSheet extends BottomSheet {
         applyBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(11), AndroidUtilities.dp(12), AndroidUtilities.dp(11));
         applyBtn.setOnClickListener(v -> {
             String code = xmlEditor.getText().toString().trim();
+            MiogramCustomUiPrefs.resetBrokenCpbMasks();
             if (MiogramAmeProfileEngine.applyProfileXml(code)) {
                 Toast.makeText(context, MiogramLocale.get("Аме профіль успішно застосовано!", "Аме профиль успешно применен!", "Ame Profile applied successfully!"), Toast.LENGTH_SHORT).show();
                 dismiss();

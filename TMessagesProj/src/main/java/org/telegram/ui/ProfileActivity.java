@@ -6679,11 +6679,24 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         final float minNameY = (float) Math.floor(minEndNameY) + AndroidUtilities.dp(1.3f);
         final float minOnlineY = minNameY + AndroidUtilities.dpf2(22.7f);
 
-        nameTextView[1].setTranslationX(nameTextViewX);
+        boolean isSelfProfileAme = myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId));
+        float finalNameX = nameTextViewX;
+        float finalOnlineX = onlineTextViewX;
+        if (isSelfProfileAme) {
+            String align = app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarAlign();
+            if ("right".equalsIgnoreCase(align)) {
+                float shift = -AndroidUtilities.dp(80f);
+                finalNameX += shift;
+                finalOnlineX += shift;
+            }
+            nameTextView[1].setRotation(app.amegram.bridge.ameprofile.AmeProfileEngine.getNameRotation());
+        }
+
+        nameTextView[1].setTranslationX(finalNameX);
         nameTextView[1].setTranslationY(Math.max(minNameY, nameTextViewY));
-        onlineTextView[1].setTranslationX(getOnlineTextViewTranslationXWithOffsets(onlineTextViewX));
+        onlineTextView[1].setTranslationX(getOnlineTextViewTranslationXWithOffsets(finalOnlineX));
         onlineTextView[1].setTranslationY(getOnlineTextViewTranslationYWithOffsets(Math.max(minOnlineY, onlineTextViewY)));
-        mediaCounterTextView.setTranslationX(onlineTextViewX);
+        mediaCounterTextView.setTranslationX(finalOnlineX);
         mediaCounterTextView.setTranslationY(Math.max(minOnlineY, onlineTextViewY));
 
         updateActionsPosition();
@@ -6739,7 +6752,28 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void fixAvatarImageInCenter() {
         if (listView == null) return;
         final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-        avatarX = listView.getMeasuredWidth() / 2f - (params.width * avatarScale * 0.5f);
+        boolean isSelfProfileAme = myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId));
+        if (isSelfProfileAme) {
+            String align = app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarAlign();
+            float rot = app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarRotation();
+            float scaleMul = app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarScaleMultiplier();
+            if (avatarImage != null) {
+                avatarImage.setRotation(rot);
+            }
+            if (avatarContainer != null && scaleMul > 0f) {
+                avatarContainer.setScaleX(avatarScale * scaleMul);
+                avatarContainer.setScaleY(avatarScale * scaleMul);
+            }
+            if ("right".equalsIgnoreCase(align)) {
+                avatarX = listView.getMeasuredWidth() - (params.width * avatarScale * scaleMul) - dp(24) + dp(app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarOffsetX());
+            } else if ("left".equalsIgnoreCase(align)) {
+                avatarX = dp(16) + dp(app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarOffsetX());
+            } else {
+                avatarX = listView.getMeasuredWidth() / 2f - (params.width * avatarScale * scaleMul * 0.5f) + dp(app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarOffsetX());
+            }
+        } else {
+            avatarX = listView.getMeasuredWidth() / 2f - (params.width * avatarScale * 0.5f);
+        }
         if (openAnimationInProgress) {
             avatarX = lerp(prevAvatarTranslation, avatarX, avatarAnimationProgress);
         }

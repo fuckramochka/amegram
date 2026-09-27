@@ -1,24 +1,24 @@
 package app.amegram.bridge.ameprofile;
 
-import android.animation.ObjectAnimator;
-import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
-import android.graphics.Path;
 import android.graphics.RectF;
 import android.graphics.Typeface;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
-import android.view.animation.LinearInterpolator;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
@@ -28,10 +28,10 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
-import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.ui.ActionBar.BottomSheet;
@@ -46,9 +46,11 @@ import app.miogram.bridge.customui.MiogramCustomUiPrefs;
 /**
  * ✦ AME STUDIO (АМЕ СТУДІО ໒꒱) — 10/10 GOLD STANDARD ✦
  * The ultimate visual & XML studio for Telegram profiles:
- * - Real-time Interactive Live Mockup Preview.
- * - 1-tap Aesthetic Presets (Cyberpunk, Sakura, Obsidian, Royal Gold, Matrix, Ocean).
- * - Code Editor with Quick Snippet Injection & Formatting.
+ * - Real-time Interactive Live Mockup Preview reflecting layout positioning (right/center/left avatar),
+ *   geometric rotation/tilt, local gallery photo banners, and animated gradient sweeps.
+ * - Missing local media auto-detection and 1-tap gallery picker for "local:photo1".
+ * - 1-tap Aesthetic Presets (Cyberpunk Right-Align, Sakura Dream, Obsidian, Royal Gold, Matrix).
+ * - Code Editor with Quick Snippet Injection (alignments, tilts, live gradients, media).
  * - 1-tap Direct Publishing to Community Topic (https://t.me/dkamegram/1499).
  * - 100% strict profile isolation: Zero global modifications.
  */
@@ -56,6 +58,8 @@ public class AmeProfileSheet extends BottomSheet {
 
     private final EditText xmlEditor;
     private final FrameLayout livePreviewCard;
+    private final LinearLayout prevHeaderRow;
+    private final LinearLayout nameCol;
     private final TextView previewName;
     private final TextView previewThought;
     private final FrameLayout previewAvatarFrame;
@@ -124,9 +128,9 @@ public class AmeProfileSheet extends BottomSheet {
         // Subtitle
         TextView subtitle = new TextView(context);
         subtitle.setText(MiogramLocale.get(
-                "Еталонне налаштування профілю. Редагуйте кожен піксель через XML, тестуйте у реальному часі та діліться стилем у спільноті.",
-                "Эталонная настройка профиля. Редактируйте каждый пиксель через XML, тестируйте в реальном времени и делитесь стилем в сообществе.",
-                "The pinnacle profile studio. Customize every detail via XML, live-preview instantly, and share presets with the community."
+                "Еталонне налаштування профілю: вільне розміщення (аватарка справа/зліва), нахил, анімовані градієнти та галерея фото в одному файлі.",
+                "Эталонная настройка профиля: свободное размещение (аватарка справа/слева), наклон, анимированные градиенты и галерея фото в одном файле.",
+                "Pinnacle profile studio: free layout positioning (right/center/left avatar), transforms, animated gradients, and local media in 1 file."
         ));
         subtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f);
         subtitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -148,7 +152,7 @@ public class AmeProfileSheet extends BottomSheet {
         previewContent.setOrientation(LinearLayout.VERTICAL);
 
         // Header info row inside preview
-        LinearLayout prevHeaderRow = new LinearLayout(context);
+        prevHeaderRow = new LinearLayout(context);
         prevHeaderRow.setOrientation(LinearLayout.HORIZONTAL);
         prevHeaderRow.setGravity(Gravity.CENTER_VERTICAL);
 
@@ -177,10 +181,8 @@ public class AmeProfileSheet extends BottomSheet {
         previewAvatar.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
         previewAvatarFrame.addView(previewAvatar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-        prevHeaderRow.addView(previewAvatarFrame, LayoutHelper.createLinear(44, 44, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
-
         // Name + Thought Bubble Column
-        LinearLayout nameCol = new LinearLayout(context);
+        nameCol = new LinearLayout(context);
         nameCol.setOrientation(LinearLayout.VERTICAL);
 
         previewThought = new TextView(context);
@@ -209,6 +211,8 @@ public class AmeProfileSheet extends BottomSheet {
         previewName.setShadowLayer(AndroidUtilities.dp(6), 0, 0, 0xFF00E5FF);
         nameCol.addView(previewName, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
+        // Default layout: avatar on left, name on right
+        prevHeaderRow.addView(previewAvatarFrame, LayoutHelper.createLinear(44, 44, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
         prevHeaderRow.addView(nameCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
 
         previewContent.addView(prevHeaderRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -317,6 +321,26 @@ public class AmeProfileSheet extends BottomSheet {
         LinearLayout toolbar = new LinearLayout(context);
         toolbar.setOrientation(LinearLayout.HORIZONTAL);
 
+        addToolbarChip(context, toolbar, "🖼 Додати фото (local:...)", () -> {
+            promptAddLocalMedia(context);
+        });
+
+        addToolbarChip(context, toolbar, "📐 Аватар справа", () -> {
+            insertSnippet("\n    <layout avatar-align=\"right\" avatar-size=\"120\" avatar-rotation=\"10\" name-align=\"left\" />\n");
+        });
+
+        addToolbarChip(context, toolbar, "📐 Аватар зліва", () -> {
+            insertSnippet("\n    <layout avatar-align=\"left\" avatar-size=\"100\" avatar-rotation=\"0\" name-align=\"left\" />\n");
+        });
+
+        addToolbarChip(context, toolbar, "🔄 Нахил (15°)", () -> {
+            insertSnippet(" rotation=\"15\"");
+        });
+
+        addToolbarChip(context, toolbar, "🌈 Живий градієнт 45°", () -> {
+            insertSnippet(" gradient-start=\"#FF007F\" gradient-middle=\"#7928CA\" gradient-end=\"#0070F3\" gradient-angle=\"45\" gradient-speed=\"2.0\"");
+        });
+
         addToolbarChip(context, toolbar, "+ Картка", () -> {
             insertSnippet("\n        <card id=\"new_card\"\n" +
                     "            title=\"Нова інтерактивна картка\"\n" +
@@ -325,6 +349,8 @@ public class AmeProfileSheet extends BottomSheet {
                     "            url=\"https://t.me/dkamegram/1499\"\n" +
                     "            gradient-start=\"#1E2235\"\n" +
                     "            gradient-end=\"#333A56\"\n" +
+                    "            gradient-angle=\"45\"\n" +
+                    "            gradient-speed=\"1.5\"\n" +
                     "            text-color=\"#FFFFFF\"\n" +
                     "            badge=\"HOT\"\n" +
                     "            badge-bg=\"#FF5722\"\n" +
@@ -341,7 +367,7 @@ public class AmeProfileSheet extends BottomSheet {
         });
 
         addToolbarChip(context, toolbar, "+ Банер", () -> {
-            insertSnippet("\n    <banner visible=\"true\" color=\"#1F1633\" alpha=\"95\" dim=\"15\" />\n");
+            insertSnippet("\n    <banner visible=\"true\" type=\"color\" color=\"#1F1633\" gradient-start=\"#1F1633\" gradient-end=\"#3F2B96\" gradient-angle=\"45\" gradient-speed=\"1.5\" alpha=\"95\" dim=\"15\" />\n");
         });
 
         addToolbarChip(context, toolbar, "✦ Форматувати XML", () -> {
@@ -429,11 +455,13 @@ public class AmeProfileSheet extends BottomSheet {
         applyBtn.setOnClickListener(v -> {
             String code = xmlEditor.getText().toString().trim();
             MiogramCustomUiPrefs.resetBrokenCpbMasks();
-            if (AmeProfileEngine.applyProfileXml(code)) {
-                Toast.makeText(context, MiogramLocale.get("Аме профіль успішно застосовано!", "Аме профиль успешно применен!", "Ame Profile applied successfully!"), Toast.LENGTH_SHORT).show();
-                dismiss();
+
+            // Check if there are unpicked local media assets
+            List<String> missing = AmeMediaEngine.findMissingLocalKeys(code);
+            if (!missing.isEmpty()) {
+                promptMissingMedia(context, missing.get(0), code);
             } else {
-                Toast.makeText(context, MiogramLocale.get("Помилка в синтаксисі XML! Перевірте закриття тегів.", "Ошибка в синтаксисе XML! Проверьте закрытие тегов.", "XML Syntax error! Check closing tags."), Toast.LENGTH_LONG).show();
+                applyAndDismiss(context, code);
             }
         });
         actionRow1.addView(applyBtn, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 6, 0));
@@ -510,6 +538,74 @@ public class AmeProfileSheet extends BottomSheet {
         updateLivePreviewFromXml(xmlEditor.getText().toString());
     }
 
+    private void applyAndDismiss(Context context, String code) {
+        if (AmeProfileEngine.applyProfileXml(code)) {
+            Toast.makeText(context, MiogramLocale.get("Аме профіль успішно застосовано!", "Аме профиль успешно применен!", "Ame Profile applied successfully!"), Toast.LENGTH_SHORT).show();
+            dismiss();
+        } else {
+            Toast.makeText(context, MiogramLocale.get("Помилка в синтаксисі XML! Перевірте закриття тегів.", "Ошибка в синтаксисе XML! Проверьте закрытие тегов.", "XML Syntax error! Check closing tags."), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private void promptMissingMedia(Context context, String missingKey, String code) {
+        Activity act = null;
+        if (context instanceof Activity) {
+            act = (Activity) context;
+        }
+
+        if (act == null) {
+            applyAndDismiss(context, code);
+            return;
+        }
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(act);
+        builder.setTitle("📸 Локальне медіа: local:" + missingKey);
+        builder.setMessage("У вашому коді вказано «local:" + missingKey + "», але фото або відео ще не обрано з галереї. Бажаєте обрати файл прямо зараз?");
+        final Activity finalAct = act;
+        builder.setPositiveButton("Вибрати з галереї", (dialog, which) -> {
+            AmeMediaEngine.pickMedia(finalAct, missingKey, () -> {
+                updateLivePreviewFromXml(xmlEditor.getText().toString());
+                applyAndDismiss(context, code);
+            });
+        });
+        builder.setNegativeButton("Продовжити так", (dialog, which) -> {
+            applyAndDismiss(context, code);
+        });
+        builder.show();
+    }
+
+    private void promptAddLocalMedia(Context context) {
+        Activity act = null;
+        if (context instanceof Activity) {
+            act = (Activity) context;
+        }
+        if (act == null) return;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(act);
+        builder.setTitle("🖼 Створити локальне медіа");
+        builder.setMessage("Введіть ідентифікатор медіа (наприклад: photo1 або banner1):");
+
+        final EditText input = new EditText(act);
+        input.setInputType(InputType.TYPE_CLASS_TEXT);
+        input.setText("photo1");
+        input.setSelectAllOnFocus(true);
+        builder.setView(input);
+
+        final Activity finalAct = act;
+        builder.setPositiveButton("Обрати фото з галереї", (dialog, which) -> {
+            String key = input.getText().toString().trim();
+            if (TextUtils.isEmpty(key)) key = "photo1";
+            final String finalKey = AmeMediaEngine.cleanKey(key);
+            AmeMediaEngine.pickMedia(finalAct, finalKey, () -> {
+                insertSnippet(" src=\"local:" + finalKey + "\"");
+                updateLivePreviewFromXml(xmlEditor.getText().toString());
+                Toast.makeText(context, "Фото для local:" + finalKey + " збережено та вставлено!", Toast.LENGTH_SHORT).show();
+            });
+        });
+        builder.setNegativeButton("Скасувати", null);
+        builder.show();
+    }
+
     private void addToolbarChip(Context context, LinearLayout container, String title, Runnable action) {
         TextView chip = new TextView(context);
         chip.setText(title);
@@ -538,7 +634,6 @@ public class AmeProfileSheet extends BottomSheet {
         String raw = xmlEditor.getText().toString();
         if (TextUtils.isEmpty(raw)) return;
         try {
-            // Clean multi-blank lines and normalize indentation
             String[] lines = raw.split("\n");
             StringBuilder sb = new StringBuilder();
             int consecutiveBlank = 0;
@@ -572,7 +667,56 @@ public class AmeProfileSheet extends BottomSheet {
     private void updateLivePreviewFromXml(String xml) {
         if (TextUtils.isEmpty(xml)) return;
         try {
-            // Extract colors and thought dynamically for preview
+            // 1. Layout Positioning & Transforms
+            String avatarAlign = extractStringAttr(xml, "layout", "avatar-align");
+            if (avatarAlign == null) avatarAlign = extractStringAttr(xml, "avatar", "align");
+            if (avatarAlign == null) avatarAlign = "left";
+
+            float avatarRot = extractFloatAttr(xml, "avatar", "rotation", 0f);
+            if (avatarRot == 0f) avatarRot = extractFloatAttr(xml, "layout", "avatar-rotation", 0f);
+            previewAvatarFrame.setRotation(avatarRot);
+
+            float nameRot = extractFloatAttr(xml, "name", "rotation", 0f);
+            if (nameRot == 0f) nameRot = extractFloatAttr(xml, "layout", "name-rotation", 0f);
+            previewName.setRotation(nameRot);
+
+            // Dynamically reorder header row according to avatar alignment
+            prevHeaderRow.removeAllViews();
+            if ("right".equalsIgnoreCase(avatarAlign)) {
+                prevHeaderRow.addView(nameCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
+                prevHeaderRow.addView(previewAvatarFrame, LayoutHelper.createLinear(44, 44, Gravity.CENTER_VERTICAL, 12, 0, 0, 0));
+            } else {
+                prevHeaderRow.addView(previewAvatarFrame, LayoutHelper.createLinear(44, 44, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
+                prevHeaderRow.addView(nameCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
+            }
+
+            // 2. Banner backdrop preview
+            String bannerSrc = extractStringAttr(xml, "banner", "src");
+            Bitmap bannerBmp = null;
+            if (!TextUtils.isEmpty(bannerSrc)) {
+                bannerBmp = AmeMediaEngine.getInstance().getBitmap(bannerSrc);
+            }
+
+            int bGrad1 = extractColorAttr(xml, "banner", "gradient-start", 0);
+            int bGrad2 = extractColorAttr(xml, "banner", "gradient-end", 0);
+            float bAngle = extractFloatAttr(xml, "banner", "gradient-angle", 45f);
+
+            if (bannerBmp != null) {
+                BitmapDrawable bd = new BitmapDrawable(getContext().getResources(), bannerBmp);
+                livePreviewCard.setBackground(bd);
+            } else if (bGrad1 != 0 && bGrad2 != 0) {
+                GradientDrawable bbg = AmeGradientHelper.createGradient(bGrad1, bGrad2, 0, bAngle, 16);
+                livePreviewCard.setBackground(bbg);
+            } else {
+                int bColor = extractColorAttr(xml, "banner", "color", 0xFF181B26);
+                GradientDrawable prevCardBg = new GradientDrawable();
+                prevCardBg.setColor(bColor != 0 ? bColor : 0xFF181B26);
+                prevCardBg.setCornerRadius(AndroidUtilities.dp(16));
+                prevCardBg.setStroke(AndroidUtilities.dp(1), 0x26FFFFFF);
+                livePreviewCard.setBackground(prevCardBg);
+            }
+
+            // 3. Name styling & glow
             int nameColor = extractColorAttr(xml, "name", "color", 0xFFFFFFFF);
             int glowColor = extractColorAttr(xml, "name", "glow-color", 0xFF00E5FF);
             boolean glowEnabled = extractBoolAttr(xml, "name", "glow-enabled", true);
@@ -583,11 +727,13 @@ public class AmeProfileSheet extends BottomSheet {
                 previewName.setShadowLayer(0, 0, 0, 0);
             }
 
+            // 4. Ring color
             int ringColor = extractColorAttr(xml, "avatar", "ring-color", 0xFF00E5FF);
             if (previewAvatarRingView != null) {
                 previewAvatarRingView.invalidate();
             }
 
+            // 5. Thought text & bubble
             String thought = extractStringAttr(xml, "thought", "text");
             if (!TextUtils.isEmpty(thought)) {
                 previewThought.setVisibility(View.VISIBLE);
@@ -603,12 +749,14 @@ public class AmeProfileSheet extends BottomSheet {
                 previewThought.setVisibility(View.GONE);
             }
 
+            // 6. Custom Card preview styling
             int cardGrad1 = extractColorAttr(xml, "card", "gradient-start", 0xFF202538);
             int cardGrad2 = extractColorAttr(xml, "card", "gradient-end", 0xFF353C59);
-            GradientDrawable mcBg = new GradientDrawable();
-            mcBg.setOrientation(GradientDrawable.Orientation.LEFT_RIGHT);
-            mcBg.setColors(new int[]{cardGrad1, cardGrad2});
-            mcBg.setCornerRadius(AndroidUtilities.dp(12));
+            float cardAngle = extractFloatAttr(xml, "card", "gradient-angle", 45f);
+            float cardRot = extractFloatAttr(xml, "card", "rotation", 0f);
+            previewCardFrame.setRotation(cardRot);
+
+            GradientDrawable mcBg = AmeGradientHelper.createGradient(cardGrad1, cardGrad2, 0, cardAngle, 12);
             previewCardFrame.setBackground(mcBg);
 
             String cTitle = extractStringAttr(xml, "card", "title");
@@ -641,6 +789,27 @@ public class AmeProfileSheet extends BottomSheet {
                             if (!TextUtils.isEmpty(hex)) {
                                 return Color.parseColor(hex.startsWith("#") ? hex : "#" + hex);
                             }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignore) {}
+        return def;
+    }
+
+    private static float extractFloatAttr(String xml, String tag, String attr, float def) {
+        try {
+            int tagIdx = xml.indexOf("<" + tag);
+            if (tagIdx != -1) {
+                int tagEnd = xml.indexOf(">", tagIdx);
+                if (tagEnd != -1) {
+                    String sub = xml.substring(tagIdx, tagEnd);
+                    int attrIdx = sub.indexOf(attr + "=\"");
+                    if (attrIdx != -1) {
+                        int valStart = attrIdx + attr.length() + 2;
+                        int valEnd = sub.indexOf("\"", valStart);
+                        if (valEnd != -1) {
+                            return Float.parseFloat(sub.substring(valStart, valEnd));
                         }
                     }
                 }

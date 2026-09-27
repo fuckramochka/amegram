@@ -478,11 +478,54 @@ public class MiogramUiEngine {
 
     public static void drawProfileBanner(Canvas canvas, int width, int height) {
         if (canvas == null || width <= 0 || height <= 0 || !MiogramCustomUiPrefs.isBannerEnabled()) return;
-        int color = MiogramCustomUiPrefs.getBannerColor();
+
         int alpha = (int) (255 * (MiogramCustomUiPrefs.getBannerAlpha() / 100f));
-        int finalColor = (color & 0x00FFFFFF) | (alpha << 24);
-        profileBannerPaint.setColor(finalColor);
-        canvas.drawRect(0, 0, width, height, profileBannerPaint);
+        int dim = (int) (255 * (MiogramCustomUiPrefs.getBannerDim() / 100f));
+
+        // 1. Check local / remote media photo/image
+        String src = app.amegram.bridge.ameprofile.AmeProfileEngine.getBannerSrc();
+        Bitmap bmp = null;
+        if (!android.text.TextUtils.isEmpty(src)) {
+            bmp = app.amegram.bridge.ameprofile.AmeMediaEngine.getInstance().getBitmap(src);
+        }
+
+        if (bmp != null && !bmp.isRecycled()) {
+            profileBannerPaint.setShader(null);
+            profileBannerPaint.setColor(Color.WHITE);
+            profileBannerPaint.setAlpha(alpha);
+            android.graphics.Rect srcR = new android.graphics.Rect(0, 0, bmp.getWidth(), bmp.getHeight());
+            android.graphics.Rect dstR = new android.graphics.Rect(0, 0, width, height);
+            canvas.drawBitmap(bmp, srcR, dstR, profileBannerPaint);
+        } else {
+            // 2. Check gradient with angle and speed
+            int c1 = app.amegram.bridge.ameprofile.AmeProfileEngine.getBannerGradientColor1();
+            int c2 = app.amegram.bridge.ameprofile.AmeProfileEngine.getBannerGradientColor2();
+            int c3 = app.amegram.bridge.ameprofile.AmeProfileEngine.getBannerGradientColor3();
+            float angle = app.amegram.bridge.ameprofile.AmeProfileEngine.getBannerGradientAngle();
+            float speed = app.amegram.bridge.ameprofile.AmeProfileEngine.getBannerGradientSpeed();
+
+            if (c1 != 0 && c2 != 0) {
+                int[] colors = c3 != 0 ? new int[]{c1, c3, c2} : new int[]{c1, c2};
+                LinearGradient shader = app.amegram.bridge.ameprofile.AmeGradientHelper.createAnimatedShader(colors, angle, width, height, speed);
+                profileBannerPaint.setShader(shader);
+                profileBannerPaint.setColor(Color.WHITE);
+                profileBannerPaint.setAlpha(alpha);
+                canvas.drawRect(0, 0, width, height, profileBannerPaint);
+            } else {
+                int color = MiogramCustomUiPrefs.getBannerColor();
+                int finalColor = (color & 0x00FFFFFF) | (alpha << 24);
+                profileBannerPaint.setShader(null);
+                profileBannerPaint.setColor(finalColor);
+                canvas.drawRect(0, 0, width, height, profileBannerPaint);
+            }
+        }
+
+        // 3. Dim overlay
+        if (dim > 0) {
+            profileBannerPaint.setShader(null);
+            profileBannerPaint.setColor(dim << 24);
+            canvas.drawRect(0, 0, width, height, profileBannerPaint);
+        }
     }
 
     /* =========================================================================

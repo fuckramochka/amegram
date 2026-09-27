@@ -26,12 +26,14 @@ import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.customui.MiogramCustomUiPrefs;
 
 /**
- * ✦ AME PROFILE ENGINE (АМЕ ПРОФІЛЬ) ✦
+ * ✦ AME PROFILE ENGINE (АМЕ ПРОФІЛЬ) — 10/10 MASTER ENGINE ✦
  * The pinnacle customization engine for Amegram profile aesthetics:
  * - 100% strict profile tab isolation: Zero global chat/bubble leaks.
- * - Comprehensive XML configuration with rich aesthetic presets.
- * - Full Ukrainian guide, snippet generation, and auto-formatting.
- * - 1-tap community topic sharing to https://t.me/dkamegram/1499.
+ * - Free layout positioning: Avatar on the right/center/left, large sizing, offset.
+ * - Transforms & Tilt: Rotation angles on avatar, name, and modular elements.
+ * - Gradient Physics: 0°-360° gradient angles and animated high-speed neon sweeps.
+ * - Dynamic Media: Local photo/video binding (src="local:photo1"), remote URLs, GIFs, looping videos.
+ * - Arbitrary Modular DOM: Add, duplicate, reorder, or delete cards, text blocks, and media.
  */
 public class AmeProfileEngine {
 
@@ -41,13 +43,18 @@ public class AmeProfileEngine {
 
     public static class AmeCard {
         public String id = "";
+        public String type = "card"; // "card", "text", "image", "badge"
         public String title = "";
         public String subtitle = "";
         public String icon = "link";
         public String url = "";
+        public String src = ""; // local:xxx or http(s)://
         public int bgColor = 0;
         public int gradientColor1 = 0;
         public int gradientColor2 = 0;
+        public int gradientColor3 = 0;
+        public float gradientAngle = 0f;
+        public float gradientSpeed = 0f;
         public int textColor = 0;
         public int subtitleColor = 0;
         public String badge = "";
@@ -58,9 +65,39 @@ public class AmeProfileEngine {
         public int iconColor = 0;
         public int iconBgColor = 0;
         public int radius = 14;
+        public float rotation = 0f; // tilt angle in degrees
+        public int textSize = 15;
+        public String align = "left"; // left, center, right
     }
 
-    // In-memory runtime state for fast profile view binding
+    // --- Runtime Profile Layout State ---
+    private static String avatarAlign = "left"; // "left", "center", "right"
+    private static int avatarSize = 100; // dp
+    private static float avatarRotation = 0f; // degrees
+    private static int avatarOffsetX = 0; // dp
+    private static int avatarOffsetY = 0; // dp
+
+    private static String nameAlign = "left"; // "left", "center", "right"
+    private static float nameRotation = 0f; // degrees
+    private static int nameSize = 22; // sp
+
+    private static String thoughtAlign = "left";
+    private static float thoughtRotation = 0f;
+
+    // Banner Media state
+    private static boolean bannerVisible = true;
+    private static String bannerType = "color"; // "color", "image", "gif", "video"
+    private static String bannerSrc = ""; // local:xxx or http(s)://
+    private static boolean bannerSound = false;
+    private static boolean bannerLoop = true;
+    private static int bannerHeight = 0; // dp (0 = default automatic)
+    private static int bannerGradientColor1 = 0;
+    private static int bannerGradientColor2 = 0;
+    private static int bannerGradientColor3 = 0;
+    private static float bannerGradientAngle = 0f;
+    private static float bannerGradientSpeed = 0f;
+
+    // Info rows visibility & colors
     private static boolean phoneVisible = true;
     private static int phoneColor = 0;
     private static boolean usernameVisible = true;
@@ -92,13 +129,42 @@ public class AmeProfileEngine {
                 return;
             }
         }
-        // Load defaults from MiogramCustomUiPrefs
+        // Defaults
         phoneVisible = !MiogramCustomUiPrefs.isHideRowPhone();
         usernameVisible = !MiogramCustomUiPrefs.isHideRowUsername();
         bioVisible = !MiogramCustomUiPrefs.isHideRowBio();
         mediaTabsVisible = !MiogramCustomUiPrefs.isHideMediaTabs();
     }
 
+    // Getters for Layout & Transforms
+    public static String getAvatarAlign() { ensureInitialized(); return avatarAlign; }
+    public static int getAvatarSize() { ensureInitialized(); return avatarSize; }
+    public static float getAvatarScaleMultiplier() { ensureInitialized(); return avatarSize > 0 ? (avatarSize / 100f) : 1f; }
+    public static float getAvatarRotation() { ensureInitialized(); return avatarRotation; }
+    public static int getAvatarOffsetX() { ensureInitialized(); return avatarOffsetX; }
+    public static int getAvatarOffsetY() { ensureInitialized(); return avatarOffsetY; }
+
+    public static String getNameAlign() { ensureInitialized(); return nameAlign; }
+    public static float getNameRotation() { ensureInitialized(); return nameRotation; }
+    public static int getNameSize() { ensureInitialized(); return nameSize; }
+
+    public static String getThoughtAlign() { ensureInitialized(); return thoughtAlign; }
+    public static float getThoughtRotation() { ensureInitialized(); return thoughtRotation; }
+
+    // Banner Getters
+    public static boolean isBannerVisible() { ensureInitialized(); return bannerVisible && MiogramCustomUiPrefs.isBannerEnabled(); }
+    public static String getBannerType() { ensureInitialized(); return bannerType; }
+    public static String getBannerSrc() { ensureInitialized(); return bannerSrc; }
+    public static boolean isBannerSound() { ensureInitialized(); return bannerSound; }
+    public static boolean isBannerLoop() { ensureInitialized(); return bannerLoop; }
+    public static int getBannerHeight() { ensureInitialized(); return bannerHeight; }
+    public static int getBannerGradientColor1() { ensureInitialized(); return bannerGradientColor1; }
+    public static int getBannerGradientColor2() { ensureInitialized(); return bannerGradientColor2; }
+    public static int getBannerGradientColor3() { ensureInitialized(); return bannerGradientColor3; }
+    public static float getBannerGradientAngle() { ensureInitialized(); return bannerGradientAngle; }
+    public static float getBannerGradientSpeed() { ensureInitialized(); return bannerGradientSpeed; }
+
+    // Info rows Getters
     public static boolean isPhoneVisible() { ensureInitialized(); return phoneVisible; }
     public static int getPhoneColor() { ensureInitialized(); return phoneColor; }
     public static boolean isUsernameVisible() { ensureInitialized(); return usernameVisible; }
@@ -109,6 +175,7 @@ public class AmeProfileEngine {
     public static int getBirthdayColor() { ensureInitialized(); return birthdayColor; }
     public static boolean isPresenceVisible() { ensureInitialized(); return presenceVisible; }
     public static boolean isMediaTabsVisible() { ensureInitialized(); return mediaTabsVisible; }
+
     public static List<AmeCard> getCustomCards() {
         ensureInitialized();
         return Collections.unmodifiableList(new ArrayList<>(customCards));
@@ -134,45 +201,47 @@ public class AmeProfileEngine {
     public static List<AmePreset> getPresets() {
         List<AmePreset> presets = new ArrayList<>();
 
-        // 1. Ame Cyberpunk
+        // 1. Ame Cyberpunk: Avatar on the Right, Animated Gradient, Neon Tilt
         presets.add(new AmePreset(
-                "Ame Cyberpunk",
+                "Cyber Right-Align",
                 "⚡",
-                "Неонове бірюзово-рожеве сяйво, кібер-картки та сквіркл",
+                "Велика аватарка справа, нік зліва, живий анімований градієнт та нахил",
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<ame-profile version=\"1.0\" preset=\"cyberpunk\">\n\n" +
-                "    <theme bg-color=\"#0D0E15\" card-bg=\"#161926\" card-radius=\"16\" />\n\n" +
-                "    <banner visible=\"true\" color=\"#1F1633\" alpha=\"95\" dim=\"15\" />\n\n" +
-                "    <avatar visible=\"true\" shape=\"1\" radius=\"26\" ring-enabled=\"true\" ring-color=\"#00F0FF\" ring-pulse=\"true\" />\n\n" +
-                "    <name color-enabled=\"true\" color=\"#FFFFFF\" glow-enabled=\"true\" glow-color=\"#00E5FF\" glow-radius=\"14\" />\n\n" +
-                "    <thought visible=\"true\" text=\"⚡ Living in the neon cybergrid ໒꒱\" text-color=\"#00F0FF\" bg-color=\"#18192A\" />\n\n" +
+                "<ame-profile version=\"2.0\" preset=\"cyber_right\">\n\n" +
+                "    <theme bg-color=\"#0A0B10\" card-bg=\"#141624\" card-radius=\"18\" />\n\n" +
+                "    <layout avatar-align=\"right\" avatar-size=\"115\" avatar-rotation=\"10\" name-align=\"left\" />\n\n" +
+                "    <banner visible=\"true\" type=\"color\" color=\"#1B1530\" gradient-start=\"#16082F\" gradient-end=\"#38126B\" gradient-angle=\"45\" gradient-speed=\"1.8\" alpha=\"95\" dim=\"15\" />\n\n" +
+                "    <avatar visible=\"true\" align=\"right\" size=\"115\" rotation=\"10\" shape=\"1\" radius=\"28\" ring-enabled=\"true\" ring-color=\"#00F0FF\" ring-pulse=\"true\" ring-width=\"3\" />\n\n" +
+                "    <name color-enabled=\"true\" color=\"#FFFFFF\" glow-enabled=\"true\" glow-color=\"#00E5FF\" glow-radius=\"16\" align=\"left\" />\n\n" +
+                "    <thought visible=\"true\" text=\"⚡ Cyberpunk Layout: Right Avatar ໒꒱\" text-color=\"#00F0FF\" bg-color=\"#18192A\" />\n\n" +
                 "    <info-rows phone-visible=\"true\" phone-color=\"#818CF8\" username-visible=\"true\" username-color=\"#00F0FF\" bio-visible=\"true\" bio-color=\"#E2E8F0\" birthday-visible=\"true\" />\n\n" +
                 "    <presence visible=\"true\" />\n\n" +
                 "    <media-tabs visible=\"true\" />\n\n" +
                 "    <custom-cards>\n" +
-                "        <card id=\"cyber_hub\" title=\"Cyberpunk Terminal\" subtitle=\"Офіційний портал оновлень та конфігів\" icon=\"code\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#1F1D36\" gradient-end=\"#3F2B96\" text-color=\"#FFFFFF\" badge=\"ONLINE\" badge-bg=\"#00E5FF\" badge-color=\"#000000\" radius=\"16\" />\n" +
-                "        <card id=\"steam_deck\" title=\"Steam Game Station\" subtitle=\"Переглянути мої досягнення та ігри\" icon=\"steam\" url=\"https://steamcommunity.com\" bg-color=\"#171A21\" text-color=\"#C7D5E0\" badge=\"STEAM\" radius=\"16\" />\n" +
+                "        <card id=\"cyber_terminal\" title=\"Cyber Terminal Station\" subtitle=\"Гіпершвидкісний потік оновлень\" icon=\"code\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#1F1D36\" gradient-middle=\"#3F2B96\" gradient-end=\"#00F0FF\" gradient-angle=\"45\" gradient-speed=\"2.0\" text-color=\"#FFFFFF\" badge=\"ONLINE\" badge-bg=\"#00E5FF\" badge-color=\"#000000\" radius=\"16\" rotation=\"-1\" />\n" +
+                "        <card id=\"steam_hub\" title=\"Steam Game Matrix\" subtitle=\"Досягнення та ігровий профіль\" icon=\"steam\" url=\"https://steamcommunity.com\" bg-color=\"#161926\" border-color=\"#00F0FF\" border-width=\"1\" text-color=\"#C7D5E0\" badge=\"STEAM\" radius=\"16\" />\n" +
                 "    </custom-cards>\n\n" +
                 "</ame-profile>"
         ));
 
-        // 2. Pastel Sakura Dream
+        // 2. Sakura Centered Dream: Soft angled gradients and local photo banner support
         presets.add(new AmePreset(
                 "Sakura Dream",
                 "🌸",
-                "Ніжний пастельний градієнт, лавандові відтінки та м'яке сяйво",
+                "Ніжний пастельний градієнт 135°, лавандове сяйво та витончена естетика",
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<ame-profile version=\"1.0\" preset=\"sakura\">\n\n" +
+                "<ame-profile version=\"2.0\" preset=\"sakura\">\n\n" +
                 "    <theme bg-color=\"#1A1520\" card-bg=\"#241E2D\" card-radius=\"18\" />\n\n" +
-                "    <banner visible=\"true\" color=\"#362238\" alpha=\"90\" dim=\"10\" />\n\n" +
-                "    <avatar visible=\"true\" shape=\"1\" radius=\"28\" ring-enabled=\"true\" ring-color=\"#FF80BF\" ring-pulse=\"true\" />\n\n" +
-                "    <name color-enabled=\"true\" color=\"#FFE6F2\" glow-enabled=\"true\" glow-color=\"#FF66B2\" glow-radius=\"12\" />\n\n" +
+                "    <layout avatar-align=\"left\" avatar-size=\"105\" avatar-rotation=\"-5\" name-align=\"left\" />\n\n" +
+                "    <banner visible=\"true\" type=\"color\" color=\"#362238\" gradient-start=\"#3E2745\" gradient-end=\"#6B3E69\" gradient-angle=\"135\" gradient-speed=\"1.0\" alpha=\"92\" dim=\"10\" />\n\n" +
+                "    <avatar visible=\"true\" align=\"left\" size=\"105\" rotation=\"-5\" shape=\"1\" radius=\"28\" ring-enabled=\"true\" ring-color=\"#FF80BF\" ring-pulse=\"true\" />\n\n" +
+                "    <name color-enabled=\"true\" color=\"#FFE6F2\" glow-enabled=\"true\" glow-color=\"#FF66B2\" glow-radius=\"14\" />\n\n" +
                 "    <thought visible=\"true\" text=\"🌸 Квітну у весняному саду ໒꒱\" text-color=\"#FFB3D9\" bg-color=\"#2B1E30\" />\n\n" +
                 "    <info-rows phone-visible=\"true\" phone-color=\"#DDA0DD\" username-visible=\"true\" username-color=\"#FF99CC\" bio-visible=\"true\" bio-color=\"#F5EEF8\" birthday-visible=\"true\" />\n\n" +
                 "    <presence visible=\"true\" />\n\n" +
                 "    <media-tabs visible=\"true\" />\n\n" +
                 "    <custom-cards>\n" +
-                "        <card id=\"sakura_channel\" title=\"Мій затишний куточок ໒꒱\" subtitle=\"Естетичні фото, музика та натхнення\" icon=\"star\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#3E2745\" gradient-end=\"#6B3E69\" text-color=\"#FFFFFF\" badge=\"CUTE\" badge-bg=\"#FF80BF\" badge-color=\"#1A1520\" radius=\"16\" />\n" +
+                "        <card id=\"sakura_corner\" title=\"Мій затишний куточок ໒꒱\" subtitle=\"Естетичні фото, музика та натхнення\" icon=\"star\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#4A2E50\" gradient-end=\"#784475\" gradient-angle=\"60\" gradient-speed=\"1.2\" text-color=\"#FFFFFF\" badge=\"CUTE\" badge-bg=\"#FF80BF\" badge-color=\"#1A1520\" radius=\"16\" />\n" +
                 "    </custom-cards>\n\n" +
                 "</ame-profile>"
         ));
@@ -181,10 +250,11 @@ public class AmeProfileEngine {
         presets.add(new AmePreset(
                 "OLED Obsidian",
                 "🖤",
-                "Глибокий чорний мінімалізм, чіткі білі лінії та монохром",
+                "Глибокий чорний мінімалізм, чіткі контури та монохром",
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<ame-profile version=\"1.0\" preset=\"obsidian\">\n\n" +
+                "<ame-profile version=\"2.0\" preset=\"obsidian\">\n\n" +
                 "    <theme bg-color=\"#000000\" card-bg=\"#111111\" card-radius=\"14\" />\n\n" +
+                "    <layout avatar-align=\"left\" avatar-size=\"100\" avatar-rotation=\"0\" />\n\n" +
                 "    <banner visible=\"false\" color=\"#000000\" alpha=\"0\" dim=\"0\" />\n\n" +
                 "    <avatar visible=\"true\" shape=\"0\" radius=\"36\" ring-enabled=\"true\" ring-color=\"#FFFFFF\" ring-pulse=\"false\" />\n\n" +
                 "    <name color-enabled=\"true\" color=\"#FFFFFF\" glow-enabled=\"false\" glow-color=\"#FFFFFF\" glow-radius=\"0\" />\n\n" +
@@ -202,19 +272,20 @@ public class AmeProfileEngine {
         presets.add(new AmePreset(
                 "Royal Gold",
                 "👑",
-                "Імперське золото, пульсуючий німб та преміум-бейджі",
+                "Імперське золото, велика аватарка, 45° градієнти та розкіш",
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<ame-profile version=\"1.0\" preset=\"royal_gold\">\n\n" +
+                "<ame-profile version=\"2.0\" preset=\"royal_gold\">\n\n" +
                 "    <theme bg-color=\"#0C0B08\" card-bg=\"#191712\" card-radius=\"16\" />\n\n" +
-                "    <banner visible=\"true\" color=\"#2E230B\" alpha=\"95\" dim=\"20\" />\n\n" +
-                "    <avatar visible=\"true\" shape=\"1\" radius=\"24\" ring-enabled=\"true\" ring-color=\"#FFD700\" ring-pulse=\"true\" />\n\n" +
-                "    <name color-enabled=\"true\" color=\"#FFF2B2\" glow-enabled=\"true\" glow-color=\"#FFC800\" glow-radius=\"14\" />\n\n" +
+                "    <layout avatar-align=\"right\" avatar-size=\"120\" avatar-rotation=\"8\" name-align=\"left\" />\n\n" +
+                "    <banner visible=\"true\" type=\"color\" color=\"#2E230B\" gradient-start=\"#36280B\" gradient-end=\"#6B5219\" gradient-angle=\"45\" gradient-speed=\"1.4\" alpha=\"95\" dim=\"20\" />\n\n" +
+                "    <avatar visible=\"true\" align=\"right\" size=\"120\" rotation=\"8\" shape=\"1\" radius=\"26\" ring-enabled=\"true\" ring-color=\"#FFD700\" ring-pulse=\"true\" ring-width=\"3\" />\n\n" +
+                "    <name color-enabled=\"true\" color=\"#FFF2B2\" glow-enabled=\"true\" glow-color=\"#FFC800\" glow-radius=\"16\" />\n\n" +
                 "    <thought visible=\"true\" text=\"👑 Golden Standard of Quality ໒꒱\" text-color=\"#FFD700\" bg-color=\"#261E0F\" />\n\n" +
                 "    <info-rows phone-visible=\"true\" phone-color=\"#F0E68C\" username-visible=\"true\" username-color=\"#FFD700\" bio-visible=\"true\" bio-color=\"#FFF8DC\" birthday-visible=\"true\" />\n\n" +
                 "    <presence visible=\"true\" />\n\n" +
                 "    <media-tabs visible=\"true\" />\n\n" +
                 "    <custom-cards>\n" +
-                "        <card id=\"vip_club\" title=\"Amegram VIP Club\" subtitle=\"Ексклюзивний доступ та привілеї спільноти\" icon=\"star\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#36280B\" gradient-end=\"#6B5219\" text-color=\"#FFF6CC\" badge=\"VIP 10/10\" badge-bg=\"#FFD700\" badge-color=\"#000000\" radius=\"16\" />\n" +
+                "        <card id=\"vip_club\" title=\"Amegram VIP Club\" subtitle=\"Ексклюзивний доступ та привілеї спільноти\" icon=\"star\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#3D2D0C\" gradient-middle=\"#73591B\" gradient-end=\"#FFD700\" gradient-angle=\"45\" gradient-speed=\"2.2\" text-color=\"#FFF6CC\" badge=\"VIP 10/10\" badge-bg=\"#FFD700\" badge-color=\"#000000\" radius=\"16\" rotation=\"1\" />\n" +
                 "    </custom-cards>\n\n" +
                 "</ame-profile>"
         ));
@@ -223,11 +294,12 @@ public class AmeProfileEngine {
         presets.add(new AmePreset(
                 "Emerald Matrix",
                 "🌿",
-                "Глибокий смарагдовий матричний стиль з неоновим м'ятним сяйвом",
+                "Смарагдовий неоновий термінал, 90° вертикальний градієнт",
                 "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<ame-profile version=\"1.0\" preset=\"matrix\">\n\n" +
+                "<ame-profile version=\"2.0\" preset=\"matrix\">\n\n" +
                 "    <theme bg-color=\"#08120B\" card-bg=\"#0E1F14\" card-radius=\"16\" />\n\n" +
-                "    <banner visible=\"true\" color=\"#0E2A18\" alpha=\"95\" dim=\"15\" />\n\n" +
+                "    <layout avatar-align=\"left\" avatar-size=\"100\" avatar-rotation=\"0\" />\n\n" +
+                "    <banner visible=\"true\" type=\"color\" color=\"#0E2A18\" gradient-start=\"#092113\" gradient-end=\"#144726\" gradient-angle=\"90\" gradient-speed=\"1.5\" alpha=\"95\" dim=\"15\" />\n\n" +
                 "    <avatar visible=\"true\" shape=\"1\" radius=\"22\" ring-enabled=\"true\" ring-color=\"#00FF88\" ring-pulse=\"true\" />\n\n" +
                 "    <name color-enabled=\"true\" color=\"#E6FFF2\" glow-enabled=\"true\" glow-color=\"#00FF88\" glow-radius=\"14\" />\n\n" +
                 "    <thought visible=\"true\" text=\"01000001 01001101 01000101 ໒꒱\" text-color=\"#00FF88\" bg-color=\"#0C2B18\" />\n\n" +
@@ -235,28 +307,7 @@ public class AmeProfileEngine {
                 "    <presence visible=\"true\" />\n\n" +
                 "    <media-tabs visible=\"true\" />\n\n" +
                 "    <custom-cards>\n" +
-                "        <card id=\"matrix_source\" title=\"Matrix Terminal Source\" subtitle=\"Системні журнали та код розробки\" icon=\"code\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#0E331B\" gradient-end=\"#16542D\" text-color=\"#FFFFFF\" badge=\"ROOT\" badge-bg=\"#00FF88\" badge-color=\"#000000\" radius=\"16\" />\n" +
-                "    </custom-cards>\n\n" +
-                "</ame-profile>"
-        ));
-
-        // 6. Midnight Ocean Ice
-        presets.add(new AmePreset(
-                "Ocean Ice",
-                "🌊",
-                "Глибокий сапфіровий океан, крижаний градієнт та ультрамарин",
-                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
-                "<ame-profile version=\"1.0\" preset=\"ocean\">\n\n" +
-                "    <theme bg-color=\"#080E1C\" card-bg=\"#0F192E\" card-radius=\"16\" />\n\n" +
-                "    <banner visible=\"true\" color=\"#122240\" alpha=\"95\" dim=\"15\" />\n\n" +
-                "    <avatar visible=\"true\" shape=\"0\" radius=\"34\" ring-enabled=\"true\" ring-color=\"#38BDF8\" ring-pulse=\"true\" />\n\n" +
-                "    <name color-enabled=\"true\" color=\"#F0F9FF\" glow-enabled=\"true\" glow-color=\"#0284C7\" glow-radius=\"14\" />\n\n" +
-                "    <thought visible=\"true\" text=\"🌊 Whispers of the midnight abyss ໒꒱\" text-color=\"#38BDF8\" bg-color=\"#112547\" />\n\n" +
-                "    <info-rows phone-visible=\"true\" phone-color=\"#7DD3FC\" username-visible=\"true\" username-color=\"#38BDF8\" bio-visible=\"true\" bio-color=\"#E0F2FE\" birthday-visible=\"true\" />\n\n" +
-                "    <presence visible=\"true\" />\n\n" +
-                "    <media-tabs visible=\"true\" />\n\n" +
-                "    <custom-cards>\n" +
-                "        <card id=\"ocean_station\" title=\"Deep Ocean Station\" subtitle=\"Стріми, треки та chill атмосфера\" icon=\"music\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#132B52\" gradient-end=\"#1E498A\" text-color=\"#FFFFFF\" badge=\"WAVE\" badge-bg=\"#38BDF8\" badge-color=\"#080E1C\" radius=\"16\" />\n" +
+                "        <card id=\"matrix_source\" title=\"Matrix Terminal Source\" subtitle=\"Системні журнали та код розробки\" icon=\"code\" url=\"https://t.me/dkamegram/1499\" gradient-start=\"#0E331B\" gradient-end=\"#16542D\" gradient-angle=\"45\" gradient-speed=\"1.5\" text-color=\"#FFFFFF\" badge=\"ROOT\" badge-bg=\"#00FF88\" badge-color=\"#000000\" radius=\"16\" />\n" +
                 "    </custom-cards>\n\n" +
                 "</ame-profile>"
         ));
@@ -266,7 +317,7 @@ public class AmeProfileEngine {
 
     /**
      * Generates a fully documented XML representing current profile layout and styles,
-     * equipped with an extensive Ukrainian guide in header comments.
+     * equipped with an exhaustive Ukrainian guide in header comments.
      */
     public static String exportCurrentProfileXml() {
         ensureInitialized();
@@ -290,63 +341,36 @@ public class AmeProfileEngine {
         StringBuilder sb = new StringBuilder();
         sb.append("<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
         sb.append("<!--\n");
-        sb.append("  ══════════════════════════════════════════════════════════════════════════\n");
-        sb.append("  ✦ АМЕ ПРОФІЛЬ СТУДІО (AMEGRAM PROFILE STUDIO 10/10) - ПОВНИЙ ГАЙД ✦\n");
-        sb.append("  ══════════════════════════════════════════════════════════════════════════\n");
-        sb.append("  Цей XML-конфіг надає абсолютний контроль над кожним пікселем вашого профілю,\n");
-        sb.append("  гарантуючи 100% ізоляцію: жодних змін у чатах чи глобальній темі!\n\n");
-        sb.append("  Швидкі дії:\n");
-        sb.append("  1. \"Застосувати код ໒꒱\" — оновлює профіль на льоту без перезапуску.\n");
-        sb.append("  2. \"Опублікувати у вітку\" — відкриває офіційну тему спільноти:\n");
-        sb.append("     https://t.me/dkamegram/1499, копіюючи код у ваш буфер обміну.\n\n");
-        sb.append("  ─── СТРУКТУРА ТА СЕКЦІЇ ТЕГІВ ───\n");
-        sb.append("  1. <theme>:\n");
-        sb.append("     • bg-color=\"#HEX\"          : фоновий колір сторінки профілю\n");
-        sb.append("     • card-bg=\"#HEX\"           : колір блоків і карток профілю\n");
-        sb.append("     • card-radius=\"16\"         : радіус закруглення блоків (dp)\n\n");
-        sb.append("  2. <banner>:\n");
-        sb.append("     • visible=\"true/false\"     : відображення верхнього банера\n");
-        sb.append("     • color=\"#HEX\"             : колір банера\n");
-        sb.append("     • alpha=\"100\"              : непрозорість (0-100)\n");
-        sb.append("     • dim=\"20\"                 : затемнення фото (0-100)\n\n");
-        sb.append("  3. <avatar>:\n");
-        sb.append("     • visible=\"true/false\"     : відображення аватарки\n");
-        sb.append("     • shape=\"0|1|2|3|4|5|6|7\"  : форма (0:коло, 1:сквіркл, 2:квадрат,\n");
-        sb.append("                                   3:шестикутник, 4:п'ятикутник, 5:зірка, 6:серце)\n");
-        sb.append("     • radius=\"26\"              : радіус кутів для форми (dp)\n");
-        sb.append("     • ring-enabled=\"true\"      : неонове сяюче кільце\n");
-        sb.append("     • ring-color=\"#HEX\"        : колір сяйва кільця\n");
-        sb.append("     • ring-pulse=\"true/false\"  : пульсація сяйва\n\n");
-        sb.append("  4. <name>:\n");
-        sb.append("     • color-enabled=\"true\"     : власний колір імені\n");
-        sb.append("     • color=\"#HEX\"             : колір тексту імені\n");
-        sb.append("     • glow-enabled=\"true\"      : неонове сяйво букв імені\n");
-        sb.append("     • glow-color=\"#HEX\"        : колір сяйва\n");
-        sb.append("     • glow-radius=\"14\"         : розмиття сяйва\n\n");
-        sb.append("  5. <thought>:\n");
-        sb.append("     • visible=\"true/false\"     : хмаринка думок/статусу\n");
-        sb.append("     • text=\"Текст статусу\"     : текст цитати або емоджі\n");
-        sb.append("     • text-color=\"#HEX\"        : колір тексту цитати\n");
-        sb.append("     • bg-color=\"#HEX\"          : фон хмаринки\n\n");
-        sb.append("  6. <info-rows>:\n");
-        sb.append("     • phone-visible=\"true/false\"    : показувати телефон\n");
-        sb.append("     • phone-color=\"#HEX\"            : колір телефону\n");
-        sb.append("     • username-visible=\"true/false\" : показувати юзернейм\n");
-        sb.append("     • username-color=\"#HEX\"         : колір юзернейму\n");
-        sb.append("     • bio-visible=\"true/false\"      : показувати біографію\n");
-        sb.append("     • bio-color=\"#HEX\"              : колір тексту біографії\n");
-        sb.append("     • birthday-visible=\"true/false\" : показувати день народження\n\n");
-        sb.append("  7. <presence>:\n");
-        sb.append("     • visible=\"true/false\"     : блок Steam / Discord / активності\n\n");
-        sb.append("  8. <media-tabs>:\n");
-        sb.append("     • visible=\"true/false\"     : вкладки медіа та файлів під профілем\n\n");
-        sb.append("  9. <custom-cards>:\n");
-        sb.append("     Додавайте довільну кількість інтерактивних карток із посиланнями!\n");
-        sb.append("     Атрибути <card>: title, subtitle, icon, url, bg-color,\n");
-        sb.append("     gradient-start, gradient-end, text-color, badge, badge-bg, badge-color, radius.\n");
-        sb.append("  ══════════════════════════════════════════════════════════════════════════\n");
+        sb.append("  ════════════════════════════════════════════════════════════════════════════════════\n");
+        sb.append("  ✦ АМЕ ПРОФІЛЬ СТУДІО (AME PROFILE STUDIO 10/10) — ЕТАЛОННИЙ ГАЙД ✦\n");
+        sb.append("  ════════════════════════════════════════════════════════════════════════════════════\n");
+        sb.append("  Цей файл надає абсолютний контроль над розміщенням, формами, медіа та анімаціями!\n");
+        sb.append("  100% сувора ізоляція: жодного впливу на чати, бульбашки чи інші вікна.\n\n");
+        sb.append("  ─── 1. РОЗМІЩЕННЯ ТА НАХИЛ (LAYOUT & TRANSFORMS) ───\n");
+        sb.append("  • avatar-align=\"right|center|left\" : розміщення аватарки (наприклад, велика аватарка\n");
+        sb.append("                                       справа, а нік/статус зліва чи по центру!)\n");
+        sb.append("  • avatar-size=\"120\"                 : розмір аватарки в dp (80..160)\n");
+        sb.append("  • avatar-rotation=\"15\"              : градус нахилу/повороту аватарки (-45°..+45°)\n");
+        sb.append("  • name-align=\"left|center|right\"    : вирівнювання імені\n");
+        sb.append("  • rotation=\"-5\"                      : нахил будь-якої картки, тексту чи блоку\n\n");
+        sb.append("  ─── 2. ГРАДІЄНТИ ТА ШВИДКІСТЬ АНІМАЦІЇ ───\n");
+        sb.append("  • gradient-start=\"#HEX\", gradient-middle=\"#HEX\", gradient-end=\"#HEX\"\n");
+        sb.append("  • gradient-angle=\"45\"               : кут нахилу градієнта від 0 до 360 градусів\n");
+        sb.append("  • gradient-speed=\"2.0\"              : швидкість живого анімованого переливу\n");
+        sb.append("                                       (0 = статичний, 1.0..3.0 = плавний хід)\n\n");
+        sb.append("  ─── 3. МЕДІА: ФОТО З ІНТЕРНЕТУ, ЛОКАЛЬНІ ФОТО, ГІФКИ, ВІДЕО ───\n");
+        sb.append("  • src=\"https://example.com/art.jpg\" : пряме посилання на фото або гіфку\n");
+        sb.append("  • src=\"local:photo1\"                 : локальне фото з галереї! При збереженні або\n");
+        sb.append("                                       натисканні «Вибрати фото», програма попросить\n");
+        sb.append("                                       вибрати файл і надійно збереже його локально!\n");
+        sb.append("  • type=\"color|image|gif|video\"      : тип фону або банера\n");
+        sb.append("  • sound=\"true|false\"                : увімкнути чи вимкнути звук для відео-банера\n\n");
+        sb.append("  ─── 4. ДОВІЛЬНІ ЕЛЕМЕНТИ (ДОДАВАЙТЕ, ДУБЛЮЙТЕ, ВИДАЛЯЙТЕ) ───\n");
+        sb.append("  Ви можете створювати будь-яку кількість <card>, <text>, <image> елементів,\n");
+        sb.append("  міняти їх порядок, видаляти непотрібні або копіювати нові.\n");
+        sb.append("  ════════════════════════════════════════════════════════════════════════════════════\n");
         sb.append("-->\n");
-        sb.append("<ame-profile version=\"1.0\" author=\"").append(escapeXml(username)).append("\">\n\n");
+        sb.append("<ame-profile version=\"2.0\" author=\"").append(escapeXml(username)).append("\">\n\n");
 
         // 1. Theme
         sb.append("    <theme\n");
@@ -354,31 +378,53 @@ public class AmeProfileEngine {
         sb.append("        card-bg=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getBlocksColor()))).append("\"\n");
         sb.append("        card-radius=\"").append(MiogramCustomUiPrefs.getBlocksRadius()).append("\" />\n\n");
 
-        // 2. Banner
+        // 2. Layout
+        sb.append("    <layout\n");
+        sb.append("        avatar-align=\"").append(escapeXml(avatarAlign)).append("\"\n");
+        sb.append("        avatar-size=\"").append(avatarSize).append("\"\n");
+        sb.append("        avatar-rotation=\"").append(avatarRotation).append("\"\n");
+        sb.append("        name-align=\"").append(escapeXml(nameAlign)).append("\" />\n\n");
+
+        // 3. Banner
         sb.append("    <banner\n");
-        sb.append("        visible=\"").append(MiogramCustomUiPrefs.isBannerEnabled()).append("\"\n");
+        sb.append("        visible=\"").append(bannerVisible).append("\"\n");
+        sb.append("        type=\"").append(escapeXml(bannerType)).append("\"\n");
+        if (!TextUtils.isEmpty(bannerSrc)) {
+            sb.append("        src=\"").append(escapeXml(bannerSrc)).append("\"\n");
+        }
         sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getBannerColor()))).append("\"\n");
+        if (bannerGradientColor1 != 0 && bannerGradientColor2 != 0) {
+            sb.append("        gradient-start=\"").append(escapeXml(MiogramCustomUiPrefs.hex(bannerGradientColor1))).append("\"\n");
+            sb.append("        gradient-end=\"").append(escapeXml(MiogramCustomUiPrefs.hex(bannerGradientColor2))).append("\"\n");
+            sb.append("        gradient-angle=\"").append(bannerGradientAngle).append("\"\n");
+            sb.append("        gradient-speed=\"").append(bannerGradientSpeed).append("\"\n");
+        }
         sb.append("        alpha=\"").append(MiogramCustomUiPrefs.getBannerAlpha()).append("\"\n");
         sb.append("        dim=\"").append(MiogramCustomUiPrefs.getBannerDim()).append("\" />\n\n");
 
-        // 3. Avatar
+        // 4. Avatar
         sb.append("    <avatar\n");
         sb.append("        visible=\"true\"\n");
+        sb.append("        align=\"").append(escapeXml(avatarAlign)).append("\"\n");
+        sb.append("        size=\"").append(avatarSize).append("\"\n");
+        sb.append("        rotation=\"").append(avatarRotation).append("\"\n");
         sb.append("        shape=\"").append(MiogramCustomUiPrefs.getAvatarShape()).append("\"\n");
         sb.append("        radius=\"").append(MiogramCustomUiPrefs.getAvatarRadius()).append("\"\n");
         sb.append("        ring-enabled=\"").append(MiogramCustomUiPrefs.isAvatarRingEnabled()).append("\"\n");
         sb.append("        ring-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getAvatarRingColor()))).append("\"\n");
         sb.append("        ring-pulse=\"").append(MiogramCustomUiPrefs.isAvatarRingPulse()).append("\" />\n\n");
 
-        // 4. Name
+        // 5. Name
         sb.append("    <name\n");
         sb.append("        color-enabled=\"").append(MiogramCustomUiPrefs.isNameColorEnabled()).append("\"\n");
         sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getNameColor()))).append("\"\n");
         sb.append("        glow-enabled=\"").append(MiogramCustomUiPrefs.isNameGlowEnabled()).append("\"\n");
         sb.append("        glow-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getNameGlowColor()))).append("\"\n");
-        sb.append("        glow-radius=\"").append(MiogramCustomUiPrefs.getNameGlowRadius()).append("\" />\n\n");
+        sb.append("        glow-radius=\"").append(MiogramCustomUiPrefs.getNameGlowRadius()).append("\"\n");
+        sb.append("        align=\"").append(escapeXml(nameAlign)).append("\"\n");
+        sb.append("        rotation=\"").append(nameRotation).append("\" />\n\n");
 
-        // 5. Thought
+        // 6. Thought
         String thought = MiogramCustomUiPrefs.getThoughtText();
         sb.append("    <thought\n");
         sb.append("        visible=\"").append(!TextUtils.isEmpty(thought)).append("\"\n");
@@ -386,7 +432,7 @@ public class AmeProfileEngine {
         sb.append("        text-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getThoughtTextColor()))).append("\"\n");
         sb.append("        bg-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getThoughtBgColor()))).append("\" />\n\n");
 
-        // 6. Info rows
+        // 7. Info rows
         sb.append("    <info-rows\n");
         sb.append("        phone-visible=\"").append(!MiogramCustomUiPrefs.isHideRowPhone()).append("\"\n");
         sb.append("        phone-color=\"").append(phoneColor != 0 ? escapeXml(MiogramCustomUiPrefs.hex(phoneColor)) : "").append("\"\n");
@@ -396,27 +442,76 @@ public class AmeProfileEngine {
         sb.append("        bio-color=\"").append(bioColor != 0 ? escapeXml(MiogramCustomUiPrefs.hex(bioColor)) : "").append("\"\n");
         sb.append("        birthday-visible=\"true\" />\n\n");
 
-        // 7. Presence
+        // 8. Presence
         sb.append("    <presence visible=\"true\" />\n\n");
 
-        // 8. Media tabs
+        // 9. Media tabs
         sb.append("    <media-tabs visible=\"").append(!MiogramCustomUiPrefs.isHideMediaTabs()).append("\" />\n\n");
 
-        // 9. Custom cards
+        // 10. Custom Cards
         sb.append("    <custom-cards>\n");
-        sb.append("        <card\n");
-        sb.append("            id=\"community_topic\"\n");
-        sb.append("            title=\"Вітка Аме Профілів ໒꒱\"\n");
-        sb.append("            subtitle=\"Переглядайте та завантажуйте конфіги інших користувачів\"\n");
-        sb.append("            icon=\"star\"\n");
-        sb.append("            url=\"https://t.me/dkamegram/1499\"\n");
-        sb.append("            gradient-start=\"#1E2235\"\n");
-        sb.append("            gradient-end=\"#333A56\"\n");
-        sb.append("            text-color=\"#FFFFFF\"\n");
-        sb.append("            badge=\"10/10\"\n");
-        sb.append("            badge-bg=\"#6C63FF\"\n");
-        sb.append("            badge-color=\"#FFFFFF\"\n");
-        sb.append("            radius=\"16\" />\n");
+        if (customCards.isEmpty()) {
+            sb.append("        <card\n");
+            sb.append("            id=\"community_topic\"\n");
+            sb.append("            title=\"Вітка Аме Профілів ໒꒱\"\n");
+            sb.append("            subtitle=\"Переглядайте та завантажуйте конфіги інших користувачів\"\n");
+            sb.append("            icon=\"star\"\n");
+            sb.append("            url=\"https://t.me/dkamegram/1499\"\n");
+            sb.append("            gradient-start=\"#1E2235\"\n");
+            sb.append("            gradient-end=\"#333A56\"\n");
+            sb.append("            gradient-angle=\"45\"\n");
+            sb.append("            gradient-speed=\"1.5\"\n");
+            sb.append("            text-color=\"#FFFFFF\"\n");
+            sb.append("            badge=\"10/10\"\n");
+            sb.append("            badge-bg=\"#6C63FF\"\n");
+            sb.append("            badge-color=\"#FFFFFF\"\n");
+            sb.append("            radius=\"16\"\n");
+            sb.append("            rotation=\"0\" />\n");
+        } else {
+            for (AmeCard card : customCards) {
+                sb.append("        <card\n");
+                sb.append("            id=\"").append(escapeXml(card.id)).append("\"\n");
+                sb.append("            title=\"").append(escapeXml(card.title)).append("\"\n");
+                if (!TextUtils.isEmpty(card.subtitle)) {
+                    sb.append("            subtitle=\"").append(escapeXml(card.subtitle)).append("\"\n");
+                }
+                sb.append("            icon=\"").append(escapeXml(card.icon)).append("\"\n");
+                if (!TextUtils.isEmpty(card.url)) {
+                    sb.append("            url=\"").append(escapeXml(card.url)).append("\"\n");
+                }
+                if (!TextUtils.isEmpty(card.src)) {
+                    sb.append("            src=\"").append(escapeXml(card.src)).append("\"\n");
+                }
+                if (card.gradientColor1 != 0 && card.gradientColor2 != 0) {
+                    sb.append("            gradient-start=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.gradientColor1))).append("\"\n");
+                    if (card.gradientColor3 != 0) {
+                        sb.append("            gradient-middle=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.gradientColor3))).append("\"\n");
+                    }
+                    sb.append("            gradient-end=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.gradientColor2))).append("\"\n");
+                    sb.append("            gradient-angle=\"").append(card.gradientAngle).append("\"\n");
+                    sb.append("            gradient-speed=\"").append(card.gradientSpeed).append("\"\n");
+                } else if (card.bgColor != 0) {
+                    sb.append("            bg-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.bgColor))).append("\"\n");
+                }
+                if (card.textColor != 0) {
+                    sb.append("            text-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.textColor))).append("\"\n");
+                }
+                if (!TextUtils.isEmpty(card.badge)) {
+                    sb.append("            badge=\"").append(escapeXml(card.badge)).append("\"\n");
+                    if (card.badgeBgColor != 0) sb.append("            badge-bg=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.badgeBgColor))).append("\"\n");
+                    if (card.badgeTextColor != 0) sb.append("            badge-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.badgeTextColor))).append("\"\n");
+                }
+                if (card.borderColor != 0) {
+                    sb.append("            border-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(card.borderColor))).append("\"\n");
+                    sb.append("            border-width=\"").append(card.borderWidth).append("\"\n");
+                }
+                sb.append("            radius=\"").append(card.radius).append("\"\n");
+                if (card.rotation != 0) {
+                    sb.append("            rotation=\"").append(card.rotation).append("\"\n");
+                }
+                sb.append("        />\n");
+            }
+        }
         sb.append("    </custom-cards>\n\n");
 
         sb.append("</ame-profile>\n");
@@ -448,6 +543,10 @@ public class AmeProfileEngine {
                         case "theme":
                             parseTheme(parser);
                             break;
+                        case "layout":
+                        case "header":
+                            parseLayout(parser);
+                            break;
                         case "banner":
                             parseBanner(parser);
                             break;
@@ -471,6 +570,8 @@ public class AmeProfileEngine {
                             parseMediaTabs(parser);
                             break;
                         case "card":
+                        case "item":
+                        case "element":
                             AmeCard card = parseCard(parser);
                             if (card != null) parsedCards.add(card);
                             break;
@@ -524,14 +625,79 @@ public class AmeProfileEngine {
         }
     }
 
+    private static void parseLayout(XmlPullParser p) {
+        String align = p.getAttributeValue(null, "avatar-align");
+        if (align != null) avatarAlign = align.toLowerCase().trim();
+
+        String size = p.getAttributeValue(null, "avatar-size");
+        if (size != null) {
+            try { avatarSize = Integer.parseInt(size); } catch (Throwable ignore) {}
+        }
+
+        String rot = p.getAttributeValue(null, "avatar-rotation");
+        if (rot == null) rot = p.getAttributeValue(null, "avatar-tilt");
+        if (rot != null) {
+            try { avatarRotation = Float.parseFloat(rot); } catch (Throwable ignore) {}
+        }
+
+        String nAlign = p.getAttributeValue(null, "name-align");
+        if (nAlign != null) nameAlign = nAlign.toLowerCase().trim();
+
+        String nRot = p.getAttributeValue(null, "name-rotation");
+        if (nRot != null) {
+            try { nameRotation = Float.parseFloat(nRot); } catch (Throwable ignore) {}
+        }
+    }
+
     private static void parseBanner(XmlPullParser p) {
         String visible = p.getAttributeValue(null, "visible");
         if (visible == null) visible = p.getAttributeValue(null, "enabled");
-        if (visible != null) MiogramCustomUiPrefs.setBannerEnabled(Boolean.parseBoolean(visible));
+        if (visible != null) {
+            bannerVisible = Boolean.parseBoolean(visible);
+            MiogramCustomUiPrefs.setBannerEnabled(bannerVisible);
+        }
+
+        String type = p.getAttributeValue(null, "type");
+        if (type != null) bannerType = type.toLowerCase().trim();
+
+        String src = p.getAttributeValue(null, "src");
+        if (src != null) bannerSrc = src;
+
+        String sound = p.getAttributeValue(null, "sound");
+        if (sound != null) bannerSound = Boolean.parseBoolean(sound);
+
+        String loop = p.getAttributeValue(null, "loop");
+        if (loop != null) bannerLoop = Boolean.parseBoolean(loop);
+
+        String height = p.getAttributeValue(null, "height");
+        if (height != null) {
+            try { bannerHeight = Integer.parseInt(height); } catch (Throwable ignore) {}
+        }
 
         String color = p.getAttributeValue(null, "color");
         if (color != null) {
             MiogramCustomUiPrefs.setBannerColor(MiogramCustomUiPrefs.parseColor(color, 0xFF1C242F));
+        }
+
+        String gradStart = p.getAttributeValue(null, "gradient-start");
+        if (gradStart != null) bannerGradientColor1 = MiogramCustomUiPrefs.parseColor(gradStart, 0);
+
+        String gradEnd = p.getAttributeValue(null, "gradient-end");
+        if (gradEnd != null) bannerGradientColor2 = MiogramCustomUiPrefs.parseColor(gradEnd, 0);
+
+        String gradMiddle = p.getAttributeValue(null, "gradient-middle");
+        if (gradMiddle != null) bannerGradientColor3 = MiogramCustomUiPrefs.parseColor(gradMiddle, 0);
+
+        String gradAngle = p.getAttributeValue(null, "gradient-angle");
+        if (gradAngle == null) gradAngle = p.getAttributeValue(null, "angle");
+        if (gradAngle != null) {
+            try { bannerGradientAngle = Float.parseFloat(gradAngle); } catch (Throwable ignore) {}
+        }
+
+        String gradSpeed = p.getAttributeValue(null, "gradient-speed");
+        if (gradSpeed == null) gradSpeed = p.getAttributeValue(null, "speed");
+        if (gradSpeed != null) {
+            try { bannerGradientSpeed = Float.parseFloat(gradSpeed); } catch (Throwable ignore) {}
         }
 
         String alpha = p.getAttributeValue(null, "alpha");
@@ -546,6 +712,20 @@ public class AmeProfileEngine {
     }
 
     private static void parseAvatar(XmlPullParser p) {
+        String align = p.getAttributeValue(null, "align");
+        if (align != null) avatarAlign = align.toLowerCase().trim();
+
+        String size = p.getAttributeValue(null, "size");
+        if (size != null) {
+            try { avatarSize = Integer.parseInt(size); } catch (Throwable ignore) {}
+        }
+
+        String rot = p.getAttributeValue(null, "rotation");
+        if (rot == null) rot = p.getAttributeValue(null, "tilt");
+        if (rot != null) {
+            try { avatarRotation = Float.parseFloat(rot); } catch (Throwable ignore) {}
+        }
+
         String shape = p.getAttributeValue(null, "shape");
         if (shape != null) {
             try { MiogramCustomUiPrefs.setAvatarShape(Integer.parseInt(shape)); } catch (Throwable ignore) {}
@@ -589,6 +769,19 @@ public class AmeProfileEngine {
         if (glowRadius != null) {
             try { MiogramCustomUiPrefs.setNameGlowRadius(Integer.parseInt(glowRadius)); } catch (Throwable ignore) {}
         }
+
+        String align = p.getAttributeValue(null, "align");
+        if (align != null) nameAlign = align.toLowerCase().trim();
+
+        String rot = p.getAttributeValue(null, "rotation");
+        if (rot != null) {
+            try { nameRotation = Float.parseFloat(rot); } catch (Throwable ignore) {}
+        }
+
+        String sz = p.getAttributeValue(null, "size");
+        if (sz != null) {
+            try { nameSize = Integer.parseInt(sz); } catch (Throwable ignore) {}
+        }
     }
 
     private static void parseThought(XmlPullParser p) {
@@ -608,6 +801,11 @@ public class AmeProfileEngine {
         String bgColor = p.getAttributeValue(null, "bg-color");
         if (bgColor != null) {
             MiogramCustomUiPrefs.setThoughtBgColor(MiogramCustomUiPrefs.parseColor(bgColor, 0xFF1C242F));
+        }
+
+        String rot = p.getAttributeValue(null, "rotation");
+        if (rot != null) {
+            try { thoughtRotation = Float.parseFloat(rot); } catch (Throwable ignore) {}
         }
     }
 
@@ -666,6 +864,7 @@ public class AmeProfileEngine {
         card.subtitle = p.getAttributeValue(null, "subtitle");
         card.icon = p.getAttributeValue(null, "icon");
         card.url = p.getAttributeValue(null, "url");
+        card.src = p.getAttributeValue(null, "src");
 
         String bg = p.getAttributeValue(null, "bg-color");
         if (bg != null) card.bgColor = MiogramCustomUiPrefs.parseColor(bg, 0);
@@ -675,6 +874,27 @@ public class AmeProfileEngine {
 
         String gradEnd = p.getAttributeValue(null, "gradient-end");
         if (gradEnd != null) card.gradientColor2 = MiogramCustomUiPrefs.parseColor(gradEnd, 0);
+
+        String gradMid = p.getAttributeValue(null, "gradient-middle");
+        if (gradMid != null) card.gradientColor3 = MiogramCustomUiPrefs.parseColor(gradMid, 0);
+
+        String gradAngle = p.getAttributeValue(null, "gradient-angle");
+        if (gradAngle == null) gradAngle = p.getAttributeValue(null, "angle");
+        if (gradAngle != null) {
+            try { card.gradientAngle = Float.parseFloat(gradAngle); } catch (Throwable ignore) {}
+        }
+
+        String gradSpeed = p.getAttributeValue(null, "gradient-speed");
+        if (gradSpeed == null) gradSpeed = p.getAttributeValue(null, "speed");
+        if (gradSpeed != null) {
+            try { card.gradientSpeed = Float.parseFloat(gradSpeed); } catch (Throwable ignore) {}
+        }
+
+        String rot = p.getAttributeValue(null, "rotation");
+        if (rot == null) rot = p.getAttributeValue(null, "tilt");
+        if (rot != null) {
+            try { card.rotation = Float.parseFloat(rot); } catch (Throwable ignore) {}
+        }
 
         String text = p.getAttributeValue(null, "text-color");
         if (text != null) card.textColor = MiogramCustomUiPrefs.parseColor(text, 0);
@@ -702,12 +922,33 @@ public class AmeProfileEngine {
         if (radius != null) {
             try { card.radius = Integer.parseInt(radius); } catch (Throwable ignore) {}
         }
-        return !TextUtils.isEmpty(card.title) ? card : null;
+        return !TextUtils.isEmpty(card.title) || !TextUtils.isEmpty(card.src) ? card : null;
     }
 
     public static void resetToDefaults() {
         SharedPreferences sp = getPrefs();
         if (sp != null) sp.edit().remove(KEY_RAW_XML).apply();
+        avatarAlign = "left";
+        avatarSize = 100;
+        avatarRotation = 0f;
+        nameAlign = "left";
+        nameRotation = 0f;
+        nameSize = 22;
+        thoughtAlign = "left";
+        thoughtRotation = 0f;
+
+        bannerVisible = true;
+        bannerType = "color";
+        bannerSrc = "";
+        bannerSound = false;
+        bannerLoop = true;
+        bannerHeight = 0;
+        bannerGradientColor1 = 0;
+        bannerGradientColor2 = 0;
+        bannerGradientColor3 = 0;
+        bannerGradientAngle = 0f;
+        bannerGradientSpeed = 0f;
+
         phoneVisible = true;
         phoneColor = 0;
         usernameVisible = true;

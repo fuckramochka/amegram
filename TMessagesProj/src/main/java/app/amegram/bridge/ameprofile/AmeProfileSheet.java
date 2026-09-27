@@ -76,6 +76,8 @@ public class AmeProfileSheet extends BottomSheet {
         if (bgColor == 0) bgColor = 0xFF12131C;
         fixNavigationBar(bgColor);
 
+        xmlEditor = new EditText(context);
+
         ScrollView masterScrollView = new ScrollView(context);
         masterScrollView.setFillViewport(true);
 
@@ -362,7 +364,6 @@ public class AmeProfileSheet extends BottomSheet {
         ScrollView editorScroll = new ScrollView(context);
         editorScroll.setFillViewport(true);
 
-        xmlEditor = new EditText(context);
         xmlEditor.setText(AmeProfileEngine.exportCurrentProfileXml());
         xmlEditor.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
         xmlEditor.setTypeface(Typeface.MONOSPACE);

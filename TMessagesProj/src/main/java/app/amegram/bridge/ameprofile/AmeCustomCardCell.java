@@ -172,8 +172,8 @@ public class AmeCustomCardCell extends FrameLayout {
         // Icon Container & Mapping
         int iconRes = R.drawable.msg_link2;
         String iconKey = card.icon != null ? card.icon.toLowerCase().trim() : "";
-        if (iconKey.contains("steam")) {
-            iconRes = R.drawable.msg_game;
+        if (iconKey.contains("steam") || iconKey.contains("game")) {
+            iconRes = R.drawable.filter_game;
         } else if (iconKey.contains("discord") || iconKey.contains("github") || iconKey.contains("web") || iconKey.contains("code")) {
             iconRes = R.drawable.msg_openin;
         } else if (iconKey.contains("star") || iconKey.contains("vip") || iconKey.contains("crown")) {
@@ -185,7 +185,7 @@ public class AmeCustomCardCell extends FrameLayout {
         } else if (iconKey.contains("stats") || iconKey.contains("chart")) {
             iconRes = R.drawable.msg_stats;
         } else if (iconKey.contains("music") || iconKey.contains("spotify") || iconKey.contains("audio")) {
-            iconRes = R.drawable.msg_round_music;
+            iconRes = R.drawable.files_music;
         } else if (iconKey.contains("tg") || iconKey.contains("telegram") || iconKey.contains("channel") || iconKey.contains("bot")) {
             iconRes = R.drawable.msg_channel;
         }

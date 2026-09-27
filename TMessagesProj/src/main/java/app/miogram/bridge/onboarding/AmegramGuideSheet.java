@@ -38,6 +38,7 @@ import java.util.List;
 
 import app.exteraless.plugins.ui.MiogramPluginCatalogAlert;
 import app.miogram.bridge.MiogramLocale;
+import app.miogram.bridge.ai.companion.MiogramCompanionPrefs;
 import app.amegram.bridge.ameprofile.AmeProfileEngine;
 import app.amegram.bridge.ameprofile.AmeProfileSheet;
 import app.miogram.bridge.cloudvault.MiogramCloudVaultEngine;

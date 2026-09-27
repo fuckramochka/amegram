@@ -20520,7 +20520,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     public void setupTextColors() {
         if (currentMessageObject.isOutOwner()) {
-            int outTextColor = app.miogram.bridge.customui.MiogramCustomUiPrefs.isBubbleColorEnabled() ? app.miogram.bridge.customui.MiogramCustomUiPrefs.getBubbleTextColor() : getThemedColor(Theme.key_chat_messageTextOut);
+            int outTextColor = getThemedColor(Theme.key_chat_messageTextOut);
             Theme.chat_msgTextPaint.setColor(outTextColor);
             Theme.chat_msgGameTextPaint.setColor(getThemedColor(Theme.key_chat_messageTextOut));
             Theme.chat_msgTextCodePaint.setColor(getThemedColor(Theme.key_chat_messageTextOut));
@@ -20921,7 +20921,6 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
 
     public void drawBackgroundInternal(Canvas canvas, boolean fromParent) {
         drawBackgroundInternal(canvas, fromParent, false);
-        app.miogram.bridge.customui.MiogramUiEngine.afterDrawBubble(canvas, currentBackgroundDrawable);
     }
 
     @SuppressLint("WrongCall")
@@ -22762,13 +22761,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             canvas.translate(nx, ny);
             oldAlpha = Theme.chat_namePaint.getAlpha();
             Theme.chat_namePaint.setAlpha((int) (oldAlpha * nameAlpha));
-            if (Theme.chat_namePaint != null) {
-                app.miogram.bridge.customui.MiogramUiEngine.applyNameEffect(Theme.chat_namePaint, (int) nameLayoutWidth, Theme.chat_namePaint.getColor());
-            }
             nameLayout.draw(canvas);
-            if (Theme.chat_namePaint != null) {
-                app.miogram.bridge.customui.MiogramUiEngine.restoreNameEffect(Theme.chat_namePaint);
-            }
             Theme.chat_namePaint.setAlpha(oldAlpha);
             canvas.restore();
 

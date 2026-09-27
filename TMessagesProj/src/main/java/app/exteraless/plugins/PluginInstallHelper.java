@@ -407,12 +407,7 @@ public final class PluginInstallHelper {
                                 plugin == null ? null : plugin.loadDebug);
                         return;
                     }
-                    boolean isCustomProfile = plugin != null && plugin.id != null &&
-                            (plugin.id.equalsIgnoreCase("custom_profile")
-                                    || plugin.id.equalsIgnoreCase("customprofile")
-                                    || (plugin.name != null && plugin.name.toLowerCase(Locale.ROOT).contains("custom profile")));
-
-                    if ((enableAfterInstall || isCustomProfile) && plugin != null && plugin.id != null) {
+                    if (enableAfterInstall && plugin != null && plugin.id != null) {
                         PluginsController.getInstance().setPluginEnabled(plugin.id, true);
                     }
                     showInstalled(plugin);

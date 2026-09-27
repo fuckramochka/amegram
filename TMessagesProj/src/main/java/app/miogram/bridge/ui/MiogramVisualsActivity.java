@@ -130,7 +130,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         } else if (position == customUiRow) {
             presentFragment(new app.miogram.bridge.customui.MiogramCustomUiActivity());
         } else if (position == ameProfileXmlRow) {
-            new app.miogram.bridge.ameprofile.MiogramAmeProfileSheet(getParentActivity() != null ? getParentActivity() : getContext()).show();
+            new app.amegram.bridge.ameprofile.AmeProfileSheet(getParentActivity() != null ? getParentActivity() : getContext()).show();
         } else if (position == ameVibeRow) {
             boolean next = !ameVibeEnabled();
             MiogramVisualsPrefs.saveBool(getSafeContext(), "ame_vibe_enabled", next);

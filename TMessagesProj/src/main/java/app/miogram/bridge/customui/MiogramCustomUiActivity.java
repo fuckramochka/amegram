@@ -116,7 +116,7 @@ public class MiogramCustomUiActivity extends BaseFragment {
         rowAmeProfile.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
         rowAmeProfile.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
-            new app.miogram.bridge.ameprofile.MiogramAmeProfileSheet(getParentActivity() != null ? getParentActivity() : context).show();
+            new app.amegram.bridge.ameprofile.AmeProfileSheet(getParentActivity() != null ? getParentActivity() : context).show();
         });
         content.addView(rowAmeProfile);
 

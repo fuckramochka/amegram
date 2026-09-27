@@ -38,9 +38,8 @@ import java.util.List;
 
 import app.exteraless.plugins.ui.MiogramPluginCatalogAlert;
 import app.miogram.bridge.MiogramLocale;
-import app.miogram.bridge.ai.companion.MiogramCompanionPrefs;
-import app.miogram.bridge.ameprofile.MiogramAmeProfileEngine;
-import app.miogram.bridge.ameprofile.MiogramAmeProfileSheet;
+import app.amegram.bridge.ameprofile.AmeProfileEngine;
+import app.amegram.bridge.ameprofile.AmeProfileSheet;
 import app.miogram.bridge.cloudvault.MiogramCloudVaultEngine;
 import app.miogram.bridge.customui.MiogramHaptic;
 import app.miogram.bridge.MiogramFlags;
@@ -496,7 +495,7 @@ public class AmegramGuideSheet extends BottomSheet {
         openXmlBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
         openXmlBtn.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
-            new MiogramAmeProfileSheet(context).show();
+            new AmeProfileSheet(context).show();
         });
         btnRow.addView(openXmlBtn, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
@@ -513,7 +512,7 @@ public class AmegramGuideSheet extends BottomSheet {
         topicBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10), AndroidUtilities.dp(12), AndroidUtilities.dp(10));
         topicBtn.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
-            Browser.openUrl(context, MiogramAmeProfileEngine.COMMUNITY_TOPIC_URL);
+            Browser.openUrl(context, AmeProfileEngine.COMMUNITY_TOPIC_URL);
         });
         btnRow.addView(topicBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
 

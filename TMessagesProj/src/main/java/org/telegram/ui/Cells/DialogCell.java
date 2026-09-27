@@ -269,10 +269,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private boolean visibleOnScreen = true;
     private boolean updateLayout;
     private boolean wasDrawnOnline;
-    // Miogram draws its own styled online dot (MiogramUiEngine.drawOnlineIndicator).
-    // When it did, upstream's key_chats_onlineCircle dot must stay off or the two
-    // stack up (green + blue) on the same avatar corner.
-    private boolean miogramOnlineDrawn;
 
     public void setMoving(boolean moving) {
         this.moving = moving;
@@ -3945,14 +3941,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         boolean needInvalidate = false;
-        miogramOnlineDrawn = false;
 
         // Official iOS Telegram paints pinned chats with a distinct section
         // background (ChatListNode.swift). The upstream drawRect calls for the
         // pinned overlay are commented out in this fork, so fill directly.
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext()) && getIsPinned() && !drawArchive
-                && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()
-                && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isUiDialogCards()) {
+                && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
             canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
         }
 
@@ -4172,10 +4166,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             gtx += translationX;
         }
 
-        if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isUiDialogCards()) {
-            int surfaceColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-            app.miogram.bridge.customui.MiogramUiEngine.drawDialogCard(canvas, getMeasuredWidth(), getMeasuredHeight(), isSelected, getIsPinned(), surfaceColor);
-        }
 
         float cornersRadius = dp(8) * cornerProgress;
         if (isSelected) {
@@ -4292,17 +4282,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 } else {
                     Theme.dialogs_namePaint[paintIndex].setColor(Theme.dialogs_namePaint[paintIndex].linkColor = Theme.getColor(Theme.key_chats_name, resourcesProvider));
                 }
-                if (Theme.dialogs_namePaint != null && paintIndex >= 0 && paintIndex < Theme.dialogs_namePaint.length && Theme.dialogs_namePaint[paintIndex] != null) {
-                    app.miogram.bridge.customui.MiogramUiEngine.applyNameEffect(Theme.dialogs_namePaint[paintIndex], (int) nameWidth, Theme.dialogs_namePaint[paintIndex].getColor());
-                }
                 canvas.save();
                 canvas.translate(nameLeft + nameLayoutTranslateX, nameTop);
                 SpoilerEffect.layoutDrawMaybe(nameLayout, canvas);
                 AnimatedEmojiSpan.drawAnimatedEmojis(canvas, nameLayout, animatedEmojiStackName, -.075f, null, 0, 0, 0, 1f, getAdaptiveEmojiColorFilter(0, nameLayout.getPaint().getColor()));
                 canvas.restore();
-                if (Theme.dialogs_namePaint != null && paintIndex >= 0 && paintIndex < Theme.dialogs_namePaint.length && Theme.dialogs_namePaint[paintIndex] != null) {
-                    app.miogram.bridge.customui.MiogramUiEngine.restoreNameEffect(Theme.dialogs_namePaint[paintIndex]);
-                }
                 if (nameLayoutEllipsizeByGradient && !nameLayoutFits) {
                     canvas.save();
                     if (nameLayoutEllipsizeLeft) {
@@ -4601,8 +4585,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     botVerification.draw(canvas);
                 }
             }
-            boolean drawMuted = (drawUnmute || dialogMuted || isHiddenInCommunity) && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideDialogMuteIcon();
-            if (dialogsType != 2 && (drawMuted || (!app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideDialogMuteIcon() && dialogMutedProgress > 0)) && !drawVerified && drawScam == 0) {
+            boolean drawMuted = drawUnmute || dialogMuted || isHiddenInCommunity;
+            if (dialogsType != 2 && (drawMuted || dialogMutedProgress > 0) && !drawVerified && drawScam == 0) {
                 if (drawMuted && dialogMutedProgress != 1f) {
                     dialogMutedProgress += 16 / 150f;
                     if (dialogMutedProgress > 1f) {
@@ -4916,16 +4900,6 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 storyParams.forceState = s;
             }
 
-            if (storyParams != null && storyParams.originalAvatarRect != null) {
-                app.miogram.bridge.customui.MiogramUiEngine.drawAvatarGlowRing(canvas, storyParams.originalAvatarRect);
-                miogramOnlineDrawn = false;
-                if (user != null && user.status != null && user.status.expires > org.telegram.tgnet.ConnectionsManager.getInstance(currentAccount).getCurrentTime()) {
-                    int strokeColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-                    app.miogram.bridge.customui.MiogramUiEngine.drawOnlineIndicator(canvas, storyParams.originalAvatarRect, true, strokeColor);
-                    miogramOnlineDrawn = true;
-                }
-            }
-
             if (!insideCommunityList && (chat != null && chat.linked_community_id != 0 || user != null && user.linked_community_id != 0) && !drawCommunityAvatar && isDialogCell && !isDialogFolder()) {
                 final float ccx = storyParams.originalAvatarRect.centerX() + dp(20.33f);
                 final float ccy = storyParams.originalAvatarRect.centerY() + dp(19);
@@ -4978,7 +4952,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             canvas.restore();
         }
 
-        if (useSeparator && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled() && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isUiDialogCards()) {
+        if (useSeparator && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
             int left;
             if (fullSeparator || currentDialogFolderId != 0 && archiveHidden && !fullSeparator2 || fullSeparator2 && !archiveHidden) {
                 left = 0;
@@ -5294,15 +5268,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         left = (int) (storyParams.originalAvatarRect.right - dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 10 : 6));
                     }
 
-                    // Miogram already painted its own styled dot above: drawing
-                    // upstream's key_chats_onlineCircle here stacks a second
-                    // (blue) dot on the same corner.
-                    if (!miogramOnlineDrawn) {
-                        Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-                        canvas.drawCircle(left, top, dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
-                        Theme.dialogs_onlineCirclePaint.setColor(onlineColor);
-                        canvas.drawCircle(left, top, dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);
-                    }
+                    Theme.dialogs_onlineCirclePaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                    canvas.drawCircle(left, top, dp(7) * onlineProgress, Theme.dialogs_onlineCirclePaint);
+                    Theme.dialogs_onlineCirclePaint.setColor(onlineColor);
+                    canvas.drawCircle(left, top, dp(5) * onlineProgress, Theme.dialogs_onlineCirclePaint);
                     if (isOnline) {
                         if (onlineProgress < 1.0f) {
                             onlineProgress += 16f / 150.0f;
@@ -5474,16 +5443,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 Theme.dialogs_countTextPaint2.setColor(color);
                 fillPaintAlpha = drawCounterMuted ? 30 : 40;
                 restoreCountTextPaint = true;
-            } else {
                 paint = drawCounterMuted || currentDialogFolderId != 0 ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint;
-                if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isUiBadgeCustom()) {
-                    paint.setColor(app.miogram.bridge.customui.MiogramCustomUiPrefs.getUiBadgeColor());
-                    Theme.dialogs_countTextPaint2.setColor(app.miogram.bridge.customui.MiogramCustomUiPrefs.getUiBadgeTextColor());
-                    if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isUiBadgeGlow()) {
-                        paint.setShadowLayer(AndroidUtilities.dp(6), 0, 0, app.miogram.bridge.customui.MiogramCustomUiPrefs.getUiBadgeColor());
-                    }
-                    restoreCountTextPaint = true;
-                }
             }
 
             if (countOldLayout == null || unreadCount == 0) {

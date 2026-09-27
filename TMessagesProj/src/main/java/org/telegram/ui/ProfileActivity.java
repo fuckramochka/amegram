@@ -705,6 +705,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private int musicCardRow;
     private int musicCardSectionRow;
     private int steamCardRow = -1;
+    private int ameCustomCardsStartRow = -1;
+    private int ameCustomCardsCount = 0;
     private int bottomPaddingRow;
     private int infoHeaderRow;
     private int infoHeaderRowEmpty;
@@ -2916,7 +2918,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 } else if (id == 13303815) {
                     app.miogram.bridge.badge.MiogramBadgeGrantSheet.show(getParentActivity() != null ? getParentActivity() : getContext(), userId);
                 } else if (id == 13303816) {
-                    new app.miogram.bridge.ameprofile.MiogramAmeProfileSheet(getParentActivity() != null ? getParentActivity() : getContext()).show();
+                    new app.amegram.bridge.ameprofile.AmeProfileSheet(getParentActivity() != null ? getParentActivity() : getContext()).show();
                 } else if (id == edit_info) {
                     presentFragment(new UserInfoActivity());
                 } else if (id == edit_color) {
@@ -3411,10 +3413,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             @Override
             protected void dispatchDraw(Canvas canvas) {
                 if (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
-                    if (!app.miogram.bridge.customui.MiogramCustomUiPrefs.isCustomProfilePluginActive()) {
-                        app.miogram.bridge.customui.MiogramUiEngine.drawProfileBackground(canvas, getWidth(), getHeight());
-                        app.miogram.bridge.customui.MiogramUiEngine.drawProfileBanner(canvas, getWidth(), (int) extraHeight);
-                    }
+                    app.miogram.bridge.customui.MiogramUiEngine.drawProfileBackground(canvas, getWidth(), getHeight());
+                    app.miogram.bridge.customui.MiogramUiEngine.drawProfileBanner(canvas, getWidth(), (int) extraHeight);
                 }
                 if (Build.VERSION.SDK_INT >= 31 && scrollableViewNoiseSuppressor != null) {
                     blur3_InvalidateBlur();
@@ -4419,7 +4419,16 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return;
             }
             listView.stopScroll();
-            if (position == affiliateRow) {
+            if (ameCustomCardsStartRow >= 0 && position >= ameCustomCardsStartRow && position < ameCustomCardsStartRow + ameCustomCardsCount) {
+                int cardIdx = position - ameCustomCardsStartRow;
+                java.util.List<app.amegram.bridge.ameprofile.AmeProfileEngine.AmeCard> cards = app.amegram.bridge.ameprofile.AmeProfileEngine.getCustomCards();
+                if (cards != null && cardIdx >= 0 && cardIdx < cards.size()) {
+                    app.amegram.bridge.ameprofile.AmeProfileEngine.AmeCard card = cards.get(cardIdx);
+                    if (card != null && !android.text.TextUtils.isEmpty(card.url)) {
+                        org.telegram.messenger.browser.Browser.openUrl(getParentActivity() != null ? getParentActivity() : getContext(), card.url);
+                    }
+                }
+            } else if (position == affiliateRow) {
                 TLRPC.User user = getMessagesController().getUser(userId);
                 if (userInfo != null && userInfo.starref_program != null) {
                     final long selfId = getUserConfig().getClientUserId();
@@ -5636,9 +5645,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     animatedEmojiDrawable.getImageReceiver().startAnimation();
                 }
                 if (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
-                    if (!app.miogram.bridge.customui.MiogramCustomUiPrefs.isCustomProfilePluginActive()) {
-                        app.miogram.bridge.customui.MiogramUiEngine.drawProfileAvatarExtras(canvas, this);
-                    }
+                    app.miogram.bridge.customui.MiogramUiEngine.drawProfileAvatarExtras(canvas, this);
                 }
             }
         };
@@ -10839,23 +10846,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (userId == 0) return;
         TLRPC.User user = getMessagesController().getUser(userId);
         boolean isSelf = user != null && UserObject.isUserSelf(user);
-        if (app.exteraless.plugins.PluginsController.getInstance().isPluginActive("Custom Profile")) {
-            hasSteamCard = false;
-            updateRowsIds();
-            if (listAdapter != null) {
-                listAdapter.notifyDataSetChanged();
-            }
-            return;
-        }
         if (isSelf) {
-            hasSteamCard = true;
+            hasSteamCard = app.amegram.bridge.ameprofile.AmeProfileEngine.isPresenceVisible();
             this.steamProfile = MiogramSteamManager.getInstance().getSelfProfile();
             String linkedSteamId = MiogramSteamManager.getInstance().getLinkedSteamId();
             if (!TextUtils.isEmpty(linkedSteamId) && MiogramSteamManager.getInstance().isBroadcastEnabled()) {
                 MiogramSteamManager.getInstance().resolvePublicSteam(linkedSteamId, profile -> {
                     if (profile != null) {
                         steamProfile = profile;
-                        hasSteamCard = true;
+                        hasSteamCard = app.amegram.bridge.ameprofile.AmeProfileEngine.isPresenceVisible();
                         MiogramSteamManager.getInstance().syncSelfToCloud(userId, profile, null);
                         updateRowsIds();
                         if (listAdapter != null) {
@@ -10872,10 +10871,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             return;
         }
         app.miogram.bridge.badge.MiogramSupabaseBridge.fetchUserPresence(userId, presence -> {
-            if (app.exteraless.plugins.PluginsController.getInstance().isPluginActive("Custom Profile")) {
-                hasSteamCard = false;
-                return;
-            }
             if (presence != null && presence.isAnyLinked()) {
                 hasSteamCard = true;
                 if (!TextUtils.isEmpty(presence.steamId)) {
@@ -10973,6 +10968,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         musicCardRow = -1;
         musicCardSectionRow = -1;
         steamCardRow = -1;
+        ameCustomCardsStartRow = -1;
+        ameCustomCardsCount = 0;
         infoHeaderRow = -1;
         infoHeaderRowEmpty = -1;
         infoEndRowEmpty = -1;
@@ -11084,8 +11081,21 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 musicCardSectionRow = rowCount++;
             }
 
-            if (hasSteamCard) {
+            if (hasSteamCard && app.amegram.bridge.ameprofile.AmeProfileEngine.isPresenceVisible()) {
                 steamCardRow = rowCount++;
+            } else {
+                hasSteamCard = false;
+                steamCardRow = -1;
+            }
+
+            boolean isSelfUser = (user != null && UserObject.isUserSelf(user)) || myProfile || (userId != 0 && userId == getUserConfig().getClientUserId());
+            if (isSelfUser) {
+                java.util.List<app.amegram.bridge.ameprofile.AmeProfileEngine.AmeCard> customCards = app.amegram.bridge.ameprofile.AmeProfileEngine.getCustomCards();
+                if (customCards != null && !customCards.isEmpty()) {
+                    ameCustomCardsStartRow = rowCount;
+                    ameCustomCardsCount = customCards.size();
+                    rowCount += ameCustomCardsCount;
+                }
             }
 
             if (UserObject.isUserSelf(user) && !myProfile) {
@@ -11205,20 +11215,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     restrictionReasonRow = rowCount++;
                 }
                 boolean isSelfProfile = myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(user);
-                if (!isBot && (hasPhone || !hasInfo) && !hideNumber && (!isSelfProfile || !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideRowPhone())) {
+                if (!isBot && (hasPhone || !hasInfo) && !hideNumber && (!isSelfProfile || (app.amegram.bridge.ameprofile.AmeProfileEngine.isPhoneVisible() && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideRowPhone()))) {
                     phoneRow = rowCount++;
                 }
-                if (userInfo != null && !TextUtils.isEmpty(userInfo.about) && (!isSelfProfile || !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideRowBio())) {
+                if (userInfo != null && !TextUtils.isEmpty(userInfo.about) && (!isSelfProfile || (app.amegram.bridge.ameprofile.AmeProfileEngine.isBioVisible() && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideRowBio()))) {
                     userInfoRow = rowCount++;
                 }
-                if (user != null && username != null && (!isSelfProfile || !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideRowUsername())) {
+                if (user != null && username != null && (!isSelfProfile || (app.amegram.bridge.ameprofile.AmeProfileEngine.isUsernameVisible() && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideRowUsername()))) {
                     usernameRow = rowCount++;
                 }
                 if (NaConfig.INSTANCE.getIdDcType().Int() != 0) {
                     idDcRow = rowCount++;
                 }
                 if (userInfo != null) {
-                    if (userInfo.birthday != null) {
+                    if (userInfo.birthday != null && (!isSelfProfile || app.amegram.bridge.ameprofile.AmeProfileEngine.isBirthdayVisible())) {
                         birthdayRow = rowCount++;
                     }
                     if (userInfo.business_work_hours != null) {
@@ -11324,7 +11334,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     reportDividerRow = rowCount++;
                 }
 
-                if ((hasMedia || (user != null && user.bot && user.bot_can_edit && user.bot_has_main_app) || userInfo != null && userInfo.common_chats_count != 0 || myProfile) && (!myProfile || !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideMediaTabs())) {
+                if ((hasMedia || (user != null && user.bot && user.bot_can_edit && user.bot_has_main_app) || userInfo != null && userInfo.common_chats_count != 0 || myProfile) && (!myProfile || (app.amegram.bridge.ameprofile.AmeProfileEngine.isMediaTabsVisible() && !app.miogram.bridge.customui.MiogramCustomUiPrefs.isHideMediaTabs()))) {
                     sharedMediaRow = rowCount++;
                 } else if (lastSectionRow == -1 && needSendMessage) {
                     sendMessageRow = rowCount++;
@@ -12815,7 +12825,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 otherItem.addSubItem(13303809, R.drawable.msg_theme, app.miogram.bridge.MiogramLocale.get("Оформити профіль", "Оформить профиль", "Customize profile"));
                 otherItem.addSubItem(13303812, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Всі налаштування оформлення", "Все настройки оформления", "All appearance settings"));
-                otherItem.addSubItem(13303816, R.drawable.msg_edit, app.miogram.bridge.MiogramLocale.get("Аме профіль (XML)", "Аме профиль (XML)", "Ame Profile (XML)"));
+                otherItem.addSubItem(13303816, R.drawable.msg_edit, app.miogram.bridge.MiogramLocale.get("Аме Студіо ໒꒱ (XML)", "Аме Студио ໒꒱ (XML)", "Ame Studio ໒꒱ (XML)"));
                 if (app.miogram.bridge.badge.MiogramBadgeGrantSheet.canGrantBadges()) {
                     otherItem.addSubItem(13303815, R.drawable.msg_premium_liststar, app.miogram.bridge.MiogramLocale.get("Видати бейдж", "Выдать бейдж", "Grant Badge"));
                 }
@@ -13926,7 +13936,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 VIEW_TYPE_EMPTY2 = 31,
                 VIEW_TYPE_TEXT2 = 32,
                 VIEW_TYPE_LINKED_COMMUNITY = 33,
-                VIEW_TYPE_STEAM = 34;
+                VIEW_TYPE_STEAM = 34,
+                VIEW_TYPE_AME_CUSTOM_CARD = 35;
 
         private Context mContext;
 
@@ -14038,6 +14049,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 case VIEW_TYPE_STEAM: {
                     app.miogram.bridge.presence.MiogramPresenceCard card = new app.miogram.bridge.presence.MiogramPresenceCard(mContext, resourcesProvider);
                     view = card;
+                    view.setTag(RecyclerListView.TAG_NOT_SECTION);
+                    break;
+                }
+                case VIEW_TYPE_AME_CUSTOM_CARD: {
+                    view = new app.amegram.bridge.ameprofile.AmeCustomCardCell(mContext);
                     view.setTag(RecyclerListView.TAG_NOT_SECTION);
                     break;
                 }
@@ -14307,6 +14323,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             );
 
                             containsGift = !myProfile && today && !getMessagesController().premiumPurchaseBlocked();
+                            if (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
+                                if (app.amegram.bridge.ameprofile.AmeProfileEngine.getBirthdayColor() != 0) {
+                                    detailCell.textView.setTextColor(app.amegram.bridge.ameprofile.AmeProfileEngine.getBirthdayColor());
+                                }
+                            }
                         }
                     } else if (position == phoneRow) {
                         String text;
@@ -14326,7 +14347,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         isFragmentPhoneNumber = phoneNumber != null && phoneNumber.matches("888\\d{8}");
                         detailCell.setTextAndValue(text, LocaleController.getString(isFragmentPhoneNumber ? R.string.AnonymousNumber : R.string.PhoneMobile), false);
                         if (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(user)) {
-                            if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isColorPhone()) {
+                            if (app.amegram.bridge.ameprofile.AmeProfileEngine.getPhoneColor() != 0) {
+                                detailCell.textView.setTextColor(app.amegram.bridge.ameprofile.AmeProfileEngine.getPhoneColor());
+                            } else if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isColorPhone()) {
                                 detailCell.textView.setTextColor(app.miogram.bridge.customui.MiogramCustomUiPrefs.getColorPhone());
                             }
                         }
@@ -14408,7 +14431,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         detailCell.setTextAndValue(text, alsoUsernamesString(username, usernames, value), infoEndRowEmpty == -1 && (isTopic || bizHoursRow != -1 || bizLocationRow != -1) && birthdayRow < 0);
                         if (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
-                            if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isColorUsername()) {
+                            if (app.amegram.bridge.ameprofile.AmeProfileEngine.getUsernameColor() != 0) {
+                                detailCell.textView.setTextColor(app.amegram.bridge.ameprofile.AmeProfileEngine.getUsernameColor());
+                            } else if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isColorUsername()) {
                                 detailCell.textView.setTextColor(app.miogram.bridge.customui.MiogramCustomUiPrefs.getColorUsername());
                             }
                         }
@@ -14453,6 +14478,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         detailCell.setTextAndValue(value, LocaleController.getString(R.string.TapToChangePhone), true);
                         detailCell.setContentDescriptionValueFirst(false);
+                        if (app.amegram.bridge.ameprofile.AmeProfileEngine.getPhoneColor() != 0) {
+                            detailCell.textView.setTextColor(app.amegram.bridge.ameprofile.AmeProfileEngine.getPhoneColor());
+                        }
                     } else if (position == setUsernameRow) {
                         TLRPC.User user = UserConfig.getInstance(currentAccount).getCurrentUser();
                         String text = "";
@@ -14485,6 +14513,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                         detailCell.setTextAndValue(text, value, true);
                         detailCell.setContentDescriptionValueFirst(true);
+                        if (app.amegram.bridge.ameprofile.AmeProfileEngine.getUsernameColor() != 0) {
+                            detailCell.textView.setTextColor(app.amegram.bridge.ameprofile.AmeProfileEngine.getUsernameColor());
+                        }
                     }
                     if (containsGift) {
                         Drawable drawable = ContextCompat.getDrawable(detailCell.getContext(), R.drawable.msg_input_gift);
@@ -14514,7 +14545,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     if (position == userInfoRow) {
                         aboutLinkCell.setTextAndValue(MessageHelper.zalgoFilter(userInfo.about), LocaleController.getString(R.string.UserBio), true);
                         if (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
-                            if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isColorBio()) {
+                            if (app.amegram.bridge.ameprofile.AmeProfileEngine.getBioColor() != 0) {
+                                aboutLinkCell.setCustomTextColor(app.amegram.bridge.ameprofile.AmeProfileEngine.getBioColor());
+                            } else if (app.miogram.bridge.customui.MiogramCustomUiPrefs.isColorBio()) {
                                 aboutLinkCell.setCustomTextColor(app.miogram.bridge.customui.MiogramCustomUiPrefs.getColorBio());
                             }
                         }
@@ -14535,6 +14568,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                             currentBio = null;
                         }
                         aboutLinkCell.setMoreButtonDisabled(true);
+                        if (app.amegram.bridge.ameprofile.AmeProfileEngine.getBioColor() != 0) {
+                            aboutLinkCell.setCustomTextColor(app.amegram.bridge.ameprofile.AmeProfileEngine.getBioColor());
+                        }
                     }
                     break;
                 case VIEW_TYPE_LINKED_COMMUNITY:
@@ -15059,6 +15095,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         }
                     }
                     break;
+                case VIEW_TYPE_AME_CUSTOM_CARD:
+                    if (holder.itemView instanceof app.amegram.bridge.ameprofile.AmeCustomCardCell) {
+                        int cardIdx = position - ameCustomCardsStartRow;
+                        java.util.List<app.amegram.bridge.ameprofile.AmeProfileEngine.AmeCard> cards = app.amegram.bridge.ameprofile.AmeProfileEngine.getCustomCards();
+                        if (cards != null && cardIdx >= 0 && cardIdx < cards.size()) {
+                            ((app.amegram.bridge.ameprofile.AmeCustomCardCell) holder.itemView).bind(cards.get(cardIdx));
+                        }
+                    }
+                    break;
                 case VIEW_TYPE_VERSION:
                     ((TextInfoPrivacyCell) holder.itemView).setText(AndroidUtil.getVersionText());
                     break;
@@ -15177,7 +15222,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         position == clearLogsRow || position == switchBackendRow || position == setAvatarRow ||
                         position == addToGroupButtonRow || position == premiumRow || position == premiumGiftingRow ||
                         position == businessRow || position == liteModeRow || position == birthdayRow || position == channelRow ||
-                        position == starsRow || position == tonRow || position == linkedCommunityRow || position == idDcRow || position == nekoRow;
+                        position == starsRow || position == tonRow || position == linkedCommunityRow || position == idDcRow || position == nekoRow ||
+                        (ameCustomCardsStartRow >= 0 && position >= ameCustomCardsStartRow && position < ameCustomCardsStartRow + ameCustomCardsCount);
             }
             if (holder.itemView instanceof UserCell) {
                 UserCell userCell = (UserCell) holder.itemView;
@@ -15282,6 +15328,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 return VIEW_TYPE_COLORFUL_TEXT;
             } else if (position == infoHeaderRowEmpty || position == infoEndRowEmpty) {
                 return VIEW_TYPE_HEADER_EMPTY;
+            } else if (ameCustomCardsStartRow >= 0 && position >= ameCustomCardsStartRow && position < ameCustomCardsStartRow + ameCustomCardsCount) {
+                return VIEW_TYPE_AME_CUSTOM_CARD;
             }
             return 4;
         }

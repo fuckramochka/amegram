@@ -94,13 +94,7 @@ public class DrawerHeaderView extends FrameLayout {
     public DrawerHeaderView(Context context) {
         super(context);
 
-        avatarView = new BackupImageView(context) {
-            @Override
-            protected void dispatchDraw(Canvas canvas) {
-                super.dispatchDraw(canvas);
-                app.miogram.bridge.customui.MiogramUiEngine.drawProfileAvatarExtras(canvas, this);
-            }
-        };
+        avatarView = new BackupImageView(context);
         avatarView.getImageReceiver().setAvatarCornersApplied(true);
         avatarView.setRoundRadius(AppearanceConfig.getAvatarCorners(AndroidUtilities.dp(72)));
         addView(avatarView, LayoutHelper.createFrame(72, 72.0f, Gravity.LEFT | Gravity.TOP, 16.0f, 16.0f, 0.0f, 0.0f));

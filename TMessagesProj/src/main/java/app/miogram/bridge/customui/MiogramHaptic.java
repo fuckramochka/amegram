@@ -23,6 +23,13 @@ public final class MiogramHaptic {
     public static final int MAX_AMPLITUDE = 255;
     public static final long SAME_GAP_MS = 60;
     public static final long TICK_GAP_MS = 28;
+    public static final int KEYBOARD_TAP = HapticFeedbackConstants.KEYBOARD_TAP;
+
+    public static void perform(View view, int feedbackConstant) {
+        if (view != null) {
+            tap(view);
+        }
+    }
 
     private static long lastAny;
     private static long lastTick;

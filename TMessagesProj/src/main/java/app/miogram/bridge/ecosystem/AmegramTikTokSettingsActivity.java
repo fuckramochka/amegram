@@ -279,7 +279,7 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndValueAndIcon(
                                 MiogramLocale.get("Синхронізувати акаунт з TikTok MI ໒꒱", "Синхронизировать аккаунт с TikTok MI ໒꒱", "Sync Account with TikTok MI ໒꒱"),
                                 isLinked ? ("@" + linkedUser) : MiogramLocale.get("Не прив'язано", "Не привязан", "Not linked"),
-                                R.drawable.msg_user,
+                                R.drawable.msg_openprofile,
                                 false
                         );
                     }

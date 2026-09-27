@@ -57,34 +57,34 @@ public class MiogramAmeProfileEngine {
         // 2. Banner Header
         sb.append("    <banner\n");
         sb.append("        enabled=\"").append(MiogramCustomUiPrefs.isBannerEnabled()).append("\"\n");
-        sb.append("        mode=\"").append(escapeXml(MiogramCustomUiPrefs.getBannerMode())).append("\"\n");
-        sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.getBannerColorHex())).append("\"\n");
+        sb.append("        mode=\"").append(MiogramCustomUiPrefs.getBannerMode()).append("\"\n");
+        sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getBannerColor()))).append("\"\n");
         sb.append("        alpha=\"").append(MiogramCustomUiPrefs.getBannerAlpha()).append("\"\n");
         sb.append("        dim=\"").append(MiogramCustomUiPrefs.getBannerDim()).append("\" />\n");
 
         // 3. Avatar Geometry & Glowing Ring
         sb.append("    <avatar\n");
-        sb.append("        shape=\"").append(escapeXml(MiogramCustomUiPrefs.getAvatarShape())).append("\"\n");
+        sb.append("        shape=\"").append(MiogramCustomUiPrefs.getAvatarShape()).append("\"\n");
         sb.append("        radius=\"").append(MiogramCustomUiPrefs.getAvatarRadius()).append("\"\n");
         sb.append("        ring-enabled=\"").append(MiogramCustomUiPrefs.isAvatarRingEnabled()).append("\"\n");
-        sb.append("        ring-color=\"").append(escapeXml(MiogramCustomUiPrefs.getAvatarRingColorHex())).append("\"\n");
+        sb.append("        ring-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getAvatarRingColor()))).append("\"\n");
         sb.append("        ring-pulse=\"").append(MiogramCustomUiPrefs.isAvatarRingPulse()).append("\" />\n");
 
         // 4. Name & Text FX
         sb.append("    <name\n");
         sb.append("        color-enabled=\"").append(MiogramCustomUiPrefs.isNameColorEnabled()).append("\"\n");
-        sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.getNameColorHex())).append("\"\n");
+        sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getNameColor()))).append("\"\n");
         sb.append("        glow-enabled=\"").append(MiogramCustomUiPrefs.isNameGlowEnabled()).append("\"\n");
-        sb.append("        glow-color=\"").append(escapeXml(MiogramCustomUiPrefs.getNameGlowColorHex())).append("\"\n");
+        sb.append("        glow-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getNameGlowColor()))).append("\"\n");
         sb.append("        glow-radius=\"").append(MiogramCustomUiPrefs.getNameGlowRadius()).append("\"\n");
-        sb.append("        fx=\"").append(escapeXml(MiogramCustomUiPrefs.getNameFx())).append("\" />\n");
+        sb.append("        fx=\"").append(MiogramCustomUiPrefs.getNameFx()).append("\" />\n");
 
         // 5. Blocks Styling
         sb.append("    <blocks\n");
         sb.append("        color-enabled=\"").append(MiogramCustomUiPrefs.isBlocksColorEnabled()).append("\"\n");
-        sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.getBlocksColorHex())).append("\"\n");
+        sb.append("        color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getBlocksColor()))).append("\"\n");
         sb.append("        alpha=\"").append(MiogramCustomUiPrefs.getBlocksAlpha()).append("\"\n");
-        sb.append("        blur=\"").append(MiogramCustomUiPrefs.isBlocksBlur()).append("\"\n");
+        sb.append("        blur=\"").append(MiogramCustomUiPrefs.getBlocksBlur()).append("\"\n");
         sb.append("        depth=\"").append(MiogramCustomUiPrefs.getBlocksDepth()).append("\"\n");
         sb.append("        radius=\"").append(MiogramCustomUiPrefs.getBlocksRadius()).append("\" />\n");
 
@@ -92,13 +92,13 @@ public class MiogramAmeProfileEngine {
         String thought = MiogramCustomUiPrefs.getThoughtText();
         sb.append("    <thought\n");
         sb.append("        text=\"").append(escapeXml(thought != null ? thought : "")).append("\"\n");
-        sb.append("        text-color=\"").append(escapeXml(MiogramCustomUiPrefs.getThoughtTextColorHex())).append("\"\n");
-        sb.append("        bg-color=\"").append(escapeXml(MiogramCustomUiPrefs.getThoughtBgColorHex())).append("\" />\n");
+        sb.append("        text-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getThoughtTextColor()))).append("\"\n");
+        sb.append("        bg-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getThoughtBgColor()))).append("\" />\n");
 
         // 7. Text Colors
         sb.append("    <palette\n");
         sb.append("        text-color-enabled=\"").append(MiogramCustomUiPrefs.isProfileTextColorEnabled()).append("\"\n");
-        sb.append("        text-color=\"").append(escapeXml(MiogramCustomUiPrefs.getProfileTextColorHex())).append("\" />\n");
+        sb.append("        text-color=\"").append(escapeXml(MiogramCustomUiPrefs.hex(MiogramCustomUiPrefs.getProfileTextColor()))).append("\" />\n");
 
         sb.append("</ame-profile>\n");
         return sb.toString();
@@ -175,10 +175,14 @@ public class MiogramAmeProfileEngine {
         if (enabled != null) MiogramCustomUiPrefs.setBannerEnabled(Boolean.parseBoolean(enabled));
 
         String mode = p.getAttributeValue(null, "mode");
-        if (mode != null) MiogramCustomUiPrefs.setBannerMode(mode);
+        if (mode != null) {
+            try { MiogramCustomUiPrefs.setBannerMode(Integer.parseInt(mode)); } catch (Throwable ignore) {}
+        }
 
         String color = p.getAttributeValue(null, "color");
-        if (color != null) MiogramCustomUiPrefs.setBannerColor(color);
+        if (color != null) {
+            MiogramCustomUiPrefs.setBannerColor(MiogramCustomUiPrefs.parseColor(color, 0xFF1C242F));
+        }
 
         String alpha = p.getAttributeValue(null, "alpha");
         if (alpha != null) {
@@ -193,7 +197,9 @@ public class MiogramAmeProfileEngine {
 
     private static void parseAvatar(XmlPullParser p) {
         String shape = p.getAttributeValue(null, "shape");
-        if (shape != null) MiogramCustomUiPrefs.setAvatarShape(shape);
+        if (shape != null) {
+            try { MiogramCustomUiPrefs.setAvatarShape(Integer.parseInt(shape)); } catch (Throwable ignore) {}
+        }
 
         String radius = p.getAttributeValue(null, "radius");
         if (radius != null) {
@@ -204,7 +210,9 @@ public class MiogramAmeProfileEngine {
         if (ring != null) MiogramCustomUiPrefs.setAvatarRingEnabled(Boolean.parseBoolean(ring));
 
         String ringColor = p.getAttributeValue(null, "ring-color");
-        if (ringColor != null) MiogramCustomUiPrefs.setAvatarRingColor(ringColor);
+        if (ringColor != null) {
+            MiogramCustomUiPrefs.setAvatarRingColor(MiogramCustomUiPrefs.parseColor(ringColor, 0xFF00E5FF));
+        }
 
         String pulse = p.getAttributeValue(null, "ring-pulse");
         if (pulse != null) MiogramCustomUiPrefs.setAvatarRingPulse(Boolean.parseBoolean(pulse));
@@ -215,13 +223,17 @@ public class MiogramAmeProfileEngine {
         if (colorEnabled != null) MiogramCustomUiPrefs.setNameColorEnabled(Boolean.parseBoolean(colorEnabled));
 
         String color = p.getAttributeValue(null, "color");
-        if (color != null) MiogramCustomUiPrefs.setNameColor(color);
+        if (color != null) {
+            MiogramCustomUiPrefs.setNameColor(MiogramCustomUiPrefs.parseColor(color, 0xFFFFFFFF));
+        }
 
         String glowEnabled = p.getAttributeValue(null, "glow-enabled");
         if (glowEnabled != null) MiogramCustomUiPrefs.setNameGlowEnabled(Boolean.parseBoolean(glowEnabled));
 
         String glowColor = p.getAttributeValue(null, "glow-color");
-        if (glowColor != null) MiogramCustomUiPrefs.setNameGlowColor(glowColor);
+        if (glowColor != null) {
+            MiogramCustomUiPrefs.setNameGlowColor(MiogramCustomUiPrefs.parseColor(glowColor, 0xFF2A87FF));
+        }
 
         String glowRadius = p.getAttributeValue(null, "glow-radius");
         if (glowRadius != null) {
@@ -229,7 +241,9 @@ public class MiogramAmeProfileEngine {
         }
 
         String fx = p.getAttributeValue(null, "fx");
-        if (fx != null) MiogramCustomUiPrefs.setNameFx(fx);
+        if (fx != null) {
+            try { MiogramCustomUiPrefs.setNameFx(Integer.parseInt(fx)); } catch (Throwable ignore) {}
+        }
     }
 
     private static void parseBlocks(XmlPullParser p) {
@@ -237,7 +251,9 @@ public class MiogramAmeProfileEngine {
         if (colorEnabled != null) MiogramCustomUiPrefs.setBlocksColorEnabled(Boolean.parseBoolean(colorEnabled));
 
         String color = p.getAttributeValue(null, "color");
-        if (color != null) MiogramCustomUiPrefs.setBlocksColor(color);
+        if (color != null) {
+            MiogramCustomUiPrefs.setBlocksColor(MiogramCustomUiPrefs.parseColor(color, 0xFF1C242F));
+        }
 
         String alpha = p.getAttributeValue(null, "alpha");
         if (alpha != null) {
@@ -245,7 +261,17 @@ public class MiogramAmeProfileEngine {
         }
 
         String blur = p.getAttributeValue(null, "blur");
-        if (blur != null) MiogramCustomUiPrefs.setBlocksBlur(Boolean.parseBoolean(blur));
+        if (blur != null) {
+            try {
+                if ("true".equalsIgnoreCase(blur)) {
+                    MiogramCustomUiPrefs.setBlocksBlur(1);
+                } else if ("false".equalsIgnoreCase(blur)) {
+                    MiogramCustomUiPrefs.setBlocksBlur(0);
+                } else {
+                    MiogramCustomUiPrefs.setBlocksBlur(Integer.parseInt(blur));
+                }
+            } catch (Throwable ignore) {}
+        }
 
         String depth = p.getAttributeValue(null, "depth");
         if (depth != null) {
@@ -263,10 +289,14 @@ public class MiogramAmeProfileEngine {
         if (text != null) MiogramCustomUiPrefs.setThoughtText(text);
 
         String textColor = p.getAttributeValue(null, "text-color");
-        if (textColor != null) MiogramCustomUiPrefs.setThoughtTextColor(textColor);
+        if (textColor != null) {
+            MiogramCustomUiPrefs.setThoughtTextColor(MiogramCustomUiPrefs.parseColor(textColor, -1));
+        }
 
         String bgColor = p.getAttributeValue(null, "bg-color");
-        if (bgColor != null) MiogramCustomUiPrefs.setThoughtBgColor(bgColor);
+        if (bgColor != null) {
+            MiogramCustomUiPrefs.setThoughtBgColor(MiogramCustomUiPrefs.parseColor(bgColor, 0xEE1C242F));
+        }
     }
 
     private static void parsePalette(XmlPullParser p) {
@@ -274,7 +304,9 @@ public class MiogramAmeProfileEngine {
         if (textEnabled != null) MiogramCustomUiPrefs.setProfileTextColorEnabled(Boolean.parseBoolean(textEnabled));
 
         String textColor = p.getAttributeValue(null, "text-color");
-        if (textColor != null) MiogramCustomUiPrefs.setProfileTextColor(textColor);
+        if (textColor != null) {
+            MiogramCustomUiPrefs.setProfileTextColor(MiogramCustomUiPrefs.parseColor(textColor, -1));
+        }
     }
 
     /**

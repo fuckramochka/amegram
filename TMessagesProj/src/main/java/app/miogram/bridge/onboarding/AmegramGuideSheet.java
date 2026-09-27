@@ -2,6 +2,7 @@ package app.miogram.bridge.onboarding;
 
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
@@ -689,7 +690,13 @@ public class AmegramGuideSheet extends BottomSheet {
         marketBtn.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(6), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
         marketBtn.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
-            new MiogramPluginCatalogAlert(getParentActivity() != null ? getParentActivity() : null).show();
+            Activity act = AndroidUtilities.findActivity(v.getContext());
+            if (act == null) {
+                act = AndroidUtilities.findActivity(context);
+            }
+            if (act != null) {
+                new MiogramPluginCatalogAlert(act).show();
+            }
         });
         layout.addView(marketBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
 

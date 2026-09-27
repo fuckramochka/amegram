@@ -45,6 +45,7 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
     private int clipVaultRow;
     private int soundboardRow;
     private int syncNowRow;
+    private int syncAccountRow;
     private int syncInfoRow;
 
     @Override
@@ -74,6 +75,7 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
         clipVaultRow = addRow();
         soundboardRow = addRow();
         syncNowRow = addRow();
+        syncAccountRow = addRow();
         syncInfoRow = addRow();
     }
 
@@ -135,6 +137,16 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
 
             AmegramTikTokBridge.syncThemeToTikTokMi(context, accent, dark, amoled);
             Toast.makeText(context, MiogramLocale.get("Тему синхронізовано з TikTok MI ໒꒱", "Тема синхронизирована с TikTok MI ໒꒱", "Theme synced with TikTok MI ໒꒱"), Toast.LENGTH_SHORT).show();
+        } else if (position == syncAccountRow) {
+            if (!isInstalled) {
+                Toast.makeText(context, MiogramLocale.get("TikTok MI не знайдено", "TikTok MI не найден", "TikTok MI not found"), Toast.LENGTH_SHORT).show();
+                return;
+            }
+            android.os.Bundle acc = AmegramTikTokBridge.queryTikTokMiAccount(context);
+            String ttUser = acc != null ? acc.getString("username", "") : AmegramTikTokManager.getInstance().getLinkedUsername();
+            String ttNick = acc != null ? acc.getString("nickname", "") : AmegramTikTokManager.getInstance().getNickname();
+            String ttAvatar = acc != null ? acc.getString("avatar", "") : AmegramTikTokManager.getInstance().getAvatarUrl();
+            AmegramTikTokLinkSheet.show(context, "", ttUser, ttNick, ttAvatar);
         }
     }
 
@@ -259,6 +271,15 @@ public class AmegramTikTokSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Синхронізувати тему зараз", "Синхронизировать тему сейчас", "Sync theme now"),
                                 R.drawable.msg_theme,
+                                false
+                        );
+                    } else if (position == syncAccountRow) {
+                        boolean isLinked = AmegramTikTokManager.getInstance().isLinked();
+                        String linkedUser = AmegramTikTokManager.getInstance().getLinkedUsername();
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Синхронізувати акаунт з TikTok MI ໒꒱", "Синхронизировать аккаунт с TikTok MI ໒꒱", "Sync Account with TikTok MI ໒꒱"),
+                                isLinked ? ("@" + linkedUser) : MiogramLocale.get("Не прив'язано", "Не привязан", "Not linked"),
+                                R.drawable.msg_user,
                                 false
                         );
                     }

@@ -52,6 +52,8 @@ public class AmegramTikTokManager {
     private static final String KEY_LIKES = "tiktok_likes";
     private static final String KEY_BIO = "tiktok_bio";
     private static final String KEY_LAST_UPDATED = "tiktok_last_updated";
+    private static final String KEY_TG_USER_ID = "tiktok_tg_user_id";
+    private static final String KEY_TG_USERNAME = "tiktok_tg_username";
 
     private static volatile AmegramTikTokManager instance;
 
@@ -183,6 +185,21 @@ public class AmegramTikTokManager {
                 .putLong(KEY_LIKES, likes)
                 .putLong(KEY_LAST_UPDATED, System.currentTimeMillis())
                 .apply();
+    }
+
+    public void setLinkedTelegramAccount(long tgId, String tgUsername) {
+        getPrefs().edit()
+                .putLong(KEY_TG_USER_ID, tgId)
+                .putString(KEY_TG_USERNAME, tgUsername != null ? tgUsername : "")
+                .apply();
+    }
+
+    public long getLinkedTelegramUserId() {
+        return getPrefs().getLong(KEY_TG_USER_ID, 0);
+    }
+
+    public String getLinkedTelegramUsername() {
+        return getPrefs().getString(KEY_TG_USERNAME, "");
     }
 
     public void unlink() {

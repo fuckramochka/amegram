@@ -253,6 +253,8 @@ public class AmegramEcosystemProvider extends ContentProvider {
                         res.putLong("following", u.followingCount);
                         res.putLong("likes", u.likesCount);
                         res.putString("bio", u.bio);
+                        res.putLong("telegram_id", AmegramTikTokManager.getInstance().getLinkedTelegramUserId());
+                        res.putString("telegram_username", AmegramTikTokManager.getInstance().getLinkedTelegramUsername());
                     }
                 } catch (Throwable t) {
                     FileLog.e(t);

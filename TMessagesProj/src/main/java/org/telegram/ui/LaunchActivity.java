@@ -1948,6 +1948,19 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     } catch (Throwable e) {
                         FileLog.e(e);
                     }
+                } else if ("app.amegram.ACTION_LINK_TIKTOK".equals(intent.getAction()) ||
+                           (intent.getData() != null && "amegram".equals(intent.getData().getScheme()) && "sync".equals(intent.getData().getHost()))) {
+                    try {
+                        final String tiktokUid = intent.getStringExtra("tiktok_uid");
+                        final String tiktokUsername = intent.getStringExtra("tiktok_username");
+                        final String tiktokNickname = intent.getStringExtra("tiktok_nickname");
+                        final String tiktokAvatar = intent.getStringExtra("tiktok_avatar");
+                        AndroidUtilities.runOnUIThread(() -> {
+                            app.miogram.bridge.ecosystem.AmegramTikTokLinkSheet.show(LaunchActivity.this, tiktokUid, tiktokUsername, tiktokNickname, tiktokAvatar);
+                        }, 250);
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
                 } else if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
                     boolean error = false;
                     try {

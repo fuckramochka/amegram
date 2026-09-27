@@ -49,7 +49,7 @@ public class MiogramUpdater {
     private static final String KEY_LAST_SEEN_TAG = "last_seen_tag";
     private static final String KEY_LAST_SEEN_TIME = "last_seen_time";
     /** Dismissed update re-prompts after this long instead of never. */
-    private static final long DISMISS_SNOOZE_MS = 3L * 24 * 60 * 60 * 1000L; // 3 days
+    private static final long DISMISS_SNOOZE_MS = 4L * 60 * 60 * 1000L; // 4 hours
     private static final String KEY_UPDATE_CHANNEL = "update_channel"; // "beta" (default) | "stable"
     private static final String KEY_CHANNEL_CHOICE_VERSION = "channel_choice_version";
     private static final String KEY_PROMO_VERSION = "channel_promo_version";
@@ -83,9 +83,9 @@ public class MiogramUpdater {
     }
 
     private static final String KEY_LAST_CHECK_TIME = "last_check_timestamp";
-    private static final long CHECK_INTERVAL_MS = 24 * 60 * 60 * 1000L; // 24 hours cooldown
+    private static final long CHECK_INTERVAL_MS = 2 * 60 * 60 * 1000L; // 2 hours cooldown
     private static final String KEY_LAST_ENTRY_CHECK = "last_entry_check_timestamp";
-    private static final long ENTRY_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000L; // 12 hours cooldown
+    private static final long ENTRY_CHECK_INTERVAL_MS = 30 * 60 * 1000L; // 30 minutes cooldown
     private static volatile boolean autoUpdateStarted = false;
 
     /**
@@ -494,8 +494,9 @@ public class MiogramUpdater {
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
-                    conn.setConnectTimeout(6000);
-                    conn.setReadTimeout(6000);
+                    conn.setRequestProperty("User-Agent", "Amegram-Android/" + getCurrentAppVersion());
+                    conn.setConnectTimeout(8000);
+                    conn.setReadTimeout(8000);
 
                     int code = conn.getResponseCode();
                     if (code == 200) {
@@ -552,6 +553,32 @@ public class MiogramUpdater {
                 }
             }
 
+            // Fallback: If GitHub API was rate-limited (HTTP 403) or failed, inspect releases/latest redirect
+            if (bestCandidate == null) {
+                try {
+                    URL fallbackUrl = new URL("https://github.com/fuckramochka/amegram/releases/latest");
+                    HttpURLConnection fbConn = (HttpURLConnection) fallbackUrl.openConnection();
+                    fbConn.setInstanceFollowRedirects(false);
+                    fbConn.setRequestMethod("HEAD");
+                    fbConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)");
+                    fbConn.setConnectTimeout(8000);
+                    fbConn.setReadTimeout(8000);
+                    int resp = fbConn.getResponseCode();
+                    if (resp == 301 || resp == 302 || resp == 307 || resp == 308) {
+                        String loc = fbConn.getHeaderField("Location");
+                        if (loc != null && loc.contains("/tag/")) {
+                            String tag = loc.substring(loc.lastIndexOf("/tag/") + 5).trim();
+                            String ver = tag.replace("v", "").replace("V", "").trim();
+                            String runNum = ver.contains(".") ? ver.substring(ver.lastIndexOf('.') + 1) : ver;
+                            String apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + "(1261" + runNum + ").apk";
+                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, "Останнє оновлення Amegram на GitHub: " + tag, apkUrl);
+                        }
+                    }
+                } catch (Throwable t) {
+                    FileLog.e(t);
+                }
+            }
+
             if (bestCandidate != null) {
                 final String currentVersion = getCurrentAppVersion();
                 boolean isNewer = isNewerVersion(currentVersion, bestCandidate.version, bestCandidate.tag, bestCandidate.body);
@@ -599,23 +626,10 @@ public class MiogramUpdater {
         if (TextUtils.isEmpty(remoteVersion)) return false;
 
         String c = currentVersion != null ? currentVersion.replace("v", "").replace("V", "").trim() : "";
-        String r = remoteVersion.trim();
+        String r = remoteVersion.replace("v", "").replace("V", "").trim();
 
         // 1. Exact match
         if (c.equalsIgnoreCase(r)) return false;
-        // Same base release with a commit-hash suffix (e.g. 12.11.0-83b6b68 vs 12.11.0)
-        // is up to date — but a LONGER NUMERIC component (12.11.1 vs 12.11.12) is newer.
-        if (!c.isEmpty() && !r.isEmpty()) {
-            if (c.startsWith(r) || r.startsWith(c)) {
-                String longer = c.length() >= r.length() ? c : r;
-                String shorter = c.length() >= r.length() ? r : c;
-                String rest = longer.substring(shorter.length());
-                if (rest.isEmpty() || !Character.isDigit(rest.charAt(0))) {
-                    return false;
-                }
-                // else: numeric continuation (e.g. ".12", "2") -> fall through to numeric compare
-            }
-        }
 
         // 2. If changelog or remote tag contains commit hash that matches installed app
         if (!TextUtils.isEmpty(changelog) && !TextUtils.isEmpty(c)) {
@@ -628,27 +642,19 @@ public class MiogramUpdater {
             }
         }
 
-        // 3. Compare numeric version components
-        String[] cParts = c.split("[^0-9]+");
-        String[] rParts = r.split("[^0-9]+");
+        // 3. Base versions (strip trailing -suffix from numerical comparison)
+        String cBase = c.contains("-") ? c.substring(0, c.indexOf('-')) : c;
+        String rBase = r.contains("-") ? r.substring(0, r.indexOf('-')) : r;
 
-        // Special handling for legacy 12.10.<run> vs 12.11.<run> transition in Amegram:
-        // CI builds were misnamed 12.10.<run> while GitHub release tags were v12.11.<run>.
-        if (cParts.length >= 3 && rParts.length >= 3) {
-            try {
-                int cMajor = Integer.parseInt(cParts[0]);
-                int cMinor = Integer.parseInt(cParts[1]);
-                int cBuild = Integer.parseInt(cParts[2]);
-
-                int rMajor = Integer.parseInt(rParts[0]);
-                int rMinor = Integer.parseInt(rParts[1]);
-                int rBuild = Integer.parseInt(rParts[2]);
-
-                if (cMajor == 12 && rMajor == 12 && cMinor == 10 && rMinor == 11) {
-                    return rBuild > cBuild;
-                }
-            } catch (Exception ignored) {}
+        // Special case: if base versions are identical, but local is a dev build with '-'
+        // and remote is clean release:
+        if (cBase.equalsIgnoreCase(rBase)) {
+            return c.contains("-") && !r.contains("-");
         }
+
+        // 4. Compare numeric version components
+        String[] cParts = cBase.split("[^0-9]+");
+        String[] rParts = rBase.split("[^0-9]+");
 
         int len = Math.max(cParts.length, rParts.length);
         for (int i = 0; i < len; i++) {

@@ -1561,9 +1561,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return Unit.INSTANCE;
         });
 
-        if (tw.nekomimi.nekogram.helpers.remote.BaseRemoteHelper.hasMetadataChannel()) {
         builder.addItem(getString(R.string.CheckUpdate), R.drawable.msg_search_solar, (it) -> {
-            Browser.openUrl(getContext(), "tg://update");
+            app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(SettingsActivity.this, true);
             return Unit.INSTANCE;
         });
 
@@ -1597,7 +1596,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 switchBuilder.doRadioCheck(radioButtonCell);
                 AndroidUtilities.runOnUIThread(() -> {
                     switchBuilder.dismiss();
-                    Browser.openUrl(getContext(), "tg://update");
+                    app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(SettingsActivity.this, true);
                 }, 500);
                 return Unit.INSTANCE;
             });
@@ -1606,14 +1605,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 switchBuilder.doRadioCheck(radioButtonCell);
                 AndroidUtilities.runOnUIThread(() -> {
                     switchBuilder.dismiss();
-                    Browser.openUrl(getContext(), "tg://update");
+                    app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(SettingsActivity.this, true);
                 }, 500);
                 return Unit.INSTANCE;
             });
             showDialog(switchBuilder.create());
             return Unit.INSTANCE;
         });
-        }
         builder.show();
     }
 

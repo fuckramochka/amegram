@@ -205,7 +205,7 @@ public class MiogramDownloadManager {
                 conn.setInstanceFollowRedirects(true);
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(30000);
-                conn.setRequestProperty("User-Agent", "Miogram/" + currentVersion);
+                conn.setRequestProperty("User-Agent", "Amegram/" + currentVersion);
 
                 if (existingBytes > 0) {
                     conn.setRequestProperty("Range", "bytes=" + existingBytes + "-");
@@ -369,7 +369,7 @@ public class MiogramDownloadManager {
                     permIntent.setData(Uri.parse("package:" + ctx.getPackageName()));
                     permIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     ctx.startActivity(permIntent);
-                    Toast.makeText(ctx, MiogramLocale.get("Увімкніть дозвіл на встановлення додатків для Miogram", "Включите разрешение на установку приложений для Miogram", "Enable install apps permission for Miogram"), Toast.LENGTH_LONG).show();
+                    Toast.makeText(ctx, MiogramLocale.get("Увімкніть дозвіл на встановлення додатків для Amegram", "Включите разрешение на установку приложений для Amegram", "Enable install apps permission for Amegram"), Toast.LENGTH_LONG).show();
                     return;
                 }
             }

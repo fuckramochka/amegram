@@ -42,7 +42,7 @@ import app.miogram.bridge.ameprofile.MiogramAmeProfileEngine;
 import app.miogram.bridge.ameprofile.MiogramAmeProfileSheet;
 import app.miogram.bridge.cloudvault.MiogramCloudVaultEngine;
 import app.miogram.bridge.customui.MiogramHaptic;
-import app.miogram.bridge.flags.MiogramFlags;
+import app.miogram.bridge.MiogramFlags;
 import app.miogram.bridge.plugins.MiogramPluginsMarket;
 import app.miogram.bridge.ui.MiogramVisualsPrefs;
 import app.miogram.bridge.ui.discord.MiogramDiscordLayout;

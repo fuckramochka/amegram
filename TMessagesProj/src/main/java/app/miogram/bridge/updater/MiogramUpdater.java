@@ -662,7 +662,7 @@ public class MiogramUpdater {
         }).start();
     }
 
-    private static String fetchApkUrlFromExpandedAssets(String tag) {
+    static String fetchApkUrlFromExpandedAssets(String tag) {
         try {
             URL url = new URL("https://github.com/fuckramochka/amegram/releases/expanded_assets/" + tag + "?t=" + System.currentTimeMillis());
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();

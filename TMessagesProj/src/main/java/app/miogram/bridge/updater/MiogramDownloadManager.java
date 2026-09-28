@@ -197,55 +197,72 @@ public class MiogramDownloadManager {
                 existingBytes = partFile.length();
             }
 
-            String targetUrl = initialUrl;
-            int redirects = 0;
-            while (redirects < 6) {
-                URL url = new URL(targetUrl);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setInstanceFollowRedirects(true);
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(30000);
-                conn.setRequestProperty("User-Agent", "Amegram/" + currentVersion);
+            List<String> candidateUrls = buildCandidateUrls(initialUrl, currentVersion);
+            int responseCode = -1;
+            boolean isResume = false;
 
-                if (existingBytes > 0) {
-                    conn.setRequestProperty("Range", "bytes=" + existingBytes + "-");
-                }
+            for (String tryUrl : candidateUrls) {
+                if (isCancelled) return;
+                String targetUrl = tryUrl;
+                int redirects = 0;
+                while (redirects < 6) {
+                    URL url = new URL(targetUrl);
+                    conn = (HttpURLConnection) url.openConnection();
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(15000);
+                    conn.setReadTimeout(30000);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)");
 
-                conn.connect();
-                int code = conn.getResponseCode();
-                if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP || code == 307 || code == 308) {
-                    String newLoc = conn.getHeaderField("Location");
-                    if (newLoc != null) {
-                        conn.disconnect();
-                        targetUrl = newLoc;
-                        redirects++;
-                        continue;
+                    if (existingBytes > 0) {
+                        conn.setRequestProperty("Range", "bytes=" + existingBytes + "-");
                     }
+
+                    conn.connect();
+                    int code = conn.getResponseCode();
+                    if (code == HttpURLConnection.HTTP_MOVED_PERM || code == HttpURLConnection.HTTP_MOVED_TEMP || code == 307 || code == 308) {
+                        String newLoc = conn.getHeaderField("Location");
+                        if (newLoc != null) {
+                            conn.disconnect();
+                            targetUrl = newLoc;
+                            redirects++;
+                            continue;
+                        }
+                    }
+                    break;
                 }
-                break;
-            }
 
-            if (conn == null) throw new Exception("Failed to establish connection");
+                if (conn == null) continue;
+                responseCode = conn.getResponseCode();
+                isResume = (responseCode == HttpURLConnection.HTTP_PARTIAL);
 
-            int responseCode = conn.getResponseCode();
-            boolean isResume = (responseCode == HttpURLConnection.HTTP_PARTIAL);
-
-            if (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL) {
-                if (existingBytes > 0 && responseCode == 416) {
+                if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_PARTIAL) {
+                    break; // Successfully connected!
+                } else if (responseCode == 416 && existingBytes > 0) {
                     partFile.delete();
                     existingBytes = 0;
                     conn.disconnect();
                     URL url = new URL(targetUrl);
                     conn = (HttpURLConnection) url.openConnection();
+                    conn.setInstanceFollowRedirects(true);
                     conn.setConnectTimeout(15000);
                     conn.setReadTimeout(30000);
-                    conn.setRequestProperty("User-Agent", "Miogram/" + currentVersion);
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)");
                     conn.connect();
                     responseCode = conn.getResponseCode();
                     isResume = false;
-                } else {
-                    throw new Exception("HTTP server error " + responseCode);
+                    if (responseCode == HttpURLConnection.HTTP_OK) {
+                        break;
+                    }
                 }
+                // If 404 or other failure, disconnect and try next candidate URL!
+                if (conn != null) {
+                    try { conn.disconnect(); } catch (Exception ignored) {}
+                    conn = null;
+                }
+            }
+
+            if (conn == null || (responseCode != HttpURLConnection.HTTP_OK && responseCode != HttpURLConnection.HTTP_PARTIAL)) {
+                throw new Exception("HTTP server error " + responseCode);
             }
 
             long contentLength = conn.getContentLengthLong();
@@ -323,6 +340,68 @@ public class MiogramDownloadManager {
             try { if (out != null) out.close(); } catch (Exception ignored) {}
             try { if (conn != null) conn.disconnect(); } catch (Exception ignored) {}
         }
+    }
+
+    private List<String> buildCandidateUrls(String initialUrl, String version) {
+        List<String> list = new ArrayList<>();
+        if (initialUrl != null && !initialUrl.trim().isEmpty()) {
+            String u = initialUrl.trim();
+            list.add(u);
+
+            if (u.contains("(") || u.contains(")")) {
+                String dotUrl = u.replace("(", ".").replace(")", "");
+                if (!list.contains(dotUrl)) {
+                    list.add(dotUrl);
+                }
+                String dotUrl2 = u.replaceAll("\\(([^)]+)\\)", ".$1");
+                if (!list.contains(dotUrl2)) {
+                    list.add(dotUrl2);
+                }
+            }
+        }
+
+        String tag = null;
+        if (version != null && !version.trim().isEmpty()) {
+            tag = version.trim();
+            if (!tag.startsWith("v") && !tag.startsWith("V")) {
+                tag = "v" + tag;
+            }
+        } else if (initialUrl != null && initialUrl.contains("/releases/download/")) {
+            try {
+                String sub = initialUrl.substring(initialUrl.indexOf("/releases/download/") + 19);
+                if (sub.contains("/")) {
+                    tag = sub.substring(0, sub.indexOf("/"));
+                }
+            } catch (Exception ignored) {}
+        }
+
+        if (tag != null && !tag.isEmpty()) {
+            try {
+                String dynamicUrl = MiogramUpdater.fetchApkUrlFromExpandedAssets(tag);
+                if (dynamicUrl != null && !dynamicUrl.isEmpty() && !list.contains(dynamicUrl)) {
+                    list.add(Math.min(1, list.size()), dynamicUrl);
+                }
+            } catch (Throwable ignored) {}
+
+            String verNum = tag.replace("v", "").replace("V", "").trim();
+            String runNum = verNum.contains(".") ? verNum.substring(verNum.lastIndexOf('.') + 1) : verNum;
+
+            String[] patterns = new String[] {
+                "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".1261" + runNum + ".apk",
+                "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + "." + runNum + ".apk",
+                "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk",
+                "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram.apk",
+                "https://github.com/fuckramochka/amegram/releases/latest/download/amegram.apk"
+            };
+
+            for (String p : patterns) {
+                if (!list.contains(p)) {
+                    list.add(p);
+                }
+            }
+        }
+
+        return list;
     }
 
     private void postProgress(int percent, long downloaded, long total) {

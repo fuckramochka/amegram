@@ -83,9 +83,9 @@ public class MiogramUpdater {
     }
 
     private static final String KEY_LAST_CHECK_TIME = "last_check_timestamp";
-    private static final long CHECK_INTERVAL_MS = 2 * 60 * 60 * 1000L; // 2 hours cooldown
+    private static final long CHECK_INTERVAL_MS = 15 * 60 * 1000L; // 15 minutes cooldown
     private static final String KEY_LAST_ENTRY_CHECK = "last_entry_check_timestamp";
-    private static final long ENTRY_CHECK_INTERVAL_MS = 30 * 60 * 1000L; // 30 minutes cooldown
+    private static final long ENTRY_CHECK_INTERVAL_MS = 5 * 60 * 1000L; // 5 minutes cooldown
     private static volatile boolean autoUpdateStarted = false;
 
     /**
@@ -455,10 +455,17 @@ public class MiogramUpdater {
                     return;
                 }
                 final String finalVer = (version != null && !version.isEmpty()) ? version : getCurrentAppVersion();
-                MiogramUpdateBottomSheet sheet = new MiogramUpdateBottomSheet(fragment, hasUpdate, finalVer, changelog, apkUrl);
+                if (!hasUpdate) {
+                    // SILENT IF AUTO-CHECK / RESUME CHECK! Never disturb user when up to date!
+                    if (manualCheck) {
+                        Toast.makeText(fragment.getParentActivity(), MiogramLocale.format("Встановлена остання версія (%s)", "Установлена последняя версия (%s)", "Latest version installed (%s)", finalVer), Toast.LENGTH_SHORT).show();
+                    }
+                    return;
+                }
+                MiogramUpdateBottomSheet sheet = new MiogramUpdateBottomSheet(fragment, true, finalVer, changelog, apkUrl);
                 sheet.show();
             });
-        });
+        }, manualCheck);
     }
 
     private interface UpdateCallback {
@@ -482,6 +489,10 @@ public class MiogramUpdater {
     }
 
     private static void fetchLatestRelease(UpdateCallback callback) {
+        fetchLatestRelease(callback, false);
+    }
+
+    private static void fetchLatestRelease(UpdateCallback callback, boolean bypassCache) {
         final boolean beta = !CHANNEL_STABLE.equals(getUpdateChannel());
         new Thread(() -> {
             ReleaseCandidate bestCandidate = null;
@@ -490,11 +501,18 @@ public class MiogramUpdater {
                     String endpoint = beta
                             ? "https://api.github.com/repos/" + repo + "/releases"
                             : "https://api.github.com/repos/" + repo + "/releases/latest";
+                    if (bypassCache) {
+                        endpoint += (endpoint.contains("?") ? "&" : "?") + "nocache=" + System.currentTimeMillis();
+                    }
                     URL url = new URL(endpoint);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("GET");
                     conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
                     conn.setRequestProperty("User-Agent", "Amegram-Android/" + getCurrentAppVersion());
+                    conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+                    conn.setRequestProperty("Pragma", "no-cache");
+                    conn.setUseCaches(false);
+                    conn.setDefaultUseCaches(false);
                     conn.setConnectTimeout(8000);
                     conn.setReadTimeout(8000);
 
@@ -542,7 +560,6 @@ public class MiogramUpdater {
                                     bestCandidate = candidate;
                                 }
                             }
-                            // Primary repo (fuckramochka/amegram) found an APK release: use it immediately!
                             if ("fuckramochka/amegram".equalsIgnoreCase(repo)) {
                                 break;
                             }
@@ -553,7 +570,54 @@ public class MiogramUpdater {
                 }
             }
 
-            // Fallback: If GitHub API was rate-limited (HTTP 403) or failed, inspect releases/latest redirect
+            // Fallback 1: GitHub Atom Feed (Instant releases, zero 60-req/hr rate limiting)
+            if (bestCandidate == null) {
+                try {
+                    String atomUrl = "https://github.com/fuckramochka/amegram/releases.atom?t=" + System.currentTimeMillis();
+                    URL url = new URL(atomUrl);
+                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)");
+                    conn.setRequestProperty("Cache-Control", "no-cache");
+                    conn.setUseCaches(false);
+                    conn.setConnectTimeout(8000);
+                    conn.setReadTimeout(8000);
+                    if (conn.getResponseCode() == 200) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            sb.append(line).append("\n");
+                        }
+                        reader.close();
+                        String content = sb.toString();
+
+                        java.util.regex.Pattern pTag = java.util.regex.Pattern.compile("<link\\s+rel=\"alternate\"\\s+type=\"text/html\"\\s+href=\"https://github\\.com/[^/]+/[^/]+/releases/tag/([^\"]+)\"");
+                        java.util.regex.Matcher mTag = pTag.matcher(content);
+                        if (mTag.find()) {
+                            String tag = mTag.group(1).trim();
+                            String ver = tag.replace("v", "").replace("V", "").trim();
+
+                            String body = "Amegram " + tag;
+                            java.util.regex.Pattern pTitle = java.util.regex.Pattern.compile("<title>([^<]+)</title>");
+                            java.util.regex.Matcher mTitle = pTitle.matcher(content);
+                            if (mTitle.find() && mTitle.find()) {
+                                body = mTitle.group(1).trim();
+                            }
+
+                            String apkUrl = fetchApkUrlFromExpandedAssets(tag);
+                            if (TextUtils.isEmpty(apkUrl)) {
+                                String runNum = ver.contains(".") ? ver.substring(ver.lastIndexOf('.') + 1) : ver;
+                                apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".1261" + runNum + ".apk";
+                            }
+                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, body, apkUrl);
+                        }
+                    }
+                } catch (Throwable t) {
+                    FileLog.e(t);
+                }
+            }
+
+            // Fallback 2: releases/latest redirect inspection
             if (bestCandidate == null) {
                 try {
                     URL fallbackUrl = new URL("https://github.com/fuckramochka/amegram/releases/latest");
@@ -561,6 +625,8 @@ public class MiogramUpdater {
                     fbConn.setInstanceFollowRedirects(false);
                     fbConn.setRequestMethod("HEAD");
                     fbConn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)");
+                    fbConn.setRequestProperty("Cache-Control", "no-cache");
+                    fbConn.setUseCaches(false);
                     fbConn.setConnectTimeout(8000);
                     fbConn.setReadTimeout(8000);
                     int resp = fbConn.getResponseCode();
@@ -569,8 +635,11 @@ public class MiogramUpdater {
                         if (loc != null && loc.contains("/tag/")) {
                             String tag = loc.substring(loc.lastIndexOf("/tag/") + 5).trim();
                             String ver = tag.replace("v", "").replace("V", "").trim();
-                            String runNum = ver.contains(".") ? ver.substring(ver.lastIndexOf('.') + 1) : ver;
-                            String apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + "(1261" + runNum + ").apk";
+                            String apkUrl = fetchApkUrlFromExpandedAssets(tag);
+                            if (TextUtils.isEmpty(apkUrl)) {
+                                String runNum = ver.contains(".") ? ver.substring(ver.lastIndexOf('.') + 1) : ver;
+                                apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".1261" + runNum + ".apk";
+                            }
                             bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, "Останнє оновлення Amegram на GitHub: " + tag, apkUrl);
                         }
                     }
@@ -591,6 +660,32 @@ public class MiogramUpdater {
                 callback.onResult(false, getCurrentAppVersion(), null, null);
             }
         }).start();
+    }
+
+    private static String fetchApkUrlFromExpandedAssets(String tag) {
+        try {
+            URL url = new URL("https://github.com/fuckramochka/amegram/releases/expanded_assets/" + tag + "?t=" + System.currentTimeMillis());
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android; Mobile)");
+            conn.setRequestProperty("Cache-Control", "no-cache");
+            conn.setUseCaches(false);
+            conn.setConnectTimeout(6000);
+            conn.setReadTimeout(6000);
+            if (conn.getResponseCode() == 200) {
+                BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                String line;
+                java.util.regex.Pattern p = java.util.regex.Pattern.compile("href=\"(/fuckramochka/amegram/releases/download/[^\"]+\\.apk)\"");
+                while ((line = reader.readLine()) != null) {
+                    java.util.regex.Matcher m = p.matcher(line);
+                    if (m.find()) {
+                        reader.close();
+                        return "https://github.com" + m.group(1);
+                    }
+                }
+                reader.close();
+            }
+        } catch (Throwable ignore) {}
+        return null;
     }
 
     /** Beta channel: newest non-draft release (prereleases included) that ships an APK. */

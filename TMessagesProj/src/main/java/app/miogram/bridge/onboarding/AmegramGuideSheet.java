@@ -102,6 +102,10 @@ public class AmegramGuideSheet extends BottomSheet {
 
         selectedAme = MiogramCompanionPrefs.isAmeActive();
 
+        MiogramCompanionPrefs.setGuideShownVersion(BuildVars.BUILD_VERSION_STRING);
+        MiogramCompanionPrefs.setOnboardingCompleted(true);
+        MiogramPluginsMarket.markOnboardingDone(context);
+
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(bgColor);
@@ -873,6 +877,14 @@ public class AmegramGuideSheet extends BottomSheet {
         } else {
             finishOnboarding();
         }
+    }
+
+    @Override
+    public void dismiss() {
+        MiogramCompanionPrefs.setGuideShownVersion(BuildVars.BUILD_VERSION_STRING);
+        MiogramCompanionPrefs.setOnboardingCompleted(true);
+        MiogramPluginsMarket.markOnboardingDone(getContext());
+        super.dismiss();
     }
 
     private void finishOnboarding() {

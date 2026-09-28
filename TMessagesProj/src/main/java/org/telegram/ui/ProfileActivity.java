@@ -12855,9 +12855,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(clear_cache, R.drawable.msg_delete, getString(R.string.ClearCache));
                     updateItemsUsername();
                 }
-                otherItem.addSubItem(13303809, R.drawable.msg_theme, app.miogram.bridge.MiogramLocale.get("Оформити профіль", "Оформить профиль", "Customize profile"));
-                otherItem.addSubItem(13303812, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Всі налаштування оформлення", "Все настройки оформления", "All appearance settings"));
-                otherItem.addSubItem(13303816, R.drawable.msg_edit, app.miogram.bridge.MiogramLocale.get("Аме Студіо ໒꒱ (XML)", "Аме Студио ໒꒱ (XML)", "Ame Studio ໒꒱ (XML)"));
+                otherItem.addSubItem(13303816, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Оформлення профілю (Ame Studio)", "Оформление профиля (Ame Studio)", "Profile Design (Ame Studio)"));
                 if (app.miogram.bridge.badge.MiogramBadgeGrantSheet.canGrantBadges()) {
                     otherItem.addSubItem(13303815, R.drawable.msg_premium_liststar, app.miogram.bridge.MiogramLocale.get("Видати бейдж", "Выдать бейдж", "Grant Badge"));
                 }

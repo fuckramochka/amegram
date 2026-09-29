@@ -94,7 +94,10 @@ public class MiogramInAppNotifications implements NotificationCenter.Notificatio
             for (int i = 0; i < messageObjects.size(); i++) {
                 try {
                     MessageObject m = messageObjects.get(i);
-                    if (m != null) app.miogram.bridge.hooks.MioHook.dispatchMessage(account, m);
+                    if (m != null) {
+                        app.miogram.bridge.hooks.MioHook.dispatchMessage(account, m);
+                        app.exteraless.plugins.LuaPluginsEngine.getInstance().dispatchMessageReceived(account, m);
+                    }
                 } catch (Throwable ignored) {}
             }
 

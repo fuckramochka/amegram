@@ -377,7 +377,7 @@ object NaConfig {
         addConfig(
             "PushServiceTypeInAppDialog",
             ConfigItem.configTypeBool,
-            false
+            true
         )
     val pushServiceTypeUnifiedGateway =
         addConfig(

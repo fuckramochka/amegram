@@ -44,9 +44,10 @@ public final class PluginCapabilityScan {
             return result;
         }
         String name = file.getName().toLowerCase();
-        if (name.endsWith(".wasm") || name.endsWith(".so") || name.endsWith(".mioplugin")) {
-            result.put("READ_MESSAGE_EVENTS", java.util.Collections.singletonList("Native WASM message listener"));
-            result.put("NOTIFICATIONS", java.util.Collections.singletonList("Native in-app bulletin alert"));
+        if (name.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
+            result.put("MESSAGES_HOOK", java.util.Collections.singletonList("Lua on_message_send & on_command"));
+            result.put("RECEIVE_EVENTS", java.util.Collections.singletonList("Lua on_message_receive"));
+            result.put("UI_NOTIFICATIONS", java.util.Collections.singletonList("client.toast & client.log"));
             return result;
         }
         try {

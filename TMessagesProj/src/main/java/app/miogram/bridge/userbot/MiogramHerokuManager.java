@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.SystemClock;
 import android.text.TextUtils;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -16,7 +17,9 @@ import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
+import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 
 import java.io.BufferedReader;
@@ -43,9 +46,9 @@ import app.miogram.bridge.hooks.MioHook;
 
 /**
  * Native Heroku Userbot Module Manager for Miogram.
- * Supports executing Telegram userbot commands (.ping, .help, .eval, .tr, etc.),
+ * Supports executing Telegram userbot commands (.ping, .help, .eval, .purge, .del, .afk, .user, etc.),
  * managing Bot API helper tokens from @BotFather for inline interactive units,
- * and loading custom Heroku/Hikka Python modules (.py).
+ * and loading custom Heroku/Hikka/FTG Python modules (.py).
  */
 public class MiogramHerokuManager {
 
@@ -70,7 +73,15 @@ public class MiogramHerokuManager {
     private static final String KEY_BOT_NAME = "userbot_bot_name";
     private static final String KEY_BOT_ID = "userbot_bot_id";
     private static final String KEY_INLINE_CAPABLE = "userbot_inline_capable";
-    private static final String KEY_EDIT_ON_EXECUTE = "userbot_edit_on_execute";
+    private static final String KEY_IS_AFK = "userbot_is_afk";
+    private static final String KEY_AFK_SINCE = "userbot_afk_since";
+    private static final String KEY_AFK_REASON = "userbot_afk_reason";
+
+    // AFK runtime state
+    private volatile boolean isAfk = false;
+    private volatile long afkSince = 0L;
+    private volatile String afkReason = "";
+    private final Map<Long, Long> afkDebounceMap = new ConcurrentHashMap<>();
 
     public interface CommandHandler {
         void execute(CommandContext ctx) throws Throwable;
@@ -135,6 +146,45 @@ public class MiogramHerokuManager {
                 }
             });
         }
+
+        public void deleteRepliedMessage() {
+            if (replyMessage == null) return;
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    ArrayList<Integer> ids = new ArrayList<>();
+                    ids.add(replyMessage.getId());
+                    MessagesController.getInstance(account).deleteMessages(ids, null, null, dialogId, 0, true, 0);
+                } catch (Throwable t) {
+                    FileLog.e(t);
+                }
+            });
+        }
+
+        public void deleteMessages(List<Integer> msgIds) {
+            if (msgIds == null || msgIds.isEmpty()) return;
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    ArrayList<Integer> ids = new ArrayList<>(msgIds);
+                    MessagesController.getInstance(account).deleteMessages(ids, null, null, dialogId, 0, true, 0);
+                } catch (Throwable t) {
+                    FileLog.e(t);
+                }
+            });
+        }
+
+        public void editRepliedMessage(String newText) {
+            if (replyMessage == null || TextUtils.isEmpty(newText)) return;
+            FormattedMessage formatted = MiogramHerokuManager.formatUserbotMessage(newText);
+            String plain = formatted != null ? formatted.text : newText;
+            ArrayList<TLRPC.MessageEntity> entities = formatted != null ? formatted.entities : null;
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    SendMessagesHelper.getInstance(account).editMessage(replyMessage, plain, true, null, entities, 0, 0);
+                } catch (Throwable t) {
+                    FileLog.e(t);
+                }
+            });
+        }
     }
 
     public static class UserbotModuleInfo {
@@ -168,20 +218,13 @@ public class MiogramHerokuManager {
     }
 
     /**
-     * Converts Hikka-style formatting to Telegram entities. Supports HTML
-     * ({@code <b> <i> <u> <s> <code> <pre> <a href=""> <br>}) and Telegram
-     * markdown ({@code **bold** __italic__ ~~strike~~ `code` ```pre``` ||spoiler|| [text](url)}).
-     * HTML is normalized to markdown first, then parsed by the shared
-     * {@code MediaDataController.getEntities} — the same path as the message
-     * composer — so userbot output looks identical to hand-typed messages.
+     * Converts Hikka/FTG-style formatting to Telegram entities.
      */
     public static FormattedMessage formatUserbotMessage(String raw) {
         if (raw == null) return null;
         String text = raw;
         try {
-            // <br> -> newline
             text = text.replaceAll("(?i)<br\\s*/?>", "\n");
-            // <a href="url">label</a> -> [label](url)
             java.util.regex.Matcher linkMatcher = java.util.regex.Pattern.compile(
                     "(?i)<a\\s+[^>]*href\\s*=\\s*[\"']([^\"']+)[\"'][^>]*>(.*?)</a\\s*>",
                     java.util.regex.Pattern.DOTALL).matcher(text);
@@ -193,7 +236,6 @@ public class MiogramHerokuManager {
             }
             linkMatcher.appendTail(linkBuf);
             text = linkBuf.toString();
-            // Paired tags -> markdown equivalents
             text = text.replaceAll("(?i)</?\\s*(b|strong)\\s*>", "**");
             text = text.replaceAll("(?i)</?\\s*(i|em)\\s*>", "__");
             text = text.replaceAll("(?i)</?\\s*(s|strike|del)\\s*>", "~~");
@@ -201,7 +243,6 @@ public class MiogramHerokuManager {
             text = text.replaceAll("(?i)</?\\s*code\\s*>", "`");
             text = text.replaceAll("(?i)</?\\s*u\\s*>", "");
             text = text.replaceAll("(?i)</?\\s*(spoiler|tg-spoiler)\\s*>", "||");
-            // Strip any remaining tags, unescape entities
             text = text.replaceAll("<[^>]{0,256}>", "");
             text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&quot;", "\"")
                     .replace("&#39;", "'").replace("&amp;", "&");
@@ -232,27 +273,36 @@ public class MiogramHerokuManager {
         if (initialized) return;
         initialized = true;
 
-        // Built-ins are pure in-memory registration: instant, stays on caller thread.
+        // Restore AFK state
+        isAfk = prefs().getBoolean(KEY_IS_AFK, false);
+        afkSince = prefs().getLong(KEY_AFK_SINCE, 0L);
+        afkReason = prefs().getString(KEY_AFK_REASON, "");
+
+        // Built-ins registration
         registerBuiltinModules();
 
-        // Wire into MioHook pre-send bus (cheap, stays on caller thread)
+        // Wire into MioHook pre-send bus for AFK auto-cancel
         MioHook.onPreSend("miogram_heroku_userbot", "userbot_interceptor", 999, (dialogId, text) -> {
             if (!isEnabled()) {
                 return true;
             }
-            if (isUserbotCommand(text)) {
-                dispatchCommand(UserConfig.selectedAccount, dialogId, text, null, null);
-                return false; // Veto normal message sending, userbot handles it!
+            if (isAfk && !isAfkCommand(text)) {
+                cancelAfk(UserConfig.selectedAccount, dialogId);
             }
             return true;
         });
 
-        // External .py discovery = file I/O + parsing, must not block cold start.
+        // Wire into MioHook message bus for AFK auto-responder
+        MioHook.onMessage("miogram_heroku_userbot", "afk_responder", 100, (account, message) -> {
+            handleIncomingAfkMessage(account, message);
+        });
+
+        // External .py discovery
         executor.execute(() -> {
             try {
                 scanExternalModules();
             } catch (Throwable t) {
-                android.util.Log.e("MiogramHeroku", "background module scan failed", t);
+                FileLog.e(t);
             }
         });
     }
@@ -438,6 +488,9 @@ public class MiogramHerokuManager {
         if (!isEnabled() || params == null || TextUtils.isEmpty(params.message)) {
             return false;
         }
+        if (isAfk && !isAfkCommand(params.message)) {
+            cancelAfk(account, params.peer);
+        }
         if (isUserbotCommand(params.message)) {
             dispatchCommand(account, params.peer, params.message, params.replyToMsg, params);
             return true;
@@ -498,15 +551,108 @@ public class MiogramHerokuManager {
     }
 
     // =========================================================================
+    // AFK Lifecycle
+    // =========================================================================
+
+    private boolean isAfkCommand(String text) {
+        if (TextUtils.isEmpty(text)) return false;
+        String prefix = getPrefix();
+        return text.startsWith(prefix + "afk") || text.startsWith(prefix + "unafk");
+    }
+
+    private void cancelAfk(int account, long dialogId) {
+        if (!isAfk) return;
+        long durationMs = Math.max(0, System.currentTimeMillis() - afkSince);
+        isAfk = false;
+        prefs().edit().putBoolean(KEY_IS_AFK, false).remove(KEY_AFK_SINCE).remove(KEY_AFK_REASON).apply();
+        String dur = formatDuration(durationMs);
+        String backMsg = "☀️ " + MiogramLocale.get(
+                "**Я повернувся з AFK!**\n⏱ Був відсутній: `" + dur + "`",
+                "**Я вернулся из AFK!**\n⏱ Отсутствовал: `" + dur + "`",
+                "**I'm back from AFK!**\n⏱ Was away for: `" + dur + "`"
+        );
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                SendMessagesHelper.getInstance(account).sendMessage(
+                        SendMessagesHelper.SendMessageParams.of(backMsg, dialogId)
+                );
+            } catch (Throwable ignore) {}
+        });
+    }
+
+    private void handleIncomingAfkMessage(int account, MessageObject message) {
+        if (!isEnabled() || !isAfk || message == null || message.messageOwner == null) return;
+        if (message.isOutOwner()) return;
+
+        long dialogId = message.getDialogId();
+        boolean isTargeted = false;
+        if (dialogId > 0) {
+            isTargeted = true;
+        } else {
+            long myId = UserConfig.getInstance(account).getClientUserId();
+            if (message.isMentioned()) {
+                isTargeted = true;
+            } else if (message.messageOwner.reply_to != null) {
+                if (message.replyMessageObject != null && message.replyMessageObject.getFromChatId() == myId) {
+                    isTargeted = true;
+                }
+            }
+        }
+        if (!isTargeted) return;
+
+        long now = SystemClock.elapsedRealtime();
+        Long last = afkDebounceMap.get(dialogId);
+        if (last != null && (now - last) < 60000L) {
+            return;
+        }
+        afkDebounceMap.put(dialogId, now);
+
+        long durationMs = Math.max(0, System.currentTimeMillis() - afkSince);
+        String dur = formatDuration(durationMs);
+        String reasonStr = TextUtils.isEmpty(afkReason) ? "" : ("\n💬 " + MiogramLocale.get("Причина: `", "Причина: `", "Reason: `") + afkReason + "`");
+        String text = "💤 " + MiogramLocale.get(
+                "**Користувач зараз в AFK!**\n⏱ Відсутній: `",
+                "**Пользователь сейчас в AFK!**\n⏱ Отсутствует: `",
+                "**User is currently AFK!**\n⏱ Away for: `"
+        ) + dur + "`" + reasonStr;
+
+        FormattedMessage fm = formatUserbotMessage(text);
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                SendMessagesHelper.getInstance(account).sendMessage(
+                        SendMessagesHelper.SendMessageParams.of(
+                                fm.text, dialogId, message, null, null, true, fm.entities, null, null, true, 0, 0, null, false
+                        )
+                );
+            } catch (Throwable t) {
+                FileLog.e(t);
+            }
+        });
+    }
+
+    private static String formatDuration(long ms) {
+        long sec = (ms / 1000) % 60;
+        long min = (ms / (1000 * 60)) % 60;
+        long hrs = (ms / (1000 * 60 * 60));
+        if (hrs > 0) {
+            return String.format(Locale.US, "%dh %dm %ds", hrs, min, sec);
+        } else if (min > 0) {
+            return String.format(Locale.US, "%dm %ds", min, sec);
+        } else {
+            return Math.max(1, sec) + "s";
+        }
+    }
+
+    // =========================================================================
     // Built-in Modules
     // =========================================================================
 
     private void registerBuiltinModules() {
-        // 1. Core Module (ping, help, info, id)
-        UserbotModuleInfo core = new UserbotModuleInfo("Core", MiogramLocale.get("Базові системні команди Heroku", "Базовые системные команды Heroku", "Heroku base system commands"), "2.0.0", "Miogram Team", true);
+        // 1. Core Module (ping, help, info, status, id, prefix, restart, reload)
+        UserbotModuleInfo core = new UserbotModuleInfo("Core", MiogramLocale.get("Базові системні команди Heroku/FTG", "Базовые системные команды Heroku/FTG", "Heroku/FTG base system commands"), "2.1.0", "Miogram Team", true);
+
         registerCommand(core, "ping", ctx -> {
             long start = SystemClock.elapsedRealtime();
-            // Calculate roundtrip ping
             long elapsed = Math.max(1, SystemClock.elapsedRealtime() - start);
             String response = "🏓 **Pong!**\n" +
                     MiogramLocale.get("⏱️ Затримка: `", "⏱️ Задержка: `", "⏱️ Latency: `") + elapsed + " ms`\n" +
@@ -541,7 +687,7 @@ public class MiogramHerokuManager {
             ctx.answer(sb.toString());
         });
 
-        registerCommand(core, "info", ctx -> {
+        CommandHandler infoHandler = ctx -> {
             int modulesCount = modules.size();
             int commandsCount = commandHandlers.size();
             String res = "🪐 **Heroku Userbot Status**\n\n" +
@@ -550,9 +696,12 @@ public class MiogramHerokuManager {
                     "• " + MiogramLocale.get("Префікс: `", "Префикс: `", "Prefix: `") + getPrefix() + "`\n" +
                     "• " + MiogramLocale.get("Модулів: `", "Модулей: `", "Modules: `") + modulesCount + "` | " + MiogramLocale.get("Команд: `", "Команд: `", "Commands: `") + commandsCount + "`\n" +
                     "• Helper Bot: " + (hasConfiguredBot() ? ("@" + getBotUsername() + (isInlineCapable() ? " [Inline OK]" : "")) : MiogramLocale.get("❌ Відсутній", "❌ Отсутствует", "❌ Missing")) + "\n" +
+                    "• AFK Mode: " + (isAfk ? "💤 " + MiogramLocale.get("Увімкнено", "Включен", "Enabled") : "☀️ " + MiogramLocale.get("Вимкнено", "Выключен", "Disabled")) + "\n" +
                     "• MioHook: " + MiogramLocale.get("**Активний ໒꒱**", "**Активен ໒꒱**", "**Active ໒꒱**");
             ctx.answer(res);
-        });
+        };
+        registerCommand(core, "info", infoHandler);
+        registerCommand(core, "status", infoHandler);
 
         registerCommand(core, "id", ctx -> {
             long peer = ctx.dialogId;
@@ -568,10 +717,336 @@ public class MiogramHerokuManager {
             ctx.answer(sb.toString());
         });
 
+        registerCommand(core, "prefix", ctx -> {
+            if (!TextUtils.isEmpty(ctx.rawArgs)) {
+                String newPrefix = ctx.rawArgs.trim().substring(0, 1);
+                setPrefix(newPrefix);
+                ctx.answer("⚡️ " + MiogramLocale.get("Префікс команд змінено на: `", "Префикс команд изменен на: `", "Command prefix changed to: `") + newPrefix + "`");
+            } else {
+                ctx.answer("⚡️ " + MiogramLocale.get("Поточний префікс: `", "Текущий префикс: `", "Current prefix: `") + getPrefix() + "`");
+            }
+        });
+
+        CommandHandler restartHandler = ctx -> {
+            executor.execute(() -> {
+                commandHandlers.clear();
+                modules.clear();
+                registerBuiltinModules();
+                scanExternalModules();
+                ctx.answer("🔄 " + MiogramLocale.get("Userbot перезавантажено! Активних модулів: **", "Userbot перезагружен! Активных модулей: **", "Userbot reloaded! Active modules: **") + modules.size() + "**");
+            });
+        };
+        registerCommand(core, "restart", restartHandler);
+        registerCommand(core, "reload", restartHandler);
+
         modules.put(core.name, core);
 
-        // 2. Utils Module (calc, tr, eval)
-        UserbotModuleInfo utils = new UserbotModuleInfo("Utilities", MiogramLocale.get("Корисні утиліти, перекладач та калькулятор", "Полезные утилиты, переводчик и калькулятор", "Useful utilities, translator and calculator"), "1.0.0", "Miogram Team", true);
+        // 2. Chat Tools Module (del, purge, edit, pin, unpin, r, quote, tagall, tag)
+        UserbotModuleInfo chatTools = new UserbotModuleInfo("ChatTools", MiogramLocale.get("Управління повідомленнями та чатами (purge, del, pin, tagall)", "Управление сообщениями и чатами (purge, del, pin, tagall)", "Chat and message moderation (purge, del, pin, tagall)"), "2.1.0", "Miogram Team", true);
+
+        registerCommand(chatTools, "del", ctx -> {
+            if (ctx.replyMessage != null) {
+                ctx.deleteRepliedMessage();
+            } else {
+                ctx.answer("⚠️ " + MiogramLocale.get("Відповідайте на повідомлення для видалення: `", "Ответьте на сообщение для удаления: `", "Reply to a message to delete: `") + getPrefix() + "del`");
+            }
+        });
+
+        registerCommand(chatTools, "purge", ctx -> {
+            if (ctx.replyMessage != null) {
+                int startId = ctx.replyMessage.getId();
+                int count = 50;
+                if (!TextUtils.isEmpty(ctx.rawArgs)) {
+                    try {
+                        count = Math.min(100, Math.max(1, Integer.parseInt(ctx.rawArgs.trim())));
+                    } catch (Throwable ignore) {}
+                }
+                ArrayList<Integer> ids = new ArrayList<>();
+                for (int i = 0; i <= count; i++) {
+                    ids.add(startId + i);
+                }
+                ctx.deleteMessages(ids);
+                ctx.answer("🗑 " + MiogramLocale.get("Повідомлення успішно очищено.", "Сообщения успешно очищены.", "Messages purged successfully."));
+            } else {
+                ctx.answer("⚠️ " + MiogramLocale.get("Відповідайте на перше повідомлення для очищення: `", "Ответьте на первое сообщение для очистки: `", "Reply to the first message to purge: `") + getPrefix() + "purge [ліміт]`");
+            }
+        });
+
+        registerCommand(chatTools, "edit", ctx -> {
+            if (ctx.replyMessage != null && ctx.replyMessage.isOutOwner()) {
+                if (TextUtils.isEmpty(ctx.rawArgs)) {
+                    ctx.answer("⚠️ " + MiogramLocale.get("Вкажіть новий текст: `", "Укажите новый текст: `", "Specify new text: `") + getPrefix() + "edit новий текст`");
+                    return;
+                }
+                ctx.editRepliedMessage(ctx.rawArgs);
+            } else {
+                ctx.answer("⚠️ " + MiogramLocale.get("Відповідайте на своє повідомлення для редагування.", "Ответьте на своё сообщение для редактирования.", "Reply to your own message to edit it."));
+            }
+        });
+
+        registerCommand(chatTools, "pin", ctx -> {
+            if (ctx.replyMessage != null) {
+                int replyId = ctx.replyMessage.getId();
+                if (ctx.dialogId < 0) {
+                    TLRPC.Chat chat = MessagesController.getInstance(ctx.account).getChat(-ctx.dialogId);
+                    if (chat != null) {
+                        MessagesController.getInstance(ctx.account).pinMessage(chat, null, replyId, false, false, false);
+                        ctx.answer("📌 " + MiogramLocale.get("Повідомлення закріплено.", "Сообщение закреплено.", "Message pinned."));
+                    }
+                } else {
+                    TLRPC.User user = MessagesController.getInstance(ctx.account).getUser(ctx.dialogId);
+                    if (user != null) {
+                        MessagesController.getInstance(ctx.account).pinMessage(null, user, replyId, false, false, false);
+                        ctx.answer("📌 " + MiogramLocale.get("Повідомлення закріплено.", "Сообщение закреплено.", "Message pinned."));
+                    }
+                }
+            } else {
+                ctx.answer("⚠️ " + MiogramLocale.get("Відповідайте на повідомлення для закріплення.", "Ответьте на сообщение для закрепления.", "Reply to a message to pin it."));
+            }
+        });
+
+        registerCommand(chatTools, "unpin", ctx -> {
+            if (ctx.replyMessage != null) {
+                int replyId = ctx.replyMessage.getId();
+                if (ctx.dialogId < 0) {
+                    TLRPC.Chat chat = MessagesController.getInstance(ctx.account).getChat(-ctx.dialogId);
+                    if (chat != null) {
+                        MessagesController.getInstance(ctx.account).pinMessage(chat, null, replyId, true, false, false);
+                        ctx.answer("📌 " + MiogramLocale.get("Повідомлення відкріплено.", "Сообщение откреплено.", "Message unpinned."));
+                    }
+                } else {
+                    TLRPC.User user = MessagesController.getInstance(ctx.account).getUser(ctx.dialogId);
+                    if (user != null) {
+                        MessagesController.getInstance(ctx.account).pinMessage(null, user, replyId, true, false, false);
+                        ctx.answer("📌 " + MiogramLocale.get("Повідомлення відкріплено.", "Сообщение откреплено.", "Message unpinned."));
+                    }
+                }
+            } else {
+                ctx.answer("⚠️ " + MiogramLocale.get("Відповідайте на повідомлення для відкріплення.", "Ответьте на сообщение для открепления.", "Reply to a message to unpin it."));
+            }
+        });
+
+        CommandHandler repeatHandler = ctx -> {
+            if (ctx.replyMessage != null) {
+                String text = !TextUtils.isEmpty(ctx.rawArgs) ? ctx.rawArgs : (ctx.replyMessage.messageOwner != null ? ctx.replyMessage.messageOwner.message : "");
+                ctx.answer(text);
+            } else if (!TextUtils.isEmpty(ctx.rawArgs)) {
+                ctx.answer(ctx.rawArgs);
+            }
+        };
+        registerCommand(chatTools, "r", repeatHandler);
+        registerCommand(chatTools, "quote", repeatHandler);
+
+        registerCommand(chatTools, "tagall", ctx -> {
+            if (ctx.dialogId >= 0) {
+                ctx.answer("⚠️ " + MiogramLocale.get("Команда доступна тільки у групах.", "Команда доступна только в группах.", "Command only available in groups."));
+                return;
+            }
+            final String tagText = !TextUtils.isEmpty(ctx.rawArgs) ? ctx.rawArgs : "📢";
+            TLRPC.ChatFull chatFull = MessagesController.getInstance(ctx.account).getChatFull(-ctx.dialogId);
+            if (chatFull != null && chatFull.participants != null && chatFull.participants.participants != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append(tagText).append(" ");
+                int count = 0;
+                for (TLRPC.ChatParticipant p : chatFull.participants.participants) {
+                    TLRPC.User u = MessagesController.getInstance(ctx.account).getUser(p.user_id);
+                    if (u != null && !u.bot && !u.self) {
+                        String name = !TextUtils.isEmpty(u.first_name) ? u.first_name : "User";
+                        sb.append("[").append(name).append("](tg://user?id=").append(u.id).append(") ");
+                        count++;
+                        if (count >= 5) {
+                            ctx.answer(sb.toString().trim());
+                            sb.setLength(0);
+                            sb.append(tagText).append(" ");
+                            count = 0;
+                        }
+                    }
+                }
+                if (count > 0) {
+                    ctx.answer(sb.toString().trim());
+                }
+            } else {
+                long chatId = -ctx.dialogId;
+                TLRPC.TL_channels_getParticipants req = new TLRPC.TL_channels_getParticipants();
+                req.channel = MessagesController.getInstance(ctx.account).getInputChannel(chatId);
+                req.limit = 50;
+                req.filter = new TLRPC.TL_channelParticipantsRecent();
+                ConnectionsManager.getInstance(ctx.account).sendRequest(req, (response, error) -> {
+                    if (response instanceof TLRPC.TL_channels_channelParticipants) {
+                        TLRPC.TL_channels_channelParticipants cp = (TLRPC.TL_channels_channelParticipants) response;
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(tagText).append(" ");
+                        int count = 0;
+                        for (TLRPC.User u : cp.users) {
+                            if (u != null && !u.bot && !u.self) {
+                                String name = !TextUtils.isEmpty(u.first_name) ? u.first_name : "User";
+                                sb.append("[").append(name).append("](tg://user?id=").append(u.id).append(") ");
+                                count++;
+                                if (count >= 5) {
+                                    ctx.answer(sb.toString().trim());
+                                    sb.setLength(0);
+                                    sb.append(tagText).append(" ");
+                                    count = 0;
+                                }
+                            }
+                        }
+                        if (count > 0) {
+                            ctx.answer(sb.toString().trim());
+                        }
+                    }
+                });
+            }
+        });
+
+        registerCommand(chatTools, "tag", ctx -> {
+            if (TextUtils.isEmpty(ctx.rawArgs)) {
+                ctx.answer("⚠️ " + MiogramLocale.get("Вкажіть юзера або ID: `", "Укажите юзера или ID: `", "Specify user or ID: `") + getPrefix() + "tag @user текст`");
+                return;
+            }
+            String[] parts = ctx.rawArgs.split("\\s+", 2);
+            String target = parts[0].replace("@", "");
+            String text = parts.length > 1 ? parts[1] : "Hey";
+            TLRPC.User user = null;
+            if (target.matches("\\d+")) {
+                try {
+                    user = MessagesController.getInstance(ctx.account).getUser(Long.parseLong(target));
+                } catch (Throwable ignore) {}
+            } else {
+                user = MessagesController.getInstance(ctx.account).getUser(target);
+            }
+            if (user != null) {
+                ctx.answer(text + " [" + (!TextUtils.isEmpty(user.first_name) ? user.first_name : "User") + "](tg://user?id=" + user.id + ")");
+            } else {
+                ctx.answer(text + " @" + target);
+            }
+        });
+
+        modules.put(chatTools.name, chatTools);
+
+        // 3. AFK & Persona Module (afk, unafk, shrug, flip, unflip, lenny, disapprove)
+        UserbotModuleInfo afkMod = new UserbotModuleInfo("AFKMod", MiogramLocale.get("Режим відсутності (AFK) та канонічні каомодзі", "Режим отсутствия (AFK) и каноничные каомодзи", "Away From Keyboard mode (AFK) and kaomojis"), "2.1.0", "Miogram Team", true);
+
+        registerCommand(afkMod, "afk", ctx -> {
+            isAfk = true;
+            afkSince = System.currentTimeMillis();
+            afkReason = ctx.rawArgs;
+            prefs().edit()
+                    .putBoolean(KEY_IS_AFK, true)
+                    .putLong(KEY_AFK_SINCE, afkSince)
+                    .putString(KEY_AFK_REASON, afkReason)
+                    .apply();
+            String reasonStr = TextUtils.isEmpty(afkReason) ? "" : ("\n💬 " + MiogramLocale.get("Причина: `", "Причина: `", "Reason: `") + afkReason + "`");
+            ctx.answer("💤 **" + MiogramLocale.get("Режим AFK активовано!**", "Режим AFK активирован!**", "AFK mode enabled!**") + reasonStr);
+        });
+
+        registerCommand(afkMod, "unafk", ctx -> {
+            if (!isAfk) {
+                ctx.answer("ℹ️ " + MiogramLocale.get("Ви зараз не в режимі AFK.", "Вы сейчас не в режиме AFK.", "You are not in AFK mode."));
+                return;
+            }
+            long durationMs = Math.max(0, System.currentTimeMillis() - afkSince);
+            isAfk = false;
+            prefs().edit().putBoolean(KEY_IS_AFK, false).remove(KEY_AFK_SINCE).remove(KEY_AFK_REASON).apply();
+            ctx.answer("☀️ **" + MiogramLocale.get("Режим AFK вимкнено!**\n⏱ Був відсутній: `", "Режим AFK выключен!**\n⏱ Отсутствовал: `", "AFK mode disabled!**\n⏱ Away for: `") + formatDuration(durationMs) + "`");
+        });
+
+        registerCommand(afkMod, "shrug", ctx -> ctx.answer("¯\\_(ツ)_/¯", false));
+        registerCommand(afkMod, "flip", ctx -> ctx.answer("(╯°□°)╯︵ ┻━┻", false));
+        registerCommand(afkMod, "unflip", ctx -> ctx.answer("┬─┬ノ( º _ ºノ)", false));
+        registerCommand(afkMod, "lenny", ctx -> ctx.answer("( ͡° ͜ʖ ͡°)", false));
+        registerCommand(afkMod, "disapprove", ctx -> ctx.answer("ಠ_ಠ", false));
+
+        modules.put(afkMod.name, afkMod);
+
+        // 4. Entities & Information Module (user, whois, chat, chatinfo)
+        UserbotModuleInfo whois = new UserbotModuleInfo("WhoIsMod", MiogramLocale.get("Детальна інформація про користувачів та чати", "Детальная информация о пользователях и чатах", "Detailed information about users and chats"), "2.1.0", "Miogram Team", true);
+
+        CommandHandler userHandler = ctx -> {
+            long targetUserId = 0;
+            String targetUsername = null;
+            if (ctx.replyMessage != null) {
+                targetUserId = ctx.replyMessage.getFromChatId();
+            } else if (!TextUtils.isEmpty(ctx.rawArgs)) {
+                String arg = ctx.rawArgs.replace("@", "").trim();
+                if (arg.matches("\\d+")) {
+                    try {
+                        targetUserId = Long.parseLong(arg);
+                    } catch (Throwable ignore) {}
+                } else {
+                    targetUsername = arg;
+                }
+            } else {
+                targetUserId = UserConfig.getInstance(ctx.account).getClientUserId();
+            }
+            TLRPC.User user = null;
+            if (targetUserId != 0) {
+                user = MessagesController.getInstance(ctx.account).getUser(targetUserId);
+            } else if (targetUsername != null) {
+                user = MessagesController.getInstance(ctx.account).getUser(targetUsername);
+            }
+            if (user == null) {
+                ctx.answer("❌ " + MiogramLocale.get("Користувача не знайдено в локальному кеші.", "Пользователь не найден в локальном кэше.", "User not found in local cache."));
+                return;
+            }
+            StringBuilder sb = new StringBuilder();
+            sb.append("👤 **").append(MiogramLocale.get("Інформація про користувача:**\n\n", "Информация о пользователе:**\n\n", "User Information:**\n\n"));
+            sb.append("• ").append(MiogramLocale.get("Ім'я: **", "Имя: **", "Name: **")).append(UserObject.getUserName(user)).append("**\n");
+            sb.append("• ID: `").append(user.id).append("`\n");
+            if (!TextUtils.isEmpty(user.username)) {
+                sb.append("• ").append(MiogramLocale.get("Юзернейм: @", "Юзернейм: @", "Username: @")).append(user.username).append("\n");
+            }
+            sb.append("• ").append(MiogramLocale.get("Посилання: [Перейти](tg://user?id=", "Ссылка: [Перейти](tg://user?id=", "Permalink: [Open](tg://user?id=")).append(user.id).append(")\n");
+            sb.append("• Bot: ").append(user.bot ? "✅ " + MiogramLocale.get("Так", "Да", "Yes") : "❌ " + MiogramLocale.get("Ні", "Нет", "No")).append("\n");
+            sb.append("• Telegram Premium: ").append(user.premium ? "⭐️ " + MiogramLocale.get("Так", "Да", "Yes") : "❌ " + MiogramLocale.get("Ні", "Нет", "No")).append("\n");
+            sb.append("• Verified: ").append(user.verified ? "☑️ " + MiogramLocale.get("Так", "Да", "Yes") : "❌ " + MiogramLocale.get("Ні", "Нет", "No")).append("\n");
+            if (user.photo != null) {
+                sb.append("• DC ID: `").append(user.photo.dc_id).append("`\n");
+            }
+            ctx.answer(sb.toString());
+        };
+        registerCommand(whois, "user", userHandler);
+        registerCommand(whois, "whois", userHandler);
+
+        CommandHandler chatHandler = ctx -> {
+            if (ctx.dialogId >= 0) {
+                TLRPC.User u = MessagesController.getInstance(ctx.account).getUser(ctx.dialogId);
+                StringBuilder sb = new StringBuilder();
+                sb.append("💬 **").append(MiogramLocale.get("Приватний діалог:**\n\n", "Личный диалог:**\n\n", "Private Dialog:**\n\n"));
+                sb.append("• ID: `").append(ctx.dialogId).append("`\n");
+                if (u != null) {
+                    sb.append("• ").append(MiogramLocale.get("Співрозмовник: **", "Собеседник: **", "User: **")).append(UserObject.getUserName(u)).append("**\n");
+                    if (!TextUtils.isEmpty(u.username)) sb.append("• Username: @").append(u.username).append("\n");
+                }
+                ctx.answer(sb.toString());
+            } else {
+                TLRPC.Chat chat = MessagesController.getInstance(ctx.account).getChat(-ctx.dialogId);
+                if (chat == null) {
+                    ctx.answer("❌ " + MiogramLocale.get("Інформація про чат недоступна.", "Информация о чате недоступна.", "Chat info unavailable."));
+                    return;
+                }
+                StringBuilder sb = new StringBuilder();
+                sb.append("💬 **").append(MiogramLocale.get("Інформація про чат:**\n\n", "Информация о чате:**\n\n", "Chat Information:**\n\n"));
+                sb.append("• ").append(MiogramLocale.get("Назва: **", "Название: **", "Title: **")).append(chat.title).append("**\n");
+                sb.append("• ID: `").append(ctx.dialogId).append("`\n");
+                String type = chat.broadcast ? MiogramLocale.get("Канал 📢", "Канал 📢", "Channel 📢") : (chat.megagroup ? MiogramLocale.get("Супергрупа 👥", "Супергруппа 👥", "Supergroup 👥") : MiogramLocale.get("Група 👥", "Группа 👥", "Group 👥"));
+                sb.append("• ").append(MiogramLocale.get("Тип: ", "Тип: ", "Type: ")).append(type).append("\n");
+                if (!TextUtils.isEmpty(chat.username)) {
+                    sb.append("• Username: @").append(chat.username).append("\n");
+                }
+                if (chat.participants_count > 0) {
+                    sb.append("• ").append(MiogramLocale.get("Учасників: `", "Участников: `", "Members: `")).append(chat.participants_count).append("`\n");
+                }
+                sb.append("• ").append(MiogramLocale.get("Творець: ", "Создатель: ", "Creator: ")).append(chat.creator ? "👑 " + MiogramLocale.get("Так", "Да", "Yes") : "❌ " + MiogramLocale.get("Ні", "Нет", "No")).append("\n");
+                ctx.answer(sb.toString());
+            }
+        };
+        registerCommand(whois, "chat", chatHandler);
+        registerCommand(whois, "chatinfo", chatHandler);
+
+        modules.put(whois.name, whois);
+
+        // 5. Utilities Module (calc, tr, eval, exec, dlmod, ulmod, modules, mods)
+        UserbotModuleInfo utils = new UserbotModuleInfo("Utilities", MiogramLocale.get("Корисні утиліти, перекладач, калькулятор та модулі", "Полезные утилиты, переводчик, калькулятор и модули", "Useful utilities, translator, calculator and modules"), "2.1.0", "Miogram Team", true);
 
         registerCommand(utils, "calc", ctx -> {
             if (TextUtils.isEmpty(ctx.rawArgs)) {
@@ -613,7 +1088,7 @@ public class MiogramHerokuManager {
             });
         });
 
-        registerCommand(utils, "eval", ctx -> {
+        CommandHandler evalHandler = ctx -> {
             if (TextUtils.isEmpty(ctx.rawArgs)) {
                 ctx.answer("⚠️ " + MiogramLocale.get("Вкажіть Python вираз для виконання: `", "Укажите Python выражение для выполнения: `", "Provide Python expression to execute: `") + getPrefix() + "eval 2 + 2`");
                 return;
@@ -621,7 +1096,9 @@ public class MiogramHerokuManager {
             executePythonEval(ctx.rawArgs, output -> {
                 ctx.answer("🐍 **Python Eval:**\n" + MiogramLocale.get("**Вхід:**\n```python\n", "**Вход:**\n```python\n", "**Input:**\n```python\n") + ctx.rawArgs + "\n```\n" + MiogramLocale.get("**Вихід:**\n```\n", "**Выход:**\n```\n", "**Output:**\n```\n") + output + "\n```");
             });
-        });
+        };
+        registerCommand(utils, "eval", evalHandler);
+        registerCommand(utils, "exec", evalHandler);
 
         registerCommand(utils, "dlmod", ctx -> {
             String url = ctx.rawArgs != null ? ctx.rawArgs.trim().split("\\s+")[0] : "";
@@ -664,6 +1141,20 @@ public class MiogramHerokuManager {
             }
         });
 
+        CommandHandler modulesHandler = ctx -> {
+            StringBuilder sb = new StringBuilder();
+            sb.append("📦 **").append(MiogramLocale.get("Встановлені модулі Userbot:**\n\n", "Установленные модули Userbot:**\n\n", "Installed Userbot Modules:**\n\n"));
+            for (UserbotModuleInfo m : modules.values()) {
+                sb.append(m.isBuiltin ? "🔹 " : "🐍 ");
+                sb.append("**").append(m.name).append("** (v").append(m.version).append(")\n");
+                sb.append("  ").append(m.description).append("\n");
+                sb.append("  • ").append(MiogramLocale.get("Команд: ", "Команд: ", "Commands: ")).append(m.commands.size()).append("\n\n");
+            }
+            ctx.answer(sb.toString());
+        };
+        registerCommand(utils, "modules", modulesHandler);
+        registerCommand(utils, "mods", modulesHandler);
+
         modules.put(utils.name, utils);
     }
 
@@ -705,13 +1196,6 @@ public class MiogramHerokuManager {
         public final List<String> commands = new ArrayList<>();
     }
 
-    /**
-     * Parses Hikka/FTG module conventions without executing code:
-     * {@code __version__}, {@code strings["name"]}, {@code @loader.command}
-     * + {@code async def xxxcmd}, {@code # requires: ...} pip deps and the
-     * module docstring as description. Mirrors
-     * {@code hikka/loader.py} discovery rules.
-     */
     public static HikkaModuleMeta parseModuleMeta(File file) {
         HikkaModuleMeta meta = new HikkaModuleMeta();
         String content;
@@ -754,7 +1238,6 @@ public class MiogramHerokuManager {
             }
         } catch (Throwable ignore) {}
         try {
-            // @loader.command ... async def xxxcmd  (Hikka convention)
             java.util.regex.Matcher cm = java.util.regex.Pattern.compile(
                     "@loader\\.command[^\\n]*\\n\\s*(?:async\\s+)?def\\s+(\\w+)\\s*\\(").matcher(content);
             while (cm.find()) {
@@ -764,7 +1247,6 @@ public class MiogramHerokuManager {
                     meta.commands.add(cmd.toLowerCase(Locale.ROOT));
                 }
             }
-            // Fallback: bare `async def xxxcmd` handlers (FTG style)
             if (meta.commands.isEmpty()) {
                 java.util.regex.Matcher fm = java.util.regex.Pattern.compile(
                         "(?:async\\s+)?def\\s+(\\w+cmd)\\s*\\(\\s*self").matcher(content);
@@ -800,7 +1282,6 @@ public class MiogramHerokuManager {
             });
         }
 
-        // Real outgoing-text filter when the module declares filter_outgoing.
         try {
             if (moduleDeclaresFilter(file)) {
                 final String modulePath = file.getAbsolutePath();
@@ -833,33 +1314,42 @@ public class MiogramHerokuManager {
     }
 
     private void executePythonModuleFile(File file, CommandContext ctx) {
-        // Real on-device execution via Chaquopy + heroku_compat shims
-        // (module_runner.py). Telethon network calls inside modules are NOT
-        // supported — everything else (text processing, replies) runs.
-        // Already on the userbot executor thread; Chaquopy call blocks here.
         try {
             if (PythonPluginsEngine.getInstance().isStarted()) {
                 com.chaquo.python.Python py = com.chaquo.python.Python.getInstance();
                 com.chaquo.python.PyObject runner = py.getModule("heroku_compat.module_runner");
+                String replyText = (ctx.replyMessage != null && ctx.replyMessage.messageOwner != null) ? ctx.replyMessage.messageOwner.message : "";
+                int replyId = ctx.replyMessage != null ? ctx.replyMessage.getId() : 0;
                 com.chaquo.python.PyObject res = runner.callAttr("run_command",
-                        file.getAbsolutePath(), ctx.command, ctx.rawArgs, ctx.fullText);
+                        file.getAbsolutePath(), ctx.command, ctx.rawArgs, ctx.fullText, replyText, replyId, ctx.dialogId);
                 if (res != null) {
                     org.json.JSONObject out = new org.json.JSONObject(res.toString());
                     org.json.JSONArray replies = out.optJSONArray("replies");
-                    boolean answered = false;
+                    boolean handled = false;
                     if (replies != null) {
                         for (int i = 0; i < replies.length(); i++) {
                             org.json.JSONArray pair = replies.optJSONArray(i);
                             if (pair != null && pair.length() >= 2) {
-                                String text = pair.optString(1, "");
-                                if (!TextUtils.isEmpty(text)) {
-                                    ctx.answer(text);
-                                    answered = true;
+                                String kind = pair.optString(0, "respond");
+                                String val = pair.optString(1, "");
+                                if ("delete".equals(kind)) {
+                                    ctx.deleteRepliedMessage();
+                                    handled = true;
+                                } else if ("edit".equals(kind)) {
+                                    if (ctx.replyMessage != null && ctx.replyMessage.isOutOwner()) {
+                                        ctx.editRepliedMessage(val);
+                                    } else {
+                                        ctx.answer(val);
+                                    }
+                                    handled = true;
+                                } else if ("respond".equals(kind) && !TextUtils.isEmpty(val)) {
+                                    ctx.answer(val);
+                                    handled = true;
                                 }
                             }
                         }
                     }
-                    if (answered) return;
+                    if (handled) return;
                     String err = out.optString("error", "");
                     if (!TextUtils.isEmpty(err) && !"command not found in module".equals(err)) {
                         ctx.answer("❌ " + MiogramLocale.get("Помилка модуля: ", "Ошибка модуля: ", "Module error: ") + "`" + err + "`");
@@ -870,7 +1360,7 @@ public class MiogramHerokuManager {
         } catch (Throwable t) {
             FileLog.e(t);
         }
-        // Fallback: honest module card (no engine, or module needs Telethon network).
+
         HikkaModuleMeta meta = parseModuleMeta(file);
         StringBuilder sb = new StringBuilder();
         sb.append("🪐 **").append(!meta.name.isEmpty() ? meta.name : file.getName().replace(".py", "")).append("**\n");
@@ -885,17 +1375,12 @@ public class MiogramHerokuManager {
         if (!meta.requires.isEmpty()) {
             sb.append(MiogramLocale.get("⚠️ Потребує pip-залежностей: `", "⚠️ Требует pip-зависимостей: `", "⚠️ Needs pip packages: `")).append(meta.requires).append("`\n");
         }
-        sb.append(MiogramLocale.get("_Модуль не відповів (потрібен Python-рантайм або мережа Telethon)._",
-                "_Модуль не ответил (нужен Python-рантайм или сеть Telethon)._",
-                "_Module gave no reply (needs Python runtime or Telethon network)._"));
+        sb.append(MiogramLocale.get("_Модуль не відповів (потрібен Python-рантайм)._",
+                "_Модуль не ответил (нужен Python-рантайм)._",
+                "_Module gave no reply (needs Python runtime)._"));
         ctx.answer(sb.toString());
     }
 
-    /**
-     * Runs a module's {@code filter_outgoing(text)} on-device. Any failure
-     * (no engine, no filter, timeout, exception) returns the original text,
-     * so sending can never hang or corrupt a message.
-     */
     private String runModuleFilter(String modulePath, String text) {
         if (TextUtils.isEmpty(text) || TextUtils.isEmpty(modulePath)) return text;
         try {
@@ -919,7 +1404,6 @@ public class MiogramHerokuManager {
         executor.execute(() -> {
             try {
                 if (PythonPluginsEngine.getInstance().isStarted()) {
-                    // Use Chaquopy / Python runtime
                     com.chaquo.python.Python py = com.chaquo.python.Python.getInstance();
                     com.chaquo.python.PyObject builtins = py.getBuiltins();
                     com.chaquo.python.PyObject evalFunc = builtins.get("eval");
@@ -935,7 +1419,6 @@ public class MiogramHerokuManager {
                 return;
             }
 
-            // Fallback lightweight evaluator
             try {
                 double val = evaluateMathExpression(code);
                 AndroidUtilities.runOnUIThread(() -> callback.run(String.valueOf(val)));
@@ -945,11 +1428,6 @@ public class MiogramHerokuManager {
         });
     }
 
-    /**
-     * Plugin-style install: downloads a {@code .py} module from URL into
-     * {@code userbot_modules} and registers it (metadata parsed, commands
-     * discovered like Hikka's loader). Runs fully on the userbot executor.
-     */
     public void downloadModuleFromUrl(String urlStr, Utilities.Callback2<File, String> callback) {
         executor.execute(() -> {
             HttpURLConnection conn = null;
@@ -998,7 +1476,6 @@ public class MiogramHerokuManager {
         });
     }
 
-    /** Removes an external (non-builtin) module by name, command or file base. */
     public boolean unloadExternalModule(String name) {
         if (TextUtils.isEmpty(name)) return false;
         String key = name.trim().toLowerCase(Locale.ROOT).replace(".py", "");
@@ -1067,7 +1544,6 @@ public class MiogramHerokuManager {
                     boolean canJoin = res.optBoolean("can_join_groups", true);
                     boolean supportsInline = res.optBoolean("supports_inline_queries", false);
 
-                    // Save verified bot info
                     setBotInfo(fToken, username, firstName, id, supportsInline);
 
                     AndroidUtilities.runOnUIThread(() -> {

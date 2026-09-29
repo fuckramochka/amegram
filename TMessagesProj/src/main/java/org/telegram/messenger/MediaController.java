@@ -1027,6 +1027,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private boolean voiceMessagesPlaylistUnread;
     private ArrayList<MessageObject> voiceMessagesPlaylist;
     private SparseArray<MessageObject> voiceMessagesPlaylistMap;
+    private ArrayList<MessageObject> voiceMessagesHistory = new ArrayList<>();
 
     private static Runnable refreshGalleryRunnable;
     public static AlbumEntry allMediaAlbumEntry;
@@ -2969,6 +2970,17 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public void playNextMessage() {
+        if (playingMessageObject != null && (playingMessageObject.isVoice() || playingMessageObject.isRoundVideo())) {
+            if (voiceMessagesPlaylist != null && !voiceMessagesPlaylist.isEmpty()) {
+                MessageObject nextVoice = voiceMessagesPlaylist.remove(0);
+                if (voiceMessagesPlaylistMap != null) {
+                    voiceMessagesPlaylistMap.remove(nextVoice.getId());
+                }
+                playMusicAgain = true;
+                playMessage(nextVoice);
+            }
+            return;
+        }
         playNextMessageWithoutOrder(false);
     }
 
@@ -3069,6 +3081,27 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public void playPreviousMessage() {
+        if (playingMessageObject != null && (playingMessageObject.isVoice() || playingMessageObject.isRoundVideo())) {
+            if (playingMessageObject.audioProgressSec > 3) {
+                seekToProgress(playingMessageObject, 0);
+                return;
+            }
+            if (voiceMessagesHistory != null && !voiceMessagesHistory.isEmpty()) {
+                MessageObject prev = voiceMessagesHistory.remove(voiceMessagesHistory.size() - 1);
+                if (voiceMessagesPlaylist != null && !voiceMessagesPlaylist.contains(playingMessageObject)) {
+                    voiceMessagesPlaylist.add(0, playingMessageObject);
+                    if (voiceMessagesPlaylistMap != null) {
+                        voiceMessagesPlaylistMap.put(playingMessageObject.getId(), playingMessageObject);
+                    }
+                }
+                playMusicAgain = true;
+                playMessage(prev);
+                return;
+            }
+            seekToProgress(playingMessageObject, 0);
+            return;
+        }
+
         ArrayList<MessageObject> currentPlayList = SharedConfig.shuffleMusic ? shuffledPlaylist : playlist;
         if (currentPlayList.isEmpty() || currentPlaylistNum < 0 || currentPlaylistNum >= currentPlayList.size()) {
             return;
@@ -3190,6 +3223,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     }
 
     public void setVoiceMessagesPlaylist(ArrayList<MessageObject> playlist, boolean unread) {
+        setVoiceMessagesPlaylist(playlist, unread, null);
+    }
+
+    public void setVoiceMessagesPlaylist(ArrayList<MessageObject> playlist, boolean unread, ArrayList<MessageObject> history) {
         voiceMessagesPlaylist = playlist != null ? new ArrayList<>(playlist) : null;
         if (voiceMessagesPlaylist != null) {
             voiceMessagesPlaylistUnread = unread;
@@ -3197,6 +3234,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             for (int a = 0; a < voiceMessagesPlaylist.size(); a++) {
                 MessageObject messageObject = voiceMessagesPlaylist.get(a);
                 voiceMessagesPlaylistMap.put(messageObject.getId(), messageObject);
+            }
+        }
+        if (history != null) {
+            voiceMessagesHistory = new ArrayList<>(history);
+        } else if (voiceMessagesPlaylist == null) {
+            if (voiceMessagesHistory != null) {
+                voiceMessagesHistory.clear();
             }
         }
     }
@@ -3697,6 +3741,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         boolean saved = false;
         boolean notify = !playMusicAgain;
         MessageObject oldMessageObject = playingMessageObject;
+        if (oldMessageObject != null && (oldMessageObject.isVoice() || oldMessageObject.isRoundVideo())
+                && (messageObject.isVoice() || messageObject.isRoundVideo()) && oldMessageObject.getId() != messageObject.getId()) {
+            if (voiceMessagesHistory == null) {
+                voiceMessagesHistory = new ArrayList<>();
+            }
+            if (!voiceMessagesHistory.contains(oldMessageObject)) {
+                voiceMessagesHistory.add(oldMessageObject);
+                if (voiceMessagesHistory.size() > 50) {
+                    voiceMessagesHistory.remove(0);
+                }
+            }
+        }
         if (playingMessageObject != null) {
             if (playingMessageObject.isMusic() && messageObject.isVoice() || messageObject.isRoundVideo() || messageObject.isVideo()) {
                 saved = saveMusicPlaylistStateIfNeeded();

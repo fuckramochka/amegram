@@ -81,12 +81,23 @@ public class MiogramPluginsMarket {
         CATALOG.add(new MarketPluginEntry(
                 "custom_profile",
                 "Custom Profile.plugin",
-                "Custom Profile (WASM)",
-                "WASM-рушій кастомізації профілю: карточки Steam, статус гри/музики та неонові плашки.",
-                "WASM-движок кастомизации профиля: карточки Steam, статус игры/музыки и неоновые плашки.",
-                "Full WASM package for custom profile cards (Steam, Spotify/Presence status, glowing badges).",
+                "Custom Profile",
+                "Кастомізація профілю: карточки Steam, статус гри/музики та неонові плашки.",
+                "Кастомизация профиля: карточки Steam, статус игры/музыки и неоновые плашки.",
+                "Custom profile cards (Steam, Spotify/Presence status, glowing badges).",
                 "Профіль & Інтерфейс",
                 R.drawable.msg_edit
+        ));
+
+        CATALOG.add(new MarketPluginEntry(
+                "shrug_and_calc",
+                "shrug_and_calc.lua",
+                "Shrug & Mini Calc (Lua)",
+                "Швидкі команди /shrug, /flip та математичний калькулятор =2+2*2 на надлегкому рушії Lua.",
+                "Быстрые команды /shrug, /flip и математический калькулятор =2+2*2 на сверхлегком движке Lua.",
+                "Quick /shrug, /flip commands and inline math calculator =2+2*2 powered by ultra-lightweight Lua engine.",
+                "Інструменти & Текст",
+                R.drawable.msg_bot
         ));
 
         CATALOG.add(new MarketPluginEntry(

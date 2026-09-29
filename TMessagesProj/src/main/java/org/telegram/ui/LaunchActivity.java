@@ -6228,16 +6228,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (progress != null) {
             progress.end();
         }
-        BaseFragment fragment = getLastFragment();
-        if (fragment != null) {
-            app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(fragment, force);
+        if (force) {
+            BaseFragment fragment = getLastFragment();
+            if (fragment != null) {
+                app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(fragment, true);
+            } else {
+                AndroidUtilities.runOnUIThread(() -> {
+                    BaseFragment frag = getLastFragment();
+                    if (frag != null) {
+                        app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(frag, true);
+                    }
+                }, 300);
+            }
         } else {
-            AndroidUtilities.runOnUIThread(() -> {
-                BaseFragment frag = getLastFragment();
-                if (frag != null) {
-                    app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(frag, force);
-                }
-            }, 300);
+            app.miogram.bridge.updater.MiogramUpdater.checkOnEntry(this);
         }
     }
 

@@ -1142,6 +1142,69 @@ public class EditTextCaption extends EditTextBoldCursor implements FloatingToolb
     }
 
     @Override
+    public boolean performLongClick() {
+        checkSelectWordOnLongPress(-1, -1);
+        return super.performLongClick();
+    }
+
+    @Override
+    public boolean performLongClick(float x, float y) {
+        checkSelectWordOnLongPress(x, y);
+        return super.performLongClick(x, y);
+    }
+
+    private void checkSelectWordOnLongPress(float x, float y) {
+        try {
+            CharSequence text = getText();
+            if (TextUtils.isEmpty(text)) {
+                return;
+            }
+            if (hasSelection() && getSelectionStart() != getSelectionEnd()) {
+                return;
+            }
+            int offset = -1;
+            if (x >= 0 && y >= 0 && getLayout() != null) {
+                int line = getLayout().getLineForVertical((int) y);
+                offset = getLayout().getOffsetForHorizontal(line, x);
+            }
+            if (offset < 0 || offset > text.length()) {
+                offset = getSelectionStart();
+            }
+            if (offset < 0 || offset > text.length()) {
+                return;
+            }
+
+            int len = text.length();
+            if (len == 0) return;
+            if (offset >= len) offset = len - 1;
+
+            if (offset > 0 && Character.isWhitespace(text.charAt(offset)) && !Character.isWhitespace(text.charAt(offset - 1))) {
+                offset--;
+            }
+
+            int start = offset;
+            int end = offset;
+
+            while (start > 0 && isWordChar(text.charAt(start - 1))) {
+                start--;
+            }
+            while (end < len && isWordChar(text.charAt(end))) {
+                end++;
+            }
+
+            if (start < end) {
+                setSelection(start, end);
+                performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS);
+            }
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private static boolean isWordChar(char c) {
+        return Character.isLetterOrDigit(c) || c == '_' || c == '@' || c == '#' || (c >= 0x2000 && c <= 0x3300);
+    }
+
+    @Override
     public ActionMode startActionMode(final ActionMode.Callback callback, int type) {
         return super.startActionMode(overrideCallback(callback), type);
     }

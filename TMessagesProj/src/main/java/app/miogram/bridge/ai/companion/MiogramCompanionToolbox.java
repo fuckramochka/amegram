@@ -60,8 +60,24 @@ public class MiogramCompanionToolbox {
         if (response == null) return null;
         int idx = response.indexOf("[ACTION:");
         if (idx < 0) return null;
-        int end = response.indexOf("]", idx);
-        if (end < 0) return null;
+        int depth = 0;
+        int end = -1;
+        for (int i = idx; i < response.length(); i++) {
+            char c = response.charAt(i);
+            if (c == '[') {
+                depth++;
+            } else if (c == ']') {
+                depth--;
+                if (depth == 0) {
+                    end = i;
+                    break;
+                }
+            }
+        }
+        if (end < 0) {
+            end = response.indexOf("]", idx);
+            if (end < 0) return null;
+        }
 
         String raw = response.substring(idx + 8, end).trim();
         String name = raw;
@@ -84,8 +100,24 @@ public class MiogramCompanionToolbox {
         if (response == null) return "";
         int idx = response.indexOf("[ACTION:");
         if (idx < 0) return response.trim();
-        int end = response.indexOf("]", idx);
-        if (end < 0) return response.trim();
+        int depth = 0;
+        int end = -1;
+        for (int i = idx; i < response.length(); i++) {
+            char c = response.charAt(i);
+            if (c == '[') {
+                depth++;
+            } else if (c == ']') {
+                depth--;
+                if (depth == 0) {
+                    end = i;
+                    break;
+                }
+            }
+        }
+        if (end < 0) {
+            end = response.indexOf("]", idx);
+            if (end < 0) return response.trim();
+        }
         String clean = response.substring(0, idx) + response.substring(end + 1);
         return clean.trim();
     }

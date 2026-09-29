@@ -46,11 +46,9 @@ public final class PluginInstallHelper {
             PluginsConstants.PLUGIN_EXT,       // .plugin
             PluginsConstants.PLUGIN_EXT_ELYX,  // .elyx
             PluginsConstants.PLUGIN_EXT_EAF,   // .eaf
-            ".wasm",
-            ".so",
-            ".zip",
+            ".lua",
             ".py",
-            ".mioplugin"
+            ".zip"
     };
 
     private PluginInstallHelper() {

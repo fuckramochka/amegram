@@ -1,30 +1,162 @@
 """On-device executor for Hikka/Heroku .py userbot modules (Miogram).
 
-Loads a module file with the local device-safe ``heroku_compat`` shims
-(no Telethon), finds the ``loader.Module`` subclass, and runs a command
-handler or ``filter_outgoing`` with a fake message object. All replies are
-captured and returned as JSON so Java can send them into chats.
-
-Runs on a background thread; every await is guarded by a timeout so a bad
-module can never hang the client.
+Loads a module file with the local device-safe heroku_compat shims,
+finds the loader.Module subclass, and runs a command handler or filter_outgoing
+with an enhanced mock message object. All replies, edits, and deletes are
+captured and returned as JSON so Java can execute them in Telegram.
 """
 
 import asyncio
 import importlib.util
 import inspect
 import json
+import os
 import sys
 import traceback
+import types
+from typing import Any, Dict, List, Optional
+
+
+def _setup_compat_packages():
+    """Ensure relative imports like 'from .. import loader, utils' and 'from hikka import ...' resolve."""
+    from heroku_compat import loader as compat_loader
+    from heroku_compat import utils as compat_utils
+
+    for pkg_name in ("friendly_telegram", "hikka"):
+        if pkg_name not in sys.modules:
+            pkg = types.ModuleType(pkg_name)
+            pkg.loader = compat_loader
+            pkg.utils = compat_utils
+            sys.modules[pkg_name] = pkg
+
+        subpkg_name = f"{pkg_name}.modules"
+        if subpkg_name not in sys.modules:
+            subpkg = types.ModuleType(subpkg_name)
+            sys.modules[subpkg_name] = subpkg
+
+    # Mock telethon if not installed on device
+    if "telethon" not in sys.modules:
+        try:
+            import telethon  # noqa: F401
+        except ImportError:
+            t = types.ModuleType("telethon")
+            t_tl = types.ModuleType("telethon.tl")
+            t_types = types.ModuleType("telethon.tl.types")
+            t_funcs = types.ModuleType("telethon.tl.functions")
+            t_utils = types.ModuleType("telethon.utils")
+
+            class _DummyType:
+                def __init__(self, *args, **kwargs):
+                    self.id = kwargs.get("id", 0)
+                    self.user_id = kwargs.get("user_id", 0)
+                    self.first_name = kwargs.get("first_name", "User")
+                    self.last_name = kwargs.get("last_name", "")
+                    self.username = kwargs.get("username", "")
+
+            t_types.User = _DummyType
+            t_types.Channel = _DummyType
+            t_types.Chat = _DummyType
+            t_types.Message = _DummyType
+            t_types.PeerUser = _DummyType
+            t_types.PeerChat = _DummyType
+            t_types.PeerChannel = _DummyType
+
+            t_utils.get_display_name = lambda u: getattr(u, "first_name", "User")
+            t_utils.resolve_id = lambda i: (i, "user")
+            t_utils.get_peer_id = lambda p: getattr(p, "id", 0)
+
+            t.tl = t_tl
+            t.tl.types = t_types
+            t.tl.functions = t_funcs
+            t.utils = t_utils
+            sys.modules["telethon"] = t
+            sys.modules["telethon.tl"] = t_tl
+            sys.modules["telethon.tl.types"] = t_types
+            sys.modules["telethon.tl.functions"] = t_funcs
+            sys.modules["telethon.utils"] = t_utils
+
+
+class _FakeEntity:
+    def __init__(self, entity_id: int = 0, name: str = "User"):
+        self.id = entity_id
+        self.first_name = name
+        self.last_name = ""
+        self.username = f"user_{entity_id}" if entity_id else ""
+
+    def __str__(self):
+        return self.first_name
+
+
+class _FakeClient:
+    def __init__(self, message: "_FakeMessage"):
+        self._msg = message
+
+    async def get_me(self):
+        return _FakeEntity(777000, "Me")
+
+    async def get_entity(self, entity_id: Any):
+        eid = int(entity_id) if str(entity_id).isdigit() else 12345
+        return _FakeEntity(eid, str(entity_id))
+
+    async def is_bot(self):
+        return False
+
+    async def send_message(self, entity: Any, text: str, **kwargs):
+        self._msg.replies.append(["respond", str(text)])
+        return text
+
+    async def send_file(self, entity: Any, file: Any, **kwargs):
+        caption = kwargs.get("caption", "")
+        self._msg.replies.append(["respond", f"📎 {caption}"])
+        return True
+
+    async def delete_messages(self, entity: Any, message_ids: Any):
+        self._msg.replies.append(["delete_messages", str(message_ids)])
+        return True
+
+    async def download_profile_photo(self, entity: Any, file: Any = None):
+        return None
+
+    async def iter_messages(self, *args, **kwargs):
+        if False:
+            yield None
+
+    async def iter_participants(self, *args, **kwargs):
+        if False:
+            yield None
+
+
+class _FakeReplyMessage:
+    def __init__(self, reply_text: str = "", reply_id: int = 1, sender_id: int = 0):
+        self.id = reply_id
+        self.text = reply_text or ""
+        self.raw_text = reply_text or ""
+        self.message = reply_text or ""
+        self.sender_id = sender_id
+        self.from_id = sender_id
+        self.sender = _FakeEntity(sender_id, "User")
 
 
 class _FakeMessage:
-    """Minimal stand-in for a Telethon message (what compat utils need)."""
+    """Full-featured stand-in for a Telethon message."""
 
-    def __init__(self, text, args):
-        self.text = text or ""
-        self.raw_text = text or ""
+    def __init__(self, full_text: str, args: str, reply_text: Optional[str] = None, reply_id: int = 0, chat_id: int = 0):
+        self.text = full_text or ""
+        self.raw_text = full_text or ""
+        self.message = full_text or ""
         self.args = args or ""
-        self.replies = []
+        self.id = 9999
+        self.chat_id = chat_id
+        self.to_id = chat_id
+        self.sender_id = 777000
+        self.is_channel = chat_id < 0
+        self.is_group = chat_id < 0
+        self.is_private = chat_id > 0
+        self.reply_to_msg_id = reply_id
+        self.is_reply = bool(reply_id > 0 or reply_text)
+        self._reply_obj = _FakeReplyMessage(reply_text or "", reply_id) if self.is_reply else None
+        self.replies: List[List[str]] = []
+        self.client = _FakeClient(self)
 
     async def edit(self, text, **kwargs):
         self.replies.append(["edit", str(text)])
@@ -33,6 +165,17 @@ class _FakeMessage:
     async def respond(self, text, **kwargs):
         self.replies.append(["respond", str(text)])
         return text
+
+    async def reply(self, text, **kwargs):
+        self.replies.append(["respond", str(text)])
+        return text
+
+    async def delete(self):
+        self.replies.append(["delete", ""])
+        return True
+
+    async def get_reply_message(self):
+        return self._reply_obj
 
 
 def _run_coro(coro, timeout):
@@ -49,39 +192,40 @@ def _run_coro(coro, timeout):
         return (False, repr(e))
 
 
-_MODULE_CACHE = {}
+_MODULE_CACHE: Dict[str, Any] = {}
 
 
-def _load_module(path):
-    import heroku_compat  # noqa: F401  (ensures shims are importable)
+def _load_module(path: str):
+    _setup_compat_packages()
     from heroku_compat import loader as compat_loader
-    # Modules used to be re-imported AND re-executed on every outgoing message
-    # (run_filter) and every command, synchronously on the sender thread.
-    # Cache by file identity: editing the file changes mtime/size and reloads.
-    # Side effect: module top-level state now persists between calls, like a
-    # real userbot, instead of resetting on every message.
+
     try:
-        import os
         st = os.stat(path)
         sig = (st.st_mtime_ns, st.st_size)
     except Exception:
         sig = None
+
     if sig is not None:
         hit = _MODULE_CACHE.get(path)
         if hit is not None and hit[0] == sig:
             return hit[1], compat_loader, hit[2]
-    mod_name = "miogram_user_mod_%d" % (abs(hash(path)) % 1000000)
+
+    mod_name = "friendly_telegram.modules.user_mod_%d" % (abs(hash(path)) % 1000000)
     spec = importlib.util.spec_from_file_location(mod_name, path)
     if spec is None or spec.loader is None:
         return None, None, "cannot load module file"
+
     mod = importlib.util.module_from_spec(spec)
+    mod.__package__ = "friendly_telegram.modules"
     sys.modules[mod_name] = mod
+
     try:
         spec.loader.exec_module(mod)
     except Exception as e:
         if sig is not None:
-            _MODULE_CACHE[path] = (sig, None, "import error: %s" % (repr(e),))
-        return None, None, "import error: %s" % (repr(e),)
+            _MODULE_CACHE[path] = (sig, None, f"import error: {repr(e)}")
+        return None, None, f"import error: {repr(e)}"
+
     if sig is not None:
         _MODULE_CACHE[path] = (sig, mod, None)
     return mod, compat_loader, None
@@ -104,7 +248,7 @@ def _iter_module_classes(mod, compat_loader):
     return found
 
 
-def _match_cmd(fn_name, marked_name, cmd):
+def _match_cmd(fn_name: str, marked_name: Optional[str], cmd: str) -> bool:
     cmd = (cmd or "").lower()
     if marked_name and str(marked_name).lower() == cmd:
         return True
@@ -112,7 +256,7 @@ def _match_cmd(fn_name, marked_name, cmd):
     return base.lower() == cmd
 
 
-def _find_handler(mod, compat_loader, cmd):
+def _find_handler(mod, compat_loader, cmd: str):
     """Returns (instance, bound_fn) or (None, None)."""
     for cls in _iter_module_classes(mod, compat_loader):
         try:
@@ -134,7 +278,8 @@ def _find_handler(mod, compat_loader, cmd):
             fname = getattr(fn, "__name__", None) or getattr(raw, "__name__", mname)
             if (marked and _match_cmd(fname, marked_name, cmd)) or _match_cmd(fname, None, cmd):
                 return inst, fn
-    # Fallback: plain module-level function named <cmd> (FTG-lite style).
+
+    # Fallback: module-level function
     for fname in (cmd, cmd + "cmd"):
         try:
             fn = getattr(mod, fname, None)
@@ -145,22 +290,24 @@ def _find_handler(mod, compat_loader, cmd):
     return None, None
 
 
-def run_command(path, cmd, args, full_text, timeout=25):
+def run_command(path: str, cmd: str, args: str, full_text: str, reply_text: Optional[str] = None, reply_id: int = 0, chat_id: int = 0, timeout: int = 25) -> str:
     """Runs one module command. Returns JSON: {"replies": [[kind, text]], "error": str|None}."""
-    out = {"replies": [], "error": None}
+    out: Dict[str, Any] = {"replies": [], "error": None}
     try:
         mod, compat_loader, err = _load_module(path)
         if err is not None:
             out["error"] = err
             return json.dumps(out)
+
         inst, fn = _find_handler(mod, compat_loader, cmd or "")
         if fn is None:
             out["error"] = "command not found in module"
             return json.dumps(out)
-        msg = _FakeMessage(full_text, args)
+
+        msg = _FakeMessage(full_text, args, reply_text=reply_text, reply_id=reply_id, chat_id=chat_id)
 
         async def _call():
-            res = fn(msg) if inst is None else fn(msg)
+            res = fn(msg)
             if inspect.isawaitable(res):
                 await res
             return True
@@ -175,8 +322,8 @@ def run_command(path, cmd, args, full_text, timeout=25):
         return json.dumps(out)
 
 
-def has_filter(path):
-    """True if the module defines filter_outgoing (checked without running)."""
+def has_filter(path: str) -> bool:
+    """True if the module defines filter_outgoing."""
     try:
         mod, compat_loader, err = _load_module(path)
         if err is not None:
@@ -189,14 +336,15 @@ def has_filter(path):
         return False
 
 
-def run_filter(path, text, timeout=8):
+def run_filter(path: str, text: str, timeout: int = 8) -> str:
     """Runs filter_outgoing(self, text). Returns JSON: {"text": str, "error": str|None}."""
-    out = {"text": text, "error": None}
+    out: Dict[str, Any] = {"text": text, "error": None}
     try:
         mod, compat_loader, err = _load_module(path)
         if err is not None:
             out["error"] = err
             return json.dumps(out)
+
         target = None
         inst = None
         for cls in _iter_module_classes(mod, compat_loader):
@@ -207,11 +355,13 @@ def run_filter(path, text, timeout=8):
                     break
                 except Exception:
                     continue
+
         if target is None and hasattr(mod, "filter_outgoing"):
             try:
                 target = getattr(mod, "filter_outgoing")
             except Exception:
                 target = None
+
         if target is None:
             out["error"] = "no filter_outgoing"
             return json.dumps(out)

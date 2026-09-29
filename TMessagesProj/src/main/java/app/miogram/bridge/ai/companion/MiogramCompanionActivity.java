@@ -706,6 +706,11 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         chipsRow.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(6));
         chipsScroll.addView(chipsRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
+        addChip(context, chipsRow, MiogramLocale.get("💬 Як справи?", "💬 Как дела?", "💬 How are you?"), () -> {
+            inputField.setText(MiogramLocale.get("Амэ, як справи? Розкажи чим займаєшся (´｡• ω •｡`)", "Амэ, как дела? Расскажи чем занимаешься (´｡• ω •｡`)", "Ame, how are you? What are you up to? (´｡• ω •｡`)"));
+            onSendMessage();
+        });
+
         addChip(context, chipsRow, MiogramLocale.get("Що нового?", "Что нового?", "What's new?"), () -> {
             inputField.setText(MiogramLocale.get("Що нового в моїх чатах? Зроби короткий огляд!", "Что нового в моих чатах? Сделай краткий обзор!", "What's new in my chats? Give me a quick summary!"));
             onSendMessage();
@@ -729,7 +734,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         });
 
         addChip(context, chipsRow, MiogramLocale.get("Пошук по групах", "Поиск по группам", "Search groups"), () -> {
-            inputField.setText(MiogramLocale.get("Пі-тян, пошукай по групах що пишуть про ", "Пи-тян, поищи по группам что пишут про ", "P-chan, search groups for "));
+            inputField.setText(MiogramLocale.get("Амэ, пошукай по групах що пишуть про ", "Амэ, поищи по группам что пишут про ", "Ame, search groups for "));
             inputField.setSelection(inputField.getText().length());
             inputField.requestFocus();
             AndroidUtilities.showKeyboard(inputField);
@@ -741,7 +746,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         });
 
         addChip(context, chipsRow, MiogramLocale.get("Юзербот .ping", "Юзербот .ping", "Userbot .ping"), () -> {
-            inputField.setText(MiogramLocale.get("Пі-тян, перевір затримку через юзербот команду ping", "Пи-тян, проверь пинг через команду юзербота ping", "P-chan, check latency using userbot command ping"));
+            inputField.setText(MiogramLocale.get("Амэ, перевір затримку через юзербот команду ping", "Амэ, проверь пинг через команду юзербота ping", "Ame, check latency using userbot command ping"));
             onSendMessage();
         });
 
@@ -752,11 +757,11 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
         if (scopedDialogId != 0) {
             addChip(context, chipsRow, MiogramLocale.get("Що тут пишуть?", "Что тут пишут?", "What are they writing?"), () -> {
-                inputField.setText(MiogramLocale.get("П-тян, прочитай останні повідомлення цього чату", "П-тян, прочитай последние сообщения этого чата", "Read the latest messages in this chat"));
+                inputField.setText(MiogramLocale.get("Амэ, прочитай останні повідомлення цього чату", "Амэ, прочитай последние сообщения этого чата", "Ame, read the latest messages in this chat"));
                 onSendMessage();
             });
             addChip(context, chipsRow, MiogramLocale.get("Почистити цей чат", "Очистить этот чат", "Clear this chat"), () -> {
-                inputField.setText(MiogramLocale.get("П-тян, будь ласка, очисти історію цього чату", "П-тян, пожалуйста, очисти историю этого чата", "Please clear history of this chat"));
+                inputField.setText(MiogramLocale.get("Амэ, будь ласка, очисти історію цього чату", "Амэ, пожалуйста, очисти историю этого чата", "Ame, please clear history of this chat"));
                 onSendMessage();
             });
         } else {
@@ -893,8 +898,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
         actionBar.setTitle(isAme ? "Ame-chan ໒꒱" : "KAngel ✧†");
         actionBar.setSubtitle(isAme
-                ? ("Ame-OS v3.8 • " + MiogramLocale.get("У мережі", "В сети", "Online"))
-                : ("†BLESSING† • " + MiogramLocale.get("Прямий ефір", "Прямой эфир", "Live"))
+                ? ("Ame-OS v3.8 • " + MiogramLocale.get("ШІ-Агент ໒꒱", "ИИ-Агент ໒꒱", "AI Agent ໒꒱"))
+                : ("†BLESSING† • " + MiogramLocale.get("ШІ-Агент ✧", "ИИ-Агент ✧", "AI Agent ✧"))
         );
 
         updateCarouselVisuals(isAme);
@@ -933,20 +938,22 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         String m = mood != null ? mood.toLowerCase(Locale.US) : "neutral";
         if (ameSpeechBubble != null) {
             if (m.contains("happy")) {
-                ameSpeechBubble.setText(MiogramLocale.get("«Дякую, П-тян! ♡ (⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)\nТи найкращий у світі!»", "«Спасибо, Пи-тян! ♡ (⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)\nТы лучший на свете!»", "\"Thank you, P-chan! ♡ (⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄)\nYou're the best in the world!\""));
+                ameSpeechBubble.setText(MiogramLocale.get("«(★ω★) О, Пі-тян! Заціни, що я нарила в інтернеті ww»", "«(★ω★) О, Пи-тян! Зацени, что я нарыла в инете ww»", "\"«(★ω★) Oh, P-chan! Look what I found online ww»\""));
             } else if (m.contains("sad")) {
-                ameSpeechBubble.setText(MiogramLocale.get("«Ех… (T_T)\nНе йди, П-тян, мені без тебе сумно…»", "«Эх… (T_T)\nНе уходи, Пи-тян, мне без тебя грустно…»", "\"Sigh… (T_T)\nDon't go, P-chan, I'm sad without you…\""));
+                ameSpeechBubble.setText(MiogramLocale.get("«(´-ω-`) Мені так ліньки сьогодні... Голова розколюється ww»", "«(´-ω-`) Мне так лень сегодня... Голова раскалывается ww»", "\"«(´-ω-`) I'm so exhausted today... my head hurts ww»\""));
             } else {
-                ameSpeechBubble.setText(MiogramLocale.get("«Дякую, П-тян! ♡\nТепер я тільки твоя назавжди!»", "«Спасибо, Пи-тян! ♡\nТеперь я только твоя навсегда!»", "\"Thank you, P-chan! ♡\nNow I am yours forever!\""));
+                ameSpeechBubble.setText(MiogramLocale.get("«(・ω・) Пі-тян, ти придумав ідею для стріму? Не гальмуй давай»", "«(・ω・) Пи-тян, ты придумал идею для стрима? Не тормози давай»", "\"«(・ω・) P-chan, got an idea for the stream? Don't slack off»\""));
             }
         }
         if (kangelSpeechBubble != null) {
             if (m.contains("happy") || m.contains("pray")) {
-                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Дякую, любий отаку! ✧\nПолетимо у стратосферу разом!»", "«† BLESSING † Спасибо, милый отаку! ✧\nПолетим в стратосферу вместе!»", "\"† BLESSING † Thank you, dear otaku! ✧\nLet's fly into the stratosphere together!\""));
+                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Кон-тен, продюсере! ✧\nПолетимо у стратосферу! (★ω★)»", "«† BLESSING † Кон-тен, продюсер! ✧\nПолетим в стратосферу! (★ω★)»", "\"† BLESSING † Kon-ten, Producer! ✧\nTo the stratosphere! (★ω★)\""));
+            } else if (m.contains("start")) {
+                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † У мене божевільна ідея для стріму! ✧\nЗараз підірвемо інтернет ww»", "«† BLESSING † У меня безумная идея для стрима! ✧\nСейчас взорвем интернет ww»", "\"† BLESSING † I have a wild stream idea! ✧\nLet's break the internet ww\""));
             } else if (m.contains("sad")) {
-                kangelSpeechBubble.setText(MiogramLocale.get("«Ех… ✕\nНе зникай так, отаку…»", "«Эх… ✕\nНе исчезай так, отаку…»", "\"Sigh… ✕\nDon't disappear like that, otaku…\""));
+                kangelSpeechBubble.setText(MiogramLocale.get("«Ех… ✕ Стрім забрав усі сили, продюсере…\nПосидь зі мною трохи, поки адреналін спаде»", "«Эх… ✕ Стрим забрал все силы, продюсер…\nПосиди со мной немного, пока адреналин спадет»", "\"Sigh… ✕ Stream drained all my energy, Producer…\nStay with me for a bit while the adrenaline fades\""));
             } else {
-                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Полетимо у стратосферу разом, любий отаку! ✧»", "«† BLESSING † Полетим в стратосферу вместе, милый отаку! ✧»", "\"† BLESSING † Let's fly into the stratosphere together, dear otaku! ✧\""));
+                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Кон-тен! ✧\nМільйон підписників самі себе не наберуть ww»", "«† BLESSING † Кон-тен! ✧\nМиллион подписчиков сами себя не наберут ww»", "\"† BLESSING † Kon-ten! ✧\nOne million followers won't gain themselves ww\""));
             }
         }
     }
@@ -1001,16 +1008,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         String mood;
         if (isAme) {
             text = MiogramLocale.get(
-                    "П-тян, нарешті ти тут... я скучила. Ти як взагалі, як день проходить? (´・ω・｀)",
-                    "Пи-тян, наконец-то ты тут... я соскучилась. Ты как вообще, как день проходит? (´・ω・｀)",
-                    "P-chan, you're finally here... I missed you. How are you holding up today? (´・ω・｀)"
+                    "Пі-тян, ти тут? Я якраз залипала в телефоні ww Що там у тебе нового? (´-ω-`)",
+                    "Пи-тян, ты тут? Я как раз залипала в телефоне ww Что там у тебя нового? (´-ω-`)",
+                    "P-chan, you there? I was just doomscrolling ww What's new with you? (´-ω-`)"
             );
-            mood = "happy";
+            mood = "talk";
         } else {
             text = MiogramLocale.get(
-                    "† BLESSING †! П-тян, нарешті ти заглянув! Якраз випала хвилинка перепочити після стріму. Що нового? ✧",
-                    "† BLESSING †! Пи-тян, наконец-то ты заглянул! Как раз выдалась минутка передохнуть после стрима. Что нового? ✧",
-                    "† BLESSING †! P-chan, finally you're here! Just caught a quick breath backstage. What's new? ✧"
+                    "† BLESSING †! Кон-тен, продюсере! ✧ Щойно закінчила стрім, чат просто підірвало ww Що у нас далі за планом?",
+                    "† BLESSING †! Кон-тен, продюсер! ✧ Только что закончила стрим, чат просто взорвало ww Что у нас дальше по плану?",
+                    "† BLESSING †! Kon-ten, Producer! ✧ Just wrapped up the stream, chat totally blew up ww What's next on our agenda?"
             );
             mood = "pray";
         }
@@ -1022,9 +1029,9 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
     private void addSwitchAnnouncement(boolean toAme) {
         String text = toAme
-                ? MiogramLocale.get("П-тян перемкнувся на Аме! (⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄) Дякую, що вибрав мене...", "П-тян переключился на Аме! (⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄) Спасибо, что выбрал меня...", "P-chan switched to Ame! (⁄ ⁄>⁄ ▽ ⁄<⁄ ⁄) Thank you for choosing me...")
-                : MiogramLocale.get("†BLESSING†! Увімкнено режим Інтернет-Ангела Кангель! ✧*｡", "†BLESSING†! Включен режим Интернет-Ангела Кангель! ✧*｡", "†BLESSING†! Internet Angel KAngel mode activated! ✧*｡");
-        String mood = toAme ? "happy" : "pray";
+                ? MiogramLocale.get("Перемкнулися на Амэ. Ну нарешті, можна не натягувати маску айдола ww (´-ω-`)", "Переключились на Амэ. Ну наконец-то, можно не натягивать маску айдола ww (´-ω-`)", "Switched to Ame. Finally, don't have to wear the idol mask ww (´-ω-`)")
+                : MiogramLocale.get("† BLESSING †! Режим Інтернет-Ангела Кангель активовано! ✧ Полетимо у стратосферу, продюсере!", "† BLESSING †! Режим Интернет-Ангела Кангель активирован! ✧ Полетим в стратосферу, продюсер!", "† BLESSING †! Internet Angel KAngel mode activated! ✧ Let's fly into the stratosphere, Producer!");
+        String mood = toAme ? "talk" : "pray";
         MiogramCompanionPrefs.ChatMessage msg = new MiogramCompanionPrefs.ChatMessage(false, text, mood, System.currentTimeMillis(), null, null);
         history.add(msg);
         MiogramCompanionPrefs.saveHistory(history);
@@ -1371,7 +1378,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
                 MiogramCompanionPrefs.ChatMessage bubble = existingBubble;
                 String toolDesc = MiogramCompanionToolbox.describeTool(action.name, action.params);
-                String workingText = toolDesc + "…";
+                String workingText = "(っ˘ω˘ς ) " + toolDesc;
                 String actionParamsStr = action.params != null ? action.params.toString() : null;
                 if (bubble == null) {
                     bubble = new MiogramCompanionPrefs.ChatMessage(false, workingText, mood, System.currentTimeMillis(), action.name, actionParamsStr);

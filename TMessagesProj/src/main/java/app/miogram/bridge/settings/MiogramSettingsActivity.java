@@ -175,7 +175,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                 if (listAdapter != null) listAdapter.notifyDataSetChanged();
             });
         } else if (position == updaterRow) {
-            MiogramUpdater.checkAndShowUpdate(this, true);
+            presentFragment(new MiogramUpdateSettingsActivity());
         }
     }
 
@@ -375,17 +375,25 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == updaterRow) {
                         String branch = MiogramUpdater.getUpdateChannelName();
                         String codename = MiogramLocale.get("Ніді Кодер Бек", "Ниди Кодер Бек", "Needy Koder Beck");
-                        String ver = "v" + BuildVars.BUILD_VERSION_STRING + " · " + codename;
+                        String ver = "v" + BuildVars.BUILD_VERSION_STRING + " (" + branch + ") · " + codename;
                         cell.setTextAndValueAndIcon(
                                 MiogramLocale.get("Оновлення", "Обновления", "Updates"),
                                 ver,
                                 R.drawable.msg_download_solar,
-                                false
+                                true
                         );
                     }
                     break;
                 }
             }
+        }
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
         }
     }
 

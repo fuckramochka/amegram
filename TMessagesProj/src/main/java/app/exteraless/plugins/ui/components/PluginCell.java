@@ -60,6 +60,7 @@ public class PluginCell extends FrameLayout implements NotificationCenter.Notifi
     private final ImageView settingsButton;
     private final ImageView permissionsButton;
     private final ImageView deleteButton;
+    private final FrameLayout switchContainer;
     private final Switch switchView;
 
     private String pluginId;
@@ -277,15 +278,23 @@ public class PluginCell extends FrameLayout implements NotificationCenter.Notifi
         actions.addView(deleteButton, LayoutHelper.createLinear(40, 40, Gravity.RIGHT));
         root.addView(actions, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40));
 
+        switchContainer = new FrameLayout(context);
+        switchContainer.setFocusable(false);
+        switchContainer.setClickable(true);
+        switchContainer.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), 1, AndroidUtilities.dp(20)));
+        switchContainer.setOnClickListener(v -> callDelegate(Action.TOGGLE));
+
         switchView = new Switch(context);
         switchView.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked,
                 Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
         switchView.setFocusable(false);
-        switchView.setOnClickListener(v -> callDelegate(Action.TOGGLE));
-        // 4dp справа: у Switch трек уже своей вьюхи, и без этого он оказывается
-        // ближе к краю карточки, чем текст слева.
-        headerRow.addView(switchView, LayoutHelper.createLinear(37, 40, Gravity.TOP,
-                12, 0, 4, 0));
+        switchView.setClickable(false);
+        switchContainer.addView(switchView, LayoutHelper.createFrame(37, 40,
+                Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 4, 0));
+
+        // Увеличенная область клика (64x48dp) с селектором, чтобы тумблер легко нажимался
+        headerRow.addView(switchContainer, LayoutHelper.createLinear(64, 48, Gravity.TOP,
+                4, 0, 0, 0));
         updateCardBackground();
     }
 
@@ -436,6 +445,10 @@ public class PluginCell extends FrameLayout implements NotificationCenter.Notifi
         nameView.setSingleLine(compact);
         subtitleView.setSingleLine(compact);
         divider.setVisibility(compact ? GONE : VISIBLE);
+        if (switchContainer != null && switchContainer.getLayoutParams() instanceof LinearLayout.LayoutParams) {
+            LinearLayout.LayoutParams switchParams = (LinearLayout.LayoutParams) switchContainer.getLayoutParams();
+            switchParams.gravity = compact ? Gravity.CENTER_VERTICAL : Gravity.TOP;
+        }
         requestLayout();
     }
 

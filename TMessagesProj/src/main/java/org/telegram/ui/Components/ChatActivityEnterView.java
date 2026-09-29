@@ -6574,6 +6574,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                     return clickMaybe;
                 } else {
                     if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                        if (getParent() != null) {
+                            getParent().requestDisallowInterceptTouchEvent(true);
+                        }
                         if (delegate != null) {
                             fixHandlesColor();
                             delegate.onKeyboardRequested();

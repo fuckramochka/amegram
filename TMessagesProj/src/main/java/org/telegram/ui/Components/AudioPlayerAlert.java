@@ -1078,7 +1078,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         prevButton.setLayerColor("Triangle 4", iconColor);
         prevButton.setLayerColor("Rectangle 4", iconColor);
         prevButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(22)));
-        if (messageObject != null && !messageObject.isVoice()) {
+        if (messageObject != null) {
             bottomView.addView(prevButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         }
         prevButton.setContentDescription(LocaleController.getString(R.string.AccDescrPrevious));
@@ -1201,7 +1201,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         nextButton.setLayerColor("Rectangle 4", iconColor);
         nextButton.setRotation(180f);
         nextButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1, dp(22)));
-        if (messageObject != null && !messageObject.isVoice()) {
+        if (messageObject != null) {
             bottomView.addView(nextButton, LayoutHelper.createFrame(48, 48, Gravity.LEFT | Gravity.TOP));
         }
         nextButton.setContentDescription(LocaleController.getString(R.string.Next));

@@ -71,7 +71,7 @@ public class MiogramUpdateBar extends FrameLayout implements MiogramDownloadMana
         textContainer.setOrientation(LinearLayout.VERTICAL);
 
         titleView = new TextView(context);
-        titleView.setText(MiogramLocale.get("Оновлення Miogram", "Обновление Miogram", "Miogram Update"));
+        titleView.setText(MiogramLocale.get("Оновлення Amegram", "Обновление Amegram", "Amegram Update"));
         titleView.setTextSize(12);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -203,16 +203,22 @@ public class MiogramUpdateBar extends FrameLayout implements MiogramDownloadMana
 
     @Override
     public void onProgress(int percent, long downloadedBytes, long totalBytes) {
+        onProgressDetailed(percent, downloadedBytes, totalBytes, 0, 0);
+    }
+
+    @Override
+    public void onProgressDetailed(int percent, long downloadedBytes, long totalBytes, long speedBytesPerSec, int etaSeconds) {
         mainHandler.post(() -> {
             if (progressBar != null) progressBar.setProgress(percent);
             if (titleView != null) {
                 String ver = MiogramDownloadManager.getInstance().getCurrentVersion();
-                titleView.setText("Miogram v" + ver);
+                titleView.setText("Amegram v" + ver);
             }
             if (subtitleView != null) {
-                long dlMb = downloadedBytes / (1024 * 1024);
-                long totalMb = totalBytes / (1024 * 1024);
-                subtitleView.setText(MiogramLocale.format("Завантаження: %d%% (%dMB / %dMB)", "Загрузка: %d%% (%dMB / %dMB)", "Downloading: %d%% (%dMB / %dMB)", percent, dlMb, totalMb));
+                String dl = AndroidUtilities.formatFileSize(downloadedBytes);
+                String total = totalBytes > 0 ? AndroidUtilities.formatFileSize(totalBytes) : "...";
+                String speed = speedBytesPerSec > 0 ? " • " + AndroidUtilities.formatFileSize(speedBytesPerSec) + "/s" : "";
+                subtitleView.setText(MiogramLocale.format("Завантаження: %d%% (%s / %s)%s", "Загрузка: %d%% (%s / %s)%s", "Downloading: %d%% (%s / %s)%s", percent, dl, total, speed));
             }
         });
     }

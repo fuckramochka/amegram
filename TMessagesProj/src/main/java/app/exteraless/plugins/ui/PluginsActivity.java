@@ -166,8 +166,8 @@ public class PluginsActivity extends BaseFragment {
 
         String[] titles = {
             app.miogram.bridge.MiogramLocale.get("Всі", "Все", "All"),
-            "Miogram WASM",
-            "ETG (exteraGram)",
+            "⚡ Lua",
+            "Python (ETG)",
             app.miogram.bridge.MiogramLocale.get("Каталог ໒꒱", "Каталог ໒꒱", "Catalog ໒꒱")
         };
         int[] filters = {FILTER_ALL, FILTER_MIOGRAM, FILTER_EXTERA, FILTER_CATALOG};
@@ -245,15 +245,15 @@ public class PluginsActivity extends BaseFragment {
                 if (!matches) continue;
             }
 
-            // Category filtering: WASM vs exteraGram (Python/ETG)
-            boolean isWasm = "wasm".equalsIgnoreCase(plugin.engine)
-                    || (plugin.path != null && (plugin.path.endsWith(".wasm") || plugin.path.endsWith(".so") || plugin.path.endsWith(".mioplugin")))
-                    || (plugin.id != null && (plugin.id.endsWith(".wasm") || plugin.id.endsWith(".so") || plugin.id.endsWith(".mioplugin")));
+            // Category filtering: Lua vs Python (ETG)
+            boolean isLua = "lua".equalsIgnoreCase(plugin.engine)
+                    || (plugin.path != null && plugin.path.endsWith(".lua"))
+                    || (plugin.id != null && plugin.id.endsWith(".lua"));
 
             if (currentFilter == FILTER_MIOGRAM) {
-                if (!isWasm) continue;
+                if (!isLua) continue;
             } else if (currentFilter == FILTER_EXTERA) {
-                if (isWasm) continue;
+                if (isLua) continue;
             }
             filtered.add(plugin);
         }
@@ -705,7 +705,7 @@ public class PluginsActivity extends BaseFragment {
         // .elyx/.eaf (ZIP-архивы) от обычного .py-модуля.
         String name = resolveFileName(activity, uri);
         String ext = ".py";
-        for (String candidate : new String[]{".elyx", ".eaf", ".plugin", ".py", ".wasm", ".zip"}) {
+        for (String candidate : new String[]{".elyx", ".eaf", ".plugin", ".py", ".lua", ".zip"}) {
             if (name != null && name.toLowerCase(Locale.ROOT).endsWith(candidate)) {
                 ext = candidate;
                 break;

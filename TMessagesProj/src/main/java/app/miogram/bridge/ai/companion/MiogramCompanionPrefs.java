@@ -55,6 +55,16 @@ public class MiogramCompanionPrefs {
         getPrefs().edit().putBoolean(KEY_REPLACE_CONTACTS, replaced).apply();
     }
 
+    private static final String KEY_AGENT_MODE = "companion_agent_mode";
+
+    public static boolean isAgentMode() {
+        return getPrefs().getBoolean(KEY_AGENT_MODE, true);
+    }
+
+    public static void setAgentMode(boolean agentMode) {
+        getPrefs().edit().putBoolean(KEY_AGENT_MODE, agentMode).apply();
+    }
+
     private static final String KEY_GUIDE_SHOWN_VERSION = "guide_shown_version";
 
     public static boolean hasCompletedOnboarding() {

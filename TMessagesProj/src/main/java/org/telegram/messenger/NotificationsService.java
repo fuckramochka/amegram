@@ -22,7 +22,10 @@ import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
+import android.app.PendingIntent;
+import org.telegram.ui.LaunchActivity;
 import xyz.nextalone.nagram.NaConfig;
+import app.miogram.bridge.MiogramLocale;
 
 public class NotificationsService extends Service {
 
@@ -40,17 +43,44 @@ public class NotificationsService extends Service {
         final boolean visible = NaConfig.INSTANCE.getPushServiceTypeInAppDialog().Bool();
         final String channelId = visible ? CHANNEL_ID : CHANNEL_ID_QUIET;
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (notificationManager == null) {
+            return;
+        }
+
+        String channelName = MiogramLocale.get("AmeGram у фоні ໒꒱", "AmeGram в фоне ໒꒱", "AmeGram in background ໒꒱");
+        String channelDesc = MiogramLocale.get("Підтримує стабільне отримання сповіщень та роботу клієнта", "Поддерживает стабильное получение уведомлений и работу клиента", "Keeps notifications and client active in background");
+
         NotificationChannel channel = new NotificationChannel(channelId,
-                LocaleController.getString(R.string.NagramXPushService),
-                visible ? NotificationManager.IMPORTANCE_DEFAULT : NotificationManager.IMPORTANCE_MIN);
+                channelName,
+                visible ? NotificationManager.IMPORTANCE_LOW : NotificationManager.IMPORTANCE_MIN);
+        channel.setDescription(channelDesc);
         channel.setShowBadge(false);
+        channel.enableLights(false);
+        channel.enableVibration(false);
         notificationManager.createNotificationChannel(channel);
+
+        Intent launchIntent = new Intent(this, LaunchActivity.class);
+        launchIntent.setAction(Intent.ACTION_MAIN);
+        launchIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+        PendingIntent contentIntent = PendingIntent.getActivity(this, 0, launchIntent,
+                PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+
+        String title = "AmeGram (´-ω-`)";
+        String text = MiogramLocale.get(
+                "(´-ω-`) Тримаю AmeGram у фоні, щоб повідомлення не губилися ww",
+                "(´-ω-`) Держу AmeGram в фоне, чтобы сообщения не терялись ww",
+                "(´-ω-`) Keeping AmeGram running in background ww"
+        );
+
         Notification notification = new NotificationCompat.Builder(this, channelId)
                 .setShowWhen(false)
                 .setOngoing(true)
-                .setPriority(visible ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_MIN)
+                .setPriority(visible ? NotificationCompat.PRIORITY_LOW : NotificationCompat.PRIORITY_MIN)
                 .setSmallIcon(R.drawable.exteraless_notification)
-                .setContentText(LocaleController.getString(R.string.NagramXPushService))
+                .setContentTitle(title)
+                .setContentText(text)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(contentIntent)
                 .build();
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
@@ -59,7 +89,7 @@ public class NotificationsService extends Service {
                 startForeground(9999, notification);
             }
         } catch (Throwable e) {
-            Log.e("TFOSS", "Failed to start push service");
+            Log.e("TFOSS", "Failed to start push service", e);
         }
     }
 

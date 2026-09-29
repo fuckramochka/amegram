@@ -14308,7 +14308,8 @@ public class ChatActivity extends BaseFragment implements
         for (int a = messages.size() - 1; a >= 0; a--) {
             MessageObject messageObject = messages.get(a);
             if ((messageObject.isVoice() || messageObject.isRoundVideo()) && messageObject.isContentUnread() && !messageObject.isOut()) {
-                MediaController.getInstance().setVoiceMessagesPlaylist(MediaController.getInstance().playMessage(messageObject) ? createVoiceMessagesPlaylist(messageObject, true) : null, true);
+                boolean played = MediaController.getInstance().playMessage(messageObject);
+                MediaController.getInstance().setVoiceMessagesPlaylist(played ? createVoiceMessagesPlaylist(messageObject, true) : null, true, played ? createVoiceMessagesHistory(messageObject) : null);
                 return true;
             }
         }
@@ -32634,7 +32635,7 @@ public class ChatActivity extends BaseFragment implements
             hideHints(true);
             if (visibleMessage.isRoundVideo()) {
                 boolean result = MediaController.getInstance().playMessage(visibleMessage);
-                MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(visibleMessage, false) : null, false);
+                MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(visibleMessage, false) : null, false, result ? createVoiceMessagesHistory(visibleMessage) : null);
                 return result;
             } else {
                 SharedConfig.setNoSoundHintShowed(true);
@@ -32644,7 +32645,9 @@ public class ChatActivity extends BaseFragment implements
                 if (PhotoViewer.isPlayingMessageInPip(visibleMessage)) {
                     PhotoViewer.getPipInstance().destroyPhotoViewer();
                 }
-                return MediaController.getInstance().playMessage(visibleMessage);
+                boolean result = MediaController.getInstance().playMessage(visibleMessage);
+                MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(visibleMessage, false) : null, false, result ? createVoiceMessagesHistory(visibleMessage) : null);
+                return result;
             }
         }
         return false;
@@ -37833,6 +37836,27 @@ public class ChatActivity extends BaseFragment implements
         return messageObjects;
     }
 
+    private ArrayList<MessageObject> createVoiceMessagesHistory(MessageObject startMessageObject) {
+        ArrayList<MessageObject> historyObjects = new ArrayList<>();
+        if (startMessageObject == null) {
+            return historyObjects;
+        }
+        int messageId = startMessageObject.getId();
+        if (messageId != 0 && messages != null) {
+            for (int a = 0; a < messages.size(); a++) {
+                MessageObject messageObject = messages.get(a);
+                if (messageObject.getDialogId() == mergeDialogId && startMessageObject.getDialogId() != mergeDialogId) {
+                    continue;
+                }
+                if ((currentEncryptedChat == null && messageObject.getId() < messageId || currentEncryptedChat != null && messageObject.getId() > messageId)
+                        && (messageObject.isVoice() || messageObject.isRoundVideo()) && !messageObject.isVoiceOnce() && !messageObject.isRoundOnce()) {
+                    historyObjects.add(0, messageObject);
+                }
+            }
+        }
+        return historyObjects;
+    }
+
     private void alertUserOpenError(MessageObject message) {
         if (getParentActivity() == null) {
             return;
@@ -42991,7 +43015,7 @@ public class ChatActivity extends BaseFragment implements
                 return false;
             } else if (messageObject.isVoice() || messageObject.isRoundVideo()) {
                 boolean result = MediaController.getInstance().playMessage(messageObject, muted);
-                MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(messageObject, false) : null, false);
+                MediaController.getInstance().setVoiceMessagesPlaylist(result ? createVoiceMessagesPlaylist(messageObject, false) : null, false, result ? createVoiceMessagesHistory(messageObject) : null);
                 return result;
             } else if (messageObject.isMusic()) {
                 return MediaController.getInstance().setPlaylist(chatAdapter.getMessages(), messageObject, mergeDialogId, !chatAdapter.isFiltered, null);

@@ -46,8 +46,8 @@ _manifest_cache = None    # manifest dict, loaded lazily
 def _files_dir() -> str:
     """The app-private files dir (same source as the rest of the SDK).
 
-    Falls back to $EXTERALESS_FILES_DIR so the controller stays testable on
-    a host interpreter.
+    Falls back to $EXTERALESS_FILES_DIR, ApplicationLoader, or ~/.miogram_libs
+    so the controller stays testable on host or Android.
     """
     try:
         import file_utils
@@ -59,7 +59,23 @@ def _files_dir() -> str:
     path = os.environ.get("EXTERALESS_FILES_DIR")
     if path:
         return path
-    raise RuntimeError("pip_controller: cannot resolve the app files directory")
+    try:
+        from org.telegram.messenger import ApplicationLoader
+        ctx = ApplicationLoader.applicationContext
+        if ctx:
+            return ctx.getFilesDir().getAbsolutePath()
+    except Exception:
+        pass
+    try:
+        from java import jclass
+        ctx = jclass("org.telegram.messenger.ApplicationLoader").applicationContext
+        if ctx:
+            return ctx.getFilesDir().getAbsolutePath()
+    except Exception:
+        pass
+    fallback = os.path.join(os.path.expanduser("~"), ".miogram_libs")
+    os.makedirs(fallback, exist_ok=True)
+    return fallback
 
 
 def _shared_libs_dir() -> str:
@@ -414,3 +430,36 @@ def remove_requirements(plugin_id: str) -> None:
 def installed_packages() -> dict:
     """Snapshot of the manifest (name -> entry); for diagnostics/dev-server."""
     return json.loads(json.dumps(_load_manifest()["packages"]))
+
+
+def install_package(package_spec: str, owner: str = "userbot") -> dict:
+    """Install package by requirement spec (e.g. 'aiohttp' or 'requests>=2.28')."""
+    req = Requirement(package_spec)
+    name = _normalize(req.name)
+    ensure_requirements(owner, [package_spec])
+    manifest = _load_manifest()
+    entry = manifest["packages"].get(name, {})
+    return {
+        "name": name,
+        "version": entry.get("version", "unknown"),
+        "path": entry.get("path", "")
+    }
+
+
+def uninstall_package(package_name: str) -> bool:
+    """Uninstall a specific package from shared_libs."""
+    name = _normalize(package_name)
+    with _lock:
+        manifest = _load_manifest()
+        entry = manifest["packages"].get(name)
+        if not entry:
+            return False
+        path = entry.get("path")
+        if path:
+            shutil.rmtree(path, ignore_errors=True)
+            _sys_path_added.discard(path)
+            while path in sys.path:
+                sys.path.remove(path)
+        del manifest["packages"][name]
+        _save_manifest()
+        return True

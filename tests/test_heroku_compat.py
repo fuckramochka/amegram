@@ -113,3 +113,93 @@ class EchoMod(loader.Module):
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+
+def test_pip_runner_list():
+    from heroku_compat import pip_runner
+    res_raw = pip_runner.run_pip("list", "")
+    res = json.loads(res_raw)
+    assert res["success"] is True
+    assert res["action"] == "list"
+    assert isinstance(res["packages"], list)
+
+
+def test_pip_runner_install_and_uninstall(monkeypatch):
+    from heroku_compat import pip_runner
+    import pip_controller
+
+    installed_calls = []
+    uninstalled_calls = []
+
+    def fake_install(pkg, owner="userbot"):
+        installed_calls.append((pkg, owner))
+        return {"name": pkg, "version": "1.2.3", "path": f"/fake/{pkg}"}
+
+    def fake_uninstall(pkg):
+        uninstalled_calls.append(pkg)
+        return pkg == "testpkg"
+
+    monkeypatch.setattr(pip_controller, "install_package", fake_install)
+    monkeypatch.setattr(pip_controller, "uninstall_package", fake_uninstall)
+
+    res_raw = pip_runner.run_pip("install", "testpkg otherpkg")
+    res = json.loads(res_raw)
+    assert res["success"] is True
+    assert res["action"] == "install"
+    assert len(res["installed"]) == 2
+    assert res["installed"][0]["name"] == "testpkg"
+    assert res["installed"][1]["name"] == "otherpkg"
+    assert installed_calls == [("testpkg", "userbot"), ("otherpkg", "userbot")]
+
+    res_raw = pip_runner.run_pip("uninstall", "testpkg notfoundpkg")
+    res = json.loads(res_raw)
+    assert res["success"] is True
+    assert res["action"] == "uninstall"
+    assert res["removed"] == ["testpkg"]
+    assert res["not_found"] == ["notfoundpkg"]
+    assert uninstalled_calls == ["testpkg", "notfoundpkg"]
+
+
+def test_pip_runner_validation():
+    from heroku_compat import pip_runner
+
+    # Empty install
+    res = json.loads(pip_runner.run_pip("install", ""))
+    assert res["success"] is False
+    assert "No packages specified" in res["error"]
+
+    # Empty uninstall
+    res = json.loads(pip_runner.run_pip("uninstall", ""))
+    assert res["success"] is False
+    assert "No packages specified" in res["error"]
+
+    # Unknown command
+    res = json.loads(pip_runner.run_pip("unknown", ""))
+    assert res["success"] is False
+    assert "Unknown pip command" in res["error"]
+
+
+def test_pip_runner_exception_handling(monkeypatch):
+    from heroku_compat import pip_runner
+    import pip_controller
+
+    def bad_install(pkg, owner="userbot"):
+        raise ValueError("Wheel download failed")
+
+    monkeypatch.setattr(pip_controller, "install_package", bad_install)
+    res = json.loads(pip_runner.run_pip("install", "badpkg"))
+    assert res["success"] is False
+    assert "Wheel download failed" in res["error"]
+
+
+def test_userbot_command_registrations_in_java():
+    java_file = Path(__file__).parent.parent / "TMessagesProj" / "src" / "main" / "java" / "app" / "miogram" / "bridge" / "userbot" / "MiogramHerokuManager.java"
+    assert java_file.exists()
+    content = java_file.read_text(encoding="utf-8")
+
+    assert 'registerCommand(utils, "dlmod"' in content
+    assert 'registerCommand(utils, "dlm"' in content
+    assert 'registerCommand(utils, "lm"' in content
+    assert 'registerCommand(utils, "lmod"' in content
+    assert 'registerCommand(utils, "pip"' in content
+

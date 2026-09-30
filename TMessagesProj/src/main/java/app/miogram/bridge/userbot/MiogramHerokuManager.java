@@ -11,6 +11,7 @@ import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.FileLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MessageObject;
@@ -1100,10 +1101,10 @@ public class MiogramHerokuManager {
         registerCommand(utils, "eval", evalHandler);
         registerCommand(utils, "exec", evalHandler);
 
-        registerCommand(utils, "dlmod", ctx -> {
+        CommandHandler dlmodHandler = ctx -> {
             String url = ctx.rawArgs != null ? ctx.rawArgs.trim().split("\\s+")[0] : "";
             if (TextUtils.isEmpty(url) || (!url.startsWith("http://") && !url.startsWith("https://"))) {
-                ctx.answer("⚠️ " + MiogramLocale.get("Вкажіть пряме посилання на `.py` модуль: `", "Укажите прямую ссылку на `.py` модуль: `", "Provide a direct link to a `.py` module: `") + getPrefix() + "dlmod https://…/mymod.py`");
+                ctx.answer("⚠️ " + MiogramLocale.get("Вкажіть пряме посилання на `.py` модуль: `", "Укажите прямую ссылку на `.py` модуль: `", "Provide a direct link to a `.py` module: `") + getPrefix() + "dlm https://…/mymod.py`");
                 return;
             }
             if (!url.toLowerCase(Locale.ROOT).split("\\?")[0].endsWith(".py")) {
@@ -1117,15 +1118,159 @@ public class MiogramHerokuManager {
                     if (file != null) {
                         HikkaModuleMeta meta = parseModuleMeta(file);
                         String name = !meta.name.isEmpty() ? meta.name : file.getName().replace(".py", "");
+                        if (!meta.requires.isEmpty()) {
+                            executePipCommand("install", meta.requires, null);
+                        }
                         ctx.answer("✅ " + MiogramLocale.get("Модуль **", "Модуль **", "Module **") + name + "** "
                                 + MiogramLocale.get("встановлено", "установлен", "installed")
                                 + (meta.commands.isEmpty() ? "" : " (" + meta.commands.size() + " "
-                                + MiogramLocale.get("команд", "команд", "commands") + ")"));
+                                + MiogramLocale.get("команд", "команд", "commands") + ")")
+                                + (!meta.requires.isEmpty() ? ("\n📦 " + MiogramLocale.get("Встановлюю залежності: `", "Устанавливаю зависимости: `", "Installing dependencies: `") + meta.requires + "`") : ""));
                     } else {
                         ctx.answer("❌ " + MiogramLocale.get("Не вдалося завантажити: ", "Не удалось загрузить: ", "Download failed: ") + (error != null ? error : ""));
                     }
                 }
             });
+        };
+        registerCommand(utils, "dlmod", dlmodHandler);
+        registerCommand(utils, "dlm", dlmodHandler);
+
+        CommandHandler lmodHandler = ctx -> {
+            if (ctx.replyMessage == null) {
+                ctx.answer("⚠️ " + MiogramLocale.get("Відповідайте на `.py` файл або повідомлення з кодом модуля: `", "Ответьте на `.py` файл или сообщение с кодом модуля: `", "Reply to a `.py` file or message with module code: `") + getPrefix() + "lm`");
+                return;
+            }
+
+            if (ctx.replyMessage.isDocument()) {
+                TLRPC.Document document = ctx.replyMessage.getDocument();
+                String docName = ctx.replyMessage.getDocumentName();
+                if (TextUtils.isEmpty(docName)) {
+                    docName = FileLoader.getDocumentFileName(document);
+                }
+                if (TextUtils.isEmpty(docName)) {
+                    docName = "module_" + System.currentTimeMillis() + ".py";
+                }
+
+                ctx.answer("⏳ " + MiogramLocale.get("Завантажую та встановлюю файл модуля з Telegram...", "Загружаю и устанавливаю файл модуля из Telegram...", "Downloading and installing module file from Telegram..."));
+                final String fDocName = docName;
+                executor.execute(() -> {
+                    File file = FileLoader.getInstance(ctx.account).getPathToAttach(document, true);
+                    if (file == null || !file.exists() || file.length() == 0) {
+                        FileLoader.getInstance(ctx.account).loadFile(document, ctx.replyMessage, 2, 0);
+                        for (int i = 0; i < 40; i++) {
+                            try {
+                                Thread.sleep(250);
+                            } catch (InterruptedException ignore) {}
+                            file = FileLoader.getInstance(ctx.account).getPathToAttach(document, true);
+                            if (file != null && file.exists() && file.length() > 0) {
+                                break;
+                            }
+                        }
+                    }
+
+                    if (file != null && file.exists() && file.length() > 0) {
+                        if (fDocName.toLowerCase(Locale.ROOT).endsWith(".lua")) {
+                            try {
+                                byte[] bytes = new byte[(int) file.length()];
+                                try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                                    fis.read(bytes);
+                                }
+                                String code = new String(bytes, StandardCharsets.UTF_8);
+                                installLuaPlugin(fDocName, code);
+                                ctx.answer("✅ " + MiogramLocale.get("Lua плагін **", "Lua плагин **", "Lua plugin **") + fDocName + "** " + MiogramLocale.get("успішно встановлено!", "успешно установлен!", "installed successfully!"));
+                            } catch (Throwable t) {
+                                ctx.answer("❌ " + MiogramLocale.get("Помилка читання файлу: ", "Ошибка чтения файла: ", "File read error: ") + t.getMessage());
+                            }
+                        } else {
+                            File target = new File(getUserbotModulesDir(), fDocName.endsWith(".py") ? fDocName : (fDocName + ".py"));
+                            try {
+                                try (java.io.InputStream in = new java.io.FileInputStream(file);
+                                     java.io.OutputStream out = new java.io.FileOutputStream(target)) {
+                                    byte[] buf = new byte[8192];
+                                    int len;
+                                    while ((len = in.read(buf)) > 0) {
+                                        out.write(buf, 0, len);
+                                    }
+                                    out.flush();
+                                }
+                                loadExternalPythonModule(target);
+                                HikkaModuleMeta meta = parseModuleMeta(target);
+                                String modName = !meta.name.isEmpty() ? meta.name : target.getName().replace(".py", "");
+                                if (!meta.requires.isEmpty()) {
+                                    executePipCommand("install", meta.requires, null);
+                                }
+                                ctx.answer("✅ " + MiogramLocale.get("Модуль **", "Модуль **", "Module **") + modName + "** "
+                                        + MiogramLocale.get("успішно встановлено з файлу", "успешно установлен из файла", "successfully installed from file")
+                                        + (meta.commands.isEmpty() ? "" : " (" + meta.commands.size() + " "
+                                        + MiogramLocale.get("команд", "команд", "commands") + ")")
+                                        + (!meta.requires.isEmpty() ? ("\n📦 " + MiogramLocale.get("Встановлюю залежності: `", "Устанавливаю зависимости: `", "Installing dependencies: `") + meta.requires + "`") : ""));
+                            } catch (Throwable t) {
+                                ctx.answer("❌ " + MiogramLocale.get("Помилка встановлення: ", "Ошибка установки: ", "Install error: ") + t.getMessage());
+                            }
+                        }
+                    } else {
+                        ctx.answer("❌ " + MiogramLocale.get("Не вдалося завантажити файл з Telegram.", "Не удалось загрузить файл из Telegram.", "Failed to download file from Telegram."));
+                    }
+                });
+                return;
+            }
+
+            if (ctx.replyMessage.messageOwner != null && !TextUtils.isEmpty(ctx.replyMessage.messageOwner.message)) {
+                String code = ctx.replyMessage.messageOwner.message;
+                String baseName = !TextUtils.isEmpty(ctx.rawArgs) ? ctx.rawArgs.trim() : null;
+                if (installModuleFromCode(baseName, code)) {
+                    File[] files = getUserbotModulesDir().listFiles((d, n) -> n.endsWith(".py"));
+                    String name = baseName != null ? baseName : "модуль";
+                    if (files != null && files.length > 0) {
+                        File newest = files[0];
+                        for (File f : files) {
+                            if (f.lastModified() > newest.lastModified()) newest = f;
+                        }
+                        HikkaModuleMeta meta = parseModuleMeta(newest);
+                        if (!meta.name.isEmpty()) name = meta.name;
+                        if (!meta.requires.isEmpty()) {
+                            executePipCommand("install", meta.requires, null);
+                        }
+                    }
+                    ctx.answer("✅ " + MiogramLocale.get("Модуль **", "Модуль **", "Module **") + name + "** "
+                            + MiogramLocale.get("успішно встановлено з коду повідомлення!", "успешно установлен из кода сообщения!", "successfully installed from message code!"));
+                } else {
+                    ctx.answer("❌ " + MiogramLocale.get("Помилка збереження або завантаження модуля з тексту.", "Ошибка сохранения или загрузки модуля из текста.", "Failed to save or load module from text."));
+                }
+            } else {
+                ctx.answer("⚠️ " + MiogramLocale.get("Повідомлення не містить файлу або коду модуля.", "Сообщение не содержит файла или кода модуля.", "Message contains no file or module code."));
+            }
+        };
+        registerCommand(utils, "lm", lmodHandler);
+        registerCommand(utils, "lmod", lmodHandler);
+
+        registerCommand(utils, "pip", ctx -> {
+            if (TextUtils.isEmpty(ctx.rawArgs)) {
+                executePipCommand("list", "", result -> ctx.answer(result));
+                return;
+            }
+            String[] parts = ctx.rawArgs.trim().split("\\s+", 2);
+            String sub = parts[0].toLowerCase(Locale.ROOT);
+            String args = parts.length > 1 ? parts[1].trim() : "";
+            if ("install".equals(sub)) {
+                if (TextUtils.isEmpty(args)) {
+                    ctx.answer("⚠️ " + MiogramLocale.get("Вкажіть бібліотеку для встановлення: `", "Укажите библиотеку для установки: `", "Specify library to install: `") + getPrefix() + "pip install <бібліотека>`");
+                    return;
+                }
+                ctx.answer("⏳ " + MiogramLocale.get("Встановлюю бібліотеку з PyPI...", "Устанавливаю библиотеку из PyPI...", "Installing library from PyPI..."));
+                executePipCommand("install", args, result -> ctx.answer(result));
+            } else if ("uninstall".equals(sub) || "remove".equals(sub)) {
+                if (TextUtils.isEmpty(args)) {
+                    ctx.answer("⚠️ " + MiogramLocale.get("Вкажіть бібліотеку для видалення: `", "Укажите библиотеку для удаления: `", "Specify library to uninstall: `") + getPrefix() + "pip uninstall <бібліотека>`");
+                    return;
+                }
+                executePipCommand("uninstall", args, result -> ctx.answer(result));
+            } else if ("list".equals(sub)) {
+                executePipCommand("list", "", result -> ctx.answer(result));
+            } else {
+                ctx.answer("⏳ " + MiogramLocale.get("Встановлюю бібліотеку з PyPI...", "Устанавливаю библиотеку из PyPI...", "Installing library from PyPI..."));
+                executePipCommand("install", ctx.rawArgs.trim(), result -> ctx.answer(result));
+            }
         });
 
         registerCommand(utils, "ulmod", ctx -> {
@@ -1424,6 +1569,93 @@ public class MiogramHerokuManager {
                 AndroidUtilities.runOnUIThread(() -> callback.run(String.valueOf(val)));
             } catch (Throwable ignore) {
                 AndroidUtilities.runOnUIThread(() -> callback.run("Evaluated: " + code));
+            }
+        });
+    }
+
+    public void executePipCommand(String action, String rawArgs, Utilities.Callback<String> callback) {
+        executor.execute(() -> {
+            try {
+                if (!PythonPluginsEngine.getInstance().isStarted()) {
+                    Context appCtx = ApplicationLoader.applicationContext;
+                    PythonPluginsEngine.getInstance().ensureStarted(appCtx, ok -> {});
+                    for (int i = 0; i < 20 && !PythonPluginsEngine.getInstance().isStarted(); i++) {
+                        try { Thread.sleep(200); } catch (InterruptedException ignore) {}
+                    }
+                }
+                if (PythonPluginsEngine.getInstance().isStarted()) {
+                    com.chaquo.python.Python py = com.chaquo.python.Python.getInstance();
+                    com.chaquo.python.PyObject pipRunner = py.getModule("heroku_compat.pip_runner");
+                    com.chaquo.python.PyObject res = pipRunner.callAttr("run_pip", action, rawArgs != null ? rawArgs : "");
+                    if (res != null) {
+                        JSONObject out = new JSONObject(res.toString());
+                        boolean success = out.optBoolean("success", false);
+                        if (success) {
+                            if ("install".equals(action)) {
+                                JSONArray installed = out.optJSONArray("installed");
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("✅ **").append(MiogramLocale.get("Бібліотеку успішно встановлено у віртуальне середовище:**\n",
+                                        "Библиотека успешно установлена в виртуальное окружение:**\n",
+                                        "Library successfully installed to virtual environment:**\n"));
+                                if (installed != null) {
+                                    for (int i = 0; i < installed.length(); i++) {
+                                        JSONObject item = installed.optJSONObject(i);
+                                        if (item != null) {
+                                            sb.append("• **").append(item.optString("name")).append("** (v").append(item.optString("version")).append(")\n");
+                                        }
+                                    }
+                                }
+                                final String msg = sb.toString();
+                                AndroidUtilities.runOnUIThread(() -> { if (callback != null) callback.run(msg); });
+                                return;
+                            } else if ("uninstall".equals(action) || "remove".equals(action)) {
+                                JSONArray removed = out.optJSONArray("removed");
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("🗑 **").append(MiogramLocale.get("Бібліотеку видалено:**\n", "Библиотека удалена:**\n", "Library removed:**\n"));
+                                if (removed != null) {
+                                    for (int i = 0; i < removed.length(); i++) {
+                                        sb.append("• `").append(removed.optString(i)).append("`\n");
+                                    }
+                                }
+                                final String msg = sb.toString();
+                                AndroidUtilities.runOnUIThread(() -> { if (callback != null) callback.run(msg); });
+                                return;
+                            } else {
+                                JSONArray packages = out.optJSONArray("packages");
+                                StringBuilder sb = new StringBuilder();
+                                sb.append("🐍 **").append(MiogramLocale.get("Встановлені Python бібліотеки (Userbot Virtualenv):**\n\n",
+                                        "Установленные Python библиотеки (Userbot Virtualenv):**\n\n",
+                                        "Installed Python libraries (Userbot Virtualenv):**\n\n"));
+                                if (packages != null && packages.length() > 0) {
+                                    for (int i = 0; i < packages.length(); i++) {
+                                        JSONObject item = packages.optJSONObject(i);
+                                        if (item != null) {
+                                            sb.append("• **").append(item.optString("name")).append("** — `v").append(item.optString("version")).append("`\n");
+                                        }
+                                    }
+                                } else {
+                                    sb.append(MiogramLocale.get("_Ще не встановлено додаткових бібліотек._\n💡 Встановіть через `",
+                                            "_Ещё не установлено дополнительных библиотек._\n💡 Установите через `",
+                                            "_No additional libraries installed yet._\n💡 Install with `")).append(getPrefix()).append("pip install <пакет>`");
+                                }
+                                final String msg = sb.toString();
+                                AndroidUtilities.runOnUIThread(() -> { if (callback != null) callback.run(msg); });
+                                return;
+                            }
+                        } else {
+                            String err = out.optString("error", "Unknown pip error");
+                            final String errMsg = "❌ " + MiogramLocale.get("Помилка PIP: ", "Ошибка PIP: ", "PIP error: ") + "`" + err + "`";
+                            AndroidUtilities.runOnUIThread(() -> { if (callback != null) callback.run(errMsg); });
+                            return;
+                        }
+                    }
+                }
+                final String errNotStarted = "❌ " + MiogramLocale.get("Python-рантайм недоступний.", "Python-рантайм недоступен.", "Python runtime unavailable.");
+                AndroidUtilities.runOnUIThread(() -> { if (callback != null) callback.run(errNotStarted); });
+            } catch (Throwable t) {
+                FileLog.e(t);
+                final String errEx = "❌ " + MiogramLocale.get("Помилка: ", "Ошибка: ", "Error: ") + t.getMessage();
+                AndroidUtilities.runOnUIThread(() -> { if (callback != null) callback.run(errEx); });
             }
         });
     }

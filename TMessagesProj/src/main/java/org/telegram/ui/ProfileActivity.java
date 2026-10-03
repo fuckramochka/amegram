@@ -2166,6 +2166,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
     @Override
     public boolean onFragmentCreate() {
+        // --- Amegram Core: PROFILE_OPEN (payload: host fragment, opaque) ---
+        try {
+            app.amegram.core.hooks.HookRegistry.emit(
+                    app.amegram.core.hooks.HookPoint.PROFILE_OPEN, this);
+        } catch (Throwable ignore) {
+        }
         userId = arguments.getLong("user_id", 0);
         chatId = arguments.getLong("chat_id", 0);
         topicId = arguments.getLong("topic_id", 0);

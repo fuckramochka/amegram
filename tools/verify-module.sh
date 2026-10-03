@@ -35,7 +35,18 @@ app/amegram/module/features/guide/AmegramGuideFeature.java
 app/amegram/module/features/net/AmegramAntiBlockFeature.java
 app/amegram/module/features/profile/AmegramAmeProfileFeature.java
 app/amegram/module/features/system/AmegramHotfixFeature.java
-app/amegram/module/features/vault/AmegramDoubleBottomFeature.java"
+app/amegram/module/features/vault/AmegramDoubleBottomFeature.java
+app/amegram/core/AmegramCore.java
+app/amegram/core/config/CoreConfig.java
+app/amegram/core/hooks/HookPoint.java
+app/amegram/core/hooks/HookRegistry.java
+app/amegram/core/events/CoreEvents.java
+app/amegram/core/modules/ModuleManifest.java
+app/amegram/core/modules/ModuleManager.java
+app/amegram/core/security/Permissions.java
+app/amegram/core/security/AuditLog.java
+app/amegram/core/engine/PythonContract.java
+app/amegram/core/xposed/XposedCompat.java"
 
 ABS=""
 for f in $FILES; do ABS="$ABS $SRC/$f"; done
@@ -45,8 +56,8 @@ for f in $FILES; do ABS="$ABS $SRC/$f"; done
 UI_STUBS=/tmp/opencode/stubs-ui
 
 "$JAVAC" -version
-"$JAVAC" -proc:none -nowarn  -cp "$TC_ANDROID_JAR:$TC/json.jar" -sourcepath "$STUBS:$UI_STUBS" -d "$OUT" \
+"$JAVAC" -proc:none -nowarn  -cp "$TC_ANDROID_JAR:$TC/json.jar:$TC/bcprov.jar" -sourcepath "$STUBS:$UI_STUBS" -d "$OUT" \
   "$STUBS/org/telegram/messenger/ApplicationLoader.java" $ABS \
   "$SRC/app/amegram/module/ui/AmegramModulesActivity.java" \
   "$SRC/app/amegram/module/ui/AmegramWelcomeSheet.java"
-echo "MODULE-JAVAC-OK (18 module files)"
+echo "MODULE-JAVAC-OK ($SRC core+module files)"

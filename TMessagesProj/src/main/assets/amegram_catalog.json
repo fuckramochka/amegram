@@ -1,0 +1,14 @@
+{
+  "catalogVersion": 1,
+  "baseUrl": "https://github.com/fuckramochka/amegram/releases/download/modules",
+  "modules": [
+    {"id": "ghost", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 51200, "entry": "app.amegram.module.features.ghost.AmegramGhostController", "permissions": ["hook_net"], "title": "Режим призрака"},
+    {"id": "player", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 2097152, "entry": "app.amegram.module.features.player.AmegramPlayerFeature", "permissions": ["hook_ui"], "title": "Аудиоплеер + тексты"},
+    {"id": "badges", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 307200, "entry": "app.amegram.module.features.badges.AmegramBadgesFeature", "permissions": ["network"], "title": "Бейджики"},
+    {"id": "antiblock", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 409600, "entry": "app.amegram.module.features.net.AmegramAntiBlockFeature", "permissions": ["network", "hook_net"], "title": "Антиблок"},
+    {"id": "ameprofile", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 204800, "entry": "app.amegram.module.features.profile.AmegramAmeProfileFeature", "permissions": ["hook_ui", "storage"], "title": "Аме-профиль"},
+    {"id": "hotfix", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 51200, "entry": "app.amegram.module.features.system.AmegramHotfixFeature", "permissions": ["network"], "title": "Хотфиксы"},
+    {"id": "doublebottom", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 102400, "entry": "app.amegram.module.features.vault.AmegramDoubleBottomFeature", "permissions": [], "title": "Двойное дно"},
+    {"id": "guide", "version": "1.0.0", "minCoreAbi": 1, "kind": "builtin", "ramBudgetBytes": 102400, "entry": "app.amegram.module.features.guide.AmegramGuideFeature", "permissions": ["hook_ui"], "title": "Гид"}
+  ]
+}

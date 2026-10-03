@@ -3086,6 +3086,12 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public boolean onFragmentCreate() {
+        // --- Amegram Core: CHAT_OPEN (payload: host fragment, opaque) ---
+        try {
+            app.amegram.core.hooks.HookRegistry.emit(
+                    app.amegram.core.hooks.HookPoint.CHAT_OPEN, this);
+        } catch (Throwable ignore) {
+        }
         final long chatId = arguments.getLong("chat_id", 0);
         final long userId = arguments.getLong("user_id", 0);
         final int encId = arguments.getInt("enc_id", 0);

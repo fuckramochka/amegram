@@ -213,6 +213,13 @@ public class ItemOptions {
         if (fragment == null || fragment.getContext() == null) {
             return;
         }
+        // --- Amegram Core: MENU_BUILD (payload: host ItemOptions, opaque) ---
+        // NB: emit AFTER the null-guard so listeners never see a dead menu.
+        try {
+            app.amegram.core.hooks.HookRegistry.emit(
+                    app.amegram.core.hooks.HookPoint.MENU_BUILD, this);
+        } catch (Throwable ignore) {
+        }
         fragment = downFragment(fragment);
 
         this.fragment = fragment;

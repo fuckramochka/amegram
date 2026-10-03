@@ -419,6 +419,18 @@ public class ConnectionsManager extends BaseController {
             FileLog.d("send request " + object + " with token = " + requestToken);
         }
 
+        // --- Amegram Core: PRE_REQUEST extension point (no listeners = zero behavior change) ---
+        try {
+            app.amegram.core.events.CoreEvents.NetRequest coreReq =
+                    new app.amegram.core.events.CoreEvents.NetRequest(
+                            object.getClass().getSimpleName(), object);
+            if (app.amegram.core.hooks.HookRegistry.emit(
+                    app.amegram.core.hooks.HookPoint.PRE_REQUEST, coreReq) || coreReq.cancelled) {
+                FileLog.d("AmegramCore: request " + object.getClass().getSimpleName() + " cancelled by hook.");
+                return;
+            }
+        } catch (Throwable ignore) {
+        }
         // --- Ghost Mode ---
         AyuGhostUtils.InterceptResult interceptResult = AyuGhostUtils.interceptRequest(object, onCompleteOrig);
         if (interceptResult.blockRequest()) {

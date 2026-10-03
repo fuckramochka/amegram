@@ -1109,6 +1109,12 @@ public class DialogsSearchAdapter extends RecyclerListView.SelectionAdapter {
     }
 
     public void searchDialogs(String text, int folderId, boolean allowPublicPosts) {
+        // --- Amegram Core: SEARCH_QUERY (payload: query string) ---
+        try {
+            app.amegram.core.hooks.HookRegistry.emit(
+                    app.amegram.core.hooks.HookPoint.SEARCH_QUERY, text != null ? text : "");
+        } catch (Throwable ignore) {
+        }
         searchAdapterHelper.setAllowGlobalResults(globalResultsAllowed());
         if (text != null && text.equals(lastSearchText) && (folderId == this.folderId || TextUtils.isEmpty(text))) {
             return;

@@ -309,6 +309,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
         parentActivity = (LaunchActivity) context;
 
+        // --- Amegram Core: PLAYER_OPEN (payload: host alert, opaque) ---
+        try {
+            app.amegram.core.hooks.HookRegistry.emit(
+                    app.amegram.core.hooks.HookPoint.PLAYER_OPEN, this);
+        } catch (Throwable ignore) {
+        }
+
         TAG = DownloadController.getInstance(currentAccount).generateObserverTag();
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingDidReset);
         NotificationCenter.getInstance(currentAccount).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);

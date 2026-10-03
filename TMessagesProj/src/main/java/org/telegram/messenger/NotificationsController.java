@@ -4141,6 +4141,19 @@ public class NotificationsController extends BaseController implements Notificat
                 if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive() && !app.miogram.bridge.vault.MiogramDoubleBottomManager.isChatAllowed(currentAccount, message.getDialogId())) {
                     continue;
                 }
+                // --- Amegram Core: NOTIFICATION_INCOMING extension point ---
+                try {
+                    CharSequence preview = message.messageText;
+                    app.amegram.core.events.CoreEvents.Notification coreNotif =
+                            new app.amegram.core.events.CoreEvents.Notification(
+                                    message.getDialogId(), preview != null ? preview.toString() : "");
+                    if (app.amegram.core.hooks.HookRegistry.emit(
+                            app.amegram.core.hooks.HookPoint.NOTIFICATION_INCOMING, coreNotif)
+                            || coreNotif.suppressed) {
+                        continue;
+                    }
+                } catch (Throwable ignore) {
+                }
                 if (maxDate < message.messageOwner.date) {
                     lastNotification = message;
                     maxDate = message.messageOwner.date;

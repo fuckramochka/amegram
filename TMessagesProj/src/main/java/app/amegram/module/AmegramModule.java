@@ -22,6 +22,11 @@ public final class AmegramModule {
             return;
         }
         initialized = true;
+        // Новое ядро стартует вместе с модульной системой: одна точка входа.
+        try {
+            app.amegram.core.AmegramCore.init(context.getApplicationContext());
+        } catch (Throwable ignore) {
+        }
         AmegramConfig.init(context.getApplicationContext());
         AmegramFeatureManager.init(context.getApplicationContext());
         try {

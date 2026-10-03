@@ -275,6 +275,15 @@
 -keepclassmembers class org.telegram.messenger.SendMessagesHelper { *; }
 
 # --- MIOGRAM (app.miogram.*) ---
+# Amegram Core/Module reach these ONLY via reflection (Class.forName):
+# shrinking must not strip them even when no static call site remains.
+-keep class tw.nekomimi.nekogram.NekoConfig { *; }
+-keep class app.miogram.bridge.bypass.MiogramAntiBlockEngine { *; }
+-keep class app.amegram.bridge.ameprofile.AmeProfileEngine { *; }
+-keep class app.miogram.bridge.vault.MiogramDoubleBottomManager { *; }
+-keep class app.exteraless.plugins.PythonPluginsEngine { *; }
+-keep class app.amegram.core.** { *; }
+-keep class app.amegram.module.** { *; }
 # BouncyCastle: опциональные ссылки на JDK-классы (sun.*, jce) отсутствуют на Android
 -dontwarn org.bouncycastle.**
 # SQLCipher: JNI-биндинги резолвят классы по имени из нативного кода

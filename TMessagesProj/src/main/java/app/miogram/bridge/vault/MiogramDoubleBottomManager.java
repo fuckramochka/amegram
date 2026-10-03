@@ -3,12 +3,16 @@ package app.miogram.bridge.vault;
 import android.content.Context;
 import android.content.SharedPreferences;
 
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
+import org.bouncycastle.crypto.params.Argon2Parameters;
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.Utilities;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -59,10 +63,27 @@ public class MiogramDoubleBottomManager {
     }
 
     public static boolean isDuressActive() {
-        if (!isConfigured()) {
+        if (!isModuleEnabled() || !isConfigured()) {
             return false;
         }
         return isDuressActive || getPrefs().getBoolean(KEY_DURESS_ACTIVE, false);
+    }
+
+    /**
+     * Amegram Modules hub master switch ("doublebottom", default ON).
+     * Read by prefs FILE NAME so this file keeps zero new imports.
+     * OFF = duress workspace can never activate; stock lock screen applies.
+     */
+    public static boolean isModuleEnabled() {
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                return ctx.getSharedPreferences("amegram_module_prefs", Context.MODE_PRIVATE)
+                        .getBoolean("doublebottom_enabled", true);
+            }
+        } catch (Throwable ignore) {
+        }
+        return true;
     }
 
     public static void setDuressActive(boolean active) {
@@ -178,7 +199,57 @@ public class MiogramDoubleBottomManager {
         return VERDICT_NONE;
     }
 
+    /** Async PIN verdict for the lock screen. Argon2id must never run on the UI thread. */
+    public interface PinVerdictCallback {
+        void onVerdict(int verdict);
+    }
+
+    public static void checkPasscodeAsync(final String pin, final PinVerdictCallback callback) {
+        Utilities.globalQueue.postRunnable(() -> {
+            int verdict = VERDICT_NONE;
+            try {
+                // Timing equalization: always verify BOTH slots, even on first match.
+                boolean real = pin != null && !pin.isEmpty() && verifyPin(KEY_REAL_PIN, pin);
+                boolean duress = pin != null && !pin.isEmpty() && verifyPin(KEY_DURESS_PIN, pin);
+                verdict = real ? VERDICT_REAL : (duress ? VERDICT_DURESS : VERDICT_NONE);
+            } catch (Throwable t) {
+                verdict = VERDICT_NONE;
+            }
+            final int result = verdict;
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    callback.onVerdict(result);
+                } catch (Throwable ignore) {
+                }
+            });
+        });
+    }
+
     private static final String HASH_PREFIX = "v1$";
+    private static final String HASH2_PREFIX = "v2$argon2id$";
+
+    // Single memory-hard profile for unlock-time PINs: ~16 MiB, fast enough
+    // for the lock screen (~100-200ms off-thread), brutal for 4-digit brute force.
+    private static final int PIN_KDF_MEMORY_KIB = 16384;
+    private static final int PIN_KDF_ITERATIONS = 2;
+    private static final int PIN_KDF_PARALLELISM = 1;
+    private static final int PIN_SALT_BYTES = 16;
+    private static final int PIN_TAG_BYTES = 32;
+
+    private static byte[] argon2id(byte[] pinUtf8, byte[] salt) {
+        Argon2Parameters params = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+                .withVersion(Argon2Parameters.ARGON2_VERSION_13)
+                .withSalt(salt)
+                .withIterations(PIN_KDF_ITERATIONS)
+                .withMemoryAsKB(PIN_KDF_MEMORY_KIB)
+                .withParallelism(PIN_KDF_PARALLELISM)
+                .build();
+        Argon2BytesGenerator gen = new Argon2BytesGenerator();
+        gen.init(params);
+        byte[] out = new byte[PIN_TAG_BYTES];
+        gen.generateBytes(pinUtf8, out);
+        return out;
+    }
 
     private static void storePin(String key, String pin) {
         String trimmed = pin != null ? pin.trim() : "";
@@ -186,17 +257,32 @@ public class MiogramDoubleBottomManager {
             getPrefs().edit().remove(key).apply();
             return;
         }
-        byte[] salt = new byte[16];
+        // v2: memory-hard Argon2id verifier. PIN bytes are zeroized after use.
+        byte[] salt = new byte[PIN_SALT_BYTES];
         Utilities.random.nextBytes(salt);
-        String saltHex = Utilities.bytesToHex(salt);
-        byte[] both = (saltHex + "\n" + trimmed).getBytes(StandardCharsets.UTF_8);
-        String hashHex = Utilities.bytesToHex(Utilities.computeSHA256(both, 0, both.length));
-        getPrefs().edit().putString(key, HASH_PREFIX + saltHex + "$" + hashHex).apply();
+        byte[] pinBytes = trimmed.getBytes(StandardCharsets.UTF_8);
+        try {
+            byte[] tag = argon2id(pinBytes, salt);
+            try {
+                String record = HASH2_PREFIX
+                        + "m=" + PIN_KDF_MEMORY_KIB + ",t=" + PIN_KDF_ITERATIONS + ",p=" + PIN_KDF_PARALLELISM
+                        + "$" + Utilities.bytesToHex(salt) + "$" + Utilities.bytesToHex(tag);
+                getPrefs().edit().putString(key, record).apply();
+            } finally {
+                Arrays.fill(tag, (byte) 0);
+            }
+        } finally {
+            Arrays.fill(pinBytes, (byte) 0);
+            Arrays.fill(salt, (byte) 0);
+        }
     }
 
     private static boolean verifyPin(String key, String pin) {
         String stored = getPrefs().getString(key, "");
         if (stored == null || stored.isEmpty() || pin == null) return false;
+        if (stored.startsWith(HASH2_PREFIX)) {
+            return verifyPinV2(key, stored, pin);
+        }
         if (stored.startsWith(HASH_PREFIX)) {
             try {
                 String[] parts = stored.split("\\$");
@@ -205,7 +291,12 @@ public class MiogramDoubleBottomManager {
                 String expectHex = parts[2];
                 byte[] both = (saltHex + "\n" + pin).getBytes(StandardCharsets.UTF_8);
                 String actualHex = Utilities.bytesToHex(Utilities.computeSHA256(both, 0, both.length));
-                return constantTimeEquals(expectHex, actualHex);
+                boolean ok = constantTimeEquals(expectHex, actualHex);
+                if (ok) {
+                    // Transparent upgrade: v1 -> memory-hard v2 on next successful unlock.
+                    storePin(key, pin);
+                }
+                return ok;
             } catch (Throwable t) {
                 return false;
             }
@@ -218,6 +309,54 @@ public class MiogramDoubleBottomManager {
             } catch (Throwable ignored) {}
         }
         return ok;
+    }
+
+    private static boolean verifyPinV2(String key, String stored, String pin) {
+        try {
+            // v2$argon2id$m=..,t=..,p=..$saltHex$tagHex  -> 5 segments
+            String[] parts = stored.split("\\$");
+            if (parts.length != 5) return false;
+            String[] cost = parts[2].split(",");
+            int m = PIN_KDF_MEMORY_KIB, t = PIN_KDF_ITERATIONS, p = PIN_KDF_PARALLELISM;
+            for (String c : cost) {
+                if (c.startsWith("m=")) m = Integer.parseInt(c.substring(2));
+                else if (c.startsWith("t=")) t = Integer.parseInt(c.substring(2));
+                else if (c.startsWith("p=")) p = Integer.parseInt(c.substring(2));
+            }
+            byte[] salt = Utilities.hexToBytes(parts[3]);
+            byte[] expect = Utilities.hexToBytes(parts[4]);
+            byte[] pinBytes = pin.getBytes(StandardCharsets.UTF_8);
+            byte[] actual;
+            try {
+                Argon2Parameters params = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+                        .withVersion(Argon2Parameters.ARGON2_VERSION_13)
+                        .withSalt(salt)
+                        .withIterations(t)
+                        .withMemoryAsKB(m)
+                        .withParallelism(p)
+                        .build();
+                Argon2BytesGenerator gen = new Argon2BytesGenerator();
+                gen.init(params);
+                actual = new byte[expect.length];
+                gen.generateBytes(pinBytes, actual);
+            } finally {
+                Arrays.fill(pinBytes, (byte) 0);
+                Arrays.fill(salt, (byte) 0);
+            }
+            boolean ok = constantTimeBytesEquals(expect, actual);
+            Arrays.fill(actual, (byte) 0);
+            Arrays.fill(expect, (byte) 0);
+            return ok;
+        } catch (Throwable th) {
+            return false;
+        }
+    }
+
+    private static boolean constantTimeBytesEquals(byte[] a, byte[] b) {
+        if (a == null || b == null || a.length != b.length) return false;
+        int diff = 0;
+        for (int i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
+        return diff == 0;
     }
 
     private static boolean constantTimeEquals(String a, String b) {

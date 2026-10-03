@@ -42,6 +42,11 @@ public class MiogramArrowDrawable extends Drawable {
     private long lastDrawTime;
     private boolean isRunning;
 
+    // Cached bloom shader: RadialGradient creation per frame costs a GPU upload.
+    // Recreated only when geometry or badge type changes.
+    private RadialGradient cachedBloom;
+    private int cachedBloomKey;
+
     // 6 Dynamic Flying Micro-Particles: {baseX, speedFactor, swayFreq, swayAmp, isCross(1f/0f), yOffset}
     private static final float[][] DYNAMIC_PARTICLES = {
             { 2.5f, 0.00035f, 0.08f, 1.2f, 1.0f, 0.05f},
@@ -195,12 +200,19 @@ public class MiogramArrowDrawable extends Drawable {
             default:      bloomColor = 0x3814C8F9; break;
         }
 
-        RadialGradient gradient = new RadialGradient(
-                cx, cy, radius,
-                new int[]{bloomColor, Color.TRANSPARENT},
-                null,
-                Shader.TileMode.CLAMP
-        );
+        RadialGradient gradient = cachedBloom;
+        int key = (Float.floatToIntBits(cx) * 31 + Float.floatToIntBits(cy)) * 31
+                + Float.floatToIntBits(radius) ^ bloomColor;
+        if (gradient == null || key != cachedBloomKey) {
+            gradient = new RadialGradient(
+                    cx, cy, radius,
+                    new int[]{bloomColor, Color.TRANSPARENT},
+                    null,
+                    Shader.TileMode.CLAMP
+            );
+            cachedBloom = gradient;
+            cachedBloomKey = key;
+        }
         paintBloom.setShader(gradient);
         canvas.drawCircle(cx, cy, radius, paintBloom);
         paintBloom.setShader(null);

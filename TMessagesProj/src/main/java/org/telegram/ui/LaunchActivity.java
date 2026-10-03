@@ -487,6 +487,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
         super.onCreate(savedInstanceState);
         org.telegram.messenger.Utilities.globalQueue.postRunnable(() -> app.miogram.bridge.badge.MiogramSupabaseBridge.init());
+        try {
+            app.amegram.module.AmegramHooks.onLaunchCreated(this);
+        } catch (Throwable ignore) {
+        }
         app.miogram.bridge.perf.MiogramPerformanceOptimizer.applyProMotionRefreshRate(this);
         if (Build.VERSION.SDK_INT >= 24) {
             AndroidUtilities.isInMultiwindow = isInMultiWindowMode();

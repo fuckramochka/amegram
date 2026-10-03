@@ -16,9 +16,54 @@ import org.telegram.tgnet.tl.TL_stories;
 
 import tw.nekomimi.nekogram.NekoConfig;
 
+import app.amegram.module.features.ghost.AmegramGhostController;
+import app.amegram.module.features.ghost.AmegramGhostPolicy;
+
 public class AyuGhostUtils {
 
     private static final int OFFLINE_DELAY_MS = 1000;
+
+    // --- Amegram Module bridge (Etap 1): module wins when active, legacy NekoConfig is fallback.
+    // Keeps per-chat exclusions + fake-response behavior bit-for-bit. Zero cost when module dormant.
+    private static boolean effSendRead() {
+        try {
+            if (AmegramGhostController.isModuleActive()) {
+                return AmegramGhostPolicy.resolveSendRead(true, AmegramGhostController.hideRead(), NekoConfig.sendReadMessagePackets.Bool());
+            }
+        } catch (Throwable ignore) {
+        }
+        return NekoConfig.sendReadMessagePackets.Bool();
+    }
+
+    private static boolean effSendStories() {
+        try {
+            if (AmegramGhostController.isModuleActive()) {
+                return AmegramGhostPolicy.resolveSendStories(true, AmegramGhostController.hideRead(), NekoConfig.sendReadStoriesPackets.Bool());
+            }
+        } catch (Throwable ignore) {
+        }
+        return NekoConfig.sendReadStoriesPackets.Bool();
+    }
+
+    private static boolean effSendOnline() {
+        try {
+            if (AmegramGhostController.isModuleActive()) {
+                return AmegramGhostPolicy.resolveSendOnline(true, AmegramGhostController.hideOnline(), NekoConfig.sendOnlinePackets.Bool());
+            }
+        } catch (Throwable ignore) {
+        }
+        return NekoConfig.sendOnlinePackets.Bool();
+    }
+
+    private static boolean effSendTyping() {
+        try {
+            if (AmegramGhostController.isModuleActive()) {
+                return AmegramGhostPolicy.resolveSendTyping(true, AmegramGhostController.hideTyping(), NekoConfig.sendUploadProgress.Bool());
+            }
+        } catch (Throwable ignore) {
+        }
+        return NekoConfig.sendUploadProgress.Bool();
+    }
 
     public static Long getDialogId(TLRPC.InputPeer peer) {
         long dialogId;
@@ -150,30 +195,27 @@ public class AyuGhostUtils {
         boolean typingExcluded = dialogId != null && AyuGhostPreferences.getGhostModeTypingExclusion(dialogId);
 
         // Block typing if disabled
-        if (!NekoConfig.sendUploadProgress.Bool() && (object instanceof TLRPC.TL_messages_setTyping || object instanceof TLRPC.TL_messages_setEncryptedTyping)) {
-            if (!typingExcluded) {
-                FileLog.d("GhostMode: Blocking typing status request.");
-                return InterceptResult.Blocked(onCompleteOrig);
-            }
+        if (AmegramGhostPolicy.shouldBlockTyping(effSendTyping(), typingExcluded)
+                && (object instanceof TLRPC.TL_messages_setTyping || object instanceof TLRPC.TL_messages_setEncryptedTyping)) {
+            FileLog.d("GhostMode: Blocking typing status request.");
+            return InterceptResult.Blocked(onCompleteOrig);
         }
 
         // Block read receipts if disabled
-        if (!NekoConfig.sendReadMessagePackets.Bool() && (isReadMessageRequest(object))) {
+        if (!effSendRead() && (isReadMessageRequest(object))) {
             if (!AyuState.getAllowReadPacket() && !readExcluded) {
                 FileLog.d("GhostMode: Blocking read status request and sending fake response.");
                 sendFakeReadResponse(onCompleteOrig);
                 return InterceptResult.Blocked(onCompleteOrig);
             }
         }
-        if (!NekoConfig.sendReadStoriesPackets.Bool() && isReadStoriesRequest(object)) {
-            if (!readExcluded) {
-                FileLog.d("GhostMode: Blocking story read request.");
-                return InterceptResult.Blocked(onCompleteOrig);
-            }
+        if (AmegramGhostPolicy.shouldBlockStories(effSendStories(), readExcluded) && isReadStoriesRequest(object)) {
+            FileLog.d("GhostMode: Blocking story read request.");
+            return InterceptResult.Blocked(onCompleteOrig);
         }
 
         // Force offline if online status sending disabled
-        if (!NekoConfig.sendOnlinePackets.Bool() && object instanceof TL_account.updateStatus updateStatus) {
+        if (AmegramGhostPolicy.shouldForceOffline(effSendOnline()) && object instanceof TL_account.updateStatus updateStatus) {
             FileLog.d("GhostMode: Forcing offline status in updateStatus request.");
             updateStatus.offline = true;
         }
@@ -188,7 +230,7 @@ public class AyuGhostUtils {
     }
 
     private static void handleReadAfterSend(TLObject object) {
-        if (NekoConfig.markReadAfterSend.Bool() && !NekoConfig.sendReadMessagePackets.Bool()) {
+        if (NekoConfig.markReadAfterSend.Bool() && !effSendRead()) {
             TLRPC.InputPeer peer = extractPeerFromSendObject(object);
 
             if (peer != null) {

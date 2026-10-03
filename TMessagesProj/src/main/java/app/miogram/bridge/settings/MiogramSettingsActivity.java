@@ -40,6 +40,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
     // Group 1: Кастом, аудіо та функціонал
     private int headerCustomRow;
+    private int modulesRow;
     private int guideRow;
     private int visualsRow;
     private int playerEditRow;
@@ -76,6 +77,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
 
         // Оформлення
         headerCustomRow = addRow();
+        modulesRow = addRow();
         guideRow = addRow();
         visualsRow = addRow();
         playerEditRow = addRow();
@@ -107,7 +109,9 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     @Override
     public void onItemClick(View view, int position, float x, float y) {
         // Оформлення
-        if (position == guideRow) {
+        if (position == modulesRow) {
+            presentFragment(new app.amegram.module.ui.AmegramModulesActivity());
+        } else if (position == guideRow) {
             new app.miogram.bridge.onboarding.AmegramGuideSheet(getParentActivity(), false).show();
         } else if (position == visualsRow) {
             presentFragment(new MiogramVisualsActivity());
@@ -242,7 +246,13 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
                     // Оформлення
-                    if (position == guideRow) {
+                    if (position == modulesRow) {
+                        cell.setTextAndIcon(
+                                MiogramLocale.get("Модулі Amegram", "Модули Amegram", "Amegram Modules"),
+                                R.drawable.msg_plugins,
+                                true
+                        );
+                    } else if (position == guideRow) {
                         cell.setTextAndIcon(
                                 MiogramLocale.get("Гід знайомства з Amegram ໒꒱", "Знакомство с Amegram ໒꒱", "Amegram Welcome Guide ໒꒱"),
                                 R.drawable.msg_bot,

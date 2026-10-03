@@ -164,8 +164,28 @@ public class MiogramAntiBlockEngine implements NotificationCenter.NotificationCe
         loadRemoteServers();
     }
 
+    /**
+     * Amegram Modules hub flag, read by prefs FILE NAME (no new imports,
+     * vanilla-safe). Default true = today's autostart behavior preserved.
+     */
+    public static boolean isModuleEnabled() {
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                return ctx.getSharedPreferences("amegram_module_prefs", Context.MODE_PRIVATE)
+                        .getBoolean("antiblock_enabled", true);
+            }
+        } catch (Throwable ignore) {
+        }
+        return true;
+    }
+
     public void start() {
         if (isInitialized) return;
+        if (!isModuleEnabled()) {
+            FileLog.d(TAG + ": disabled via Amegram Modules hub, not starting");
+            return;
+        }
         isInitialized = true;
 
         for (int i = 0; i < UserConfig.MAX_ACCOUNT_COUNT; i++) {

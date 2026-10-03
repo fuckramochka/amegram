@@ -546,6 +546,8 @@ public class MiogramAppleMusicSheet extends BottomSheet implements NotificationC
     private static class SkipVectorButton extends View {
         private final boolean isPrev;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        // Hoisted: zero allocations in onDraw (120Hz-safe).
+        private final Path path = new Path();
 
         public SkipVectorButton(Context context, boolean isPrev) {
             super(context);
@@ -561,7 +563,7 @@ public class MiogramAppleMusicSheet extends BottomSheet implements NotificationC
             float cy = getHeight() / 2f;
             float size = AndroidUtilities.dp(14);
 
-            Path path = new Path();
+            path.rewind();
             if (isPrev) {
                 path.moveTo(cx, cy - size / 2f);
                 path.lineTo(cx - size / 2f, cy);
@@ -594,6 +596,10 @@ public class MiogramAppleMusicSheet extends BottomSheet implements NotificationC
         private boolean isPlaying = false;
         private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final Paint iconPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        // Hoisted: zero allocations in onDraw (120Hz-safe).
+        private final RectF leftBar = new RectF();
+        private final RectF rightBar = new RectF();
+        private final Path playPath = new Path();
 
         public PlayPauseVectorButton(Context context) {
             super(context);
@@ -624,15 +630,15 @@ public class MiogramAppleMusicSheet extends BottomSheet implements NotificationC
                 float barH = AndroidUtilities.dp(18);
                 float gap = AndroidUtilities.dp(5);
 
-                RectF leftBar = new RectF(cx - gap / 2f - barW, cy - barH / 2f, cx - gap / 2f, cy + barH / 2f);
-                RectF rightBar = new RectF(cx + gap / 2f, cy - barH / 2f, cx + gap / 2f + barW, cy + barH / 2f);
+                leftBar.set(cx - gap / 2f - barW, cy - barH / 2f, cx - gap / 2f, cy + barH / 2f);
+                rightBar.set(cx + gap / 2f, cy - barH / 2f, cx + gap / 2f + barW, cy + barH / 2f);
                 canvas.drawRoundRect(leftBar, AndroidUtilities.dp(2), AndroidUtilities.dp(2), iconPaint);
                 canvas.drawRoundRect(rightBar, AndroidUtilities.dp(2), AndroidUtilities.dp(2), iconPaint);
             } else {
                 float triH = AndroidUtilities.dp(20);
                 float triW = AndroidUtilities.dp(16);
 
-                Path playPath = new Path();
+                playPath.rewind();
                 playPath.moveTo(cx - triW / 3f, cy - triH / 2f);
                 playPath.lineTo(cx + triW * 2f / 3f, cy);
                 playPath.lineTo(cx - triW / 3f, cy + triH / 2f);
@@ -648,6 +654,8 @@ public class MiogramAppleMusicSheet extends BottomSheet implements NotificationC
     private static class HeartVectorButton extends View {
         private boolean isFavorite = false;
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        // Hoisted: zero allocations in onDraw (120Hz-safe).
+        private final Path heart = new Path();
 
         public HeartVectorButton(Context context) {
             super(context);
@@ -666,7 +674,7 @@ public class MiogramAppleMusicSheet extends BottomSheet implements NotificationC
             float cy = getHeight() / 2f;
             paint.setColor(isFavorite ? 0xFFFF4081 : 0x77FFFFFF);
 
-            Path heart = new Path();
+            heart.rewind();
             float w = AndroidUtilities.dp(16);
             float h = AndroidUtilities.dp(14);
 

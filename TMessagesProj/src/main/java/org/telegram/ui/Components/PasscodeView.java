@@ -941,6 +941,8 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         this.delegate = delegate;
     }
 
+    private volatile boolean duressChecking;
+
     private void processDone(boolean fingerprint) {
         if (fingerprint) {
             if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isConfigured() || MiogramGate.isConfigured()) {
@@ -962,7 +964,20 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             onPasscodeError();
             return;
         }
-        int duressVerdict = app.miogram.bridge.vault.MiogramDoubleBottomManager.checkPasscode(password);
+        // Duress-capable path: Argon2id verification runs off the UI thread.
+        // The verdict branches below are byte-for-byte the old sync logic.
+        if (duressChecking) {
+            return;
+        }
+        duressChecking = true;
+        final String duressPassword = password;
+        app.miogram.bridge.vault.MiogramDoubleBottomManager.checkPasscodeAsync(duressPassword, verdict -> {
+            duressChecking = false;
+            applyDuressVerdict(verdict, duressPassword);
+        });
+    }
+
+    private void applyDuressVerdict(int duressVerdict, String password) {
         if (duressVerdict == app.miogram.bridge.vault.MiogramDoubleBottomManager.VERDICT_REAL) {
             app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
             finishUnlock(false);

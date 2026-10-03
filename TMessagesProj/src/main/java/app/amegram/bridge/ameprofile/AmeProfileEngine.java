@@ -121,6 +121,10 @@ public class AmeProfileEngine {
     public static synchronized void ensureInitialized() {
         if (isInitialized) return;
         isInitialized = true;
+        if (!isModuleEnabled()) {
+            applyVanillaDefaults();
+            return;
+        }
         SharedPreferences sp = getPrefs();
         if (sp != null && sp.contains(KEY_RAW_XML)) {
             String xml = sp.getString(KEY_RAW_XML, null);
@@ -130,10 +134,59 @@ public class AmeProfileEngine {
             }
         }
         // Defaults
+        applyVanillaDefaults();
+    }
+
+    /** Module OFF (Amegram hub toggle) = stock Telegram profile, instantly. */
+    private static void applyVanillaDefaults() {
+        avatarAlign = "left";
+        avatarSize = 100;
+        avatarRotation = 0f;
+        avatarOffsetX = 0;
+        avatarOffsetY = 0;
+        nameAlign = "left";
+        nameRotation = 0f;
+        nameSize = 22;
+        thoughtAlign = "left";
+        thoughtRotation = 0f;
+        bannerVisible = false;
+        bannerType = "color";
+        bannerSrc = "";
+        bannerSound = false;
+        bannerLoop = true;
+        bannerHeight = 0;
+        bannerGradientColor1 = 0;
+        bannerGradientColor2 = 0;
+        bannerGradientColor3 = 0;
+        bannerGradientAngle = 0f;
+        bannerGradientSpeed = 0f;
         phoneVisible = !MiogramCustomUiPrefs.isHideRowPhone();
+        phoneColor = 0;
         usernameVisible = !MiogramCustomUiPrefs.isHideRowUsername();
+        usernameColor = 0;
         bioVisible = !MiogramCustomUiPrefs.isHideRowBio();
+        bioColor = 0;
+        birthdayVisible = true;
+        birthdayColor = 0;
+        presenceVisible = false;
         mediaTabsVisible = !MiogramCustomUiPrefs.isHideMediaTabs();
+        customCards.clear();
+    }
+
+    /**
+     * Reads the unified module flag by prefs FILE NAME (no imports, vanilla-safe).
+     * Default true = current behavior preserved for existing users.
+     */
+    public static boolean isModuleEnabled() {
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                return ctx.getSharedPreferences("amegram_module_prefs", Context.MODE_PRIVATE)
+                        .getBoolean("ameprofile_enabled", true);
+            }
+        } catch (Throwable ignore) {
+        }
+        return true;
     }
 
     // Getters for Layout & Transforms

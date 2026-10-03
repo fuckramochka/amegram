@@ -139,6 +139,25 @@ public class AmegramPatchManager {
     }
 
     /**
+     * Code (.dex) patches are opt-in. Reads the unified AmegramConfig first
+     * (reflection-free: same key in our own prefs file), defaults to false.
+     */
+    public static boolean isCodePatchAllowed() {
+        try {
+            android.content.Context ctx = org.telegram.messenger.ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                android.content.SharedPreferences p =
+                        ctx.getSharedPreferences("amegram_module_prefs", android.content.Context.MODE_PRIVATE);
+                if (p.contains("hotfix_code_patches")) {
+                    return p.getBoolean("hotfix_code_patches", false);
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        return false;
+    }
+
+    /**
      * Checks if a dynamic rule / bugfix guard is active.
      */
     public boolean isRuleEnabled(String ruleKey, boolean defaultValue) {
@@ -213,6 +232,14 @@ public class AmegramPatchManager {
                                 appliedPatchIds.add(patchId);
                                 newApplied++;
                             } else if ("bytecode".equalsIgnoreCase(type)) {
+                                // SECURITY: unsigned .dex from the network is remote code execution.
+                                // Blocked unless the user explicitly opts in via Amegram Modules hub
+                                // (AmegramConfig "hotfix_code_patches", default false).
+                                // Config-type patches are unaffected. See docs/AMEGRAM_MODULE_REBUILD.md.
+                                if (!isCodePatchAllowed()) {
+                                    FileLog.d("AmegramPatchManager: bytecode patch " + patchId + " skipped (code patches disabled)");
+                                    continue;
+                                }
                                 String dexUrl = patch.optString("url");
                                 if (!TextUtils.isEmpty(dexUrl)) {
                                     boolean success = downloadAndLoadDexPatch(patchId, dexUrl, patch.optString("entrypoint"));

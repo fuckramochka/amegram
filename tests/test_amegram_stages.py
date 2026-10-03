@@ -95,6 +95,16 @@ def test_launch_wires_welcome_hook():
     assert "guide_shown" in sheet
 
 
+def test_release_blockers_fixed():
+    heroku = _read(JAVA, "app", "miogram", "bridge", "userbot", "MiogramHerokuManager.java")
+    assert ".isMentioned()" not in heroku
+    assert ".messageOwner.mentioned" in heroku
+    lua = _read(JAVA, "app", "exteraless", "plugins", "LuaPluginsEngine.java")
+    assert ".getFromId()" not in lua
+    assert ".getSenderId()" in lua
+    assert "varargsOf(new LuaValue[]{" in lua
+
+
 def test_manager_registers_all_features():
     src = _read(JAVA, "app", "amegram", "module", "AmegramFeatureManager.java")
     for fqcn in ("AmegramGhostController", "AmegramPlayerFeature", "AmegramBadgesFeature",

@@ -591,7 +591,7 @@ public class MiogramHerokuManager {
             isTargeted = true;
         } else {
             long myId = UserConfig.getInstance(account).getClientUserId();
-            if (message.isMentioned()) {
+            if (message.messageOwner.mentioned) {
                 isTargeted = true;
             } else if (message.messageOwner.reply_to != null) {
                 if (message.replyMessageObject != null && message.replyMessageObject.getFromChatId() == myId) {

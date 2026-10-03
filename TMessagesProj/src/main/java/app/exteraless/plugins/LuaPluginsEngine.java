@@ -253,7 +253,7 @@ public class LuaPluginsEngine {
     public void dispatchMessageReceived(int account, MessageObject msg) {
         if (activePlugins.isEmpty() || msg == null || msg.messageOwner == null) return;
         long dialogId = msg.getDialogId();
-        long senderId = msg.getFromId();
+        long senderId = msg.getSenderId();
         String text = msg.messageText != null ? msg.messageText.toString() : "";
         int msgId = msg.getId();
 
@@ -261,12 +261,12 @@ public class LuaPluginsEngine {
             if (inst.plugin.enabled && inst.hasOnReceive) {
                 try {
                     LuaValue onReceive = inst.globals.get("on_message_receive");
-                    onReceive.call(
+                    onReceive.invoke(LuaValue.varargsOf(new LuaValue[]{
                         LuaValue.valueOf(dialogId),
                         LuaValue.valueOf(senderId),
                         LuaValue.valueOf(text),
                         LuaValue.valueOf(msgId)
-                    );
+                    }));
                 } catch (Throwable t) {
                     FileLog.e("LuaPlugin on_message_receive error: " + inst.plugin.id, t);
                 }

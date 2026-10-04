@@ -85,6 +85,7 @@ cat > "$STUBS/org/telegram/messenger/NotificationCenter.java" <<'EOF'
 package org.telegram.messenger;
 public class NotificationCenter {
     public static final int mainUserInfoChanged = 1;
+    public static NotificationCenter getInstance(int account) { return null; }
     public void postNotificationName(int id, Object... args) {}
 }
 EOF
@@ -198,6 +199,13 @@ cat > "$STUBS/org/telegram/messenger/ApplicationLoader.java" <<'EOF'
 package org.telegram.messenger;
 public class ApplicationLoader {
     public static android.content.Context applicationContext;
+}
+EOF
+# UserConfig.selectedAccount (UserConfig.java:28 public static int)
+cat > "$STUBS/org/telegram/messenger/UserConfig.java" <<'EOF'
+package org.telegram.messenger;
+public class UserConfig {
+    public static int selectedAccount;
 }
 EOF
 

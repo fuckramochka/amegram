@@ -2,7 +2,7 @@ package tw.nekomimi.nekogram.menu.ghostmode;
 
 import static org.telegram.messenger.LocaleController.getString;
 
-import com.radolyn.ayugram.utils.AyuGhostPreferences;
+import app.amegram.core.net.GhostExclusions;
 
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
@@ -33,31 +33,31 @@ public class GhostModeExclusionPopupWrapper {
         }
 
         defaultItem = ActionBarMenuItem.addItem(windowLayout, 0, getString(R.string.Default), true, resourcesProvider);
-        defaultItem.setChecked(!AyuGhostPreferences.getGhostModeTypingExclusion(chatId) && !AyuGhostPreferences.getGhostModeReadExclusion(chatId));
+        defaultItem.setChecked(!GhostExclusions.getTypingExclusion(chatId) && !GhostExclusions.getReadExclusion(chatId));
         defaultItem.setOnClickListener(view -> {
-            AyuGhostPreferences.setGhostModeTypingExclusion(chatId, false);
-            AyuGhostPreferences.setGhostModeReadExclusion(chatId, false);
+            GhostExclusions.setTypingExclusion(chatId, false);
+            GhostExclusions.setReadExclusion(chatId, false);
             updateItems();
         });
 
         readExclusionItem = ActionBarMenuItem.addItem(windowLayout, 0, getString(R.string.GhostModeExcludeRead), true, resourcesProvider);
-        readExclusionItem.setChecked(AyuGhostPreferences.getGhostModeReadExclusion(chatId));
+        readExclusionItem.setChecked(GhostExclusions.getReadExclusion(chatId));
         readExclusionItem.setOnClickListener(view -> {
-            AyuGhostPreferences.setGhostModeReadExclusion(chatId, !AyuGhostPreferences.getGhostModeReadExclusion(chatId));
+            GhostExclusions.setReadExclusion(chatId, !GhostExclusions.getReadExclusion(chatId));
             updateItems();
         });
 
         typingExclusionItem = ActionBarMenuItem.addItem(windowLayout, 0, getString(R.string.GhostModeExcludeTyping), true, resourcesProvider);
-        typingExclusionItem.setChecked(AyuGhostPreferences.getGhostModeTypingExclusion(chatId));
+        typingExclusionItem.setChecked(GhostExclusions.getTypingExclusion(chatId));
         typingExclusionItem.setOnClickListener(view -> {
-            AyuGhostPreferences.setGhostModeTypingExclusion(chatId, !AyuGhostPreferences.getGhostModeTypingExclusion(chatId));
+            GhostExclusions.setTypingExclusion(chatId, !GhostExclusions.getTypingExclusion(chatId));
             updateItems();
         });
     }
 
     public void updateItems() {
-        boolean readExcluded = AyuGhostPreferences.getGhostModeReadExclusion(chatId);
-        boolean typingExcluded = AyuGhostPreferences.getGhostModeTypingExclusion(chatId);
+        boolean readExcluded = GhostExclusions.getReadExclusion(chatId);
+        boolean typingExcluded = GhostExclusions.getTypingExclusion(chatId);
 
         defaultItem.setChecked(!typingExcluded && !readExcluded);
         readExclusionItem.setChecked(readExcluded);

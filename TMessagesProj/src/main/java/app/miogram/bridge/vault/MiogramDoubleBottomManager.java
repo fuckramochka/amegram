@@ -204,8 +204,15 @@ public class MiogramDoubleBottomManager {
         void onVerdict(int verdict);
     }
 
+    private static final java.util.concurrent.ExecutorService PIN_EXECUTOR =
+            java.util.concurrent.Executors.newSingleThreadExecutor(r -> {
+                Thread t = new Thread(r, "doublebottom-pin");
+                t.setPriority(Thread.NORM_PRIORITY - 1);
+                return t;
+            });
+
     public static void checkPasscodeAsync(final String pin, final PinVerdictCallback callback) {
-        Utilities.globalQueue.postRunnable(() -> {
+        PIN_EXECUTOR.execute(() -> {
             int verdict = VERDICT_NONE;
             try {
                 // Module OFF: duress slot ignored (real PIN still unlocks).

@@ -161,7 +161,7 @@ def test_doublebottom_argon2_verifiers():
     assert '"v2$argon2id$"' in src or "HASH2_PREFIX" in src
     assert "parts.length != 5" in src  # v2 has 5 $-segments
     assert "checkPasscodeAsync" in src and "PinVerdictCallback" in src
-    assert "globalQueue" in src and "runOnUIThread" in src
+    assert "PIN_EXECUTOR" in src and "runOnUIThread" in src
     # timing equalization: both slots always verified
     assert "verifyPin(KEY_REAL_PIN" in src and "verifyPin(KEY_DURESS_PIN" in src
     # v1 transparent upgrade path preserved

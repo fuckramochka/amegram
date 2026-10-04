@@ -25,9 +25,10 @@ def test_core_has_zero_legacy_imports():
             with open(path, encoding="utf-8", errors="replace") as fh:
                 src = fh.read()
             imports = [l for l in src.splitlines() if l.strip().startswith("import ")]
+            # Legacy = шари форків. org.telegram (чиста база), android/java/BC/json — можна.
             bad = [l for l in imports
                    if "app.miogram" in l or "app.exteraless" in l or "nekogram" in l
-                   or "org.telegram" in l or "com.radolyn" in l or "com.exteragram" in l]
+                   or "com.radolyn" in l or "com.exteragram" in l]
             assert not bad, (fn, bad)
 
 
@@ -199,3 +200,18 @@ def test_legacy_settings_hide_disabled():
     assert '"badges_enabled", true' in src
     assert "playerEditRow = -1" in src
     assert "updateRows();" in src.split("public void onResume()")[1]
+
+
+def test_ghost_rewritten_from_scratch():
+    filt = _core("net/GhostFilter.java")
+    imports = [l for l in filt.splitlines() if l.strip().startswith("import ")]
+    bad = [l for l in imports if "miogram" in l or "exteraless" in l
+           or "nekogram" in l or "radolyn" in l]
+    assert not bad, bad
+    for token in ("allowReadOnce", "isReadHidden", "performStatusRequest",
+                  "markReadOnServer", "offlineAfterSend", "markReadAfterSend"):
+        assert token in filt, token
+    excl = _core("net/GhostExclusions.java")
+    assert "nkmrcfg" in excl and "ghostModeReadExclusion_" in excl
+    conn = _read(JAVA, "org", "telegram", "tgnet", "ConnectionsManager.java")
+    assert "GhostFilter.intercept" in conn

@@ -3890,13 +3890,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             req.flags |= 2;
             req.big = true;
         }
-        // --- Ghost Mode ---
-        if (req.msg_id != 0 && NekoConfig.markReadAfterSend.Bool() && !NekoConfig.sendReadMessagePackets.Bool()) {
-            if (!AyuGhostPreferences.getGhostModeReadExclusion(AyuGhostUtils.getDialogId(req.peer))) {
-                AyuGhostUtils.markReadOnServer(req.msg_id, req.peer, false);
-            }
-        }
-        // --- Ghost Mode ---
+        // --- Ghost Mode (covered by Amegram Core GhostFilter.intercept; block removed, no double-send) ---
         getConnectionsManager().sendRequest(req, (response, error) -> {
             if (response != null) {
                 getMessagesController().processUpdates((TLRPC.Updates) response, false);

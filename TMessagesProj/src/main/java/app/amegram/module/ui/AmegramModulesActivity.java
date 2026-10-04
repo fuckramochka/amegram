@@ -64,6 +64,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private int plusRow;
 
     private int headerGhostRow;
+    private int ghostOfflineRow;
     private int ghostReadRow;
     private int ghostOnlineRow;
     private int ghostTypingRow;
@@ -129,12 +130,13 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
         if (ghostOn()) {
             headerGhostRow = addRow();
+            ghostOfflineRow = addRow();
             ghostReadRow = addRow();
             ghostOnlineRow = addRow();
             ghostTypingRow = addRow();
             ghostInfoRow = addRow();
         } else {
-            headerGhostRow = ghostReadRow = ghostOnlineRow = ghostTypingRow = ghostInfoRow = -1;
+            headerGhostRow = ghostOfflineRow = ghostReadRow = ghostOnlineRow = ghostTypingRow = ghostInfoRow = -1;
         }
         if (vaultOn()) {
             vaultRow = addRow();
@@ -258,6 +260,12 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(v);
             }
+        } else if (position == ghostOfflineRow) {
+            boolean v = !AmegramConfig.getBool("ghost_offline_after_send", false);
+            AmegramConfig.setBool("ghost_offline_after_send", v);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(v);
+            }
         } else if (position == vaultRow) {
             try {
                 presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
@@ -355,7 +363,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             if (cardAt(position) != null) {
                 return TYPE_MODULE_CARD;
             }
-            if (position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
+            if (position == ghostOfflineRow || position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
                     || position == playerVisualizerRow || position == hotfixCodeRow) {
                 return TYPE_CHECK;
             }
@@ -527,7 +535,10 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_CHECK: {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == ghostReadRow) {
+                    if (position == ghostOfflineRow) {
+                        cell.setTextAndCheck("Уходити в офлайн після відправки",
+                                AmegramConfig.getBool("ghost_offline_after_send", false), false);
+                    } else if (position == ghostReadRow) {
                         cell.setTextAndCheck("\u0421\u043a\u0440\u0438\u0432\u0430\u0442\u044c \u043f\u0440\u043e\u0447\u0442\u0435\u043d\u0438\u0435",
                                 AmegramGhostController.hideRead(), true);
                     } else if (position == ghostOnlineRow) {

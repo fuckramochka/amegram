@@ -942,6 +942,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
     }
 
     private volatile boolean duressChecking;
+    private volatile int duressCheckGen;
 
     private void processDone(boolean fingerprint) {
         if (fingerprint) {
@@ -970,11 +971,22 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             return;
         }
         duressChecking = true;
+        final int gen = ++duressCheckGen;
         final String duressPassword = password;
         app.miogram.bridge.vault.MiogramDoubleBottomManager.checkPasscodeAsync(duressPassword, verdict -> {
+            if (gen != duressCheckGen) {
+                return;
+            }
             duressChecking = false;
             applyDuressVerdict(verdict, duressPassword);
         });
+        // Watchdog: never leave the lock screen stuck if the verdict is lost.
+        AndroidUtilities.runOnUIThread(() -> {
+            if (gen == duressCheckGen && duressChecking) {
+                duressChecking = false;
+                onPasscodeError();
+            }
+        }, 5000);
     }
 
     private void applyDuressVerdict(int duressVerdict, String password) {

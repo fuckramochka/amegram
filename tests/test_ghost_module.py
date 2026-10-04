@@ -48,8 +48,9 @@ def test_interceptor_delegates_to_module():
 
 def test_single_chokepoint_preserved():
     src = _read(CONN)
-    assert src.count("AyuGhostUtils.interceptRequest") == 1
-    assert "AmegramHooks" not in src  # ghost stays behind Ayu chokepoint in Etap 1
+    assert src.count("GhostFilter.intercept") == 1
+    assert "AyuGhostUtils.interceptRequest" not in src
+    assert "AmegramHooks" not in src  # ghost stays behind the single chokepoint
 
 
 def test_no_new_view_hacks():

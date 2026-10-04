@@ -431,13 +431,14 @@ public class ConnectionsManager extends BaseController {
             }
         } catch (Throwable ignore) {
         }
-        // --- Ghost Mode ---
-        AyuGhostUtils.InterceptResult interceptResult = AyuGhostUtils.interceptRequest(object, onCompleteOrig);
-        if (interceptResult.blockRequest()) {
+        // --- Ghost Mode (Amegram Core filter, from scratch) ---
+        app.amegram.core.net.GhostFilter.Result ghostResult =
+                app.amegram.core.net.GhostFilter.intercept(object, onCompleteOrig);
+        if (ghostResult.blocked) {
             FileLog.d("GhostMode: Request " + object.getClass().getSimpleName() + " blocked by handler.");
             return;
         }
-        final var onComplete = interceptResult.effectiveOnComplete();
+        final var onComplete = ghostResult.callback;
         // --- Ghost Mode ---
 
         // --- exteraless plugins: pre_request_hook (CANCEL = запрос не уходит) ---

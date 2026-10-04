@@ -41,6 +41,15 @@ public class AmegramGhostController implements AmegramFeature {
     @Override
     public void setEnabled(boolean enabled) {
         AmegramConfig.setBool("ghost_enabled", enabled);
+        mirrorLegacy(enabled);
+    }
+
+    private static void mirrorLegacy(boolean enabled) {
+        try {
+            Class<?> neko = Class.forName("tw.nekomimi.nekogram.NekoConfig");
+            neko.getMethod("setGhostMode", boolean.class).invoke(null, enabled);
+        } catch (Throwable ignore) {
+        }
     }
 
     @Override
@@ -150,5 +159,30 @@ public class AmegramGhostController implements AmegramFeature {
 
     public static void setHideTyping(boolean v) {
         AmegramConfig.setBool("ghost_hide_typing", v);
+    }
+
+    /** Master toggle (GhostPill): flips the module, mirrors legacy Neko flags
+     * via reflection so legacy indicators stay truthful. Per-channel choices preserved. */
+    public static void toggleMaster() {
+        boolean next = !isOn();
+        new AmegramGhostController().setEnabled(next);
+        try {
+            Class<?> neko = Class.forName("tw.nekomimi.nekogram.NekoConfig");
+            neko.getMethod("setGhostMode", boolean.class).invoke(null, next);
+        } catch (Throwable ignore) {
+        }
+        try {
+            android.os.Handler h = new android.os.Handler(android.os.Looper.getMainLooper());
+            h.post(() -> {
+                try {
+                    org.telegram.messenger.NotificationCenter.getInstance(
+                            org.telegram.messenger.UserConfig.selectedAccount)
+                            .postNotificationName(
+                                    org.telegram.messenger.NotificationCenter.mainUserInfoChanged);
+                } catch (Throwable ignore) {
+                }
+            });
+        } catch (Throwable ignore) {
+        }
     }
 }

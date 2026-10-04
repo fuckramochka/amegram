@@ -114,8 +114,8 @@ public class GhostPill extends BasePill implements NotificationCenter.Notificati
 
     @Override
     public void onPillClicked() {
-        final boolean wasActive = NekoConfig.isGhostModeActive();
-        NekoConfig.toggleGhostMode();
+        final boolean wasActive = app.amegram.module.features.ghost.AmegramGhostController.isOn();
+        app.amegram.module.features.ghost.AmegramGhostController.toggleMaster();
         onUpdateData(true);
         NotificationCenter.getInstance(UserConfig.selectedAccount)
                 .postNotificationName(NotificationCenter.mainUserInfoChanged);

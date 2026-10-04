@@ -1,17 +1,32 @@
 package app.amegram.module.ui;
 
 import android.content.Context;
+import android.graphics.Color;
+import android.graphics.drawable.GradientDrawable;
+import android.util.TypedValue;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.ui.Cells.TextCell;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.RecyclerListView;
+import org.telegram.ui.Components.Switch;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import app.amegram.core.modules.ModuleManager;
 import app.amegram.module.AmegramConfig;
 import app.amegram.module.AmegramFeature;
 import app.amegram.module.AmegramFeatureManager;
@@ -21,15 +36,34 @@ import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 /**
- * Amegram -> Modules hub. The single native-looking place where the user
- * picks "only player + ghost": each row shows RAM cost and downloads
- * nothing until enabled. Everything here is lazy — the hub itself loads
- * no feature views.
+ * Amegram -> Modules hub (spec):
+ * - зверху картки скачаних модулів (стиль як у каталозі плагінів):
+ *   назва, версія, опис, навантаження, перемикач, «Видалити»;
+ * - кнопка «+» докачує з каталогу GitHub;
+ * - секції налаштувань існують тільки для увімкнених модулів
+ *   (вимкнув/видалив — розділ зникає, рядки перебудовуються);
+ * - нижче — плагіни; все нативно (TextCell/Switch/Theme).
+ * При всіх увімкнених — поведінка 1:1 як нинішній мод.
  */
 public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
+    private static final int TYPE_MODULE_CARD = 100;
+
+    private static final String[] CARD_ORDER = {
+            "ghost", "player", "badges", "antiblock", "ameprofile", "hotfix", "doublebottom"
+    };
+
+    private static class CardRef {
+        String id;
+        boolean isAmod;
+    }
+
+    private List<CardRef> cardRefs;
+
+    private int headerModulesRow;
+    private int plusRow;
+
     private int headerGhostRow;
-    private int ghostMasterRow;
     private int ghostReadRow;
     private int ghostOnlineRow;
     private int ghostTypingRow;
@@ -37,12 +71,10 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private int ghostInfoRow;
 
     private int headerMediaRow;
-    private int playerRow;
     private int playerVisualizerRow;
-    private int badgesRow;
-    private int antiblockRow;
-    private int ameprofileRow;
-    private int mediaInfoRow;
+
+    private int headerPluginsRow;
+    private int pluginsRow;
 
     private int headerSystemRow;
     private int guideRow;
@@ -55,25 +87,70 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
         return "Amegram \u2022 \u041c\u043e\u0434\u0443\u043b\u0438";
     }
 
+    private boolean ghostOn() {
+        return AmegramConfig.getBool("ghost_enabled", false);
+    }
+
+    private boolean playerOn() {
+        return AmegramConfig.getBool("player_enabled", true);
+    }
+
+    private boolean vaultOn() {
+        return AmegramConfig.getBool("doublebottom_enabled", true);
+    }
+
     @Override
     protected void updateRows() {
         super.updateRows();
+        if (cardRefs == null) {
+            cardRefs = new ArrayList<>();
+        }
+        cardRefs.clear();
 
-        headerGhostRow = addRow();
-        ghostMasterRow = addRow();
-        ghostReadRow = addRow();
-        ghostOnlineRow = addRow();
-        ghostTypingRow = addRow();
-        vaultRow = addRow();
-        ghostInfoRow = addRow();
+        headerModulesRow = addRow();
+        for (String id : CARD_ORDER) {
+            CardRef ref = new CardRef();
+            ref.id = id;
+            ref.isAmod = false;
+            cardRefs.add(ref);
+            addRow();
+        }
+        try {
+            for (ModuleManager.Installed inst : ModuleManager.all()) {
+                CardRef ref = new CardRef();
+                ref.id = inst.manifest.id;
+                ref.isAmod = true;
+                cardRefs.add(ref);
+                addRow();
+            }
+        } catch (Throwable ignore) {
+        }
+        plusRow = addRow();
 
-        headerMediaRow = addRow();
-        playerRow = addRow();
-        playerVisualizerRow = addRow();
-        badgesRow = addRow();
-        antiblockRow = addRow();
-        ameprofileRow = addRow();
-        mediaInfoRow = addRow();
+        if (ghostOn()) {
+            headerGhostRow = addRow();
+            ghostReadRow = addRow();
+            ghostOnlineRow = addRow();
+            ghostTypingRow = addRow();
+            ghostInfoRow = addRow();
+        } else {
+            headerGhostRow = ghostReadRow = ghostOnlineRow = ghostTypingRow = ghostInfoRow = -1;
+        }
+        if (vaultOn()) {
+            vaultRow = addRow();
+        } else {
+            vaultRow = -1;
+        }
+
+        if (playerOn()) {
+            headerMediaRow = addRow();
+            playerVisualizerRow = addRow();
+        } else {
+            headerMediaRow = playerVisualizerRow = -1;
+        }
+
+        headerPluginsRow = addRow();
+        pluginsRow = addRow();
 
         headerSystemRow = addRow();
         guideRow = addRow();
@@ -82,15 +159,87 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
         versionRow = addRow();
     }
 
+    private CardRef cardAt(int position) {
+        if (cardRefs == null) {
+            return null;
+        }
+        int idx = position - headerModulesRow - 1;
+        if (idx < 0 || idx >= cardRefs.size()) {
+            return null;
+        }
+        return cardRefs.get(idx);
+    }
+
+    private static String descFor(String id) {
+        if ("ghost".equals(id)) {
+            return "Невидимка: читай непомітно (read/online/typing)";
+        } else if ("player".equals(id)) {
+            return "Аудіоплеєр з текстами пісень і пресетами";
+        } else if ("badges".equals(id)) {
+            return "10 піксельних бейджів з хмарною синхронізацією";
+        } else if ("antiblock".equals(id)) {
+            return "Обхід блокувань: зонди + fallback-проксі";
+        } else if ("ameprofile".equals(id)) {
+            return "Живий XML-профіль: банери, картки, стиль";
+        } else if ("hotfix".equals(id)) {
+            return "Швидкі фікси без перевстановлення APK";
+        } else if ("doublebottom".equals(id)) {
+            return "Два PIN: свій відкриває все, тривожний — decoy";
+        }
+        return "Модуль з каталогу";
+    }
+
+    private static String versionFor(CardRef ref) {
+        if (ref.isAmod) {
+            try {
+                for (ModuleManager.Installed inst : ModuleManager.all()) {
+                    if (inst.manifest.id.equals(ref.id)) {
+                        return "v" + inst.manifest.version;
+                    }
+                }
+            } catch (Throwable ignore) {
+            }
+            return "";
+        }
+        return "v" + AmegramModule.MODULE_VERSION;
+    }
+
+    private static boolean enabledFor(CardRef ref) {
+        if (ref.isAmod) {
+            return AmegramConfig.getBool("amod_" + ref.id, true);
+        }
+        AmegramFeature f = AmegramFeatureManager.get(ref.id);
+        return f != null && f.isEnabled();
+    }
+
+    private static String loadFor(CardRef ref) {
+        String base;
+        if (ref.isAmod) {
+            base = "з каталогу";
+        } else {
+            AmegramFeature f = AmegramFeatureManager.get(ref.id);
+            base = f != null ? f.ramEstimate() : "";
+        }
+        return base + (enabledFor(ref) ? " \u2022 \u0443\u0432\u0456\u043c\u043a\u043d\u0435\u043d\u043e" : " \u2022 \u0441\u043f\u0438\u0442\u044c");
+    }
+
+    private static String titleFor(CardRef ref) {
+        if (!ref.isAmod) {
+            AmegramFeature f = AmegramFeatureManager.get(ref.id);
+            if (f != null) {
+                return f.title();
+            }
+        }
+        return ref.id;
+    }
+
     @Override
     public void onItemClick(View view, int position, float x, float y) {
-        if (position == ghostMasterRow) {
-            boolean v = !AmegramConfig.getBool("ghost_enabled", false);
-            AmegramFeatureManager.setEnabled("ghost", v);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(v);
+        if (position == plusRow) {
+            try {
+                new ModuleCatalogSheet(getParentActivity(), this::refresh).show();
+            } catch (Throwable ignore) {
             }
-            refresh();
         } else if (position == ghostReadRow) {
             boolean v = !AmegramGhostController.hideRead();
             AmegramGhostController.setHideRead(v);
@@ -110,48 +259,21 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 ((TextCheckCell) view).setChecked(v);
             }
         } else if (position == vaultRow) {
-            if (!AmegramConfig.getBool("doublebottom_enabled", true)) {
-                AmegramFeatureManager.setEnabled("doublebottom", true);
-                refresh();
-            }
             try {
                 presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
             } catch (Throwable ignore) {
             }
-        } else if (position == playerRow) {
-            boolean v = !AmegramConfig.getBool("player_enabled", true);
-            AmegramFeatureManager.setEnabled("player", v);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(v);
-            }
-            refresh();
         } else if (position == playerVisualizerRow) {
             boolean v = !AmegramConfig.getBool("player_visualizer", false);
             AmegramConfig.setBool("player_visualizer", v);
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(v);
             }
-        } else if (position == badgesRow) {
-            boolean v = !AmegramConfig.getBool("badges_enabled", true);
-            AmegramFeatureManager.setEnabled("badges", v);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(v);
+        } else if (position == pluginsRow) {
+            try {
+                presentFragment(new app.exteraless.plugins.ui.PluginsActivity());
+            } catch (Throwable ignore) {
             }
-            refresh();
-        } else if (position == antiblockRow) {
-            boolean v = !AmegramConfig.getBool("antiblock_enabled", true);
-            AmegramFeatureManager.setEnabled("antiblock", v);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(v);
-            }
-            refresh();
-        } else if (position == ameprofileRow) {
-            boolean v = !AmegramConfig.getBool("ameprofile_enabled", true);
-            AmegramFeatureManager.setEnabled("ameprofile", v);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(v);
-            }
-            refresh();
         } else if (position == guideRow) {
             try {
                 new AmegramWelcomeSheet(getParentActivity()).show();
@@ -172,13 +294,49 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
         }
     }
 
+    private void toggleCard(CardRef ref, boolean on) {
+        if (ref.isAmod) {
+            AmegramConfig.setBool("amod_" + ref.id, on);
+        } else {
+            AmegramFeatureManager.setEnabled(ref.id, on);
+        }
+        refresh();
+    }
+
+    private void deleteCard(CardRef ref) {
+        if (!ref.isAmod) {
+            return;
+        }
+        try {
+            ModuleManager.uninstall(ref.id);
+        } catch (Throwable ignore) {
+        }
+        refresh();
+    }
+
     private void refresh() {
         try {
+            updateRows();
             if (listAdapter != null) {
                 listAdapter.notifyDataSetChanged();
             }
             getNotificationCenter().postNotificationName(NotificationCenter.mainUserInfoChanged);
         } catch (Throwable ignore) {
+        }
+    }
+
+    private static class CardHolder extends RecyclerListView.Holder {
+        TextView title;
+        TextView version;
+        TextView desc;
+        TextView load;
+        Switch toggle;
+        TextView deleteBtn;
+        TextView rollbackBtn;
+        CardRef ref;
+
+        CardHolder(View itemView) {
+            super(itemView);
         }
     }
 
@@ -189,31 +347,154 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == headerGhostRow || position == headerMediaRow || position == headerSystemRow) {
+            if (position == headerModulesRow || position == headerGhostRow
+                    || position == headerMediaRow || position == headerPluginsRow
+                    || position == headerSystemRow) {
                 return TYPE_HEADER;
             }
-            if (position == ghostMasterRow || position == ghostReadRow || position == ghostOnlineRow
-                    || position == ghostTypingRow || position == playerRow
-                    || position == playerVisualizerRow || position == badgesRow
-                    || position == antiblockRow || position == ameprofileRow
-                    || position == hotfixCodeRow) {
+            if (cardAt(position) != null) {
+                return TYPE_MODULE_CARD;
+            }
+            if (position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
+                    || position == playerVisualizerRow || position == hotfixCodeRow) {
                 return TYPE_CHECK;
             }
-            if (position == ghostInfoRow || position == mediaInfoRow) {
+            if (position == ghostInfoRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_TEXT;
         }
 
+        @NonNull
+        @Override
+        public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+            if (viewType == TYPE_MODULE_CARD) {
+                Context context = parent.getContext();
+                LinearLayout card = new LinearLayout(context);
+                card.setOrientation(LinearLayout.VERTICAL);
+                GradientDrawable cardBg = new GradientDrawable();
+                try {
+                    cardBg.setColor(getThemedColor(
+                            org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhite));
+                } catch (Throwable t) {
+                    cardBg.setColor(0xFFFFFFFF);
+                }
+                cardBg.setCornerRadius(AndroidUtilities.dp(16));
+                cardBg.setStroke(AndroidUtilities.dp(1), Color.argb(25, 128, 128, 128));
+                card.setBackground(cardBg);
+                card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12),
+                        AndroidUtilities.dp(16), AndroidUtilities.dp(12));
+
+                LinearLayout topRow = new LinearLayout(context);
+                topRow.setOrientation(LinearLayout.HORIZONTAL);
+                topRow.setGravity(Gravity.CENTER_VERTICAL);
+
+                LinearLayout titleBox = new LinearLayout(context);
+                titleBox.setOrientation(LinearLayout.VERTICAL);
+
+                LinearLayout nameRow = new LinearLayout(context);
+                nameRow.setOrientation(LinearLayout.HORIZONTAL);
+                nameRow.setGravity(Gravity.CENTER_VERTICAL);
+                TextView title = new TextView(context);
+                title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
+                title.setTypeface(AndroidUtilities.bold());
+                nameRow.addView(title, LayoutHelper.createLinear(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                TextView version = new TextView(context);
+                version.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
+                version.setPadding(AndroidUtilities.dp(6), 0, 0, 0);
+                nameRow.addView(version, LayoutHelper.createLinear(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                titleBox.addView(nameRow, LayoutHelper.createLinear(
+                        LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                TextView desc = new TextView(context);
+                desc.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+                titleBox.addView(desc, LayoutHelper.createLinear(
+                        LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+                topRow.addView(titleBox, LayoutHelper.createLinear(
+                        0, LayoutHelper.WRAP_CONTENT, 1.0f));
+
+                Switch toggle = new Switch(context);
+                topRow.addView(toggle, LayoutHelper.createLinear(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
+                card.addView(topRow, LayoutHelper.createLinear(
+                        LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+                LinearLayout bottomRow = new LinearLayout(context);
+                bottomRow.setOrientation(LinearLayout.HORIZONTAL);
+                bottomRow.setGravity(Gravity.CENTER_VERTICAL);
+                TextView load = new TextView(context);
+                load.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
+                bottomRow.addView(load, LayoutHelper.createLinear(
+                        0, LayoutHelper.WRAP_CONTENT, 1.0f));
+                TextView rollbackBtn = new TextView(context);
+                rollbackBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+                rollbackBtn.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4),
+                        AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+                bottomRow.addView(rollbackBtn, LayoutHelper.createLinear(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                TextView deleteBtn = new TextView(context);
+                deleteBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+                deleteBtn.setTextColor(0xFFFF3B30);
+                deleteBtn.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4),
+                        AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+                bottomRow.addView(deleteBtn, LayoutHelper.createLinear(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+                card.addView(bottomRow, LayoutHelper.createLinear(
+                        LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
+
+                CardHolder holder = new CardHolder(card);
+                holder.title = title;
+                holder.version = version;
+                holder.desc = desc;
+                holder.load = load;
+                holder.toggle = toggle;
+                holder.deleteBtn = deleteBtn;
+                holder.rollbackBtn = rollbackBtn;
+                toggle.setOnClickListener(v -> {
+                    if (holder.ref != null) {
+                        toggleCard(holder.ref, !enabledFor(holder.ref));
+                    }
+                });
+                deleteBtn.setOnClickListener(v -> {
+                    if (holder.ref != null) {
+                        deleteCard(holder.ref);
+                    }
+                });
+                rollbackBtn.setOnClickListener(v -> {
+                    if (holder.ref != null && holder.ref.isAmod) {
+                        int r = ModuleManager.rollback(holder.ref.id);
+                        if (r == ModuleManager.ROLLBACK_NEED_MANUAL) {
+                            new ModuleVersionsSheet(v.getContext(), holder.ref.id,
+                                    AmegramModulesActivity.this::refresh).show();
+                        } else {
+                            refresh();
+                        }
+                    }
+                });
+                return holder;
+            }
+            return super.onCreateViewHolder(parent, viewType);
+        }
+
         @Override
         public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, boolean partial) {
+            if (holder instanceof CardHolder) {
+                bindCard((CardHolder) holder, position);
+                return;
+            }
             switch (holder.getItemViewType()) {
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
-                    if (position == headerGhostRow) {
-                        cell.setText("\u0420\u0435\u0436\u0438\u043c \u043f\u0440\u0438\u0437\u0440\u0430\u043a\u0430");
+                    if (position == headerModulesRow) {
+                        cell.setText("\u041c\u043e\u0434\u0443\u043b\u0456");
+                    } else if (position == headerGhostRow) {
+                        cell.setText("\u041d\u0435\u0432\u0438\u0434\u0438\u043c\u043a\u0430");
                     } else if (position == headerMediaRow) {
-                        cell.setText("\u041c\u0435\u0434\u0438\u0430 \u0438 \u0431\u0435\u0439\u0434\u0436\u0438");
+                        cell.setText("\u041f\u043b\u0435\u0454\u0440");
+                    } else if (position == headerPluginsRow) {
+                        cell.setText("\u041f\u043b\u0430\u0433\u0456\u043d\u0438");
                     } else if (position == headerSystemRow) {
                         cell.setText("\u0421\u0438\u0441\u0442\u0435\u043c\u0430");
                     }
@@ -221,11 +502,8 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_CHECK: {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == ghostMasterRow) {
-                        cell.setTextAndCheck("\u041d\u0435\u0432\u0438\u0434\u0438\u043c\u043a\u0430",
-                                AmegramConfig.getBool("ghost_enabled", false), true);
-                    } else if (position == ghostReadRow) {
-                        cell.setTextAndCheck("\u0421\u043a\u0440\u044b\u0432\u0430\u0442\u044c \u043f\u0440\u043e\u0447\u0442\u0435\u043d\u0438\u0435",
+                    if (position == ghostReadRow) {
+                        cell.setTextAndCheck("\u0421\u043a\u0440\u0438\u0432\u0430\u0442\u044c \u043f\u0440\u043e\u0447\u0442\u0435\u043d\u0438\u0435",
                                 AmegramGhostController.hideRead(), true);
                     } else if (position == ghostOnlineRow) {
                         cell.setTextAndCheck("\u0421\u043a\u0440\u044b\u0432\u0430\u0442\u044c \u043e\u043d\u043b\u0430\u0439\u043d",
@@ -233,21 +511,9 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                     } else if (position == ghostTypingRow) {
                         cell.setTextAndCheck("\u0421\u043a\u0440\u044b\u0432\u0430\u0442\u044c \u043d\u0430\u0431\u043e\u0440 \u0442\u0435\u043a\u0441\u0442\u0430",
                                 AmegramGhostController.hideTyping(), false);
-                    } else if (position == playerRow) {
-                        cell.setTextAndCheck(featureTitle("player"),
-                                AmegramConfig.getBool("player_enabled", true), true);
                     } else if (position == playerVisualizerRow) {
                         cell.setTextAndCheck("\u0412\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0442\u043e\u0440 \u0431\u0430\u0441\u043e\u0432",
                                 AmegramConfig.getBool("player_visualizer", false), false);
-                    } else if (position == badgesRow) {
-                        cell.setTextAndCheck(featureTitle("badges"),
-                                AmegramConfig.getBool("badges_enabled", true), true);
-                    } else if (position == antiblockRow) {
-                        cell.setTextAndCheck(featureTitle("antiblock"),
-                                AmegramConfig.getBool("antiblock_enabled", true), true);
-                    } else if (position == ameprofileRow) {
-                        cell.setTextAndCheck(featureTitle("ameprofile"),
-                                AmegramConfig.getBool("ameprofile_enabled", true), false);
                     } else if (position == hotfixCodeRow) {
                         cell.setTextAndCheck("\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044c code-\u043f\u0430\u0442\u0447\u0438 (.dex)",
                                 AmegramConfig.getBool("hotfix_code_patches", false), false);
@@ -256,11 +522,15 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
-                    if (position == vaultRow) {
-                        cell.setTextAndValue(featureTitle("doublebottom"),
-                                AmegramConfig.getBool("doublebottom_enabled", true)
-                                        ? "\u041d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043e" : "\u0412\u044b\u043a\u043b",
-                                true);
+                    if (position == plusRow) {
+                        cell.setTextAndIcon("+ \u0414\u043e\u043a\u0430\u0447\u0430\u0442\u0438 \u043c\u043e\u0434\u0443\u043b\u0456",
+                                R.drawable.msg_download_solar, true);
+                    } else if (position == vaultRow) {
+                        cell.setTextAndValue("\u0414\u0432\u043e\u0439\u043d\u043e\u0435 \u0434\u043d\u043e",
+                                "\u041d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043e", true);
+                    } else if (position == pluginsRow) {
+                        cell.setTextAndIcon("\u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043f\u043b\u0430\u0433\u0456\u043d\u0456\u0432",
+                                R.drawable.msg_plugins, true);
                     } else if (position == guideRow) {
                         cell.setTextAndIcon("\u0413\u0438\u0434 \u043f\u043e Amegram",
                                 R.drawable.msg_bot, true);
@@ -275,33 +545,54 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                                 applied > 0 ? "\u041f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u043e: " + applied : "OK",
                                 R.drawable.msg_download_solar, false);
                     } else if (position == versionRow) {
-                        cell.setTextAndValue("\u0412\u0435\u0440\u0441\u0438\u044f \u043c\u043e\u0434\u0443\u043b\u044f",
-                                AmegramModule.MODULE_VERSION, false);
+                        cell.setTextAndValue("\u042f\u0434\u0440\u043e / \u043c\u043e\u0434\u0443\u043b\u044c",
+                                app.amegram.core.AmegramCore.CORE_VERSION
+                                        + " / " + AmegramModule.MODULE_VERSION, false);
                     }
                     break;
                 }
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == ghostInfoRow) {
-                        cell.setText("\u0427\u0438\u0442\u0430\u0439 \u043d\u0435\u0437\u0430\u043c\u0435\u0442\u043d\u043e: \u0431\u043b\u043e\u043a\u0438\u0440\u0443\u0435\u0442\u0441\u044f \u043d\u0430 \u0443\u0440\u043e\u0432\u043d\u0435 \u0441\u0435\u0442\u0438. \u0418\u0441\u043a\u043b\u044e\u0447\u0435\u043d\u0438\u044f \u043f\u043e \u0447\u0430\u0442\u0430\u043c \u0440\u0430\u0431\u043e\u0442\u0430\u044e\u0442 \u043a\u0430\u043a \u0440\u0430\u043d\u044c\u0448\u0435.");
-                    } else if (position == mediaInfoRow) {
-                        cell.setText("\u0412\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u043d\u044b\u0439 \u043c\u043e\u0434\u0443\u043b\u044c \u0433\u0440\u0443\u0437\u0438\u0442\u0441\u044f \u0432 \u043f\u0430\u043c\u044f\u0442\u044c, \u0432\u044b\u043a\u043b\u044e\u0447\u0435\u043d\u043d\u044b\u0439 \u2014 \u043d\u0435\u0442.");
+                        cell.setText("\u0427\u0438\u0442\u0430\u0439 \u043d\u0435\u0437\u0430\u043c\u0435\u0442\u043d\u043e: \u0431\u043b\u043e\u043a\u0438\u0440\u0443\u0435\u0442\u0441\u044f \u043d\u0430 \u0443\u0440\u043e\u0432\u043d\u0435 \u0441\u0435\u0442\u0438.");
                     }
                     break;
                 }
             }
         }
-    }
 
-    private static String featureTitle(String id) {
-        try {
-            AmegramFeature f = AmegramFeatureManager.get(id);
-            if (f != null) {
-                return f.title() + " \u2022 " + f.ramEstimate();
+        private void bindCard(CardHolder holder, int position) {
+            CardRef ref = cardAt(position);
+            holder.ref = ref;
+            if (ref == null) {
+                return;
             }
-        } catch (Throwable ignore) {
+            holder.title.setText(titleFor(ref));
+            holder.version.setText(versionFor(ref));
+            holder.desc.setText(descFor(ref.id));
+            holder.load.setText(loadFor(ref));
+            boolean on = enabledFor(ref);
+            try {
+                if (holder.toggle.isChecked() != on) {
+                    holder.toggle.setChecked(on, false);
+                }
+            } catch (Throwable ignore) {
+            }
+            if (ref.isAmod) {
+                holder.deleteBtn.setVisibility(View.VISIBLE);
+                holder.deleteBtn.setText("\u0412\u0438\u0434\u0430\u043b\u0438\u0442\u0438");
+                List<String> hist = ModuleManager.historyVersions(ref.id);
+                if (!hist.isEmpty()) {
+                    holder.rollbackBtn.setVisibility(View.VISIBLE);
+                    holder.rollbackBtn.setText("\u21a9 \u0412\u0456\u0434\u043a\u043e\u0442\u0438\u0442\u0438");
+                } else {
+                    holder.rollbackBtn.setVisibility(View.GONE);
+                }
+            } else {
+                holder.deleteBtn.setVisibility(View.GONE);
+                holder.rollbackBtn.setVisibility(View.GONE);
+            }
         }
-        return id;
     }
 
     @Override

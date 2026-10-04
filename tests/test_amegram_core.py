@@ -120,3 +120,44 @@ def test_r8_keeps_reflection_targets():
                    "app.amegram.core.**",
                    "app.amegram.module.**"):
         assert target in rules, target
+
+
+def test_module_rollback_policy():
+    src = _core("modules/ModuleManager.java")
+    assert "MAX_AUTO_ROLLBACKS = 5" in src
+    assert "ROLLBACK_NEED_MANUAL" in src
+    assert "historyVersions" in src
+    assert "installHistoryVersion" in src
+    assert "markHealthy" in src
+    assert "pushHistory" in src
+    assert ".hist/" in src
+
+
+def test_hub_cards_and_dynamic_sections():
+    hub = _read(JAVA, "app", "amegram", "module", "ui", "AmegramModulesActivity.java")
+    assert "TYPE_MODULE_CARD = 100" in hub
+    assert "CardHolder" in hub and "RecyclerListView.Holder" in hub
+    assert "deleteCard" in hub and "ModuleManager.uninstall" in hub
+    assert "ModuleCatalogSheet" in hub and "+ " in hub
+    assert "ModuleVersionsSheet" in hub and "ROLLBACK_NEED_MANUAL" in hub
+    assert "PluginsActivity" in hub
+    # sections exist only when enabled: rows rebuilt in refresh
+    assert "ghostOn()" in hub and "= -1" in hub
+    assert "updateRows();" in hub.split("private void refresh()")[1]
+    assert "Switch" in hub and "setChecked" in hub
+    # card style mirrors plugin catalog
+    assert "setCornerRadius(AndroidUtilities.dp(16))" in hub
+
+
+def test_guide_selects_branch():
+    sheet = _read(JAVA, "app", "amegram", "module", "ui", "AmegramWelcomeSheet.java")
+    assert "miogram_updater_prefs" in sheet
+    assert '"update_channel"' in sheet
+    assert '"beta"' in sheet and '"stable"' in sheet
+
+
+def test_catalog_sheet_github_first():
+    sheet = _read(JAVA, "app", "amegram", "module", "ui", "ModuleCatalogSheet.java")
+    assert "raw.githubusercontent.com" in sheet
+    assert "amegram_catalog.json" in sheet  # asset fallback
+    assert "downloadAndInstall" in sheet

@@ -32,6 +32,7 @@ package org.telegram.ui.ActionBar;
 public class BottomSheet {
     public BottomSheet(android.content.Context context, boolean needFocus) {}
     protected int getThemedColor(int key) { return 0; }
+    public android.content.Context getContext() { return null; }
     public void setCustomView(android.view.View view) {}
     public void show() {}
     public void dismiss() {}
@@ -45,6 +46,8 @@ public class Theme {
     public static final int key_dialogTextBlack = 2;
     public static final int key_dialogTextGray2 = 3;
     public static final int key_windowBackgroundWhiteBlueHeader = 4;
+    public static final int key_windowBackgroundWhite = 5;
+    public static final int key_featuredStickers_addButton = 6;
 }
 EOF
 # Arity mirrors LayoutHelper.java:234 (w,h,weight), :210 (w,h,4 margins), :238 (w,h)
@@ -64,6 +67,7 @@ package org.telegram.messenger;
 public class AndroidUtilities {
     public static int dp(float value) { return (int) value; }
     public static android.graphics.Typeface bold() { return null; }
+    public static void runOnUIThread(Runnable r) {}
 }
 EOF
 cat > "$STUBS/org/telegram/messenger/R.java" <<'EOF'
@@ -134,16 +138,41 @@ public class BaseNekoSettingsActivity {
     public void onResume() {}
     public android.app.Activity getParentActivity() { return null; }
     public boolean presentFragment(Object fragment) { return true; }
+    public int getThemedColor(int key) { return 0; }
     public org.telegram.messenger.NotificationCenter getNotificationCenter() { return null; }
     protected abstract class BaseListAdapter {
         public BaseListAdapter(android.content.Context c) {}
         public int getItemViewType(int position) { return 0; }
         public void onBindViewHolder(androidx.recyclerview.widget.RecyclerView.ViewHolder h, int p, boolean partial) {}
+        public androidx.recyclerview.widget.RecyclerView.ViewHolder onCreateViewHolder(android.view.ViewGroup p, int t) { return null; }
         public void notifyDataSetChanged() {}
     }
 }
 EOF
-# AmegramPatchManager.java:50 getInstance, :65 PatchCheckCallback, :189 checkForPatches
+# Switch.java:130 ctor, :371 setChecked, :424 isChecked
+cat > "$STUBS/org/telegram/ui/Components/Switch.java" <<'EOF'
+package org.telegram.ui.Components;
+public class Switch extends android.view.View {
+    public Switch(android.content.Context c) { super(c); }
+    public void setChecked(boolean checked, boolean animated) {}
+    public boolean isChecked() { return false; }
+}
+EOF
+cat > "$STUBS/org/telegram/ui/Components/RecyclerListView.java" <<'EOF'
+package org.telegram.ui.Components;
+public class RecyclerListView {
+    public static class Holder extends androidx.recyclerview.widget.RecyclerView.ViewHolder {
+        public Holder(android.view.View v) { super(v); }
+    }
+}
+EOF
+mkdir -p "$STUBS/app/exteraless/plugins/ui"
+cat > "$STUBS/app/exteraless/plugins/ui/PluginsActivity.java" <<'EOF'
+package app.exteraless.plugins.ui;
+public class PluginsActivity {
+    public PluginsActivity() {}
+}
+EOF
 mkdir -p "$STUBS/app/miogram/bridge/patch" "$STUBS/app/miogram/bridge/vault"
 cat > "$STUBS/app/miogram/bridge/vault/MiogramDoubleBottomActivity.java" <<'EOF'
 package app.miogram.bridge.vault;

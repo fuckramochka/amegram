@@ -59,10 +59,11 @@ def test_badges_cache_offline_first():
 
 def test_hub_exists_and_wires_toggles():
     src = _read(JAVA, "app", "amegram", "module", "ui", "AmegramModulesActivity.java")
-    for token in ("ghost_enabled", "player_enabled", "badges_enabled",
+    for token in ("AmegramGhostController", "player_visualizer",
                   "hotfix_code_patches", "AmegramWelcomeSheet", "BaseNekoSettingsActivity"):
         assert token in src, token
-    assert "addView" not in src
+    assert "fragmentView" not in src  # no addView-hacks into upstream fragments
+    assert "ContentView" not in src
 
 
 def test_welcome_sheet_compact():
@@ -70,7 +71,7 @@ def test_welcome_sheet_compact():
     assert src.count("class ") == 1
     assert "guide_shown" in src
     assert "setEnabled" in src
-    assert len(src.splitlines()) < 260
+    assert len(src.splitlines()) < 300  # compact: persona + branch + modules + start
 
 
 def test_code_patches_gated_off():
@@ -143,8 +144,10 @@ def test_ameprofile_off_is_vanilla():
 
 def test_hub_covers_new_modules():
     src = _read(JAVA, "app", "amegram", "module", "ui", "AmegramModulesActivity.java")
-    for token in ("antiblock_enabled", "ameprofile_enabled", "antiblockRow", "ameprofileRow"):
-        assert token in src, token
+    # toggles moved into cards: all 7 builtins listed + generic toggle path
+    for mod in ("ghost", "player", "badges", "antiblock", "ameprofile", "hotfix", "doublebottom"):
+        assert '"%s"' % mod in src, mod
+    assert "toggleCard" in src and "setEnabled" in src
 
 
 def test_welcome_uses_live_defaults():

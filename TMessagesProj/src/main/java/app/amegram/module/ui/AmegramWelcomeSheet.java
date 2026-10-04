@@ -31,6 +31,7 @@ public class AmegramWelcomeSheet extends BottomSheet {
     private static final String KEY_SHOWN = "guide_shown";
 
     private boolean selectedAme = true;
+    private boolean selectedBeta = true;
     private final List<CheckBox> boxes = new ArrayList<>();
     private final List<String> ids = new ArrayList<>();
 
@@ -94,6 +95,27 @@ public class AmegramWelcomeSheet extends BottomSheet {
         personaRow.addView(ameCard, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
         personaRow.addView(kangelCard, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
         root.addView(personaRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+
+        // Вітка оновлень — пише справжній ключ апдейтера (miogram_updater_prefs).
+        selectedBeta = !"stable".equals(readUpdateChannel(context));
+        LinearLayout branchRow = new LinearLayout(context);
+        branchRow.setOrientation(LinearLayout.HORIZONTAL);
+        final TextView betaCard = makeCard(context, "Beta", selectedBeta, accentF, textF);
+        final TextView stableCard = makeCard(context, "Stable", !selectedBeta, accentF, textF);
+        betaCard.setOnClickListener(v -> {
+            selectedBeta = true;
+            paintCard(betaCard, true, accentF);
+            paintCard(stableCard, false, accentF);
+        });
+        stableCard.setOnClickListener(v -> {
+            selectedBeta = false;
+            paintCard(betaCard, false, accentF);
+            paintCard(stableCard, true, accentF);
+        });
+        branchRow.addView(betaCard, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
+        branchRow.addView(stableCard, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
+        root.addView(branchRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
         ScrollView scroll = new ScrollView(context);
@@ -158,10 +180,39 @@ public class AmegramWelcomeSheet extends BottomSheet {
 
     private void applySelection() {
         AmegramConfig.setString("companion", selectedAme ? "ame" : "kangel");
+        writeUpdateChannel(selectedBeta ? "beta" : "stable");
         for (int i = 0; i < ids.size(); i++) {
             AmegramFeatureManager.setEnabled(ids.get(i), boxes.get(i).isChecked());
         }
         markShown();
+    }
+
+    private static String readUpdateChannel(Context context) {
+        try {
+            Context app = context.getApplicationContext();
+            if (app == null) {
+                app = context;
+            }
+            return app.getSharedPreferences("miogram_updater_prefs", Context.MODE_PRIVATE)
+                    .getString("update_channel", "beta");
+        } catch (Throwable t) {
+            return "beta";
+        }
+    }
+
+    private void writeUpdateChannel(String channel) {
+        try {
+            Context context = getContext();
+            Context app = context != null ? context.getApplicationContext() : null;
+            if (app == null && context != null) {
+                app = context;
+            }
+            if (app != null) {
+                app.getSharedPreferences("miogram_updater_prefs", Context.MODE_PRIVATE)
+                        .edit().putString("update_channel", channel).apply();
+            }
+        } catch (Throwable ignore) {
+        }
     }
 
     @Override

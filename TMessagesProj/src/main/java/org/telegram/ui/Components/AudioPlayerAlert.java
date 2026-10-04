@@ -1600,10 +1600,12 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             itemTouchHelper.attachToRecyclerView(listView);
         }
 
-        lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
-        lyricsView.setVisibility(View.VISIBLE);
+        // --- Amegram Core: player module OFF = stock Telegram player (all uses null-guarded) ---
+        if (isPlayerModuleOn()) {
+            lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
+            lyricsView.setVisibility(View.VISIBLE);
 
-        modernPlayerLayout = new app.miogram.bridge.player.MiogramModernPlayerLayout(context, this, resourcesProvider);
+            modernPlayerLayout = new app.miogram.bridge.player.MiogramModernPlayerLayout(context, this, resourcesProvider);
         coverContainer.setCoverRoundRadius(dp(20));
         modernPlayerLayout.setCoverView(coverContainer);
         modernPlayerLayout.setLyricsView(lyricsView);
@@ -1620,6 +1622,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         playerShadow.setVisibility(View.GONE);
         actionBarShadow.setVisibility(View.GONE);
         actionBar.setVisibility(View.GONE);
+        }
 
         blurredView = new FrameLayout(context) {
             @Override
@@ -1862,6 +1865,20 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     public app.miogram.bridge.player.MiogramModernPlayerLayout getModernPlayerLayout() {
         return modernPlayerLayout;
+    }
+
+    /** Amegram Core: player module master switch (default ON = current behavior). */
+    private static boolean isPlayerModuleOn() {
+        try {
+            android.content.Context ctx =
+                    org.telegram.messenger.ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                return ctx.getSharedPreferences("amegram_module_prefs",
+                        android.content.Context.MODE_PRIVATE).getBoolean("player_enabled", true);
+            }
+        } catch (Throwable ignore) {
+        }
+        return true;
     }
 
     public void openMusicSearch() {

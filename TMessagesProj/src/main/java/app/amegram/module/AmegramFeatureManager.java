@@ -37,6 +37,7 @@ public final class AmegramFeatureManager {
         register(new app.amegram.module.features.profile.AmegramAmeProfileFeature());
         register(new app.amegram.module.features.system.AmegramHotfixFeature());
         register(new app.amegram.module.features.vault.AmegramDoubleBottomFeature());
+        decideFreshStart(appContext);
         // Auto-load only what user previously enabled. Everything else stays on disk.
         for (AmegramFeature f : FEATURES.values()) {
             try {
@@ -46,6 +47,56 @@ public final class AmegramFeatureManager {
             } catch (Throwable ignore) {
             }
         }
+    }
+
+    /**
+     * Spec «порожній старт»: у свіжої установки НІЧОГО не увімкнено —
+     * модулі обираються в гайді. У оновленців (знайдено сліди старих
+     * prefs) все лишається 1-в-1 як було. Вирішується один раз.
+     */
+    private static void decideFreshStart(Context appContext) {
+        try {
+            if (app.amegram.module.AmegramConfig.getBool("fresh_start_decided", false)) {
+                return;
+            }
+            boolean upgrade = hasLegacyTraces(appContext);
+            if (!upgrade) {
+                for (AmegramFeature f : FEATURES.values()) {
+                    try {
+                        if (!"guide".equals(f.id())) {
+                            f.setEnabled(false);
+                        }
+                    } catch (Throwable ignore) {
+                    }
+                }
+            }
+            app.amegram.module.AmegramConfig.setBool("fresh_start_decided", true);
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private static boolean hasLegacyTraces(Context ctx) {
+        try {
+            if (ctx == null) {
+                return true;
+            }
+            String dir = ctx.getApplicationInfo().dataDir + "/shared_prefs/";
+            String[] legacy = {
+                    "naconfig.xml", "miogram_player_prefs.xml", "miogram_ui_prefs.xml",
+                    "miogram_double_bottom.xml", "amegram_profile_prefs.xml",
+                    "miogram_bypass.xml", "miogram_supabase_prefs.xml"
+            };
+            for (String name : legacy) {
+                try {
+                    if (new java.io.File(dir + name).exists()) {
+                        return true;
+                    }
+                } catch (Throwable ignore) {
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        return false;
     }
 
     public static void register(AmegramFeature feature) {

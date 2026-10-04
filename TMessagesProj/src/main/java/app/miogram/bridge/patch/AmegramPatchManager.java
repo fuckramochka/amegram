@@ -79,9 +79,13 @@ public class AmegramPatchManager {
 
         loadPersistedState();
 
-        // Background check at startup with cooldown (at most once every 6 hours)
+        // Background check at startup with cooldown (at most once every 6 hours).
+        // Skipped entirely when the hotfix module is OFF (empty start).
         Utilities.globalQueue.postRunnable(() -> {
             try {
+                if (!isModuleEnabled()) {
+                    return;
+                }
                 SharedPreferences prefs = getPrefs();
                 long lastCheck = prefs.getLong(KEY_LAST_CHECK_TIME, 0);
                 long now = System.currentTimeMillis();
@@ -155,6 +159,22 @@ public class AmegramPatchManager {
         } catch (Throwable ignore) {
         }
         return false;
+    }
+
+    /**
+     * Amegram Modules hub master switch ("hotfix_enabled", default ON).
+     * File-name read, zero new imports.
+     */
+    public static boolean isModuleEnabled() {
+        try {
+            android.content.Context ctx = org.telegram.messenger.ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                return ctx.getSharedPreferences("amegram_module_prefs", android.content.Context.MODE_PRIVATE)
+                        .getBoolean("hotfix_enabled", true);
+            }
+        } catch (Throwable ignore) {
+        }
+        return true;
     }
 
     /**

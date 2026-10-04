@@ -486,7 +486,18 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         flagSecureReason.attach();
 
         super.onCreate(savedInstanceState);
-        org.telegram.messenger.Utilities.globalQueue.postRunnable(() -> app.miogram.bridge.badge.MiogramSupabaseBridge.init());
+        org.telegram.messenger.Utilities.globalQueue.postRunnable(() -> {
+            try {
+                if (app.amegram.module.AmegramFeatureManager.isEnabled("badges")) {
+                    app.miogram.bridge.badge.MiogramSupabaseBridge.init();
+                }
+            } catch (Throwable ignore) {
+                try {
+                    app.miogram.bridge.badge.MiogramSupabaseBridge.init();
+                } catch (Throwable ignored) {
+                }
+            }
+        });
         try {
             app.amegram.module.AmegramHooks.onLaunchCreated(this);
         } catch (Throwable ignore) {

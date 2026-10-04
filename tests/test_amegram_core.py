@@ -161,3 +161,16 @@ def test_catalog_sheet_github_first():
     assert "raw.githubusercontent.com" in sheet
     assert "amegram_catalog.json" in sheet  # asset fallback
     assert "downloadAndInstall" in sheet
+
+
+def test_empty_start_and_module_chokes():
+    mgr = _read(JAVA, "app", "amegram", "module", "AmegramFeatureManager.java")
+    assert "decideFreshStart" in mgr and "hasLegacyTraces" in mgr
+    assert "fresh_start_decided" in mgr
+    player = _read(JAVA, "org", "telegram", "ui", "Components", "AudioPlayerAlert.java")
+    assert "isPlayerModuleOn()" in player
+    assert '"player_enabled", true' in player
+    badge = _read(JAVA, "app", "miogram", "bridge", "badge", "MiogramBadgeManager.java")
+    assert '"badges_enabled", true' in badge
+    patch = _read(JAVA, "app", "miogram", "bridge", "patch", "AmegramPatchManager.java")
+    assert '"hotfix_enabled", true' in patch

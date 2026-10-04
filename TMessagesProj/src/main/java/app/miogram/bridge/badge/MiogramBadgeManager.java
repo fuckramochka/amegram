@@ -19,7 +19,28 @@ public class MiogramBadgeManager {
         if (userId <= 0) {
             return false;
         }
+        // --- Amegram Core: badges module OFF = no arrows anywhere (all call sites choke here) ---
+        if (!isModuleEnabled()) {
+            return false;
+        }
         return MiogramSupabaseBridge.hasCloudBadge(userId);
+    }
+
+    /**
+     * Reads the unified module flag by prefs FILE NAME (no imports, vanilla-safe).
+     * Default true = current behavior preserved.
+     */
+    public static boolean isModuleEnabled() {
+        try {
+            android.content.Context ctx =
+                    org.telegram.messenger.ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                return ctx.getSharedPreferences("amegram_module_prefs",
+                        android.content.Context.MODE_PRIVATE).getBoolean("badges_enabled", true);
+            }
+        } catch (Throwable ignore) {
+        }
+        return true;
     }
 
     public static MiogramBadgeType getBadgeType(long userId) {

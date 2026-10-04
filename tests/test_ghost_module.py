@@ -37,22 +37,13 @@ def test_controller_has_no_compile_time_legacy_dep():
 
 def test_interceptor_delegates_to_module():
     src = _read(INTERCEPTOR)
-    assert "AmegramGhostPolicy" in src
     assert "AmegramGhostController" in src
-    assert "effSendRead()" in src
-    assert "effSendTyping()" in src
-    assert "effSendOnline()" in src
-    assert "effSendStories()" in src
-    # The 4 ghost channels resolve only through eff* (+fallback returns inside them).
-    # interceptRequest / handleReadAfterSend decision sites must not touch raw flags.
+    # Hub owns ghost: OFF kills it regardless of legacy flags.
+    assert "isOn()" in src
+    assert "hideRead()" in src and "hideTyping()" in src and "hideOnline()" in src
     body = src[src.index("public static InterceptResult interceptRequest"):
                src.index("private static void handleReadAfterSend")]
     assert "NekoConfig.send" not in body, body
-    handlers = src[src.index("private static void handleReadAfterSend"):]
-    assert "!effSendRead()" in handlers
-    assert "NekoConfig.sendReadMessagePackets.Bool()" not in handlers
-    fallbacks = [l.strip() for l in src.splitlines() if l.strip().startswith("return NekoConfig.send")]
-    assert len(fallbacks) == 4, fallbacks
 
 
 def test_single_chokepoint_preserved():

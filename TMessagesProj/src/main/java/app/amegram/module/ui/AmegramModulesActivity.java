@@ -398,11 +398,23 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 TextView title = new TextView(context);
                 title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
                 title.setTypeface(AndroidUtilities.bold());
+                try {
+                    title.setTextColor(getThemedColor(
+                            org.telegram.ui.ActionBar.Theme.key_dialogTextBlack));
+                } catch (Throwable t) {
+                    title.setTextColor(0xFF000000);
+                }
                 nameRow.addView(title, LayoutHelper.createLinear(
                         LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
                 TextView version = new TextView(context);
                 version.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
                 version.setPadding(AndroidUtilities.dp(6), 0, 0, 0);
+                try {
+                    version.setTextColor(getThemedColor(
+                            org.telegram.ui.ActionBar.Theme.key_dialogTextGray2));
+                } catch (Throwable t) {
+                    version.setTextColor(0xFF8A8A8A);
+                }
                 nameRow.addView(version, LayoutHelper.createLinear(
                         LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
                 titleBox.addView(nameRow, LayoutHelper.createLinear(
@@ -410,14 +422,21 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
                 TextView desc = new TextView(context);
                 desc.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+                try {
+                    desc.setTextColor(getThemedColor(
+                            org.telegram.ui.ActionBar.Theme.key_dialogTextBlack));
+                } catch (Throwable t) {
+                    desc.setTextColor(0xFF000000);
+                }
                 titleBox.addView(desc, LayoutHelper.createLinear(
                         LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
                 topRow.addView(titleBox, LayoutHelper.createLinear(
                         0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
+                // Switch has no onMeasure: fixed 37x20 like TextCheckCell, else it stretches.
                 Switch toggle = new Switch(context);
                 topRow.addView(toggle, LayoutHelper.createLinear(
-                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
+                        37, 20, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
                 card.addView(topRow, LayoutHelper.createLinear(
                         LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -426,6 +445,12 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 bottomRow.setGravity(Gravity.CENTER_VERTICAL);
                 TextView load = new TextView(context);
                 load.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
+                try {
+                    load.setTextColor(getThemedColor(
+                            org.telegram.ui.ActionBar.Theme.key_dialogTextGray2));
+                } catch (Throwable t) {
+                    load.setTextColor(0xFF8A8A8A);
+                }
                 bottomRow.addView(load, LayoutHelper.createLinear(
                         0, LayoutHelper.WRAP_CONTENT, 1.0f));
                 TextView rollbackBtn = new TextView(context);

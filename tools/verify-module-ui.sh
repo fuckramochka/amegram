@@ -57,6 +57,7 @@ public class LayoutHelper {
     public static final int MATCH_PARENT = -1;
     public static final int WRAP_CONTENT = -2;
     public static android.widget.LinearLayout.LayoutParams createLinear(int w, int h, float weight) { return null; }
+    public static android.widget.LinearLayout.LayoutParams createLinear(int w, int h, int gravity, int a, int b, int c, int d) { return null; }
     public static android.widget.LinearLayout.LayoutParams createLinear(int w, int h, int a, int b, int c, int d) { return null; }
     public static android.widget.LinearLayout.LayoutParams createLinear(int w, int h) { return null; }
 }

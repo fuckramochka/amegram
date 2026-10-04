@@ -80,8 +80,17 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         modulesRow = addRow();
         guideRow = addRow();
         visualsRow = addRow();
-        playerEditRow = addRow();
-        badgeStudioRow = addRow();
+        // Модульні входи існують тільки для увімкнених модулів (spec: розділ зникає).
+        if (isModuleOn("player_enabled", true)) {
+            playerEditRow = addRow();
+        } else {
+            playerEditRow = -1;
+        }
+        if (isModuleOn("badges_enabled", true)) {
+            badgeStudioRow = addRow();
+        } else {
+            badgeStudioRow = -1;
+        }
         spotifyRow = addRow();
         tiktokEcosystemRow = addRow();
 
@@ -104,6 +113,19 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         channelRow = addRow();
         hotfixRow = addRow();
         updaterRow = addRow();
+    }
+
+    private static boolean isModuleOn(String key, boolean def) {
+        try {
+            android.content.Context ctx =
+                    org.telegram.messenger.ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                return ctx.getSharedPreferences("amegram_module_prefs",
+                        android.content.Context.MODE_PRIVATE).getBoolean(key, def);
+            }
+        } catch (Throwable ignore) {
+        }
+        return def;
     }
 
     @Override
@@ -402,6 +424,11 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     @Override
     public void onResume() {
         super.onResume();
+        // Перебудова рядків: вимкнені модулі зникають з hub-настройок.
+        try {
+            updateRows();
+        } catch (Throwable ignore) {
+        }
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
         }

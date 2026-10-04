@@ -174,3 +174,28 @@ def test_empty_start_and_module_chokes():
     assert '"badges_enabled", true' in badge
     patch = _read(JAVA, "app", "miogram", "bridge", "patch", "AmegramPatchManager.java")
     assert '"hotfix_enabled", true' in patch
+
+
+def test_card_rendering_fixed():
+    hub = _read(JAVA, "app", "amegram", "module", "ui", "AmegramModulesActivity.java")
+    # Switch needs fixed 37x20 (no onMeasure) or it stretches across the card
+    assert "37, 20, Gravity.CENTER_VERTICAL" in hub
+    # every card text has an explicit themed color (invisible texts bug)
+    assert hub.count("key_dialogTextBlack") >= 2
+    assert hub.count("key_dialogTextGray2") >= 2
+
+
+def test_ghost_off_kills_ghost():
+    src = _read(JAVA, "app", "miogram", "bridge", "vault", "MiogramDoubleBottomManager.java")
+    assert "isModuleEnabled() && pin != null" in src
+    ghost = _read(JAVA, "app", "amegram", "module", "features", "ghost",
+                  "AmegramGhostController.java")
+    assert "isOn()" in ghost
+
+
+def test_legacy_settings_hide_disabled():
+    src = _read(JAVA, "app", "miogram", "bridge", "settings", "MiogramSettingsActivity.java")
+    assert '"player_enabled", true' in src
+    assert '"badges_enabled", true' in src
+    assert "playerEditRow = -1" in src
+    assert "updateRows();" in src.split("public void onResume()")[1]

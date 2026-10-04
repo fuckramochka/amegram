@@ -59,6 +59,19 @@ public class AmegramGhostController implements AmegramFeature {
     }
 
     /**
+     * Hub master switch. OFF = ghost dead everywhere (effSend* return true).
+     * Migration (Neko -> Amegram flags) runs once on load(); legacy Neko UI
+     * becomes inert while the hub owns ghost.
+     */
+    public static boolean isOn() {
+        try {
+            return AmegramConfig.getBool("ghost_enabled", false);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
+    /**
      * True when the module owns ghost decisions (user switched ghost on at least once
      * or migration already ran). Before first enable we defer to legacy NekoConfig
      * so existing users keep their behavior bit-for-bit.

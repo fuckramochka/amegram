@@ -23,13 +23,14 @@ public class AyuGhostUtils {
 
     private static final int OFFLINE_DELAY_MS = 1000;
 
-    // --- Amegram Module bridge (Etap 1): module wins when active, legacy NekoConfig is fallback.
-    // Keeps per-chat exclusions + fake-response behavior bit-for-bit. Zero cost when module dormant.
+    // --- Amegram Module bridge (Etap 1): hub owns ghost. Module OFF = ghost
+    // dead everywhere (vanilla sends everything), regardless of legacy Neko flags.
     private static boolean effSendRead() {
         try {
-            if (AmegramGhostController.isModuleActive()) {
-                return AmegramGhostPolicy.resolveSendRead(true, AmegramGhostController.hideRead(), NekoConfig.sendReadMessagePackets.Bool());
+            if (!AmegramGhostController.isOn()) {
+                return true;
             }
+            return !AmegramGhostController.hideRead();
         } catch (Throwable ignore) {
         }
         return NekoConfig.sendReadMessagePackets.Bool();
@@ -37,9 +38,10 @@ public class AyuGhostUtils {
 
     private static boolean effSendStories() {
         try {
-            if (AmegramGhostController.isModuleActive()) {
-                return AmegramGhostPolicy.resolveSendStories(true, AmegramGhostController.hideRead(), NekoConfig.sendReadStoriesPackets.Bool());
+            if (!AmegramGhostController.isOn()) {
+                return true;
             }
+            return !AmegramGhostController.hideRead();
         } catch (Throwable ignore) {
         }
         return NekoConfig.sendReadStoriesPackets.Bool();
@@ -47,9 +49,10 @@ public class AyuGhostUtils {
 
     private static boolean effSendOnline() {
         try {
-            if (AmegramGhostController.isModuleActive()) {
-                return AmegramGhostPolicy.resolveSendOnline(true, AmegramGhostController.hideOnline(), NekoConfig.sendOnlinePackets.Bool());
+            if (!AmegramGhostController.isOn()) {
+                return true;
             }
+            return !AmegramGhostController.hideOnline();
         } catch (Throwable ignore) {
         }
         return NekoConfig.sendOnlinePackets.Bool();
@@ -57,9 +60,10 @@ public class AyuGhostUtils {
 
     private static boolean effSendTyping() {
         try {
-            if (AmegramGhostController.isModuleActive()) {
-                return AmegramGhostPolicy.resolveSendTyping(true, AmegramGhostController.hideTyping(), NekoConfig.sendUploadProgress.Bool());
+            if (!AmegramGhostController.isOn()) {
+                return true;
             }
+            return !AmegramGhostController.hideTyping();
         } catch (Throwable ignore) {
         }
         return NekoConfig.sendUploadProgress.Bool();

@@ -208,9 +208,11 @@ public class MiogramDoubleBottomManager {
         Utilities.globalQueue.postRunnable(() -> {
             int verdict = VERDICT_NONE;
             try {
-                // Timing equalization: always verify BOTH slots, even on first match.
+                // Module OFF: duress slot ignored (real PIN still unlocks).
+                // ON: always verify BOTH slots (timing equalization).
                 boolean real = pin != null && !pin.isEmpty() && verifyPin(KEY_REAL_PIN, pin);
-                boolean duress = pin != null && !pin.isEmpty() && verifyPin(KEY_DURESS_PIN, pin);
+                boolean duress = isModuleEnabled() && pin != null && !pin.isEmpty()
+                        && verifyPin(KEY_DURESS_PIN, pin);
                 verdict = real ? VERDICT_REAL : (duress ? VERDICT_DURESS : VERDICT_NONE);
             } catch (Throwable t) {
                 verdict = VERDICT_NONE;

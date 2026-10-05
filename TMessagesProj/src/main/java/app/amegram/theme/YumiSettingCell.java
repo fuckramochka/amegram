@@ -100,6 +100,31 @@ public class YumiSettingCell extends FrameLayout {
         dividerPaint.setColor(Theme.getColor(Theme.key_divider));
     }
 
+    public void setDrawable(android.graphics.drawable.Drawable icon, CharSequence title, CharSequence subtitle, boolean showChevron, boolean divider) {
+        iconFrame.setVisibility(VISIBLE);
+        iconFrame.setBackground(YumiTheme.squircleIconBackground(
+                (Theme.isCurrentThemeDark() ? 0x2A000000 : 0x1C000000) | 0x00808080));
+        iconView.setImageDrawable(icon);
+        iconView.setColorFilter(null);
+        FrameLayout.LayoutParams textLp = (FrameLayout.LayoutParams) textLayout.getLayoutParams();
+        textLp.leftMargin = AndroidUtilities.dp(54);
+        textLp.rightMargin = showChevron ? AndroidUtilities.dp(36) : 0;
+        textLayout.setLayoutParams(textLp);
+        titleView.setText(title);
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        if (!TextUtils.isEmpty(subtitle)) {
+            subtitleView.setVisibility(VISIBLE);
+            subtitleView.setText(subtitle);
+            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        } else {
+            subtitleView.setVisibility(GONE);
+        }
+        valueView.setVisibility(GONE);
+        chevronView.setVisibility(showChevron ? VISIBLE : GONE);
+        this.needDivider = divider;
+        invalidate();
+    }
+
     public void set(int iconRes, int iconBgColor, CharSequence title, CharSequence subtitle, CharSequence value, boolean showChevron, boolean divider) {
         if (iconRes != 0) {
             iconFrame.setVisibility(VISIBLE);
@@ -166,6 +191,11 @@ public class YumiSettingCell extends FrameLayout {
             YumiSettingCell cell = (YumiSettingCell) view;
             int iconBg = (int) item.longValue;
             boolean showChevron = item.accent;
+            if (item.object instanceof android.graphics.drawable.Drawable) {
+                cell.setDrawable((android.graphics.drawable.Drawable) item.object,
+                        item.text, item.subtext, showChevron, divider);
+                return;
+            }
             cell.set(item.iconResId, iconBg, item.text, item.subtext, item.textValue, showChevron, divider);
         }
 
@@ -175,6 +205,17 @@ public class YumiSettingCell extends FrameLayout {
 
         public static UItem of(int id, int iconRes, int iconBgColor, CharSequence title, CharSequence subtitle, CharSequence value) {
             return of(id, iconRes, iconBgColor, title, subtitle, value, true);
+        }
+
+        public static UItem ofDrawable(int id, android.graphics.drawable.Drawable icon, CharSequence title, CharSequence subtitle) {
+            UItem item = UItem.ofFactory(Factory.class);
+            item.id = id;
+            item.iconResId = 0;
+            item.object = icon;
+            item.text = title;
+            item.subtext = subtitle;
+            item.accent = true;
+            return item;
         }
 
         public static UItem of(int id, int iconRes, int iconBgColor, CharSequence title, CharSequence subtitle, CharSequence value, boolean showChevron) {

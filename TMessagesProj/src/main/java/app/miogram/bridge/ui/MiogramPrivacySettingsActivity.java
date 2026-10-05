@@ -56,16 +56,27 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         vaultManageRow = addRow();
         vaultInfoRow = addRow();
 
-        headerGhostRow = addRow();
-        ghostReadRow = addRow();
-        ghostOnlineRow = addRow();
-        ghostTypingRow = addRow();
-        ghostInfoRow = addRow();
+        // Привид + анти-видалення — одне ціле (hot-модуль ghost). Вимкнений = зник з налаштувань.
+        boolean ghostOn = false;
+        try {
+            ghostOn = app.amegram.hot.HotModulesManager.isModuleEnabled("ghost");
+        } catch (Throwable ignore) {
+        }
+        if (ghostOn) {
+            headerGhostRow = addRow();
+            ghostReadRow = addRow();
+            ghostOnlineRow = addRow();
+            ghostTypingRow = addRow();
+            ghostInfoRow = addRow();
 
-        headerHistoryRow = addRow();
-        saveDeletedMessagesRow = addRow();
-        saveDeletedMediaRow = addRow();
-        historyInfoRow = addRow();
+            headerHistoryRow = addRow();
+            saveDeletedMessagesRow = addRow();
+            saveDeletedMediaRow = addRow();
+            historyInfoRow = addRow();
+        } else {
+            headerGhostRow = ghostReadRow = ghostOnlineRow = ghostTypingRow = ghostInfoRow = -1;
+            headerHistoryRow = saveDeletedMessagesRow = saveDeletedMediaRow = historyInfoRow = -1;
+        }
 
         headerGeneralPrivacyRow = addRow();
         hidePhoneRow = addRow();
@@ -80,23 +91,46 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         } else if (position == ghostReadRow) {
             boolean v = !NekoConfig.sendReadMessagePackets.Bool();
             NekoConfig.sendReadMessagePackets.setConfigBool(v);
+            try {
+                app.amegram.hot.HotModulesManager.putBool("ghost", "hide_read", !v);
+                app.amegram.module.AmegramConfig.setBool("ghost_hide_read", !v);
+            } catch (Throwable ignore) {
+            }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
         } else if (position == ghostOnlineRow) {
             boolean v = !NekoConfig.sendOnlinePackets.Bool();
             NekoConfig.sendOnlinePackets.setConfigBool(v);
+            try {
+                app.amegram.hot.HotModulesManager.putBool("ghost", "hide_online", !v);
+                app.amegram.module.AmegramConfig.setBool("ghost_hide_online", !v);
+            } catch (Throwable ignore) {
+            }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
         } else if (position == ghostTypingRow) {
             boolean v = !NekoConfig.sendUploadProgress.Bool();
             NekoConfig.sendUploadProgress.setConfigBool(v);
+            try {
+                app.amegram.hot.HotModulesManager.putBool("ghost", "hide_typing", !v);
+                app.amegram.module.AmegramConfig.setBool("ghost_hide_typing", !v);
+            } catch (Throwable ignore) {
+            }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
         } else if (position == saveDeletedMessagesRow) {
             boolean v = !NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool();
             NaConfig.INSTANCE.getEnableSaveDeletedMessages().setConfigBool(v);
+            try {
+                app.amegram.hot.HotModulesManager.putBool("ghost", "save_deleted_messages", v);
+            } catch (Throwable ignore) {
+            }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
             listAdapter.notifyItemChanged(saveDeletedMediaRow);
         } else if (position == saveDeletedMediaRow) {
             boolean v = !NaConfig.INSTANCE.getMessageSavingSaveMedia().Bool();
             NaConfig.INSTANCE.getMessageSavingSaveMedia().setConfigBool(v);
+            try {
+                app.amegram.hot.HotModulesManager.putBool("ghost", "save_deleted_media", v);
+            } catch (Throwable ignore) {
+            }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
         } else if (position == hidePhoneRow) {
             boolean v = !NekoConfig.hidePhone.Bool();

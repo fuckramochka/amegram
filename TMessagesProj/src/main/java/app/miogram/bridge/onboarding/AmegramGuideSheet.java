@@ -101,10 +101,8 @@ public class AmegramGuideSheet extends BottomSheet {
         cardBgColor = ColorUtils.blendARGB(bgColor, 0xFFFFFFFF, 0.08f);
 
         selectedAme = MiogramCompanionPrefs.isAmeActive();
-
-        MiogramCompanionPrefs.setGuideShownVersion(BuildVars.BUILD_VERSION_STRING);
-        MiogramCompanionPrefs.setOnboardingCompleted(true);
-        MiogramPluginsMarket.markOnboardingDone(context);
+        // Не відмічаємо гід пройденим до фактичного фінішу — інакше після вбивства
+        // процесу/оновлення онбординг більше не покажеться (див. LaunchActivity тригер).
 
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
@@ -872,6 +870,13 @@ public class AmegramGuideSheet extends BottomSheet {
     }
 
     private void nextStep() {
+        try {
+            if (currentStep == 3) {
+                applySelectedPlugins();
+            }
+        } catch (Throwable t) {
+            org.telegram.messenger.FileLog.e("AmegramGuideSheet: error applying plugins on skip", t);
+        }
         if (currentStep < TOTAL_STEPS - 1) {
             renderStep(currentStep + 1);
         } else {
@@ -881,13 +886,17 @@ public class AmegramGuideSheet extends BottomSheet {
 
     @Override
     public void dismiss() {
-        MiogramCompanionPrefs.setGuideShownVersion(BuildVars.BUILD_VERSION_STRING);
-        MiogramCompanionPrefs.setOnboardingCompleted(true);
-        MiogramPluginsMarket.markOnboardingDone(getContext());
         super.dismiss();
     }
 
     private void finishOnboarding() {
+        try {
+            if (currentStep == 3) {
+                applySelectedPlugins();
+            }
+        } catch (Throwable t) {
+            org.telegram.messenger.FileLog.e("AmegramGuideSheet: error applying plugins on finish", t);
+        }
         MiogramCompanionPrefs.setGuideShownVersion(BuildVars.BUILD_VERSION_STRING);
         MiogramCompanionPrefs.setOnboardingCompleted(true);
         MiogramPluginsMarket.markOnboardingDone(getContext());

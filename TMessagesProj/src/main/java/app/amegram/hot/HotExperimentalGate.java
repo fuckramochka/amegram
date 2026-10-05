@@ -58,13 +58,16 @@ public final class HotExperimentalGate {
     }
 
     public static boolean isSaveDeletedMessages() {
-        HotExperimental e = service();
-        return e != null && e.isSaveDeletedMessages();
+        // Анти-видалення — частина ghost-модуля (єдине ціле).
+        return HotGhostGate.isSaveDeletedMessages();
     }
 
     public static boolean isSaveEditHistory() {
-        HotExperimental e = service();
-        return e != null && e.isSaveEditHistory();
+        return HotGhostGate.isSaveEditHistory();
+    }
+
+    public static boolean isSaveDeletedMedia() {
+        return HotGhostGate.isSaveDeletedMedia();
     }
 
     public static boolean isWidePosts() {

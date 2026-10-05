@@ -29,8 +29,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
 
     private static final int ROW_VERSION = 1;
     private static final int ROW_CHECK = 2;
-    private static final int ROW_BETA = 3;
-    private static final int ROW_STABLE = 4;
+    private static final int ROW_CHANNEL = 3;
     private static final int ROW_AUTOCHECK = 5;
     private static final int ROW_WIFIONLY = 6;
     private static final int ROW_INSTALL_CACHED = 7;
@@ -74,15 +73,15 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
 
         items.add(UItem.asHeader(MiogramLocale.get("Канал оновлень", "Канал обновлений", "Update channel")));
         boolean beta = !MiogramUpdater.CHANNEL_STABLE.equals(MiogramUpdater.getUpdateChannel());
-
-        // Взаимоисключающий выбор канала через asRadio2 / asRadio
-        items.add(UItem.asRadio(ROW_BETA,
-                MiogramLocale.get("Бета-канал (Beta)", "Бета-канал (Beta)", "Beta channel"),
-                MiogramLocale.get("Нові функції та покращення раніше", "Новые функции и улучшения раньше", "Get fresh features earlier")).setChecked(beta));
-
-        items.add(UItem.asRadio(ROW_STABLE,
-                MiogramLocale.get("Стабільний канал (Stable)", "Стабильный канал (Stable)", "Stable channel"),
-                MiogramLocale.get("Рідші та максимально вивірені збірки", "Более редкие и стабильные сборки", "Calmer and battle-tested releases")).setChecked(!beta));
+        String curName = beta
+                ? MiogramLocale.get("Бета (Beta)", "Бета (Beta)", "Beta")
+                : MiogramLocale.get("Стабільний (Stable)", "Стабильный (Stable)", "Stable");
+        // Одна кнопка замість двох радіо (текст налізав один на одного).
+        items.add(YumiSettingCell.Factory.of(ROW_CHANNEL, R.drawable.msg_download_solar, 0xFF2196F3,
+                MiogramLocale.get("Канал: " + curName, "Канал: " + curName, "Channel: " + curName),
+                MiogramLocale.get("Натисни для вибору • Beta: раніше, можливі баги • Stable: рідше, вивірено",
+                        "Нажми для выбора • Beta: раньше, возможны баги • Stable: реже, проверено",
+                        "Tap to choose • Beta: earlier, may have bugs • Stable: calmer, tested")));
 
         items.add(UItem.asShadow(MiogramLocale.get(
                 "Канал визначає, які версії завантажуватимуться автоматично.",
@@ -116,12 +115,8 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
             AndroidUtilities.runOnUIThread(() -> {
                 if (listView != null && listView.adapter != null) listView.adapter.update(true);
             }, 1200);
-        } else if (item.id == ROW_BETA) {
-            MiogramUpdater.setUpdateChannel(MiogramUpdater.CHANNEL_BETA);
-            listView.adapter.update(true);
-        } else if (item.id == ROW_STABLE) {
-            MiogramUpdater.setUpdateChannel(MiogramUpdater.CHANNEL_STABLE);
-            listView.adapter.update(true);
+        } else if (item.id == ROW_CHANNEL) {
+            showChannelChooser();
         } else if (item.id == ROW_AUTOCHECK) {
             MiogramUpdater.setAutoCheckEnabled(!MiogramUpdater.isAutoCheckEnabled());
             listView.adapter.update(true);
@@ -137,6 +132,36 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
             File cached = ctx != null ? MiogramDownloadManager.getCachedApk(ctx, null) : null;
             if (cached != null) cached.delete();
             listView.adapter.update(true);
+        }
+    }
+
+    private void showChannelChooser() {
+        try {
+            android.content.Context ctx = getContext();
+            if (ctx == null) return;
+            boolean beta = !MiogramUpdater.CHANNEL_STABLE.equals(MiogramUpdater.getUpdateChannel());
+            String[] items = new String[]{
+                    MiogramLocale.get("Бета (Beta) — + раніше фічі, − можливі баги",
+                            "Бета (Beta) — + раньше фичи, − возможны баги",
+                            "Beta — + earlier features, − may have bugs"),
+                    MiogramLocale.get("Стабільний (Stable) — + вивірено, − рідше оновлення",
+                            "Стабильный (Stable) — + проверено, − реже обновления",
+                            "Stable — + battle-tested, − calmer releases")
+            };
+            org.telegram.ui.ActionBar.AlertDialog.Builder b =
+                    new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
+            b.setTitle(MiogramLocale.get("Канал оновлень", "Канал обновлений", "Update channel"));
+            b.setItems(items, (d, which) -> {
+                MiogramUpdater.setUpdateChannel(which == 0
+                        ? MiogramUpdater.CHANNEL_BETA : MiogramUpdater.CHANNEL_STABLE);
+                if (listView != null && listView.adapter != null) listView.adapter.update(true);
+            });
+            b.setNegativeButton(MiogramLocale.get("Скасувати", "Отмена", "Cancel"), null);
+            b.show();
+        } catch (Throwable ignore) {
+            boolean cur = !MiogramUpdater.CHANNEL_STABLE.equals(MiogramUpdater.getUpdateChannel());
+            MiogramUpdater.setUpdateChannel(cur ? MiogramUpdater.CHANNEL_STABLE : MiogramUpdater.CHANNEL_BETA);
+            if (listView != null && listView.adapter != null) listView.adapter.update(true);
         }
     }
 

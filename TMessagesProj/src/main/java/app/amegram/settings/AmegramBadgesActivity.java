@@ -31,6 +31,7 @@ public class AmegramBadgesActivity extends BaseFragment {
     private static final int ROW_GRANT = 2;
 
     private UniversalRecyclerView listView;
+    private final java.util.List<MiogramBadgeType> catalogOrder = new java.util.ArrayList<>();
 
     @Override
     public View createView(Context context) {
@@ -55,9 +56,21 @@ public class AmegramBadgesActivity extends BaseFragment {
         String badgeTitle = selfId > 0 ? MiogramBadgeManager.getBadgeTitle(selfId)
                 : MiogramLocale.get("Увійди, щоб побачити бейдж", "Войди, чтобы увидеть бейдж", "Log in to see your badge");
 
-        items.add(YumiSettingCell.Factory.of(ROW_MY_BADGE, R.drawable.msg_premium_normal, YumiTheme.getPrimary(),
-                MiogramLocale.get("Мій бейдж", "Мой бейдж", "My badge"),
-                badgeTitle + " • " + MiogramLocale.get("Натисніть для деталей", "Нажмите для подробностей", "Tap for details")));
+        android.graphics.drawable.Drawable myIcon = null;
+        try {
+            myIcon = new app.miogram.bridge.badge.MiogramArrowDrawable(28,
+                    selfId > 0 ? MiogramBadgeManager.getBadgeType(selfId) : MiogramBadgeType.ORIGINAL);
+        } catch (Throwable ignore) {
+        }
+        if (myIcon != null) {
+            items.add(YumiSettingCell.Factory.ofDrawable(ROW_MY_BADGE, myIcon,
+                    MiogramLocale.get("Мій бейдж", "Мой бейдж", "My badge"),
+                    badgeTitle + " • " + MiogramLocale.get("Натисніть для деталей", "Нажмите для подробностей", "Tap for details")));
+        } else {
+            items.add(YumiSettingCell.Factory.of(ROW_MY_BADGE, R.drawable.msg_premium_normal, YumiTheme.getPrimary(),
+                    MiogramLocale.get("Мій бейдж", "Мой бейдж", "My badge"),
+                    badgeTitle + " • " + MiogramLocale.get("Натисніть для деталей", "Нажмите для подробностей", "Tap for details")));
+        }
 
         items.add(UItem.asShadow(MiogramLocale.get(
                 "Бейджі видає спільнота Yumigram. Кеш оновлюється при відкритті профілю.",
@@ -65,13 +78,24 @@ public class AmegramBadgesActivity extends BaseFragment {
                 "Badges are granted by the Yumigram community. Cache refreshes on profile open.")));
 
         items.add(UItem.asHeader(MiogramLocale.get("Каталог стилів", "Каталог стилей", "Style catalog")));
+        catalogOrder.clear();
         MiogramBadgeType[] types = MiogramBadgeType.values();
         for (int i = 0; i < types.length; i++) {
+            catalogOrder.add(types[i]);
             MiogramBadgeType type = types[i];
-            int color = getBadgeAccentColor(type);
             String title = type.getTitle();
             String subtitle = type.getCode() + " • " + MiogramLocale.get("Натисніть для перегляду", "Нажмите для предпросмотра", "Tap to preview");
-            items.add(YumiSettingCell.Factory.of(100 + i, R.drawable.msg_settings_premium, color, title, subtitle));
+            android.graphics.drawable.Drawable icon = null;
+            try {
+                icon = new app.miogram.bridge.badge.MiogramArrowDrawable(28, type);
+            } catch (Throwable ignore) {
+            }
+            if (icon != null) {
+                items.add(YumiSettingCell.Factory.ofDrawable(100 + i, icon, title, subtitle));
+            } else {
+                int color = getBadgeAccentColor(type);
+                items.add(YumiSettingCell.Factory.of(100 + i, R.drawable.msg_settings_premium, color, title, subtitle));
+            }
         }
 
         items.add(UItem.asShadow(MiogramLocale.get(
@@ -117,7 +141,8 @@ public class AmegramBadgesActivity extends BaseFragment {
         } else if (item.id == ROW_GRANT) {
             MiogramBadgeGrantSheet.show(ctx);
         } else if (item.id >= 100) {
-            // Интерактивный предпросмотр выбранного стиля
+            // Интерактивный предпросмотр: каталог стилів вже показує справжні бейджі,
+            // шит відкриває повну сітку стилів для порівняння.
             MiogramBadgeBottomSheet.show(ctx, MiogramBadgeManager.FOUNDER_USER_ID);
         }
     }

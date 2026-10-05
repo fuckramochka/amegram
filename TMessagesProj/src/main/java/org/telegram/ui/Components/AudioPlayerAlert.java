@@ -1867,18 +1867,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         return modernPlayerLayout;
     }
 
-    /** Amegram Core: player module master switch (default ON = current behavior). */
+    /** Player master switch — єдине джерело: HotModules. Вимкнений = нема пошуку взагалі. */
     private static boolean isPlayerModuleOn() {
         try {
-            android.content.Context ctx =
-                    org.telegram.messenger.ApplicationLoader.applicationContext;
-            if (ctx != null) {
-                return ctx.getSharedPreferences("amegram_module_prefs",
-                        android.content.Context.MODE_PRIVATE).getBoolean("player_enabled", true);
-            }
+            return app.amegram.hot.HotModulesManager.isModuleEnabled("player");
         } catch (Throwable ignore) {
         }
-        return true;
+        return false;
     }
 
     public void openMusicSearch() {
@@ -1887,16 +1882,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             dismiss();
             return;
         }
-        if (parentActivity != null) {
-            parentActivity.presentFragment(new app.miogram.bridge.music.MiogramMusicSearchActivity());
-            dismiss();
-        } else if (org.telegram.ui.LaunchActivity.instance != null) {
-            org.telegram.ui.ActionBar.INavigationLayout layout = org.telegram.ui.LaunchActivity.instance.getActionBarLayout();
-            if (layout != null) {
-                layout.presentFragment(new app.miogram.bridge.music.MiogramMusicSearchActivity());
-                dismiss();
-            }
-        }
+        // Модуль вимкнений — fallback видалено: пошуку нема взагалі.
     }
 
     private void onSubItemClick(int id) {

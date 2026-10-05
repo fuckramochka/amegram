@@ -33,6 +33,35 @@ public final class HotGhostGate {
         return g != null && g.hideOnline();
     }
 
+    public static boolean hideRead() {
+        HotGhost g = service();
+        return g != null && g.hideRead();
+    }
+
+    public static boolean hideStories() {
+        HotGhost g = service();
+        return g != null && g.hideStories();
+    }
+
+    /** Анти-видалення — частина ghost-модуля (єдине ціле). */
+    public static boolean isSaveDeletedMessages() {
+        HotGhost g = service();
+        if (g != null) return g.isSaveDeletedMessages();
+        return false;
+    }
+
+    public static boolean isSaveEditHistory() {
+        HotGhost g = service();
+        if (g != null) return g.isSaveEditHistory();
+        return false;
+    }
+
+    public static boolean isSaveDeletedMedia() {
+        HotGhost g = service();
+        if (g != null) return g.isSaveDeletedMedia();
+        return false;
+    }
+
     /** true = запит мовчки відкинути (токен липовий, колбек не зовемо). */
     public static boolean shouldBlock(TLObject object) {
         if (object == null) return false;

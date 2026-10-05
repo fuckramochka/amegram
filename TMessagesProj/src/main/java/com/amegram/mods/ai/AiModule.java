@@ -72,8 +72,12 @@ public class AiModule implements HotModule, HotAiText {
             return;
         }
         try {
+            if ("nano".equals(provider(h))) {
+                callback.onError("Nano-режим: дочекайся завантаження on-device моделі");
+                return;
+            }
             String text = AiClient.generate(h.getString("gemini_key", ""),
-                    h.getString("model", ""),
+                    "gemini-3.5-flash-lite",
                     systemPrompt != null ? systemPrompt : persona(), userText);
             callback.onResult(text);
         } catch (Exception e) {
@@ -91,11 +95,22 @@ public class AiModule implements HotModule, HotAiText {
         return "Штучний інтелект (ШІ)";
     }
 
+    public static String provider(HotHost h) {
+        String p = h != null ? h.getString("provider", "api") : "api";
+        return "nano".equals(p) ? "nano" : "api";
+    }
+
+    public static String personaName(HotHost h) {
+        boolean kangel = h != null && h.getBool("persona_kangel", false);
+        return kangel ? "KAngel" : "Ame";
+    }
+
     @Override
     public void fillSettings(List<HotRow> rows) {
         HotHost h = host;
+        String prov = provider(h);
 
-        rows.add(HotRow.header("Telegram AI без Premium (12.10.6)"));
+        rows.add(HotRow.header("Telegram AI без Premium"));
         boolean replaceEd = h == null || h.getBool("replace_editor", true);
         rows.add(HotRow.switchRow("replace_editor", "Робота з чернетками (Editor)",
                 "Переклад, стилізація та виправлення чернеток через свій ШІ", replaceEd));
@@ -104,28 +119,32 @@ public class AiModule implements HotModule, HotAiText {
         rows.add(HotRow.switchRow("replace_summaries", "Переказ повідомлень (Summaries)",
                 "Швидкий переказ довгих публікацій у каналах без Premium", replaceSum));
 
-        rows.add(HotRow.header("Локальний ШІ"));
-        boolean nano = h != null && h.getBool("gemini_nano", false);
-        rows.add(HotRow.switchRow("gemini_nano", "Gemini Nano (On-device)",
-                "Локальна обробка на підтримуваних чипах, нуль запитів на сервер", nano));
+        rows.add(HotRow.header("Провайдер: тільки Nano або Gemini API"));
+        rows.add(HotRow.button("provider", "Провайдер: " + ("nano".equals(prov) ? "Gemini Nano (на пристрої)" : "Gemini API (3.5 Flash-Lite)"),
+                "nano".equals(prov) ? "Локально, без ключа. Качає Nano + STT-модель." : "Хмара Google. Потрібен ключ AI Studio."));
 
-        rows.add(HotRow.header("Провайдери та API"));
-        rows.add(HotRow.inputRow("gemini_key", "API-ключ (Gemini / Perplexity / OpenAI)",
-                h != null ? h.getString("gemini_key", "") : ""));
-        rows.add(HotRow.inputRow("model", "Модель",
-                h != null ? h.getString("model", "gemini-2.5-flash") : ""));
+        if ("nano".equals(prov)) {
+            rows.add(HotRow.info("Nano працює офлайн. При першому запуску докачається Nano-модель"
+                    + " і модель розшифровки голосу (якщо чип не тягне STT). Ключ не потрібен."));
+            rows.add(HotRow.button("download_nano", "Завантажити моделі Nano",
+                    "Nano + голосова модель за потреби"));
+        } else {
+            rows.add(HotRow.inputRow("gemini_key", "API-ключ Gemini",
+                    h != null ? h.getString("gemini_key", "") : ""));
+            rows.add(HotRow.button("get_key", "Отримати ключ",
+                    "Відкриє AI Studio (aistudio.google.com)"));
+            rows.add(HotRow.info("Модель фіксована: gemini-3.5-flash-lite. Тільки Gemini API, без сторонніх."));
+        }
 
         rows.add(HotRow.header("Персона супутника"));
-        boolean kangel = h != null && h.getBool("persona_kangel", false);
-        rows.add(HotRow.switchRow("persona_kangel", "KAngel",
-                "Вимкнено = Ame", kangel));
+        rows.add(HotRow.button("persona", "Персона: " + personaName(h),
+                "Ame — неонова, KAngel — спокійна. Натисни для вибору."));
 
         boolean history = h != null && h.getBool("save_ai_history", true);
         rows.add(HotRow.switchRow("save_ai_history", "Зберігати історію чату",
                 "Збереження діалогу з ШІ між перезапусками", history));
 
         rows.add(HotRow.button("open_chat", "Відкрити ШІ-чат", ""));
-        rows.add(HotRow.info("Підтримка Gemini Nano, Perplexity, OpenAI та Responses API."));
     }
 
     @Override
@@ -137,9 +156,32 @@ public class AiModule implements HotModule, HotAiText {
 
     @Override
     public void onSettingsAction(String rowId) {
-        if ("open_chat".equals(rowId) && host != null) {
+        if (host == null) return;
+        if ("open_chat".equals(rowId)) {
             host.openModuleScreen("companion");
+        } else if ("get_key".equals(rowId)) {
+            try {
+                android.content.Context ctx = host.context();
+                android.content.Intent it = new android.content.Intent(
+                        android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("https://aistudio.google.com/app/apikey"));
+                it.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK);
+                ctx.startActivity(it);
+            } catch (Throwable ignore) {
+            }
+        } else if ("provider".equals(rowId)) {
+            cycleProvider();
+        } else if ("persona".equals(rowId)) {
+            host.setBool("persona_kangel", !"KAngel".equals(personaName(host)));
+        } else if ("download_nano".equals(rowId)) {
+            host.toast("Nano-моделі докачаються при першому запуску Nano-режиму (потрібен перезапуск чату)");
         }
+    }
+
+    private void cycleProvider() {
+        if (host == null) return;
+        String cur = provider(host);
+        host.setString("provider", "nano".equals(cur) ? "api" : "nano");
     }
 
     @Override
@@ -165,7 +207,7 @@ public class AiModule implements HotModule, HotAiText {
                 try {
                     out[0] = AiClient.generate(
                             host.getString("gemini_key", ""),
-                            host.getString("model", ""),
+                            "gemini-3.5-flash-lite",
                             persona(), text);
                 } catch (Exception e) {
                     err[0] = e;

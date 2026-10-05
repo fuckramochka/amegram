@@ -284,7 +284,12 @@ public class ChatAttachAlertAudioLayout extends ChatAttachAlert.AttachAlertLayou
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asSpace(-100, dp(1)));
-        items.add(UItem.asButton(MIOGRAM_ONLINE_SEARCH_BUTTON, R.drawable.outline_header_search, app.miogram.bridge.MiogramLocale.get("Онлайн-пошук музики (Deezer, iTunes, Cloud)", "Онлайн-поиск музыки (Deezer, iTunes, Cloud)", "Online Music Search (Deezer, iTunes, Cloud)")).accent());
+        try {
+            if (app.amegram.hot.HotModulesManager.isModuleEnabled("player")) {
+                items.add(UItem.asButton(MIOGRAM_ONLINE_SEARCH_BUTTON, R.drawable.outline_header_search, app.miogram.bridge.MiogramLocale.get("Онлайн-пошук музики (Deezer, iTunes, Cloud)", "Онлайн-поиск музыки (Deezer, iTunes, Cloud)", "Online Music Search (Deezer, iTunes, Cloud)")).accent());
+            }
+        } catch (Throwable ignore) {
+        }
         int firstIndex = items.size();
         if (TextUtils.isEmpty(query)) {
             adapter.whiteSectionStart();

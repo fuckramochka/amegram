@@ -41,7 +41,7 @@ public final class HotPlayerGate {
 
     public static boolean isMusicSearchAvailable() {
         HotPlayer p = service();
-        return p != null || HotModulesManager.isModuleInstalled("player");
+        return p != null;
     }
 
     public static void openMusicSearch(Context context) {

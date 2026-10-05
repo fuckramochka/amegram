@@ -190,14 +190,7 @@ public class ExperimentalModule implements HotModule, HotExperimental {
         rows.add(HotRow.switchRow("hardware_decoder", "Апаратний декодер відео",
                 "Відтворення важких відео з апаратним прискоренням GPU", isPreferHardwareDecoder()));
 
-        rows.add(HotRow.header("Історія повідомлень"));
-        rows.add(HotRow.switchRow("save_deleted_messages", "Збереження видалених",
-                "Повідомлення залишаються видимими після видалення співрозмовником", isSaveDeletedMessages()));
-        rows.add(HotRow.switchRow("save_edit_history", "Історія редагувань",
-                "Збереження початкового тексту відредагованих повідомлень", isSaveEditHistory()));
-        rows.add(HotRow.button("export_saved_messages", "Резервна копія в Збережене",
-                "Надіслати всю базу видалених та відредагованих повідомлень у Saved Messages"));
-
+        rows.add(HotRow.info("Видалені повідомлення переїхали в модуль Привида (одне ціле)."));
         rows.add(HotRow.info("Експериментальні оптимізації працюють нативно у клієнті Yumigram."));
     }
 

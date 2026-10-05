@@ -958,8 +958,28 @@ public final class HotModulesManager {
         }
 
         @Override
+        public void setBool(String key, boolean value) {
+            putBool(key, value);
+        }
+
+        @Override
+        public void setString(String key, String value) {
+            putString(key, value);
+        }
+
+        @Override
+        public void setInt(String key, int value) {
+            putInt(key, value);
+        }
+
+        @Override
         public void openModuleScreen(String screenId) {
             HotModulesManager.openModuleScreen(moduleId, screenId);
+        }
+
+        @Override
+        public void openSettings() {
+            openModuleScreen("settings");
         }
     }
 

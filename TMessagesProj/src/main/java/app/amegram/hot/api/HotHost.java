@@ -16,13 +16,25 @@ public interface HotHost {
 
     void putBool(String key, boolean value);
 
+    default void setBool(String key, boolean value) {
+        putBool(key, value);
+    }
+
     String getString(String key, String def);
 
     void putString(String key, String value);
 
+    default void setString(String key, String value) {
+        putString(key, value);
+    }
+
     int getInt(String key, int def);
 
     void putInt(String key, int value);
+
+    default void setInt(String key, int value) {
+        putInt(key, value);
+    }
 
     void toast(String text);
 
@@ -41,4 +53,8 @@ public interface HotHost {
 
     /** Відкрити екран модуля (див. {@link HotModule#createScreen}). */
     void openModuleScreen(String screenId);
+
+    default void openSettings() {
+        openModuleScreen("settings");
+    }
 }

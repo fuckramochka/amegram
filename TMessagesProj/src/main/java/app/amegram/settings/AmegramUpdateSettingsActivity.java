@@ -100,7 +100,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         File cached = ctx != null ? MiogramDownloadManager.getCachedApk(ctx, null) : null;
         if (cached != null && cached.exists() && cached.length() > 0) {
             items.add(UItem.asHeader(MiogramLocale.get("Завантажений файл", "Загруженный файл", "Cached APK")));
-            items.add(YumiSettingCell.Factory.of(ROW_INSTALL_CACHED, R.drawable.msg_document, 0xFF4CAF50,
+            items.add(YumiSettingCell.Factory.of(ROW_INSTALL_CACHED, R.drawable.msg_download_solar, 0xFF4CAF50,
                     MiogramLocale.get("Встановити оновлення", "Установить обновление", "Install update"),
                     AndroidUtilities.formatFileSize(cached.length())));
             items.add(YumiSettingCell.Factory.of(ROW_DELETE_CACHED, R.drawable.msg_delete, YumiTheme.getError(),

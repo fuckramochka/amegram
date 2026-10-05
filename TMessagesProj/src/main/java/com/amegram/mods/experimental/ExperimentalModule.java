@@ -195,14 +195,27 @@ public class ExperimentalModule implements HotModule, HotExperimental {
                 "Повідомлення залишаються видимими після видалення співрозмовником", isSaveDeletedMessages()));
         rows.add(HotRow.switchRow("save_edit_history", "Історія редагувань",
                 "Збереження початкового тексту відредагованих повідомлень", isSaveEditHistory()));
+        rows.add(HotRow.button("export_saved_messages", "Резервна копія в Збережене",
+                "Надіслати всю базу видалених та відредагованих повідомлень у Saved Messages"));
 
-        rows.add(HotRow.info("Експериментальні оптимізації працюють нативно у клієнті Amegram."));
+        rows.add(HotRow.info("Експериментальні оптимізації працюють нативно у клієнті Yumigram."));
     }
 
     @Override
     public void onSettingsToggle(String key, boolean value) {
         if (host != null) {
             host.setBool(key, value);
+        }
+    }
+
+    @Override
+    public void onSettingsAction(String rowId) {
+        if ("export_saved_messages".equals(rowId)) {
+            app.amegram.database.YumiBackupHelper.exportDatabaseToSavedMessages(
+                    org.telegram.messenger.UserConfig.selectedAccount,
+                    host != null ? host.context() : null,
+                    null
+            );
         }
     }
 

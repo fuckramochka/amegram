@@ -115,7 +115,7 @@ public class AmegramBadgesActivity extends BaseFragment {
                     ? getUserConfig().getCurrentUser().id : MiogramBadgeManager.FOUNDER_USER_ID;
             MiogramBadgeBottomSheet.show(ctx, selfId);
         } else if (item.id == ROW_GRANT) {
-            MiogramBadgeGrantSheet.show(ctx, 0, null);
+            MiogramBadgeGrantSheet.show(ctx);
         } else if (item.id >= 100) {
             // Интерактивный предпросмотр выбранного стиля
             MiogramBadgeBottomSheet.show(ctx, MiogramBadgeManager.FOUNDER_USER_ID);

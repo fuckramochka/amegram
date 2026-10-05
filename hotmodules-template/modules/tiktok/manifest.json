@@ -1,0 +1,8 @@
+{
+  "id": "tiktok",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.tiktok.TikModule",
+  "name": "TikTok MI",
+  "minApp": 7112
+}

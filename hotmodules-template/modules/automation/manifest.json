@@ -1,0 +1,8 @@
+{
+  "id": "automation",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.automation.AutomationModule",
+  "name": "Автоматизація",
+  "minApp": 7112
+}

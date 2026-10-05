@@ -373,6 +373,7 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         installCrashReportFilter();
         try {
             app.amegram.module.AmegramModule.init(this);
+            app.amegram.hot.HotModulesManager.attachEnabledAsync();
         } catch (Throwable ignore) {
         }
         app.miogram.bridge.perf.MiogramPerformanceOptimizer.init(this);

@@ -1,0 +1,8 @@
+{
+  "id": "experimental",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.experimental.ExperimentalModule",
+  "name": "Експерименти",
+  "minApp": 7112
+}

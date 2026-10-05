@@ -964,7 +964,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             }
             case 102: {
-                presentFragment(new app.miogram.bridge.settings.MiogramSettingsActivity());
+                presentFragment(new app.amegram.settings.AmegramSettingsActivity());
                 break;
             }
             case 103: {

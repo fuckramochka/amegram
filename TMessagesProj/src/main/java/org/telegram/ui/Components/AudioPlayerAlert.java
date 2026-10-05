@@ -1882,6 +1882,11 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
     }
 
     public void openMusicSearch() {
+        if (app.amegram.hot.HotPlayerGate.isMusicSearchAvailable()) {
+            app.amegram.hot.HotPlayerGate.openMusicSearch(getContext());
+            dismiss();
+            return;
+        }
         if (parentActivity != null) {
             parentActivity.presentFragment(new app.miogram.bridge.music.MiogramMusicSearchActivity());
             dismiss();

@@ -1,0 +1,8 @@
+{
+  "id": "vault",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.vault.VaultModule",
+  "name": "Хмарне сховище",
+  "minApp": 7112
+}

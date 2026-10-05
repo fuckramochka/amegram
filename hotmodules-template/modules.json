@@ -1,0 +1,165 @@
+{
+  "updated": 1728067200,
+  "modules": [
+    {
+      "id": "player",
+      "name": "Музика та плеєр",
+      "description": "Глобальний пошук музики з 6 джерел (Telegram, YouTube, Deezer, iTunes, Jamendo, Audius), візуалізатор та тексти пісень (LRC).",
+      "entry": "com.amegram.mods.player.PlayerModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/player-1.0.0/player-1.0.0.hmod",
+          "sha256": "1cc980103ff76c0a3190767b34fd075d36204cc528401607270768bbe0a48428",
+          "minApp": 7112,
+          "changelog": "Повний пошук музики, відтворення, стрімінг та кешування."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "ghost",
+      "name": "Режим привида",
+      "description": "Повна невидимість у мережі: приховування прочитання повідомлень, історій, статусу онлайн та набору тексту.",
+      "entry": "com.amegram.mods.ghost.GhostModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ghost-1.0.0/ghost-1.0.0.hmod",
+          "sha256": "9ee109bc98f44f3e5ec2c101805f468564246f98a9b2a85271010fcb08be95c5",
+          "minApp": 7112,
+          "changelog": "Перехоплення на рівні мережі: readHistory, readStories, typing та offline статус."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "ame",
+      "name": "Кастомізація профіля та інтерфейсу",
+      "description": "Аме-студія з XML-редактором, картки профіля, градієнти, картки діалогів, скляне розмиття, кольори та світіння повідомлень.",
+      "entry": "com.amegram.mods.ame.AmeModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ame-1.0.0/ame-1.0.0.hmod",
+          "sha256": "54fbe2f45c6b8ea5197016227b2482dd212b2538a956b9978486cafdeb979aa4",
+          "minApp": 7112,
+          "changelog": "Повна кастомізація профіля та чатів."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "vault",
+      "name": "Хмарне сховище",
+      "description": "Зашифрований AES-256-GCM віртуальний диск у форум-супергрупі з автоматичним нарізанням файлів на чанки та фоновою синхронізацією.",
+      "entry": "com.amegram.mods.vault.VaultModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/vault-1.0.0/vault-1.0.0.hmod",
+          "sha256": "6d6e360e571aeab974323028896a008dbded5d93ac60bdae41bdea62718efc59",
+          "minApp": 7112,
+          "changelog": "Шифрування файлів будь-якого розміру, папки-топіки, автосинхронізація."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "tiktok",
+      "name": "TikTok MI",
+      "description": "Внутрішній відеоплеєр без водяних знаків, очищення трекінг-посилань та підключення акаунта TikTok MI.",
+      "entry": "com.amegram.mods.tiktok.TikModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/tiktok-1.0.0/tiktok-1.0.0.hmod",
+          "sha256": "2c7beb9264861bd3b8e7552830a03ca7b35f4c245e40bd55d4040b882d1bec35",
+          "minApp": 7112,
+          "changelog": "Плеєр без ватермарок, синхронізація акаунта, чисті URL."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "stt",
+      "name": "ШІ-Розшифровка",
+      "description": "Розпізнавання голосу та кружечків на базі Google Gemini або OpenAI Whisper BYOK.",
+      "entry": "com.amegram.mods.stt.SttModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/stt-1.0.0/stt-1.0.0.hmod",
+          "sha256": "6f1c480d5ba4519460bbb3cdb093962b9e10cf8abec25a2f910a410361a7ac6e",
+          "minApp": 7112,
+          "changelog": "Миттєва транскрипція аудіо за власним ключем API."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "ai",
+      "name": "ШІ-Компаньйон",
+      "description": "Інтерактивний персональний супутник Ame / KAngel з пам'яттю, настроєм та кастомними підказками.",
+      "entry": "com.amegram.mods.ai.AiModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ai-1.0.0/ai-1.0.0.hmod",
+          "sha256": "9192bc35b59bfbce42ac74b9b1afd51125c6ed8c4b71eb9bac124b5d9695f532",
+          "minApp": 7112,
+          "changelog": "Чат зі супутником, персони Ame та KAngel."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "experimental",
+      "name": "Експерименти",
+      "description": "Безліміт закріплених чатів та стікерів, прискорення завантаження, шумозаглушення, підвищений бітрейт відео та збереження видалених повідомлень.",
+      "entry": "com.amegram.mods.experimental.ExperimentalModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/experimental-1.0.0/experimental-1.0.0.hmod",
+          "sha256": "e933178f8474f3e64d78e9edb597915697e89641ba1f6002968888b5961da3b9",
+          "minApp": 7112,
+          "changelog": "Оптимізації клієнта, безліміти та збереження повідомлень."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "automation",
+      "name": "Автоматизація",
+      "description": "Фонова періодична синхронізація хмари, автобекап Обраного та обслуговування тимчасових файлів.",
+      "entry": "com.amegram.mods.automation.AutomationModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/automation-1.0.0/automation-1.0.0.hmod",
+          "sha256": "a4d5b7528b26ed511236190c4d5857f1eed1e265fa415771465ab8aacf392cf4",
+          "minApp": 7112,
+          "changelog": "Фонові планувальники та автобекапи."
+        }
+      },
+      "history": []
+    },
+    {
+      "id": "demo",
+      "name": "Демо модуль",
+      "description": "Зразок нативного модуля для розробників розширень Амэграм.",
+      "entry": "com.amegram.mods.demo.DemoModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/demo-1.0.0/demo-1.0.0.hmod",
+          "sha256": "7d50d7d3217d76b14267c9a6543108ad8c37836f80b409b9a52a2bc453e81067",
+          "minApp": 7112,
+          "changelog": "Демонстраційний шаблон."
+        }
+      },
+      "history": []
+    }
+  ]
+}

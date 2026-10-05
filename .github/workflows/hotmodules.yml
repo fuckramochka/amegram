@@ -30,6 +30,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Set up Python for Chaquopy
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Point Chaquopy at that Python
+        run: echo "CHAQUOPY_BUILD_PYTHON=$(which python3.11 || which python)" >> $GITHUB_ENV
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
         with:

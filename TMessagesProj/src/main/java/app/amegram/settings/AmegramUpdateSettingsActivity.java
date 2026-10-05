@@ -56,7 +56,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         items.add(UItem.asHeader(MiogramLocale.get("Статус", "Статус", "Status")));
         String ver;
         try {
-            ver = BuildConfig.BUILD_VERSION_STRING + " (" + BuildConfig.VERSION_NUM + ")";
+            ver = BuildConfig.BUILD_VERSION_STRING + " (" + BuildConfig.BUILD_COMMIT_ID + ")";
         } catch (Throwable t) {
             ver = "?";
         }

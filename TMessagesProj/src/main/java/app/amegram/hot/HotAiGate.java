@@ -9,7 +9,11 @@ public final class HotAiGate {
     }
 
     public static HotAiText get() {
-        return HotModulesManager.service(HotServices.AI_TEXT, HotAiText.class);
+        try {
+            return HotModulesManager.getService(HotServices.AI_TEXT);
+        } catch (Throwable ignore) {
+            return null;
+        }
     }
 
     public static boolean isAvailable() {

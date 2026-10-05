@@ -28,6 +28,7 @@ import java.util.zip.ZipFile;
 
 import app.amegram.hot.api.HotHost;
 import app.amegram.hot.api.HotModule;
+import app.miogram.bridge.MiogramLocale;
 
 /**
  * Хот-модули: нативные доверенные расширения из отдельного репозитория.
@@ -360,6 +361,16 @@ public final class HotModulesManager {
                     "⚪ Выключен • 0 KB RAM • Выгружен",
                     "⚪ Disabled • 0 KB RAM • Unloaded");
         }
+    }
+
+    public static boolean getBool(String moduleId, String key, boolean def) {
+        if (appContext == null) return def;
+        return appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).getBoolean(key, def);
+    }
+
+    public static void putBool(String moduleId, String key, boolean value) {
+        if (appContext == null) return;
+        appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).edit().putBoolean(key, value).apply();
     }
 
     public static void installBundledModule(String modId, boolean enable, Callback<Void> cb) {

@@ -151,6 +151,10 @@ public final class HotModulesManager {
         if (appContext == null) return;
         new Thread(() -> {
             try {
+                ensureBundledModulesInstalled();
+            } catch (Throwable ignore) {
+            }
+            try {
                 Thread.sleep(1000);
             } catch (InterruptedException ignore) {
             }
@@ -203,6 +207,10 @@ public final class HotModulesManager {
             }
         } catch (Throwable ignore) {
         }
+    }
+
+    public static boolean isBuiltin(String moduleId) {
+        return moduleId != null && BUILTIN_ENTRIES.containsKey(moduleId);
     }
 
     public static boolean isModuleInstalled(String moduleId) {
@@ -563,8 +571,16 @@ public final class HotModulesManager {
                     postProgress(cb, false, "Не вдалося зберегти модуль", null);
                     return;
                 }
+                boolean wasEnabled = prefs().getBoolean("enabled_" + moduleId, false);
                 prefs().edit().putString("installed_" + moduleId, m.version).apply();
                 if (autoEnable) {
+                    prefs().edit().putBoolean("enabled_" + moduleId, true).apply();
+                }
+                // Старий Handle кешований — без dropLoaded новий код не підхопиться.
+                // Вбудовані (createBuiltinModule) тінять .hmod з тим самим FQCN
+                // (parent-first), тому їх оновлення приїде з APK; кастомні — відразу.
+                dropLoaded(moduleId);
+                if (autoEnable || wasEnabled) {
                     prefs().edit().putBoolean("enabled_" + moduleId, true).apply();
                     getHandle(moduleId);
                 }

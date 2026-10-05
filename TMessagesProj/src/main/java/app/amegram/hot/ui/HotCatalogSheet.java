@@ -170,14 +170,21 @@ public class HotCatalogSheet extends BottomSheet {
         row.addView(progress, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 8, 0, 0));
 
         boolean isInstalled = HotModulesManager.isModuleInstalled(entry.id);
+        boolean builtin = HotModulesManager.isBuiltin(entry.id);
         TextView action = new TextView(context);
         action.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         action.setTypeface(AndroidUtilities.bold());
         action.setTextColor(accent);
         action.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(6),
                 AndroidUtilities.dp(12), AndroidUtilities.dp(6));
-        action.setText(isInstalled ? MiogramLocale.get("Оновити", "Обновить", "Update")
-                : MiogramLocale.get("Встановити", "Установить", "Install"));
+        if (builtin) {
+            action.setText(MiogramLocale.get("Вбудовано в клієнт", "Встроен в клиент", "Built into client"));
+            action.setAlpha(0.5f);
+            action.setEnabled(false);
+        } else {
+            action.setText(isInstalled ? MiogramLocale.get("Оновити", "Обновить", "Update")
+                    : MiogramLocale.get("Встановити", "Установить", "Install"));
+        }
         action.setOnClickListener(v -> {
             if (def == null) return;
             action.setEnabled(false);

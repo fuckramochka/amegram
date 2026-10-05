@@ -93,6 +93,32 @@ public final class HotModulesManager {
     private static final Map<String, Handle> LOADED = new HashMap<>();
     private static final Map<String, Object> SERVICES = new HashMap<>();
 
+    public static final Map<String, String> BUILTIN_ENTRIES = new HashMap<>();
+    public static final Map<String, String> BUILTIN_NAMES = new HashMap<>();
+    static {
+        BUILTIN_ENTRIES.put("ghost", "com.amegram.mods.ghost.GhostModule");
+        BUILTIN_ENTRIES.put("player", "com.amegram.mods.player.PlayerModule");
+        BUILTIN_ENTRIES.put("ame", "com.amegram.mods.ame.AmeModule");
+        BUILTIN_ENTRIES.put("vault", "com.amegram.mods.vault.VaultModule");
+        BUILTIN_ENTRIES.put("tiktok", "com.amegram.mods.tiktok.TikModule");
+        BUILTIN_ENTRIES.put("ai", "com.amegram.mods.ai.AiModule");
+        BUILTIN_ENTRIES.put("experimental", "com.amegram.mods.experimental.ExperimentalModule");
+        BUILTIN_ENTRIES.put("stt", "com.amegram.mods.stt.SttModule");
+        BUILTIN_ENTRIES.put("demo", "com.amegram.mods.demo.DemoModule");
+        BUILTIN_ENTRIES.put("automation", "com.amegram.mods.automation.AutomationModule");
+
+        BUILTIN_NAMES.put("ghost", "Ghost Mode");
+        BUILTIN_NAMES.put("player", "Music Player");
+        BUILTIN_NAMES.put("ame", "Ame Studio");
+        BUILTIN_NAMES.put("vault", "Cloud Vault");
+        BUILTIN_NAMES.put("tiktok", "TikTok MI");
+        BUILTIN_NAMES.put("ai", "AI Companion");
+        BUILTIN_NAMES.put("experimental", "Experimental");
+        BUILTIN_NAMES.put("stt", "Speech To Text");
+        BUILTIN_NAMES.put("demo", "Demo Module");
+        BUILTIN_NAMES.put("automation", "Automation");
+    }
+
     private HotModulesManager() {
     }
 
@@ -180,7 +206,9 @@ public final class HotModulesManager {
     }
 
     public static boolean isModuleInstalled(String moduleId) {
-        if (moduleId == null || appContext == null) return false;
+        if (moduleId == null) return false;
+        if (BUILTIN_ENTRIES.containsKey(moduleId)) return true;
+        if (appContext == null) return false;
         String active = prefs().getString("installed_" + moduleId, "");
         if (!active.isEmpty()) return true;
         File modDir = new File(root(), moduleId);
@@ -190,6 +218,12 @@ public final class HotModulesManager {
     public static boolean isModuleEnabled(String moduleId) {
         if (moduleId == null || appContext == null) return false;
         return prefs().getBoolean("enabled_" + moduleId, false);
+    }
+
+    public static boolean isModuleActive(String moduleId) {
+        if (!isModuleEnabled(moduleId)) return false;
+        Handle h = getHandle(moduleId);
+        return h != null && h.instance != null;
     }
 
     // ---------- каталог ----------
@@ -274,6 +308,18 @@ public final class HotModulesManager {
                 } catch (Throwable e) {
                     FileLog.e("hotmods: bad " + hmod, e);
                 }
+            }
+        }
+        Set<String> listedIds = new HashSet<>();
+        for (InstalledInfo info : res) {
+            listedIds.add(info.manifest.id);
+        }
+        for (Map.Entry<String, String> entry : BUILTIN_ENTRIES.entrySet()) {
+            String bId = entry.getKey();
+            if (!listedIds.contains(bId)) {
+                boolean enabled = prefs().getBoolean("enabled_" + bId, false);
+                Manifest m = new Manifest(bId, "1.0.0", "stable", entry.getValue(), BUILTIN_NAMES.get(bId), 0);
+                res.add(new InstalledInfo(m, null, enabled, true));
             }
         }
         Collections.sort(res, (a, b) -> {
@@ -612,20 +658,65 @@ public final class HotModulesManager {
     public static synchronized Handle getHandle(String moduleId) {
         Handle cached = LOADED.get(moduleId);
         if (cached != null) return cached;
-        if (appContext == null) return null;
+        if (appContext == null) {
+            init(ApplicationLoader.applicationContext);
+            if (appContext == null) return null;
+        }
         if (!prefs().getBoolean("enabled_" + moduleId, false)) return null;
-        String version = prefs().getString("installed_" + moduleId, "");
-        if (version.isEmpty()) return null;
-        File hmod = new File(new File(new File(root(), moduleId), version), "module.hmod");
-        if (!hmod.exists()) return null;
+
+        String entryClass = BUILTIN_ENTRIES.get(moduleId);
+        String version = prefs().getString("installed_" + moduleId, "1.0.0");
+        String name = BUILTIN_NAMES.get(moduleId);
+        if (name == null) name = moduleId;
+
+        File hmod = null;
+        Manifest m = null;
+        if (version != null && !version.isEmpty()) {
+            File candidate = new File(new File(new File(root(), moduleId), version), "module.hmod");
+            if (candidate.exists()) {
+                hmod = candidate;
+                try {
+                    m = readManifest(hmod);
+                    if (m != null && m.entry != null) {
+                        entryClass = m.entry;
+                        name = m.name;
+                    }
+                } catch (Throwable ignore) {
+                }
+            }
+        }
+
+        if (m == null) {
+            if (entryClass == null) return null;
+            m = new Manifest(moduleId, version != null && !version.isEmpty() ? version : "1.0.0", "stable", entryClass, name, 0);
+        }
+
+        Class<?> cls = null;
+        // 1. Try loading directly from APK ClassLoader (built-in compiled module)
         try {
-            Manifest m = readManifest(hmod);
-            DexClassLoader loader = new DexClassLoader(hmod.getAbsolutePath(),
-                    dexOptDir().getAbsolutePath(), null, appContext.getClassLoader());
-            Class<?> cls = Class.forName(m.entry, true, loader);
+            cls = appContext.getClassLoader().loadClass(entryClass);
+        } catch (ClassNotFoundException e) {
+            // 2. Fallback to DexClassLoader for dynamic modules
+            if (hmod != null && hmod.exists()) {
+                try {
+                    DexClassLoader loader = new DexClassLoader(hmod.getAbsolutePath(),
+                            dexOptDir().getAbsolutePath(), null, appContext.getClassLoader());
+                    cls = Class.forName(entryClass, true, loader);
+                } catch (Throwable dexEx) {
+                    FileLog.e("hotmods: DexClassLoader failed: " + moduleId, dexEx);
+                }
+            }
+        }
+
+        if (cls == null) {
+            FileLog.e("hotmods: load failed, class not found: " + moduleId + " (" + entryClass + ")");
+            return null;
+        }
+
+        try {
             Object obj = cls.newInstance();
             if (!(obj instanceof HotModule)) {
-                FileLog.e("hotmods: entry is not HotModule: " + m.entry);
+                FileLog.e("hotmods: entry is not HotModule: " + entryClass);
                 return null;
             }
             HotModule mod = (HotModule) obj;
@@ -639,7 +730,7 @@ public final class HotModulesManager {
             }
             return handle;
         } catch (Throwable e) {
-            FileLog.e("hotmods: load failed: " + moduleId, e);
+            FileLog.e("hotmods: instantiation failed for " + moduleId, e);
             return null;
         }
     }

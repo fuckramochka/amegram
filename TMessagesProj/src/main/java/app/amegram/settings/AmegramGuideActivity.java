@@ -12,13 +12,14 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
 
+import app.amegram.theme.YumiSettingCell;
 import app.exteraless.plugins.ui.PluginsActivity;
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.plugins.MiogramPluginsMarket;
 
 /**
- * Гид по плагинам — лёгкая замена AmegramGuideSheet (896 строк с Discord+AGSL).
- * 3 шага текстом + кнопки действий. Дока для разработчиков: docs/AMEGRAM_PLUGINS_GUIDE.md
+ * Руководство по плагинам и скриптам в стиле Material Design 3.
+ * Наглядные карточки шагов вместо нечитаемого мелкого шрифта сносок.
  */
 public class AmegramGuideActivity extends BaseFragment {
 
@@ -46,44 +47,57 @@ public class AmegramGuideActivity extends BaseFragment {
     }
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asHeader(MiogramLocale.get("Крок 1", "Шаг 1", "Step 1")));
-        items.add(UItem.asShadow(MiogramLocale.get(
-                "Відкрий «Плагіни» та ввімкни движок. Безпечний режим вимикає все одним тумблером.",
-                "Открой «Плагины» и включи движок. Безопасный режим выключает всё одним тумблером.",
-                "Open Plugins and enable the engine. Safe mode disables everything with one toggle.")));
+        items.add(UItem.asHeader(MiogramLocale.get("Швидкий старт", "Быстрый старт", "Quick start")));
 
-        items.add(UItem.asHeader(MiogramLocale.get("Крок 2", "Шаг 2", "Step 2")));
-        items.add(UItem.asShadow(MiogramLocale.get(
-                "Постав приклад з каталогу: petpet.py, boykisser_meow.py, shrug_and_calc.lua. Файли лежать у filesDir/plugins.",
-                "Поставь пример из каталога: petpet.py, boykisser_meow.py, shrug_and_calc.lua. Файлы лежат в filesDir/plugins.",
-                "Install a sample from catalog: petpet.py, boykisser_meow.py, shrug_and_calc.lua under filesDir/plugins.")));
+        items.add(YumiSettingCell.Factory.of(ROW_STEP1, R.drawable.msg_settings_old, 0xFF2A87FF,
+                MiogramLocale.get("Крок 1: Активація движка", "Шаг 1: Активация движка", "Step 1: Enable engine"),
+                MiogramLocale.get("Відкрий розділ «Плагіни» та увімкни перемикач. Безпечний режим вимикає все в 1 клік.",
+                        "Открой раздел «Плагины» и включи переключатель. Безопасный режим выключает всё в 1 клик.",
+                        "Open Plugins section and toggle switch. Safe mode disables everything instantly.")));
 
-        items.add(UItem.asHeader(MiogramLocale.get("Крок 3", "Шаг 3", "Step 3")));
-        items.add(UItem.asShadow(MiogramLocale.get(
-                "Пиши свої: Python (Chaquopy 3.11, BasePlugin), Lua або Java-хуки. Кожен плагін просить права окремо.",
-                "Пиши свои: Python (Chaquopy 3.11, BasePlugin), Lua или Java-хуки. Каждый плагин просит права отдельно.",
-                "Write your own: Python (Chaquopy 3.11, BasePlugin), Lua or Java hooks. Each plugin asks permissions separately.")));
+        items.add(YumiSettingCell.Factory.of(ROW_STEP2, R.drawable.msg_download_solar, 0xFF00ACC1,
+                MiogramLocale.get("Крок 2: Встановлення прикладів", "Шаг 2: Установка примеров", "Step 2: Install samples"),
+                MiogramLocale.get("Обери плагін із каталогу: petpet.py, boykisser_meow.py, shrug_and_calc.lua.",
+                        "Выбери плагин из каталога: petpet.py, boykisser_meow.py, shrug_and_calc.lua.",
+                        "Pick a plugin from catalog: petpet.py, boykisser_meow.py, shrug_and_calc.lua.")));
 
-        items.add(UItem.asHeader(MiogramLocale.get("Дії", "Действия", "Actions")));
-        items.add(UItem.asSettingsCell(ROW_OPEN_PLUGINS,
-                MiogramLocale.get("Відкрити плагіни", "Открыть плагины", "Open plugins"), ""));
+        items.add(YumiSettingCell.Factory.of(ROW_STEP3, R.drawable.msg_bot, 0xFF8E24AA,
+                MiogramLocale.get("Крок 3: Власні сценарії", "Шаг 3: Свои сценарии", "Step 3: Custom scripts"),
+                MiogramLocale.get("Пиши скрипти на Python 3.11, Lua або Java. Кожен плагін просить дозволи окремо.",
+                        "Пиши скрипты на Python 3.11, Lua или Java. Каждый плагин просит разрешения отдельно.",
+                        "Write scripts in Python 3.11, Lua or Java. Each plugin requests permissions separately.")));
+
+        items.add(UItem.asShadow(null));
+
+        items.add(UItem.asHeader(MiogramLocale.get("Швидкі дії", "Быстрые действия", "Quick actions")));
+
+        items.add(YumiSettingCell.Factory.of(ROW_OPEN_PLUGINS, R.drawable.msg_bot, 0xFFE5486B,
+                MiogramLocale.get("Керування плагінами", "Управление плагинами", "Manage plugins"),
+                MiogramLocale.get("Перегляд встановлених, увімкнення та логи",
+                        "Просмотр установленных, включение и логи",
+                        "Installed list, runtime toggles and audit log")));
+
         int count = 0;
         try {
             count = MiogramPluginsMarket.getCatalog().size();
         } catch (Throwable ignore) {}
-        items.add(UItem.asSettingsCell(ROW_OPEN_CATALOG,
-                MiogramLocale.get("Каталог", "Каталог", "Catalog"),
-                count > 0 ? String.valueOf(count) : ""));
+
+        String catSubtitle = count > 0
+                ? MiogramLocale.get("Доступно плагінів у каталозі: " + count, "Доступно плагинов в каталоге: " + count, "Available in catalog: " + count)
+                : MiogramLocale.get("Перегляд онлайн-каталогу плагінів", "Просмотр онлайн-каталога плагинов", "Browse online plugin catalog");
+
+        items.add(YumiSettingCell.Factory.of(ROW_OPEN_CATALOG, R.drawable.msg_fave, 0xFFFF8F00,
+                MiogramLocale.get("Каталог плагінів", "Каталог плагинов", "Plugin catalog"),
+                catSubtitle));
+
         items.add(UItem.asShadow(MiogramLocale.get(
-                "Повний API — у docs/AMEGRAM_PLUGINS_GUIDE.md",
-                "Полный API — в docs/AMEGRAM_PLUGINS_GUIDE.md",
-                "Full API in docs/AMEGRAM_PLUGINS_GUIDE.md")));
+                "Повний посібник для розробників: docs/AMEGRAM_PLUGINS_GUIDE.md",
+                "Полное руководство для разработчиков: docs/AMEGRAM_PLUGINS_GUIDE.md",
+                "Full developer guide in docs/AMEGRAM_PLUGINS_GUIDE.md")));
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ROW_OPEN_PLUGINS) {
-            presentFragment(new PluginsActivity());
-        } else if (item.id == ROW_OPEN_CATALOG) {
+        if (item.id == ROW_OPEN_PLUGINS || item.id == ROW_OPEN_CATALOG) {
             presentFragment(new PluginsActivity());
         }
     }

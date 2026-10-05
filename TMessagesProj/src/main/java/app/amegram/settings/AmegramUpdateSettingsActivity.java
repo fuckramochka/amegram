@@ -2,7 +2,6 @@ package app.amegram.settings;
 
 import android.content.Context;
 import android.view.View;
-import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
@@ -16,13 +15,15 @@ import org.telegram.ui.Components.UniversalRecyclerView;
 import java.io.File;
 import java.util.ArrayList;
 
+import app.amegram.theme.YumiSettingCell;
+import app.amegram.theme.YumiTheme;
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.updater.MiogramDownloadManager;
 import app.miogram.bridge.updater.MiogramUpdater;
 
 /**
- * Экран автообновлений. Чистый порт логики MiogramUpdateSettingsActivity
- * без Neko-базы: BaseFragment + UniversalRecyclerView.
+ * Экран автообновлений Yumigram в стиле Material Design 3.
+ * Взаимоисключающий выбор каналов (Radio), карточки статуса и настроек.
  */
 public class AmegramUpdateSettingsActivity extends BaseFragment {
 
@@ -53,51 +54,64 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
     }
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asHeader(MiogramLocale.get("Статус", "Статус", "Status")));
+        items.add(UItem.asHeader(MiogramLocale.get("Статус клієнта", "Статус клиента", "Client status")));
         String ver;
         try {
             ver = BuildConfig.BUILD_VERSION_STRING + " (" + BuildConfig.BUILD_COMMIT_ID + ")";
         } catch (Throwable t) {
-            ver = "?";
+            ver = "1.0.0";
         }
-        items.add(UItem.asSettingsCell(ROW_VERSION,
-                MiogramLocale.get("Поточна версія", "Текущая версия", "Current version"), ver));
-        items.add(UItem.asSettingsCell(ROW_CHECK,
-                MiogramLocale.get("Перевірити зараз", "Проверить сейчас", "Check now"),
-                MiogramUpdater.getLastCheckTimeFormatted()));
+
+        items.add(YumiSettingCell.Factory.of(ROW_VERSION, R.drawable.msg_download_solar, YumiTheme.getPrimary(),
+                "Yumigram v" + ver,
+                MiogramLocale.get("Остання перевірка: ", "Последняя проверка: ", "Last check: ") + MiogramUpdater.getLastCheckTimeFormatted()));
+
+        items.add(YumiSettingCell.Factory.of(ROW_CHECK, R.drawable.msg_retry, 0xFF2A87FF,
+                MiogramLocale.get("Перевірити наявність оновлень", "Проверить наличие обновлений", "Check for updates"),
+                MiogramLocale.get("Запит свіжих релізів з GitHub", "Запрос свежих релизов с GitHub", "Query latest releases from GitHub")));
+
         items.add(UItem.asShadow(null));
 
-        items.add(UItem.asHeader(MiogramLocale.get("Канал", "Канал", "Channel")));
+        items.add(UItem.asHeader(MiogramLocale.get("Канал оновлень", "Канал обновлений", "Update channel")));
         boolean beta = !MiogramUpdater.CHANNEL_STABLE.equals(MiogramUpdater.getUpdateChannel());
-        items.add(UItem.asCheck(ROW_BETA, MiogramLocale.get("Бета", "Бета", "Beta")).setChecked(beta));
-        items.add(UItem.asCheck(ROW_STABLE, "Stable").setChecked(!beta));
-        items.add(UItem.asShadow(MiogramLocale.get(
-                "Бета — нові фічі раніше, Stable — рідше і стабільніше.",
-                "Бета — новые фичи раньше, Stable — реже и стабильнее.",
-                "Beta gets features earlier, Stable is calmer.")));
 
-        items.add(UItem.asHeader(MiogramLocale.get("Налаштування", "Настройки", "Preferences")));
+        // Взаимоисключающий выбор канала через asRadio2 / asRadio
+        items.add(UItem.asRadio(ROW_BETA,
+                MiogramLocale.get("Бета-канал (Beta)", "Бета-канал (Beta)", "Beta channel"),
+                MiogramLocale.get("Нові функції та покращення раніше", "Новые функции и улучшения раньше", "Get fresh features earlier")).setChecked(beta));
+
+        items.add(UItem.asRadio(ROW_STABLE,
+                MiogramLocale.get("Стабільний канал (Stable)", "Стабильный канал (Stable)", "Stable channel"),
+                MiogramLocale.get("Рідші та максимально вивірені збірки", "Более редкие и стабильные сборки", "Calmer and battle-tested releases")).setChecked(!beta));
+
+        items.add(UItem.asShadow(MiogramLocale.get(
+                "Канал визначає, які версії завантажуватимуться автоматично.",
+                "Канал определяет, какие версии будут загружаться автоматически.",
+                "Channel selects which versions will be fetched automatically.")));
+
+        items.add(UItem.asHeader(MiogramLocale.get("Параметри", "Параметры", "Preferences")));
         items.add(UItem.asCheck(ROW_AUTOCHECK,
-                MiogramLocale.get("Автоперевірка", "Автопроверка", "Auto-check")).setChecked(MiogramUpdater.isAutoCheckEnabled()));
+                MiogramLocale.get("Фонова автоперевірка", "Фоновая автопроверка", "Background auto-check")).setChecked(MiogramUpdater.isAutoCheckEnabled()));
         items.add(UItem.asCheck(ROW_WIFIONLY,
-                MiogramLocale.get("Тільки Wi-Fi", "Только Wi-Fi", "Wi-Fi only")).setChecked(MiogramUpdater.isWifiOnlyEnabled()));
+                MiogramLocale.get("Завантажувати лише через Wi-Fi", "Загружать только по Wi-Fi", "Download on Wi-Fi only")).setChecked(MiogramUpdater.isWifiOnlyEnabled()));
         items.add(UItem.asShadow(null));
 
         Context ctx = getContext();
         File cached = ctx != null ? MiogramDownloadManager.getCachedApk(ctx, null) : null;
         if (cached != null && cached.exists() && cached.length() > 0) {
-            items.add(UItem.asHeader(MiogramLocale.get("Кеш", "Кэш", "Cache")));
-            items.add(UItem.asSettingsCell(ROW_INSTALL_CACHED,
-                    MiogramLocale.get("Встановити з кешу", "Установить из кэша", "Install cached"),
+            items.add(UItem.asHeader(MiogramLocale.get("Завантажений файл", "Загруженный файл", "Cached APK")));
+            items.add(YumiSettingCell.Factory.of(ROW_INSTALL_CACHED, R.drawable.msg_document, 0xFF4CAF50,
+                    MiogramLocale.get("Встановити оновлення", "Установить обновление", "Install update"),
                     AndroidUtilities.formatFileSize(cached.length())));
-            items.add(UItem.asSettingsCell(ROW_DELETE_CACHED,
-                    MiogramLocale.get("Видалити кеш", "Удалить кэш", "Delete cache"), ""));
+            items.add(YumiSettingCell.Factory.of(ROW_DELETE_CACHED, R.drawable.msg_delete, YumiTheme.getError(),
+                    MiogramLocale.get("Видалити інсталятор", "Удалить установщик", "Delete installer"),
+                    MiogramLocale.get("Звільнити місце на пристрої", "Освободить место на устройстве", "Free up disk space")));
             items.add(UItem.asShadow(null));
         }
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ROW_CHECK) {
+        if (item.id == ROW_CHECK || item.id == ROW_VERSION) {
             MiogramUpdater.checkAndShowUpdate(this, true);
             AndroidUtilities.runOnUIThread(() -> {
                 if (listView != null && listView.adapter != null) listView.adapter.update(true);
@@ -121,8 +135,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         } else if (item.id == ROW_DELETE_CACHED) {
             Context ctx = getContext();
             File cached = ctx != null ? MiogramDownloadManager.getCachedApk(ctx, null) : null;
-            if (cached != null && cached.exists()) cached.delete();
-            if (ctx != null) Toast.makeText(ctx, MiogramLocale.get("Кеш видалено", "Кэш удалён", "Cache deleted"), Toast.LENGTH_SHORT).show();
+            if (cached != null) cached.delete();
             listView.adapter.update(true);
         }
     }

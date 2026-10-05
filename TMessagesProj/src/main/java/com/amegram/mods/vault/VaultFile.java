@@ -1,0 +1,196 @@
+package com.amegram.mods.vault;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.R;
+
+import java.util.ArrayList;
+
+/**
+ * Model representing a virtual file stored in the encrypted Miogram Cloud Vault.
+ */
+public class VaultFile {
+
+    public String fileId;
+    public String name;
+    public long totalSize;
+    public String mimeType;
+    public int chunksCount;
+    public long chunkSize;
+    public String sha256;
+    public long topicId;
+    public String topicName;
+    public long date;
+    public ArrayList<Integer> chunkMsgIds = new ArrayList<>();
+    public ArrayList<Long> chunkDocIds = new ArrayList<>();
+    public transient ArrayList<org.telegram.tgnet.TLRPC.Message> chunkMessages = new ArrayList<>();
+    public transient ArrayList<org.telegram.tgnet.TLRPC.Document> chunkDocuments = new ArrayList<>();
+
+    public boolean isDownloading;
+    public float downloadProgress;
+    public boolean isUploading;
+    public float uploadProgress;
+    public String localPath;
+
+    public VaultFile() {
+    }
+
+    public String getFormattedSize() {
+        return AndroidUtilities.formatFileSize(totalSize);
+    }
+
+    public String getFormattedDate() {
+        return LocaleController.formatDateChat(date);
+    }
+
+    public String getFileExtension() {
+        if (name == null) return "";
+        int idx = name.lastIndexOf('.');
+        if (idx > 0 && idx < name.length() - 1) {
+            return name.substring(idx + 1).toLowerCase();
+        }
+        return "";
+    }
+
+    public boolean isImage() {
+        String ext = getFileExtension();
+        return ext.equals("jpg") || ext.equals("jpeg") || ext.equals("png") || ext.equals("webp") || ext.equals("gif")
+                || (mimeType != null && mimeType.startsWith("image/"));
+    }
+
+    public boolean isVideo() {
+        String ext = getFileExtension();
+        return ext.equals("mp4") || ext.equals("mkv") || ext.equals("avi") || ext.equals("mov") || ext.equals("webm") || ext.equals("flv")
+                || (mimeType != null && mimeType.startsWith("video/"));
+    }
+
+    public boolean isMedia() {
+        return isImage() || isVideo();
+    }
+
+    public boolean isAudio() {
+        String ext = getFileExtension();
+        return ext.equals("mp3") || ext.equals("flac") || ext.equals("wav") || ext.equals("m4a") || ext.equals("ogg") || ext.equals("aac")
+                || (mimeType != null && mimeType.startsWith("audio/"));
+    }
+
+    public boolean isArchive() {
+        String ext = getFileExtension();
+        return ext.equals("zip") || ext.equals("rar") || ext.equals("7z") || ext.equals("tar") || ext.equals("gz") || ext.equals("iso");
+    }
+
+    public boolean isDocument() {
+        return !isMedia() && !isAudio() && !isArchive();
+    }
+
+    public int getIconRes() {
+        String ext = getFileExtension();
+        switch (ext) {
+            case "mp4":
+            case "mkv":
+            case "avi":
+            case "mov":
+            case "webm":
+            case "flv":
+                return R.drawable.msg_video;
+            case "mp3":
+            case "flac":
+            case "wav":
+            case "m4a":
+            case "ogg":
+            case "aac":
+                return R.drawable.msg_media;
+            case "zip":
+            case "rar":
+            case "7z":
+            case "tar":
+            case "gz":
+            case "iso":
+                return R.drawable.msg_archive;
+            case "jpg":
+            case "jpeg":
+            case "png":
+            case "webp":
+            case "gif":
+                return R.drawable.msg_photos;
+            case "pdf":
+            case "doc":
+            case "docx":
+            case "xls":
+            case "xlsx":
+            case "txt":
+                return R.drawable.baseline_insert_drive_file_24;
+            case "apk":
+                return R.drawable.baseline_android_24;
+            default:
+                return R.drawable.baseline_insert_drive_file_24;
+        }
+    }
+
+    public JSONObject toJson() {
+        JSONObject obj = new JSONObject();
+        try {
+            obj.put("v", 1);
+            obj.put("fileId", fileId);
+            obj.put("name", name);
+            obj.put("size", totalSize);
+            obj.put("mime", mimeType != null ? mimeType : "");
+            obj.put("chunks", chunksCount);
+            obj.put("chunkSize", chunkSize);
+            obj.put("sha256", sha256 != null ? sha256 : "");
+            obj.put("topicId", topicId);
+            obj.put("topicName", topicName != null ? topicName : "");
+            obj.put("date", date);
+
+            JSONArray msgArr = new JSONArray();
+            for (Integer id : chunkMsgIds) {
+                msgArr.put(id);
+            }
+            obj.put("chunkMsgIds", msgArr);
+
+            JSONArray docArr = new JSONArray();
+            for (Long id : chunkDocIds) {
+                docArr.put(id);
+            }
+            obj.put("chunkDocIds", docArr);
+        } catch (Exception ignore) {}
+        return obj;
+    }
+
+    public static VaultFile fromJson(JSONObject obj) {
+        if (obj == null) return null;
+        try {
+            VaultFile f = new VaultFile();
+            f.fileId = obj.optString("fileId");
+            f.name = obj.optString("name");
+            f.totalSize = obj.optLong("size", 0);
+            f.mimeType = obj.optString("mime");
+            f.chunksCount = obj.optInt("chunks", 1);
+            f.chunkSize = obj.optLong("chunkSize", 1000000000L);
+            f.sha256 = obj.optString("sha256");
+            f.topicId = obj.optLong("topicId", 0);
+            f.topicName = obj.optString("topicName", "");
+            f.date = obj.optLong("date", System.currentTimeMillis() / 1000L);
+
+            JSONArray msgArr = obj.optJSONArray("chunkMsgIds");
+            if (msgArr != null) {
+                for (int i = 0; i < msgArr.length(); i++) {
+                    f.chunkMsgIds.add(msgArr.getInt(i));
+                }
+            }
+
+            JSONArray docArr = obj.optJSONArray("chunkDocIds");
+            if (docArr != null) {
+                for (int i = 0; i < docArr.length(); i++) {
+                    f.chunkDocIds.add(docArr.getLong(i));
+                }
+            }
+
+            return f;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+}

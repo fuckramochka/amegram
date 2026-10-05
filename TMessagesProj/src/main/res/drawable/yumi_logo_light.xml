@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+
+    <!-- Логотип Yumigram для светлой темы: тональная поверхность и акцент #E5486B -->
+    <path
+        android:fillColor="#E5486B"
+        android:pathData="M 20,6 C 12,6 6,12 6,20 L 6,26 C 6,34 12,40 20,40 L 21,40 L 14,46 C 13,47 14,48 15,47.2 L 23,40 L 28,40 C 36,40 42,34 42,26 L 42,20 C 42,12 36,6 28,6 Z"/>
+
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 18,17 L 24,24 L 30,17 M 24,24 L 24,31"/>
+</vector>

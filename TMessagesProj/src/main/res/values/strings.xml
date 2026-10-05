@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="AppName">Amegram</string>
-    <string name="AppNameBeta">Amegram</string>
+    <string name="AppName">Yumigram</string>
+    <string name="AppNameBeta">Yumigram Beta</string>
     <string name="LanguageName">English</string>
     <string name="English">English</string>
     <string name="LanguageNameInEnglish">English</string>
@@ -173,7 +173,7 @@
     <string name="NoResultFoundFor">No results found for \"%s\".</string>
     <string name="NoResultFoundForTag">No results found for %s</string>
     <string name="NoResultFoundFor2">There were no results for \"%s\".\nTry a new search.</string>
-    <string name="NoChats">Welcome to Telegram</string>
+    <string name="NoChats">Welcome to Yumigram</string>
     <string name="RecentlyViewed">Recently viewed</string>
     <string name="RecentlyViewedHide">HIDE</string>
     <string name="NoChatsHelp">Start messaging by tapping the pencil button in the bottom right corner.</string>
@@ -3076,12 +3076,12 @@
     <string name="FilterBots">Bots</string>
     <string name="FilterAddingChats">Adding chats</string>
     <string name="FilterAddingChatsInfo">Please wait a few moments while we fill this folder for you...</string>
-    <string name="FilterNoChatsToDisplay">No chats found</string>
-    <string name="FilterNoChatsToDisplayInfo">No chats currently belong to this folder.</string>
+    <string name="FilterNoChatsToDisplay">All quiet here…</string>
+    <string name="FilterNoChatsToDisplayInfo">There are no chats in this folder yet.</string>
     <string name="FilterNoChatsToForward">No chats found</string>
     <string name="FilterNoChatsToForwardInfo">No chats in this folder to forward to.</string>
     <string name="FilterNew">New Folder</string>
-    <string name="FilterNoChats">No Chats</string>
+    <string name="FilterNoChats">All quiet here…</string>
     <string name="FilterContact">Contact</string>
     <string name="FilterNonContact">Non-Contact</string>
     <string name="FilterNameHeader">Folder name</string>
@@ -11228,13 +11228,13 @@
     <string name="UnsupportedMessageTitle">Unsupported Message</string>
     <string name="UnsupportedMessageMessage">Update Telegram to view this message</string>
     <string name="UnsupportedUpdate">Update</string>
-    <string name="MiogramSettingsRow">Amegram</string>
+    <string name="MiogramSettingsRow">Yumigram</string>
     <string name="MiogramVaultTitle">Vault &amp; Duress PIN</string>
     <string name="MiogramAITitle">AI: local / cloud</string>
     <string name="MiogramPluginsTitle">WASM plugins</string>
     <string name="MiogramPluginsNoRuntime">WASM plugins (runtime missing in this build)</string>
     <string name="MiogramVisualsTitle">Liquid glass (AGSL)</string>
-    <string name="MiogramToggleExtera">Amegram features</string>
+    <string name="MiogramToggleExtera">Yumigram features</string>
     <string name="MiogramToggleNagram">Ame settings</string>
     <string name="MiogramToggleAyu">Ame Moments quick access</string>
     <string name="MiogramKeyDialogTitle">Gemini API key</string>
@@ -11261,7 +11261,7 @@
     <string name="MiogramIntensity">Effect intensity</string>
     <string name="MiogramCustomization">Customization</string>
     <string name="MiogramPillStack">Pill Stack</string>
-    <string name="MiogramVisualsNote">Applies to Amegram decorative panels after the screen is reopened. Requires Android 13+; older devices get a simplified fallback.</string>
+    <string name="MiogramVisualsNote">Applies to Yumigram decorative panels after the screen is reopened. Requires Android 13+; older devices get a simplified fallback.</string>
     <string name="MiogramEnabled">Enabled</string>
     <string name="MiogramDisabled">Disabled</string>
     <string name="MiogramInstallHeader">Install</string>

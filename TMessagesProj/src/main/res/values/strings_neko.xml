@@ -70,7 +70,7 @@
     <string name="CallTo">Call to **%1$s**?</string>
     <string name="DisableNumberRounding">Disable Number Rounding</string>
     <string name="Categories">Categories</string>
-    <string name="OfficialChannel">Amegram Channel</string>
+    <string name="OfficialChannel">Yumigram Channel</string>
     <string name="About">About</string>
     <string name="IgnoreBlockedAbout">You\'ll no longer see messages from blocked users in groups.</string>
     <string name="SourceCode">Source Code</string>
@@ -167,7 +167,7 @@
     <string name="CopyCallback">Copy Callback Data</string>
     <string name="CopyInlineQuery">Copy Inline Query</string>
     <string name="CopyID">Copy ID</string>
-    <string name="NekoX" translatable="false">Amegram</string>
+    <string name="NekoX" translatable="false">Yumigram</string>
     <string name="Locked">Locked</string>
     <string name="AccDescrChatAttachEnterMenu">Chat input menu</string>
     <string name="ChatAttachEnterMenuRecordVideo">Record Video</string>

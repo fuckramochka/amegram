@@ -740,9 +740,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             items.add(UItem.asShadow(null));
         }
 
-        // Єдиний чистий вхід у всі налаштування Amegram
-        items.add(SettingCell.Factory.of(102, 0xFF993C38, 0xFF993C38, R.drawable.exteraless_icon_tile,
-                "Amegram",
+        // Єдиний чистий вхід у всі налаштування Yumigram
+        items.add(SettingCell.Factory.of(102, app.amegram.theme.YumiTheme.LIGHT_PRIMARY, app.amegram.theme.YumiTheme.LIGHT_PRIMARY, R.drawable.exteraless_icon_tile,
+                "Yumigram",
                 app.miogram.bridge.MiogramLocale.get("Всі налаштування та можливості", "Все настройки и возможности", "All settings & features")));
         items.add(UItem.asShadow(null));
 

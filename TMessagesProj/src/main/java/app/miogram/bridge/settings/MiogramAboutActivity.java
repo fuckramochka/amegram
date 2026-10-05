@@ -55,7 +55,7 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return MiogramLocale.get("Про Amegram", "Об Amegram", "About Amegram");
+        return MiogramLocale.get("Про Yumigram", "О Yumigram", "About Yumigram");
     }
 
     @Override
@@ -162,7 +162,7 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
     }
 
     private String creatorStatus() {
-        return MiogramLocale.get("Засновник і розробник Amegram", "Основатель и разработчик Amegram", "Amegram founder & developer");
+        return MiogramLocale.get("Засновник і розробник Yumigram", "Основатель и разработчик Yumigram", "Yumigram founder & developer");
     }
 
     private static String ageText() {
@@ -185,11 +185,10 @@ public class MiogramAboutActivity extends BaseNekoSettingsActivity {
     }
 
     private String aboutText() {
-        String codename = MiogramLocale.get("«Ніді Кодер Бек»", "«Ниди Кодер Бек»", "“Needy Koder Beck”");
         return MiogramLocale.get(
-                "Amegram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " " + codename + " — кастомний Telegram-клієнт: хмарне сховище, плагіни, юзербот, присутність (TikTok MI, Steam, Spotify, Discord, GitHub), ШІ-супутниці Аме та KAngel, теми і обхід блокувань.\n\nРозробка: @dkramochka, відкрито і по живому — новини, баги та ідеї летять у @" + CHANNEL_USERNAME + ".\n\nНародився 1 вересня 2026 — живе вже " + ageText() + ".",
-                "Amegram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " " + codename + " — кастомный Telegram-клиент: облачное хранилище, плагины, юзербот, присутствие (TikTok MI, Steam, Spotify, Discord, GitHub), ИИ-спутницы Аме и KAngel, темы и обход блокировок.\n\nРазработка: @dkramochka, открыто и вживую — новости, баги и идеи летят в @" + CHANNEL_USERNAME + ".\n\nРодился 1 сентября 2026 — живёт уже " + ageText() + ".",
-                "Amegram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " " + codename + " — custom Telegram client: cloud vault, plugins, userbot, presence (TikTok MI, Steam, Spotify, Discord, GitHub), AI companions Ame & KAngel, themes and anti-block.\n\nBuilt by @dkramochka in the open — news, bugs and ideas live in @" + CHANNEL_USERNAME + ".\n\nBorn September 1, 2026 — alive for " + ageText() + "."
+                "Yumigram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " — швидкий, затишний та красивий клієнт Telegram у стилі Material Design 3. Хмарне сховище, хот-модулі, музичний плеєр, ШІ-супутниця, кастомізація та бейджики спільноти.\n\nЗасновано на вихідному коді офіційного клієнта Telegram (ліцензія GNU GPL v2/v3).\nРозробка: @dkramochka. Новини, ідеї та оновлення — у @" + CHANNEL_USERNAME + ".\n\nЖиве вже " + ageText() + ".",
+                "Yumigram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " — быстрый, уютный и красивый клиент Telegram в стиле Material Design 3. Облачное хранилище, хот-модули, музыкальный плеер, ИИ-спутница, кастомизация и бейджики сообщества.\n\nОсновано на исходном коде официального клиента Telegram (лицензия GNU GPL v2/v3).\nРазработка: @dkramochka. Новости, идеи и обновления — в @" + CHANNEL_USERNAME + ".\n\nЖивёт уже " + ageText() + ".",
+                "Yumigram v" + org.telegram.messenger.BuildVars.BUILD_VERSION_STRING + " — fast, cozy and beautiful Telegram client crafted with Material Design 3. Cloud vault, hot modules, music player, AI companion, customization and community badges.\n\nBased on official Telegram source code (GNU GPL v2/v3).\nBuilt by @dkramochka in the open — news, bugs and ideas live in @" + CHANNEL_USERNAME + ".\n\nAlive for " + ageText() + "."
         );
     }
 

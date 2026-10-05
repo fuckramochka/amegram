@@ -21,6 +21,8 @@ import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
+import app.amegram.theme.YumiTheme;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -174,21 +176,13 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
 
-        int cardBg = Theme.getColor(Theme.key_windowBackgroundWhite);
-        if (cardBg == 0) cardBg = Theme.isCurrentThemeDark() ? 0xFF1C1D26 : 0xFFFFFFFF;
-
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(AndroidUtilities.dp(16));
-        bg.setColor(cardBg);
-        boolean isDark = Theme.isCurrentThemeDark();
-        bg.setStroke(AndroidUtilities.dp(1), isDark ? 0x22FFFFFF : 0x14000000);
-        card.setBackground(bg);
+        card.setBackground(YumiTheme.cardBackground(YumiTheme.RADIUS_LG));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
         lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(5), AndroidUtilities.dp(14), AndroidUtilities.dp(5));
         card.setLayoutParams(lp);
-        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(10));
+        card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
 
         // Головний рядок: Іконка + Опис + Світч
         LinearLayout topRow = new LinearLayout(context);
@@ -198,16 +192,13 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         // 1. Іконка модуля
         int modColor = getModuleColor(info.manifest.id);
         FrameLayout iconFrame = new FrameLayout(context);
-        GradientDrawable iconBg = new GradientDrawable();
-        iconBg.setCornerRadius(AndroidUtilities.dp(12));
-        iconBg.setColor(modColor);
-        iconFrame.setBackground(iconBg);
+        iconFrame.setBackground(YumiTheme.squircleIconBackground(modColor));
 
         ImageView iconView = new ImageView(context);
         iconView.setImageResource(getModuleIcon(info.manifest.id));
         iconView.setColorFilter(0xFFFFFFFF);
         iconFrame.addView(iconView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
-        topRow.addView(iconFrame, LayoutHelper.createLinear(42, 42, 0, 0, 12, 0));
+        topRow.addView(iconFrame, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
         // 2. Інформація (Заголовок, бейдж версії, навантаження, опис)
         LinearLayout infoCol = new LinearLayout(context);
@@ -230,10 +221,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         verBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         verBadge.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         verBadge.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(1), AndroidUtilities.dp(6), AndroidUtilities.dp(1));
-        GradientDrawable verBg = new GradientDrawable();
-        verBg.setCornerRadius(AndroidUtilities.dp(6));
-        verBg.setColor(isDark ? 0x22FFFFFF : 0x14000000);
-        verBadge.setBackground(verBg);
+        verBadge.setBackground(YumiTheme.squircleIconBackground(Theme.isCurrentThemeDark() ? 0x22FFFFFF : 0x14000000));
         titleRow.addView(verBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 6, 0, 0, 0));
 
         infoCol.addView(titleRow);
@@ -255,26 +243,36 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
 
         topRow.addView(infoCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 8, 0));
 
-        // 3. Світч увімкнення/вимкнення
+        // 3. Світч увімкнення/вимкнення — суворо фіксовані розміри 37x20 dp
         Switch sw = new Switch(context);
         sw.setChecked(info.enabled, false);
         sw.setOnCheckedChangeListener((view, isChecked) -> {
             HotModulesManager.setEnabled(info.manifest.id, isChecked, (ok, msg, data) -> refresh());
         });
-        topRow.addView(sw, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        topRow.addView(sw, LayoutHelper.createLinear(37, 20, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
         card.addView(topRow);
 
-        // Нижній рядок дій: [Версії / Оновити] [Видалити]
+        // Нижній рядок дій: [Налаштування (лише якщо увімкнено)] [Версії] [Видалити]
         LinearLayout bottomRow = new LinearLayout(context);
         bottomRow.setOrientation(LinearLayout.HORIZONTAL);
-        bottomRow.setGravity(Gravity.END);
+        bottomRow.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+
+        if (info.enabled) {
+            TextView btnSettings = new TextView(context);
+            btnSettings.setText(MiogramLocale.get("Налаштування", "Настройки", "Settings"));
+            btnSettings.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            btnSettings.setTypeface(AndroidUtilities.bold());
+            btnSettings.setTextColor(YumiTheme.getPrimary());
+            btnSettings.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+            btnSettings.setOnClickListener(v -> presentFragment(new HotModuleSettingsActivity(info.manifest.id)));
+            bottomRow.addView(btnSettings);
+        }
 
         TextView btnVersions = new TextView(context);
-        btnVersions.setText(info.manifest.branch + " • " + MiogramLocale.get("Версії / Оновити", "Версии / Обновить", "Versions / Update"));
+        btnVersions.setText(info.manifest.branch + " • " + MiogramLocale.get("Версії", "Версии", "Versions"));
         btnVersions.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        btnVersions.setTypeface(AndroidUtilities.bold());
-        btnVersions.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+        btnVersions.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         btnVersions.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
         btnVersions.setOnClickListener(v -> {
             HotModuleVersionsSheet sheet = new HotModuleVersionsSheet(context, info.manifest.id, null, () -> refresh());
@@ -285,7 +283,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         TextView btnDelete = new TextView(context);
         btnDelete.setText(MiogramLocale.get("Видалити", "Удалить", "Delete"));
         btnDelete.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        btnDelete.setTextColor(Theme.getColor(Theme.key_text_RedRegular));
+        btnDelete.setTextColor(YumiTheme.getError());
         btnDelete.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
         btnDelete.setOnClickListener(v -> {
             AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -306,8 +304,12 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         card.addView(bottomRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
 
         card.setOnClickListener(v -> {
-            HotModuleVersionsSheet sheet = new HotModuleVersionsSheet(context, info.manifest.id, null, () -> refresh());
-            sheet.show();
+            if (info.enabled) {
+                presentFragment(new HotModuleSettingsActivity(info.manifest.id));
+            } else {
+                HotModuleVersionsSheet sheet = new HotModuleVersionsSheet(context, info.manifest.id, null, () -> refresh());
+                sheet.show();
+            }
         });
 
         return card;

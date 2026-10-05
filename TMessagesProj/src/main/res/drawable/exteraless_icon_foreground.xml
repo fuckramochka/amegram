@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Скруглённый пузырь сообщения с фирменным градиентом #8B5CF6 → #E5486B -->
+    <path
+        android:pathData="M 45,28 C 35,28 27,36 27,46 L 27,56 C 27,66 35,74 45,74 L 46,74 L 33,83 C 31.5,84 33,85.5 34.5,84.5 L 49,74 L 63,74 C 73,74 81,66 81,56 L 81,46 C 81,36 73,28 63,28 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="27"
+                android:startY="28"
+                android:endX="81"
+                android:endY="84">
+                <item android:color="#8B5CF6" android:offset="0.0"/>
+                <item android:color="#E5486B" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Оригинальная монограмма «Y» белого цвета с закруглёнными концами -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 43,41 L 54,53 L 65,41 M 54,53 L 54,65"/>
+</vector>

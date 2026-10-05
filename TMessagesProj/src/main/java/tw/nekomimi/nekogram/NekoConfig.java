@@ -129,7 +129,7 @@ public class NekoConfig {
 
     public static ConfigItem cachePath = addConfig("cache_path", configTypeString, "");
     // Имя папки видно в настройках («Save Path») и в пути Downloads/<папка>.
-    public static ConfigItem customSavePath = addConfig("customSavePath", configTypeString, "Miogram");
+    public static ConfigItem customSavePath = addConfig("customSavePath", configTypeString, "Yumigram");
 
     public static ConfigItem translationProvider = addConfig("translationProvider", configTypeInt, 1);
     public static ConfigItem translateToLang = addConfig("TransToLang", configTypeString, ""); // "" -> translate to current language (MessageTrans.kt & Translator.kt)

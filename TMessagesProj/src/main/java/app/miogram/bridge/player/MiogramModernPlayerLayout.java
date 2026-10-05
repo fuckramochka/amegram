@@ -681,8 +681,13 @@ public class MiogramModernPlayerLayout extends FrameLayout {
     // buttons (opacity/glow), lyrics (size/glow/opacity), visualizer + profile pill.
     // Called from pencil button (top bar, both mini + fullscreen) via MiogramPlayerCustomizeAlert.
     public void applyCustomization() {
+        int accent = 0xFF3390EC;
         try {
-            int accent = getThemeAccentColor();
+            accent = getThemeAccentColor();
+        } catch (Throwable t) {
+            org.telegram.messenger.FileLog.e("player customize accent failed", t);
+        }
+        try {
             int mode = MiogramPlayerPrefs.getBackgroundMode();
             float opacity = MiogramPlayerPrefs.getBgOpacity();
             float brightness = MiogramPlayerPrefs.getBgBrightness();

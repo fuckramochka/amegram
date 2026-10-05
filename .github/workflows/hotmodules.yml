@@ -1,0 +1,128 @@
+name: Hotmodules Build & Publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'hotmodules-template/modules/**'
+      - '.github/workflows/hotmodules.yml'
+  workflow_dispatch:
+    inputs:
+      modules:
+        description: 'Module ids to build (comma separated, empty = all changed)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NATIVE_TARGET: "SKIP"
+    steps:
+      - name: Checkout amenew
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platforms;android-36 build-tools;36.0.0"
+      - name: Inject Telegram API credentials
+        run: |
+          echo "TELEGRAM_APP_ID=${{ secrets.TELEGRAM_APP_ID }}" >> $GITHUB_ENV
+          echo "TELEGRAM_APP_HASH=${{ secrets.TELEGRAM_APP_HASH }}" >> $GITHUB_ENV
+          echo "sdk.dir=${ANDROID_HOME}" >> local.properties
+      - name: Compile app classes for module classpath
+        run: ./gradlew :TMessagesProj:compileReleaseJavaWithJavac --parallel --build-cache --max-workers=4
+      - name: Build .hmod files
+        id: hmod
+        run: |
+          ANDROID_JAR="$ANDROID_HOME/platforms/android-36/android.jar"
+          D8=$(ls -d "$ANDROID_HOME/build-tools/"*/d8 | sort | tail -1)
+          APP_CLASSES=$(find TMessagesProj/build/intermediates/javac -type d -name classes 2>/dev/null | head -1)
+          if [ -z "$APP_CLASSES" ]; then APP_CLASSES=$(find TMessagesProj/build -type d -name classes 2>/dev/null | head -1); fi
+          echo "APP_CLASSES=$APP_CLASSES"
+          test -n "$APP_CLASSES" || { echo "no compiled classes dir"; exit 1; }
+          mkdir -p out-hmod
+          FILTER="${{ inputs.modules }}"
+          for moddir in hotmodules-template/modules/*/; do
+            mod=$(basename "$moddir")
+            if [ -n "$FILTER" ]; then
+              case ",$FILTER," in *",$mod,"*) ;; *) echo "skip $mod"; continue;; esac
+            fi
+            [ -f "$moddir/manifest.json" ] || { echo "skip $mod (no manifest)"; continue; }
+            ver=$(python3 -c "import json;print(json.load(open('$moddir/manifest.json'))['version'])")
+            OUT=out-hmod/classes-$mod
+            rm -rf "$OUT" && mkdir -p "$OUT"
+            javac -source 8 -target 8 -nowarn -proc:none \
+              -cp "hotmodules-template/hot-api:$ANDROID_JAR:$APP_CLASSES" \
+              -d "$OUT" "$moddir"*.java || { echo "javac failed for $mod"; exit 1; }
+            DEXOUT=out-hmod/dex-$mod
+            rm -rf "$DEXOUT" && mkdir -p "$DEXOUT"
+            "$D8" --min-api 27 --lib "$ANDROID_JAR" --lib "$APP_CLASSES" --output "$DEXOUT" "$OUT" || { echo "d8 failed for $mod"; exit 1; }
+            python3 - "$moddir/manifest.json" "$DEXOUT/classes.dex" "out-hmod/$mod-$ver.hmod" <<'PY'
+          import json, sys, zipfile
+          manifest_src, dex_src, dest = sys.argv[1], sys.argv[2], sys.argv[3]
+          m = json.load(open(manifest_src))
+          with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as z:
+              z.write(dex_src, "classes.dex")
+              z.write(manifest_src, "manifest.json")
+          print("packed", dest)
+          PY
+          done
+          ls -la out-hmod/*.hmod
+      - name: Checkout amegram-modules
+        uses: actions/checkout@v4
+        with:
+          repository: fuckramochka/amegram-modules
+          path: modules-out
+          token: ${{ secrets.MODULES_PUSH_TOKEN }}
+      - name: Publish hmods + catalog
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, shutil, glob
+          OUT = "modules-out"
+          hdir = os.path.join(OUT, "hmods")
+          os.makedirs(hdir, exist_ok=True)
+          cat_path = os.path.join(OUT, "modules.json")
+          cat = json.load(open(cat_path, encoding="utf-8"))
+          by_id = {m["id"]: m for m in cat.get("modules", [])}
+          # sync sources (so repo history carries code too)
+          import shutil as sh
+          if os.path.isdir(os.path.join(OUT, "modules")):
+              sh.rmtree(os.path.join(OUT, "modules"))
+          sh.copytree("hotmodules-template/modules", os.path.join(OUT, "modules"))
+          for hmod in glob.glob("out-hmod/*.hmod"):
+              base = os.path.basename(hmod)
+              mod_id = base.rsplit("-", 1)[0]
+              with open(hmod, "rb") as f:
+                  sha = hashlib.sha256(f.read()).hexdigest()
+              shutil.copy(hmod, os.path.join(hdir, base))
+              # refresh manifest version inside repo copy from built manifest? manifest already in template
+              mfest = json.load(open(f"hotmodules-template/modules/{mod_id}/manifest.json", encoding="utf-8"))
+              ver = mfest["version"]
+              e = by_id.get(mod_id)
+              if e is None:
+                  continue
+              st = e["branches"].get("stable", {})
+              oldv = st.get("version", "")
+              url = f"https://raw.githubusercontent.com/fuckramochka/amegram-modules/main/hmods/{base}"
+              if oldv and oldv != ver:
+                  e.setdefault("history", []).insert(0, {
+                      "branch": "stable", "version": oldv, "url": st.get("url", ""),
+                      "sha256": st.get("sha256", ""), "minApp": st.get("minApp", 0),
+                      "changelog": st.get("changelog", "")})
+              st.update({"version": ver, "url": url, "sha256": sha,
+                         "minApp": mfest.get("minApp", st.get("minApp", 0))})
+              print(mod_id, ver, sha[:12])
+          json.dump(cat, open(cat_path, "w", encoding="utf-8"), ensure_ascii=False, indent=2)
+          print("catalog updated")
+          PY
+          cd modules-out && git config user.email "fuckramochka@users.noreply.github.com" && git config user.name "fuckramochka" && git add -A && git diff --cached --stat | head -20 && git commit -m "hmod build from amenew" -q && git push origin main

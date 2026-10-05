@@ -112,7 +112,7 @@ public class PlayerModule implements HotModule, HotPlayer {
     public void onSettingsAction(String rowId) {
         if ("open_search".equals(rowId) && host != null) {
             host.openModuleScreen("search");
-
+        }
     }
 
     @Override

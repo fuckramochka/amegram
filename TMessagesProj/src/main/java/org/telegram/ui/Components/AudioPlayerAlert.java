@@ -1601,7 +1601,13 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
 
         // --- Amegram Core: player module OFF = stock Telegram player (all uses null-guarded) ---
-        if (isPlayerModuleOn()) {
+        // modern_layout OFF (але модуль увімкнено) = теж сток, пошук лишається в модулі.
+        boolean modernOn = true;
+        try {
+            modernOn = app.amegram.hot.HotPlayerGate.isModernLayoutEnabled();
+        } catch (Throwable ignore) {
+        }
+        if (isPlayerModuleOn() && modernOn) {
             lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
             lyricsView.setVisibility(View.VISIBLE);
 

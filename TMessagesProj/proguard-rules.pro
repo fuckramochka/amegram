@@ -284,6 +284,10 @@
 -keep class app.exteraless.plugins.PythonPluginsEngine { *; }
 -keep class app.amegram.core.** { *; }
 -keep class app.amegram.module.** { *; }
+-keep class com.amegram.mods.** { *; }
+-keep class app.amegram.hot.** { *; }
+-keep class app.amegram.theme.** { *; }
+-keep interface app.amegram.hot.api.** { *; }
 # BouncyCastle: опциональные ссылки на JDK-классы (sun.*, jce) отсутствуют на Android
 -dontwarn org.bouncycastle.**
 # SQLCipher: JNI-биндинги резолвят классы по имени из нативного кода

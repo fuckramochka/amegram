@@ -328,9 +328,6 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
         AbstractConfigCell a = cellGroup.rows.get(position);
         if (a == clearMessageDatabaseRow) {
             ItemOptions options = makeLongClickOptions(view);
-            options.add(R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Надіслати у Збережене", "Отправить в Избранное", "Send to Saved Messages"), () -> {
-                app.amegram.database.YumiBackupHelper.exportDatabaseToSavedMessages(currentAccount, getParentActivity(), null);
-            });
             options.add(R.drawable.msg_instant_link_solar, getString(R.string.ExportAyuDB), this::exportAyuDB);
             addDefaultLongClickOptions(options, "experimental", position);
             showLongClickOptions(view, options);

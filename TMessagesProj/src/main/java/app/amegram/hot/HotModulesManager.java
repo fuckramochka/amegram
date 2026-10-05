@@ -207,8 +207,10 @@ public final class HotModulesManager {
 
     public static boolean isModuleInstalled(String moduleId) {
         if (moduleId == null) return false;
-        if (BUILTIN_ENTRIES.containsKey(moduleId)) return true;
+        if (appContext == null) init(ApplicationLoader.applicationContext);
         if (appContext == null) return false;
+        if (prefs().getBoolean("uninstalled_" + moduleId, false)) return false;
+        if (BUILTIN_ENTRIES.containsKey(moduleId)) return true;
         String active = prefs().getString("installed_" + moduleId, "");
         if (!active.isEmpty()) return true;
         File modDir = new File(root(), moduleId);
@@ -216,7 +218,17 @@ public final class HotModulesManager {
     }
 
     public static boolean isModuleEnabled(String moduleId) {
-        if (moduleId == null || appContext == null) return false;
+        if (moduleId == null) return false;
+        if (appContext == null) init(ApplicationLoader.applicationContext);
+        if (appContext == null) return false;
+        if (prefs().getBoolean("uninstalled_" + moduleId, false)) return false;
+        if (!prefs().contains("enabled_" + moduleId)) {
+            if ("experimental".equals(moduleId) || "player".equals(moduleId) || "vault".equals(moduleId)
+                    || "ai".equals(moduleId) || "automation".equals(moduleId) || "tiktok".equals(moduleId)
+                    || "ame".equals(moduleId)) {
+                return true;
+            }
+        }
         return prefs().getBoolean("enabled_" + moduleId, false);
     }
 
@@ -316,8 +328,11 @@ public final class HotModulesManager {
         }
         for (Map.Entry<String, String> entry : BUILTIN_ENTRIES.entrySet()) {
             String bId = entry.getKey();
+            if (prefs().getBoolean("uninstalled_" + bId, false)) {
+                continue;
+            }
             if (!listedIds.contains(bId)) {
-                boolean enabled = prefs().getBoolean("enabled_" + bId, false);
+                boolean enabled = isModuleEnabled(bId);
                 Manifest m = new Manifest(bId, "1.0.0", "stable", entry.getValue(), BUILTIN_NAMES.get(bId), 0);
                 res.add(new InstalledInfo(m, null, enabled, true));
             }
@@ -613,8 +628,8 @@ public final class HotModulesManager {
 
     public static void setEnabled(String moduleId, boolean enabled, Callback<Void> cb) {
         new Thread(() -> {
-            prefs().edit().putBoolean("enabled_" + moduleId, enabled).apply();
             if (enabled) {
+                prefs().edit().remove("uninstalled_" + moduleId).putBoolean("enabled_" + moduleId, true).apply();
                 Handle h = getHandle(moduleId);
                 if (h == null || h.instance == null) {
                     prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
@@ -623,6 +638,7 @@ public final class HotModulesManager {
                     return;
                 }
             } else {
+                prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
                 dropLoaded(moduleId);
             }
             notifyChanged();
@@ -649,8 +665,28 @@ public final class HotModulesManager {
     public static void deleteModule(String moduleId) {
         dropLoaded(moduleId);
         deleteRecursive(new File(root(), moduleId));
-        prefs().edit().remove("installed_" + moduleId).remove("enabled_" + moduleId).apply();
+        prefs().edit()
+                .putBoolean("uninstalled_" + moduleId, true)
+                .remove("installed_" + moduleId)
+                .remove("enabled_" + moduleId)
+                .apply();
         notifyChanged();
+    }
+
+    // ---------- фабрика вбудованих модулів (пряме створення без рефлексії) ----------
+
+    public static HotModule createBuiltinModule(String moduleId) {
+        if ("ghost".equals(moduleId)) return new com.amegram.mods.ghost.GhostModule();
+        if ("player".equals(moduleId)) return new com.amegram.mods.player.PlayerModule();
+        if ("ame".equals(moduleId)) return new com.amegram.mods.ame.AmeModule();
+        if ("vault".equals(moduleId)) return new com.amegram.mods.vault.VaultModule();
+        if ("tiktok".equals(moduleId)) return new com.amegram.mods.tiktok.TikModule();
+        if ("ai".equals(moduleId)) return new com.amegram.mods.ai.AiModule();
+        if ("experimental".equals(moduleId)) return new com.amegram.mods.experimental.ExperimentalModule();
+        if ("stt".equals(moduleId)) return new com.amegram.mods.stt.SttModule();
+        if ("demo".equals(moduleId)) return new com.amegram.mods.demo.DemoModule();
+        if ("automation".equals(moduleId)) return new com.amegram.mods.automation.AutomationModule();
+        return null;
     }
 
     // ---------- загрузка кода (только включённые) ----------
@@ -662,7 +698,23 @@ public final class HotModulesManager {
             init(ApplicationLoader.applicationContext);
             if (appContext == null) return null;
         }
-        if (!prefs().getBoolean("enabled_" + moduleId, false)) return null;
+        if (!isModuleEnabled(moduleId)) return null;
+
+        HotModule builtin = createBuiltinModule(moduleId);
+        if (builtin != null) {
+            String name = BUILTIN_NAMES.get(moduleId);
+            if (name == null) name = moduleId;
+            Manifest m = new Manifest(moduleId, "1.0.0", "stable", builtin.getClass().getName(), name, 0);
+            InstalledInfo info = new InstalledInfo(m, null, true, true);
+            Handle handle = new Handle(info, builtin);
+            LOADED.put(moduleId, handle);
+            try {
+                builtin.onAttach(appContext, new HostImpl(moduleId));
+            } catch (Throwable e) {
+                FileLog.e("hotmods: onAttach failed: " + moduleId, e);
+            }
+            return handle;
+        }
 
         String entryClass = BUILTIN_ENTRIES.get(moduleId);
         String version = prefs().getString("installed_" + moduleId, "1.0.0");

@@ -129,7 +129,6 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     private int ayuDeletedMarkRow;
     private int ayuForwardProtectedRow;
     private int ayuClearDbRow;
-    private int ayuExportSavedRow;
     private int nagramDividerRow;
 
     private int exportEtgRow;
@@ -185,7 +184,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         ayuReplyToDeletedRow = -1;
         saveMediaPrivateChatsRow = saveMediaPublicChannelsRow = saveMediaPrivateChannelsRow = -1;
         saveMediaPublicGroupsRow = saveMediaPrivateGroupsRow = -1;
-        ayuDeletedIconRow = ayuDeletedMarkRow = ayuForwardProtectedRow = ayuClearDbRow = ayuExportSavedRow = -1;
+        ayuDeletedIconRow = ayuDeletedMarkRow = ayuForwardProtectedRow = ayuClearDbRow = -1;
         if (GeneralConfig.showAyuMoments()) {
             ayuRegexRow = addRow(NaConfig.INSTANCE.getRegexFiltersEnabled().getKey());
             ayuSaveLastSeenRow = addRow(NaConfig.INSTANCE.getSaveLocalLastSeen().getKey());
@@ -218,7 +217,6 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             }
             ayuForwardProtectedRow = addRow(NaConfig.INSTANCE.getForwardProtectedAsCopy().getKey());
             ayuClearDbRow = addRow("ayuClearDatabase");
-            ayuExportSavedRow = addRow("ayuExportSaved");
         }
         nagramDividerRow = addRow();
 
@@ -349,8 +347,6 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             toggleAyuConfig(view, NaConfig.INSTANCE.getForwardProtectedAsCopy(), false);
         } else if (position == ayuClearDbRow) {
             showClearAyuDatabaseDialog();
-        } else if (position == ayuExportSavedRow) {
-            app.amegram.database.YumiBackupHelper.exportDatabaseToSavedMessages(currentAccount, getParentActivity(), null);
         } else if (position == exportEtgRow) {
             exportEtgSettings();
         } else if (position == importEtgRow) {
@@ -968,9 +964,6 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                         cell.setTextColor(getThemedColor(Theme.key_text_RedRegular));
                         cell.setTextAndValue(getString(R.string.ClearMessageDatabase),
                                 AyuData.totalSize > 0 ? AndroidUtilities.formatFileSize(AyuData.totalSize) : "...", false);
-                    } else if (position == ayuExportSavedRow) {
-                        cell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-                        cell.setTextAndValue(app.miogram.bridge.MiogramLocale.get("Надіслати копію бази в Збережене", "Отправить копию базы в Избранное", "Backup database to Saved Messages"), "", false);
                     }
                     break;
                 }
@@ -1008,7 +1001,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     || position == resetSettingsRow || position == deleteAccountRow
                     || position == glyphRow || position == ayuGhostRow) {
                 return TYPE_TEXT;
-            } else if (position == ayuDeletedMarkRow || position == ayuClearDbRow || position == ayuExportSavedRow) {
+            } else if (position == ayuDeletedMarkRow || position == ayuClearDbRow) {
                 return TYPE_SETTINGS;
             } else if (position == ayuSaveMediaRow) {
                 return TYPE_EXPANDABLE_SWITCH;

@@ -101,16 +101,80 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         customActiveModules.clear();
 
-        // Показываем кнопки настроек ТОЛЬКО для реально активных и загруженных модулей
-        boolean hasGhost = HotModulesManager.isModuleEnabled("ghost") && HotModulesManager.isModuleActive("ghost");
-        boolean hasVault = HotModulesManager.isModuleEnabled("vault") && HotModulesManager.isModuleActive("vault");
-        boolean hasPlayer = HotModulesManager.isModuleEnabled("player") && HotModulesManager.isModuleActive("player");
-        boolean hasAme = HotModulesManager.isModuleEnabled("ame") && HotModulesManager.isModuleActive("ame");
-        boolean hasTikTok = HotModulesManager.isModuleEnabled("tiktok") && HotModulesManager.isModuleActive("tiktok");
-        boolean hasAi = HotModulesManager.isModuleEnabled("ai") && HotModulesManager.isModuleActive("ai");
-        boolean hasExp = HotModulesManager.isModuleEnabled("experimental") && HotModulesManager.isModuleActive("experimental");
+        // 1. Головні функції клієнта (завжди доступні для налаштування)
+        items.add(UItem.asHeader(MiogramLocale.get("Можливості Yumigram", "Возможности Yumigram", "Yumigram features")));
 
-        // Пошук увімкнених сторонніх модулів із налаштуваннями
+        boolean ghostOn = HotModulesManager.isModuleEnabled("ghost");
+        items.add(YumiSettingCell.Factory.of(ROW_GHOST, R.drawable.msg_secret, 0xFF9C27B0,
+                MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode"),
+                ghostOn ? MiogramLocale.get("Увімкнено • Скритність онлайну та прочитання",
+                                "Включено • Скрытность онлайна и прочтения",
+                                "Active • Hide online, read receipts & typing")
+                        : MiogramLocale.get("Вимкнено • Натисніть для налаштування",
+                                "Выключено • Нажмите для настройки",
+                                "Disabled • Tap to configure")));
+
+        boolean expOn = HotModulesManager.isModuleEnabled("experimental");
+        items.add(YumiSettingCell.Factory.of(ROW_EXPERIMENTAL, R.drawable.msg_fave, 0xFF43A047,
+                MiogramLocale.get("Експерименти та видалені", "Эксперименты и удалённые", "Experiments & Deleted"),
+                expOn ? MiogramLocale.get("Увімкнено • Збереження повідомлень, безліміти",
+                                "Включено • Сохранение сообщений, безлимиты",
+                                "Active • Save deleted messages, unlimited pins")
+                      : MiogramLocale.get("Вимкнено • Натисніть для налаштування",
+                                "Выключено • Нажмите для настройки",
+                                "Disabled • Tap to configure")));
+
+        boolean vaultOn = HotModulesManager.isModuleEnabled("vault");
+        items.add(YumiSettingCell.Factory.of(ROW_VAULT, R.drawable.msg_saved, 0xFFE5486B,
+                MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud vault"),
+                vaultOn ? MiogramLocale.get("Увімкнено • AES-256 диск, шифрування",
+                                "Включено • AES-256 диск, шифрование",
+                                "Active • AES-256 virtual disk, encryption")
+                        : MiogramLocale.get("Вимкнено • Натисніть для налаштування",
+                                "Выключено • Нажмите для настройки",
+                                "Disabled • Tap to configure")));
+
+        boolean playerOn = HotModulesManager.isModuleEnabled("player");
+        items.add(YumiSettingCell.Factory.of(ROW_PLAYER, R.drawable.baseline_music_note_24, 0xFF00ACC1,
+                MiogramLocale.get("Музичний плеєр", "Музыкальный плеер", "Music player"),
+                playerOn ? MiogramLocale.get("Увімкнено • Тексти LRC, візуалізатор, пошук",
+                                 "Включено • Тексты LRC, визуализатор, поиск",
+                                 "Active • LRC lyrics, visualizer, search")
+                         : MiogramLocale.get("Вимкнено • Натисніть для налаштування",
+                                 "Выключено • Нажмите для настройки",
+                                 "Disabled • Tap to configure")));
+
+        boolean aiOn = HotModulesManager.isModuleEnabled("ai");
+        items.add(YumiSettingCell.Factory.of(ROW_AI, R.drawable.baseline_stars_24, 0xFF8B5CF6,
+                MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial Intelligence (AI)"),
+                aiOn ? MiogramLocale.get("Увімкнено • Асистент Ame / KAngel, STT",
+                               "Включено • Ассистент Ame / KAngel, STT",
+                               "Active • Companion Ame / KAngel, STT")
+                     : MiogramLocale.get("Вимкнено • Натисніть для налаштування",
+                               "Выключено • Нажмите для настройки",
+                               "Disabled • Tap to configure")));
+
+        boolean tikOn = HotModulesManager.isModuleEnabled("tiktok");
+        items.add(YumiSettingCell.Factory.of(ROW_TIKTOK, R.drawable.msg_video, 0xFFEE1D52,
+                "TikTok MI",
+                tikOn ? MiogramLocale.get("Увімкнено • Відео без ватермарок, прямі лінки",
+                              "Включено • Видео без водяных знаков, прямые ссылки",
+                              "Active • Watermark-free videos, clean links")
+                      : MiogramLocale.get("Вимкнено • Натисніть для налаштування",
+                              "Выключено • Нажмите для настройки",
+                              "Disabled • Tap to configure")));
+
+        boolean ameOn = HotModulesManager.isModuleEnabled("ame");
+        items.add(YumiSettingCell.Factory.of(ROW_AME, R.drawable.msg_customize, 0xFFE91E63,
+                MiogramLocale.get("Кастомізація UI", "Кастомизация UI", "Customization"),
+                ameOn ? MiogramLocale.get("Увімкнено • XML-картки профілю, діалоги, blur",
+                              "Включено • XML-карточки профиля, диалоги, blur",
+                              "Active • Profile XML cards, dialogs, blur")
+                      : MiogramLocale.get("Вимкнено • Натисніть для налаштування",
+                              "Выключено • Нажмите для настройки",
+                              "Disabled • Tap to configure")));
+
+        // Сторонні завантажені модулі
         List<HotModulesManager.Handle> allHandles = HotModulesManager.settingsHandles();
         for (HotModulesManager.Handle h : allHandles) {
             if (h != null && h.info != null && h.info.manifest != null) {
@@ -119,79 +183,14 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 }
             }
         }
-
-        boolean anyFeatureActive = hasGhost || hasVault || hasPlayer || hasAme
-                || hasTikTok || hasAi || hasExp || !customActiveModules.isEmpty();
-
-        // 1. Розділ активних модулів (з'являється тільки якщо користувач реально щось увімкнув)
-        if (anyFeatureActive) {
-            items.add(UItem.asHeader(MiogramLocale.get("Увімкнені функції та модулі", "Включённые функции и модули", "Active features & modules")));
-
-            if (hasGhost) {
-                items.add(YumiSettingCell.Factory.of(ROW_GHOST, R.drawable.msg_secret, 0xFF8E24AA,
-                        MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode"),
-                        MiogramLocale.get("Приховування онлайну, прочитання та тайпінгу",
-                                "Скрытие онлайна, прочтения и тайпинга",
-                                "Hide online, read receipts & typing")));
-            }
-
-            if (hasVault) {
-                items.add(YumiSettingCell.Factory.of(ROW_VAULT, R.drawable.msg_saved, 0xFFFF8F00,
-                        MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud vault"),
-                        MiogramLocale.get("AES-256 диск, шифрування, чанки та синхронізація",
-                                "AES-256 диск, шифрование, чанки и синхронизация",
-                                "AES-256 virtual disk, chunking, auto-sync")));
-            }
-
-            if (hasPlayer) {
-                items.add(YumiSettingCell.Factory.of(ROW_PLAYER, R.drawable.baseline_music_note_24, 0xFF00ACC1,
-                        MiogramLocale.get("Музичний плеєр", "Музыкальный плеер", "Music player"),
-                        MiogramLocale.get("Пошук із 6 сервісів, кастомний плеєр, тексти LRC",
-                                "Поиск из 6 сервисов, кастомный плеер, тексты LRC",
-                                "Search 6 music sources, custom player, LRC lyrics")));
-            }
-
-            if (hasAme) {
-                items.add(YumiSettingCell.Factory.of(ROW_AME, R.drawable.msg_customize, 0xFFE91E63,
-                        MiogramLocale.get("Кастомізація UI", "Кастомизация UI", "Customization"),
-                        MiogramLocale.get("XML-картки профілю, діалоги, blur",
-                                "XML-карточки профиля, диалоги, blur",
-                                "Profile XML cards, dialogs, blur")));
-            }
-
-            if (hasTikTok) {
-                items.add(YumiSettingCell.Factory.of(ROW_TIKTOK, R.drawable.msg_video, 0xFFEE1D52,
-                        "TikTok MI",
-                        MiogramLocale.get("Вбудований плеєр без ватермарок, чисті посилання",
-                                "Встроенный плеер без ватермарок, чистые ссылки",
-                                "Watermark-free player, clean links")));
-            }
-
-            if (hasAi) {
-                items.add(YumiSettingCell.Factory.of(ROW_AI, R.drawable.baseline_stars_24, 0xFF7E57C2,
-                        MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial Intelligence (AI)"),
-                        MiogramLocale.get("Супутник Ame / KAngel, Gemini розпізнавання",
-                                "Спутник Ame / KAngel, Gemini распознавание",
-                                "Companion Ame / KAngel, Gemini STT")));
-            }
-
-            if (hasExp) {
-                items.add(YumiSettingCell.Factory.of(ROW_EXPERIMENTAL, R.drawable.msg_fave, 0xFF43A047,
-                        MiogramLocale.get("Експериментальні функції", "Экспериментальные функции", "Experimental features"),
-                        MiogramLocale.get("Збереження видалених, безліміт закріпів, boost",
-                                "Сохранение удаленных, безлимит закрепов, boost",
-                                "Save deleted messages, unlimited pins, boost")));
-            }
-
-            for (int i = 0; i < customActiveModules.size(); i++) {
-                HotModulesManager.Handle h = customActiveModules.get(i);
-                String title = h.instance != null ? h.instance.settingsTitle() : null;
-                if (title == null || title.isEmpty()) title = h.info.manifest.name;
-                items.add(YumiSettingCell.Factory.of(100 + i, R.drawable.msg_plugins, 0xFF2A87FF, title, h.info.manifest.name));
-            }
-
-            items.add(UItem.asShadow(null));
+        for (int i = 0; i < customActiveModules.size(); i++) {
+            HotModulesManager.Handle h = customActiveModules.get(i);
+            String title = h.instance != null ? h.instance.settingsTitle() : null;
+            if (title == null || title.isEmpty()) title = h.info.manifest.name;
+            items.add(YumiSettingCell.Factory.of(100 + i, R.drawable.msg_plugins, 0xFF2A87FF, title, h.info.manifest.name));
         }
+
+        items.add(UItem.asShadow(null));
 
         // 2. Керування модулями та розширеннями (головна точка входу)
         items.add(UItem.asHeader(MiogramLocale.get("Модулі та розширення", "Модули и расширения", "Modules & Extensions")));
@@ -209,7 +208,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Хот-модулі (.hmod)", "Хот-модули (.hmod)", "Hot modules (.hmod)"),
                 hotSubtitle));
 
-        items.add(YumiSettingCell.Factory.of(ROW_PLUGINS, R.drawable.msg_bot, 0xFF2A87FF,
+        items.add(YumiSettingCell.Factory.of(ROW_PLUGINS, R.drawable.msg_bot, 0xFF3F51B5,
                 MiogramLocale.get("Плагіни", "Плагины", "Plugins"),
                 MiogramLocale.get("Python + Lua + Java скрипти", "Python + Lua + Java скрипты", "Python + Lua + Java scripts")));
 
@@ -219,7 +218,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
         items.add(UItem.asShadow(null));
 
-        // 3. Нативні налаштування та спільнота (вбудовані в ядро, не модуль)
+        // 3. Нативні налаштування та спільнота
         items.add(UItem.asHeader(MiogramLocale.get("Нативні функції та спільнота", "Нативные функции и сообщество", "Native features & community")));
 
         items.add(YumiSettingCell.Factory.of(ROW_BADGES, R.drawable.msg_premium_normal, 0xFFE5486B,
@@ -228,15 +227,13 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                         "Сообщество Yumigram • Каталог стилей",
                         "Yumigram community • Style catalog")));
 
-        items.add(YumiSettingCell.Factory.of(ROW_UPDATES, R.drawable.msg_download_solar, 0xFF546E7A,
+        items.add(YumiSettingCell.Factory.of(ROW_UPDATES, R.drawable.msg_download_solar, 0xFF2196F3,
                 MiogramLocale.get("Автооновлення", "Автообновления", "Auto-updates"),
                 app.miogram.bridge.updater.MiogramUpdater.getUpdateChannelName()));
 
-        items.add(YumiSettingCell.Factory.of(ROW_ABOUT, R.drawable.msg_info, 0xFFE5486B,
+        items.add(YumiSettingCell.Factory.of(ROW_ABOUT, R.drawable.msg_info, 0xFF757575,
                 MiogramLocale.get("Про Yumigram", "О Yumigram", "About Yumigram"),
-                MiogramLocale.get("Версія " + BuildConfig.BUILD_VERSION_STRING,
-                        "Версия " + BuildConfig.BUILD_VERSION_STRING,
-                        "Version " + BuildConfig.BUILD_VERSION_STRING)));
+                "Версія " + BuildConfig.VERSION_NAME));
 
         items.add(UItem.asShadow(MiogramLocale.get(
                 "Yumigram: модульна клієнтська платформа на базі офіційного Telegram для Android.",

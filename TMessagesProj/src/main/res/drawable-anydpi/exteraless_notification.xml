@@ -2,16 +2,22 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
-    android:viewportWidth="24"
-    android:viewportHeight="24"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
     android:tint="#FFFFFF">
-    <group
-        android:scaleX="0.06935823"
-        android:scaleY="0.06935823"
-        android:translateX="-5.1846108"
-        android:translateY="-5.7903856">
-        <path
-            android:fillColor="#FFFFFFFF"
-            android:pathData="M226.661 256.5L365.364 200.461C383.286 193.22 391.945 172.82 384.704 154.898C377.463 136.976 357.064 128.317 339.141 135.558L125.889 221.717C119.053 224.479 113.264 229.328 109.348 235.574C105.431 241.82 103.587 249.144 104.078 256.5C103.587 263.856 105.431 271.179 109.348 277.425C113.264 283.671 119.053 288.521 125.889 291.283L339.141 377.442C357.064 384.683 377.463 376.024 384.704 358.102C391.945 340.179 383.286 319.78 365.364 312.539L226.661 256.5Z"/>
-    </group>
+
+    <!-- Статусна іконка сповіщень Yumigram: контурний пузыр з монограмою Y -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 42,28 L 66,28 C 74.8,28 82,35.2 82,44 L 82,56 C 82,64.8 74.8,72 66,72 L 48,72 C 45,72 40,75 34,79 C 32.5,80 31,79 31.8,77.5 C 33.2,74.5 34,71.5 34,68 L 34,67 C 29.5,64.5 26,59.5 26,54 L 26,44 C 26,35.2 33.2,28 42,28 Z"/>
+
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="6"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M 42.5,38 L 54,49.5 L 65.5,38 M 54,49.5 L 54,62"/>
 </vector>

@@ -91,32 +91,30 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         rows.clear();
+        boolean isEnabled = HotModulesManager.isModuleEnabled(moduleId);
+        items.add(UItem.asButtonCheck(10, MiogramLocale.get("Увімкнути функцію", "Включить функцию", "Enable feature"),
+                isEnabled ? MiogramLocale.get("Функція активна", "Функция активна", "Feature active")
+                          : MiogramLocale.get("Вимкнено", "Выключено", "Disabled")).setChecked(isEnabled));
+        items.add(UItem.asShadow(null));
+
         HotModulesManager.Handle h = handle();
-        if (h == null || h.instance == null) {
-            boolean installed = HotModulesManager.isModuleInstalled(moduleId);
-            if (!installed) {
-                items.add(UItem.asShadow(MiogramLocale.get(
-                        "Модуль ще не встановлено або розпаковується з ресурсів.",
-                        "Модуль ещё не установлен или распаковывается из ресурсов.",
-                        "Module is not installed yet or unpacking.")));
-                items.add(UItem.asButton(1, MiogramLocale.get("Встановити модуль", "Установить модуль", "Install module")));
-            } else {
-                items.add(UItem.asShadow(MiogramLocale.get(
-                        "Модуль вимкнено в налаштуваннях хот-модулів. Увімкніть його для доступу до функцій.",
-                        "Модуль выключен в настройках хот-модулей. Включите его для доступа к функциям.",
-                        "Module is disabled. Enable it to access settings.")));
-                items.add(UItem.asButton(2, MiogramLocale.get("Увімкнути модуль", "Включить модуль", "Enable module")));
-            }
+        HotModule mod = (h != null && h.instance != null) ? h.instance : HotModulesManager.createBuiltinModule(moduleId);
+        if (mod == null) {
+            items.add(UItem.asShadow(MiogramLocale.get(
+                    "Модуль не знайдено або він видалений.",
+                    "Модуль не найден или удалён.",
+                    "Module not found or deleted.")));
             return;
         }
+
         HotHost host = HotModulesManager.hostFor(moduleId);
         try {
-            h.instance.fillSettings(rows);
+            mod.fillSettings(rows);
         } catch (Throwable ignore) {
         }
         if (rows.isEmpty()) {
             items.add(UItem.asShadow(MiogramLocale.get(
-                    "Немає налаштувань.", "Нет настроек.", "No settings.")));
+                    "Немає додаткових налаштувань.", "Нет дополнительных настроек.", "No additional settings.")));
             return;
         }
         for (int i = 0; i < rows.size(); i++) {
@@ -148,17 +146,9 @@ public class HotModuleSettingsActivity extends BaseFragment {
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == 1) {
-            HotModulesManager.ensureBundledModulesInstalled();
-            HotModulesManager.setEnabled(moduleId, true, (ok, msg, data) -> {
-                if (actionBar != null) actionBar.setTitle(resolveTitle());
-                if (listView != null && listView.adapter != null) {
-                    listView.adapter.update(true);
-                }
-            });
-            return;
-        } else if (item.id == 2) {
-            HotModulesManager.setEnabled(moduleId, true, (ok, msg, data) -> {
+        if (item.id == 10) {
+            boolean next = !HotModulesManager.isModuleEnabled(moduleId);
+            HotModulesManager.setEnabled(moduleId, next, (ok, msg, data) -> {
                 if (actionBar != null) actionBar.setTitle(resolveTitle());
                 if (listView != null && listView.adapter != null) {
                     listView.adapter.update(true);
@@ -170,8 +160,8 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if (idx < 0 || idx >= rows.size()) return;
         HotRow r = rows.get(idx);
         HotModulesManager.Handle h = handle();
-        if (h == null || h.instance == null) return;
-        HotModule mod = h.instance;
+        HotModule mod = (h != null && h.instance != null) ? h.instance : HotModulesManager.createBuiltinModule(moduleId);
+        if (mod == null) return;
         HotHost host = HotModulesManager.hostFor(moduleId);
         try {
             if (r.type == HotRow.SWITCH) {

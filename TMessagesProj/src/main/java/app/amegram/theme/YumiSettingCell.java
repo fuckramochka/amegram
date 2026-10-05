@@ -103,11 +103,12 @@ public class YumiSettingCell extends FrameLayout {
     public void set(int iconRes, int iconBgColor, CharSequence title, CharSequence subtitle, CharSequence value, boolean showChevron, boolean divider) {
         if (iconRes != 0) {
             iconFrame.setVisibility(VISIBLE);
-            iconFrame.setBackground(YumiTheme.squircleIconBackground(iconBgColor != 0 ? iconBgColor : YumiTheme.getPrimaryContainer()));
+            int baseColor = iconBgColor != 0 ? iconBgColor : YumiTheme.getPrimary();
+            boolean isDark = Theme.isCurrentThemeDark();
+            int bg = (baseColor & 0x00FFFFFF) | (isDark ? 0x2A000000 : 0x1C000000);
+            iconFrame.setBackground(YumiTheme.squircleIconBackground(bg));
             iconView.setImageResource(iconRes);
-            int tint = (iconBgColor == 0 || iconBgColor == YumiTheme.getPrimaryContainer())
-                    ? YumiTheme.getOnPrimaryContainer() : 0xFFFFFFFF;
-            iconView.setColorFilter(new PorterDuffColorFilter(tint, PorterDuff.Mode.SRC_IN));
+            iconView.setColorFilter(new PorterDuffColorFilter(baseColor, PorterDuff.Mode.SRC_IN));
         } else {
             iconFrame.setVisibility(GONE);
         }

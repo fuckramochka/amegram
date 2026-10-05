@@ -243,13 +243,17 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
 
         topRow.addView(infoCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 8, 0));
 
-        // 3. Світч увімкнення/вимкнення — суворо фіксовані розміри 37x20 dp
+        // 3. Світч увімкнення/вимкнення — стабільний клік без рекурсії
         Switch sw = new Switch(context);
         sw.setChecked(info.enabled, false);
-        sw.setOnCheckedChangeListener((view, isChecked) -> {
-            HotModulesManager.setEnabled(info.manifest.id, isChecked, (ok, msg, data) -> refresh());
-        });
-        topRow.addView(sw, LayoutHelper.createLinear(37, 20, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
+        View.OnClickListener toggleAction = v -> {
+            boolean next = !sw.isChecked();
+            sw.setChecked(next, true);
+            HotModulesManager.setEnabled(info.manifest.id, next, (ok, msg, data) -> refresh());
+        };
+        sw.setOnClickListener(toggleAction);
+        topRow.setOnClickListener(toggleAction);
+        topRow.addView(sw, LayoutHelper.createLinear(40, 26, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
         card.addView(topRow);
 

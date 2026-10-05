@@ -167,6 +167,30 @@ public class MiogramPluginsMarket {
     }
 
     public static boolean installPlugin(Context context, MarketPluginEntry entry) {
+        // Установка ТІЛЬКИ через згоду з пермішенами: гола копія дає плагін без
+        // hooks/files/intents — Dex-ядро (Custom Profile) мовчки мертве.
+        if (context == null) context = ApplicationLoader.applicationContext;
+        try {
+            android.app.Activity act = context instanceof android.app.Activity
+                    ? (android.app.Activity) context : null;
+            java.io.File tmp = new java.io.File(
+                    new java.io.File(context.getCacheDir(), "market_tmp"), entry.assetName);
+            if (!tmp.getParentFile().exists()) tmp.getParentFile().mkdirs();
+            try (InputStream is = context.getAssets().open("plugins/" + entry.assetName);
+                 FileOutputStream fos = new FileOutputStream(tmp)) {
+                byte[] buf = new byte[8192];
+                int len;
+                while ((len = is.read(buf)) != -1) {
+                    fos.write(buf, 0, len);
+                }
+            }
+            if (act != null) {
+                app.exteraless.plugins.PluginInstallHelper.confirmAndInstall(act, tmp);
+                return true;
+            }
+        } catch (Throwable t) {
+            FileLog.e("MiogramPluginsMarket: consent install failed, fallback to copy", t);
+        }
         boolean ok = copyPluginFile(context, entry);
         if (ok) {
             try {

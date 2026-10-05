@@ -771,6 +771,8 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 }
             }
 
+            } catch (Throwable t) { org.telegram.messenger.FileLog.e("player customize section failed", t); }
+            try {
             // Buttons: opacity + color + neon glow on hero play.
             float btnOpacity = MiogramPlayerPrefs.getButtonOpacity();
             int btnColor = MiogramPlayerPrefs.getButtonColor();
@@ -823,6 +825,8 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 }
             }
 
+            } catch (Throwable t) { org.telegram.messenger.FileLog.e("player customize section failed", t); }
+            try {
             // Cover: corner radius & shadow elevation
             int coverRadius = MiogramPlayerPrefs.getCoverCornerRadius();
             int coverElev = MiogramPlayerPrefs.getCoverElevation();
@@ -838,6 +842,8 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 fullscreenCoverHolder.invalidateOutline();
             }
 
+            } catch (Throwable t) { org.telegram.messenger.FileLog.e("player customize section failed", t); }
+            try {
             // Text (Title & Artist)
             int titleCol = MiogramPlayerPrefs.getTitleColor();
             int authorCol = MiogramPlayerPrefs.getAuthorColor();
@@ -864,6 +870,8 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 fullscreenAuthorView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, Math.max(12, authorSize + 1));
             }
 
+            } catch (Throwable t) { org.telegram.messenger.FileLog.e("player customize section failed", t); }
+            try {
             // Seekbar & Time text
             int timeCol = MiogramPlayerPrefs.getTimeTextColor();
             if (timeCol != 0) {
@@ -898,12 +906,14 @@ public class MiogramModernPlayerLayout extends FrameLayout {
                 profileButtonContainer.setVisibility(MiogramPlayerPrefs.isProfileButtonEnabled() ? View.VISIBLE : View.GONE);
             }
 
+            } catch (Throwable t) { org.telegram.messenger.FileLog.e("player customize section failed", t); }
+            try {
             // Layout presets
             applyLayoutPreset(MiogramPlayerPrefs.getLayoutPreset());
 
             // Lyrics styling.
             if (lyricsView != null) lyricsView.reloadCustomization();
-        } catch (Throwable ignore) {}
+        } catch (Throwable t) { org.telegram.messenger.FileLog.e("player customize section failed", t); }
     }
 
     private void applyLayoutPreset(String preset) {

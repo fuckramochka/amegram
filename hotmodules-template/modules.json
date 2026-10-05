@@ -8,14 +8,23 @@
       "entry": "com.amegram.mods.player.PlayerModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/amegram-modules/main/hmods/player-1.0.1.hmod",
+          "sha256": "",
+          "minApp": 7112,
+          "changelog": "Ghost+deleted one module; player wiring; AI Nano/API only; experimental dedup."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
           "url": "https://github.com/fuckramochka/amegram-modules/releases/download/player-1.0.0/player-1.0.0.hmod",
           "sha256": "1cc980103ff76c0a3190767b34fd075d36204cc528401607270768bbe0a48428",
           "minApp": 7112,
           "changelog": "Повний пошук музики, відтворення, стрімінг та кешування."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "ghost",
@@ -24,14 +33,23 @@
       "entry": "com.amegram.mods.ghost.GhostModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/amegram-modules/main/hmods/ghost-1.0.1.hmod",
+          "sha256": "",
+          "minApp": 7112,
+          "changelog": "Ghost+deleted one module; player wiring; AI Nano/API only; experimental dedup."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
           "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ghost-1.0.0/ghost-1.0.0.hmod",
           "sha256": "9ee109bc98f44f3e5ec2c101805f468564246f98a9b2a85271010fcb08be95c5",
           "minApp": 7112,
           "changelog": "Перехоплення на рівні мережі: readHistory, readStories, typing та offline статус."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "ame",
@@ -104,14 +122,23 @@
       "entry": "com.amegram.mods.ai.AiModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/amegram-modules/main/hmods/ai-1.0.1.hmod",
+          "sha256": "",
+          "minApp": 7112,
+          "changelog": "Ghost+deleted one module; player wiring; AI Nano/API only; experimental dedup."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
           "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ai-1.0.0/ai-1.0.0.hmod",
           "sha256": "9192bc35b59bfbce42ac74b9b1afd51125c6ed8c4b71eb9bac124b5d9695f532",
           "minApp": 7112,
           "changelog": "Чат зі супутником, персони Ame та KAngel."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "experimental",
@@ -120,14 +147,23 @@
       "entry": "com.amegram.mods.experimental.ExperimentalModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/amegram-modules/main/hmods/experimental-1.0.1.hmod",
+          "sha256": "",
+          "minApp": 7112,
+          "changelog": "Ghost+deleted one module; player wiring; AI Nano/API only; experimental dedup."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
           "url": "https://github.com/fuckramochka/amegram-modules/releases/download/experimental-1.0.0/experimental-1.0.0.hmod",
           "sha256": "e933178f8474f3e64d78e9edb597915697e89641ba1f6002968888b5961da3b9",
           "minApp": 7112,
           "changelog": "Оптимізації клієнта, безліміти та збереження повідомлень."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "automation",

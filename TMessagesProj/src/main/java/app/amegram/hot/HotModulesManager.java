@@ -689,19 +689,12 @@ public final class HotModulesManager {
         notifyChanged();
     }
 
-    // ---------- фабрика вбудованих модулів (пряме створення без рефлексії) ----------
+    // ---------- тонкий клієнт: вбудованих impl НЕМАЄ ----------
+    // Весь код модулів живе в окремому репозиторії (amegram-modules) і в
+    // assets/hotmodules/*.hmod як сід. Завантаження тільки через DexClassLoader
+    // з диска. Той самий FQCN у APK відсутній, тому parent-first не тінить.
 
     public static HotModule createBuiltinModule(String moduleId) {
-        if ("ghost".equals(moduleId)) return new com.amegram.mods.ghost.GhostModule();
-        if ("player".equals(moduleId)) return new com.amegram.mods.player.PlayerModule();
-        if ("ame".equals(moduleId)) return new com.amegram.mods.ame.AmeModule();
-        if ("vault".equals(moduleId)) return new com.amegram.mods.vault.VaultModule();
-        if ("tiktok".equals(moduleId)) return new com.amegram.mods.tiktok.TikModule();
-        if ("ai".equals(moduleId)) return new com.amegram.mods.ai.AiModule();
-        if ("experimental".equals(moduleId)) return new com.amegram.mods.experimental.ExperimentalModule();
-        if ("stt".equals(moduleId)) return new com.amegram.mods.stt.SttModule();
-        if ("demo".equals(moduleId)) return new com.amegram.mods.demo.DemoModule();
-        if ("automation".equals(moduleId)) return new com.amegram.mods.automation.AutomationModule();
         return null;
     }
 
@@ -715,22 +708,6 @@ public final class HotModulesManager {
             if (appContext == null) return null;
         }
         if (!isModuleEnabled(moduleId)) return null;
-
-        HotModule builtin = createBuiltinModule(moduleId);
-        if (builtin != null) {
-            String name = BUILTIN_NAMES.get(moduleId);
-            if (name == null) name = moduleId;
-            Manifest m = new Manifest(moduleId, "1.0.0", "stable", builtin.getClass().getName(), name, 0);
-            InstalledInfo info = new InstalledInfo(m, null, true, true);
-            Handle handle = new Handle(info, builtin);
-            LOADED.put(moduleId, handle);
-            try {
-                builtin.onAttach(appContext, new HostImpl(moduleId));
-            } catch (Throwable e) {
-                FileLog.e("hotmods: onAttach failed: " + moduleId, e);
-            }
-            return handle;
-        }
 
         String entryClass = BUILTIN_ENTRIES.get(moduleId);
         String version = prefs().getString("installed_" + moduleId, "1.0.0");

@@ -1,6 +1,6 @@
 {
   "id": "ai",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "branch": "stable",
   "entry": "com.amegram.mods.ai.AiModule",
   "name": "ШІ Супутник",

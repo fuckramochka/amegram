@@ -57,29 +57,6 @@ public class PlayerModule implements HotModule, HotPlayer {
         return host != null && host.getBool("lyrics_enabled", true);
     }
 
-    private String bgModeName() {
-        try {
-            int m = app.miogram.bridge.player.MiogramPlayerPrefs.getBackgroundMode();
-            switch (m) {
-                case 1: return "Градієнт";
-                case 2: return "Суцільний колір";
-                case 3: return "Прозорий";
-                case 4: return "Своє фото";
-                case 5: return "Своє відео";
-                default: return "Блур обкладинки";
-            }
-        } catch (Throwable ignore) {
-            return "";
-        }
-    }
-
-    private String blurName() {
-        try {
-            return "Блур фону: " + app.miogram.bridge.player.MiogramPlayerPrefs.getBgBlur() + " px (тап — змінити)";
-        } catch (Throwable ignore) {
-            return "Блур фону";
-        }
-    }
 
     @Override
     public void openMusicSearch(Context context) {
@@ -105,10 +82,8 @@ public class PlayerModule implements HotModule, HotPlayer {
                 "Розширені кнопки, оновлена обкладинка та статус. Вимкнено = стоковий плеєр TG", isModernLayoutEnabled()));
         rows.add(HotRow.switchRow("visualizer_enabled", "Аудіовізуалізатор",
                 "Жива хвильова анімація басів", isVisualizerEnabled()));
-        rows.add(HotRow.button("bg_mode", "Фон плеєра: " + bgModeName(),
-                "Тап — наступний режим (блур/градієнт/колір/прозорий)"));
-        rows.add(HotRow.button("bg_blur", blurName(),
-                "Тап — 0 → 10 → 15 → 25 → 30 px. Діє в режимі блуру обкладинки."));
+        rows.add(HotRow.info("Фон, блур, прозорість, кнопки — олівець у плеєрі."
+                + " Дублів тут нема: одне місце налаштування."));
 
         rows.add(HotRow.header("Тексти пісень"));
         rows.add(HotRow.info("Шрифт, караоке, сяйво — олівець у плеєрі → Секції → Текст пісні."
@@ -137,21 +112,7 @@ public class PlayerModule implements HotModule, HotPlayer {
     public void onSettingsAction(String rowId) {
         if ("open_search".equals(rowId) && host != null) {
             host.openModuleScreen("search");
-        } else if ("bg_mode".equals(rowId)) {
-            try {
-                int m = app.miogram.bridge.player.MiogramPlayerPrefs.getBackgroundMode();
-                int next = (m + 1) % 4;
-                app.miogram.bridge.player.MiogramPlayerPrefs.setBackgroundMode(next);
-            } catch (Throwable ignore) {
-            }
-        } else if ("bg_blur".equals(rowId)) {
-            try {
-                int cur = app.miogram.bridge.player.MiogramPlayerPrefs.getBgBlur();
-                int next = cur <= 0 ? 10 : cur <= 10 ? 15 : cur <= 15 ? 25 : cur < 30 ? 30 : 0;
-                app.miogram.bridge.player.MiogramPlayerPrefs.setBgBlur(next);
-            } catch (Throwable ignore) {
-            }
-        }
+
     }
 
     @Override

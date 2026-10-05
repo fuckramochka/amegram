@@ -56,7 +56,7 @@ def _require(perm: str, what: str, detail=None):
     модуля это был бы цикл. Плагин определяется по стеку, поэтому проверка
     работает и в колбэках из Java, где plugin_context не выставлен.
     """
-    from extera_utils.plugin_loader import require_permission
+    require_permission = _internal("plugin_loader").require_permission
     require_permission(perm, what, detail=detail)
 
 
@@ -74,6 +74,22 @@ def get_hook_account():
 def get_selected_account() -> int:
     """The account currently selected in the UI."""
     return int(_jclass("org.telegram.messenger.UserConfig").selectedAccount)
+
+
+def _enter_hook_account(account):
+    previous = getattr(_hook_state, "account", _MISSING)
+    _hook_state.account = account
+    return previous
+
+
+def _exit_hook_account(previous):
+    if previous is _MISSING:
+        try:
+            del _hook_state.account
+        except AttributeError:
+            pass
+    else:
+        _hook_state.account = previous
 
 
 @contextmanager
@@ -164,7 +180,9 @@ def run_on_queue(fn, queue: str = PLUGINS_QUEUE, delay: int = 0, delay_ms: int =
     # Владельца берём в момент постановки в очередь: исполняться _run будет на
     # чужом потоке, где кадра плагина на стеке уже нет, и Java-гейт без метки
     # пропустил бы обращения плагина к сети и рефлексии.
-    from extera_utils.plugin_loader import java_runtime_mark, plugin_frame_owner
+    _module = _internal("plugin_loader")
+    java_runtime_mark = _module.java_runtime_mark
+    plugin_frame_owner = _module.plugin_frame_owner
     owner = plugin_frame_owner()
 
     def _run():
@@ -193,6 +211,29 @@ def run_on_queue(fn, queue: str = PLUGINS_QUEUE, delay: int = 0, delay_ms: int =
 
 # TL requests
 
+_request_delegate_class = None
+
+
+def _request_delegate_type():
+    global _request_delegate_class
+    cls = _request_delegate_class
+    if cls is not None:
+        return cls
+    from java import dynamic_proxy
+    from android_utils import safe_call
+
+    RequestDelegate = _jclass("org.telegram.tgnet.RequestDelegate")
+
+    class _RequestDelegate(dynamic_proxy(RequestDelegate)):
+        def run(self, response, error):
+            # Колбэк уходит в Java: ошибка плагина не должна ронять приложение.
+            with hook_scope(self._exteraless_account):
+                safe_call(self._exteraless_fn, response, error)
+
+    _request_delegate_class = _RequestDelegate
+    return _RequestDelegate
+
+
 def RequestCallback(fn, account=None):
     """Wrap ``fn(response, error)`` as a Java ``RequestDelegate``.
 
@@ -207,20 +248,10 @@ def RequestCallback(fn, account=None):
     account when not given), so account-scoped helpers called from within it
     target the account the request was sent on.
     """
-    from java import dynamic_proxy
-
-    RequestDelegate = _jclass("org.telegram.tgnet.RequestDelegate")
     resolved = _resolve_account(account, "RequestCallback")
-
-    class _RequestDelegate(dynamic_proxy(RequestDelegate)):
-        def run(self, response, error):
-            # Колбэк уходит в Java: ошибка плагина не должна ронять приложение.
-            from android_utils import safe_call
-
-            with hook_scope(resolved):
-                safe_call(fn, response, error)
-
-    proxy = _RequestDelegate()
+    proxy = _request_delegate_type()()
+    proxy._exteraless_fn = fn
+    proxy._exteraless_account = resolved
     # Marks an already-wrapped callback so send_request does not double-wrap.
     try:
         proxy.__dict__["_exteraless_request_delegate"] = True
@@ -287,7 +318,15 @@ def get_account_instance(account=None):
 def get_last_fragment():
     """The currently visible BaseFragment, or None when unavailable."""
     try:
-        return _jclass("org.telegram.ui.LaunchActivity").getLastFragment()
+        launch = _jclass("org.telegram.ui.LaunchActivity")
+    except Exception:
+        return None
+    try:
+        return launch.getLastFragmentIncludeMainTabs()
+    except Exception:
+        pass
+    try:
+        return launch.getLastFragment()
     except Exception:
         return None
 
@@ -374,6 +413,15 @@ def _to_array_list(items):
     return array_list
 
 
+def _to_hash_map(mapping):
+    hash_map = _jclass("java.util.HashMap")()
+    for key, value in mapping.items():
+        if key is None or value is None:
+            continue
+        hash_map.put(str(key), str(value))
+    return hash_map
+
+
 def _apply_parse_mode(params, field: str, text, parse_mode):
     """Replace params.message/params.caption with parsed text + entities."""
     if not parse_mode or text is None:
@@ -453,6 +501,8 @@ def send_message(params: dict, parse_mode=None, account=None):
     if caption is not None:
         send_params.caption = str(caption)
         _apply_parse_mode(send_params, "caption", caption, parse_mode)
+    if message is None and any(params.get(key) is not None for key in ("photo", "document")):
+        send_params.message = None
 
     for key, value in params.items():
         if value is None:
@@ -463,6 +513,8 @@ def send_message(params: dict, parse_mode=None, account=None):
         # entities сам и кладёт их обычным list'ом.
         if isinstance(value, (list, tuple)):
             value = _to_array_list(value)
+        elif isinstance(value, dict):
+            value = _to_hash_map(value)
         try:
             setattr(send_params, key, value)
         except Exception as exc:
@@ -542,7 +594,7 @@ def send_video(peer_id, path, caption=None, parse_mode=None,
 
 
 def _send_document_like(peer_id, path, caption, parse_mode, replyToMsg, resolved,
-                        mime, helper_name):
+                        mime, helper_name, replyToTopMsg=None):
     # Одна проверка на send_document/send_audio: обе идут сюда.
     _require("messages.send", helper_name)
     caption_str, entities = _parse_caption(caption, parse_mode)
@@ -558,7 +610,7 @@ def _send_document_like(peer_id, path, caption, parse_mode, replyToMsg, resolved
         # Python), so parsed captions fall back to plain text here.
         _jclass("org.telegram.messenger.SendMessagesHelper").prepareSendingDocument(
             get_account_instance(resolved), str(path), str(path), None,
-            caption_str, mime, int(peer_id), replyToMsg, None, None, None, None,
+            caption_str, mime, int(peer_id), replyToMsg, replyToTopMsg, None, None, None,
             True, 0, None, None, 0, False)
 
     if entities is not None:
@@ -568,11 +620,11 @@ def _send_document_like(peer_id, path, caption, parse_mode, replyToMsg, resolved
 
 
 def send_document(peer_id, path, caption=None, parse_mode=None,
-                  replyToMsg=None, account=None):
+                  replyToMsg=None, account=None, replyToTopMsg=None):
     """Send an arbitrary file as a document to *peer_id*."""
     _send_document_like(peer_id, path, caption, parse_mode, replyToMsg,
                         _resolve_account(account, "send_document"), None,
-                        "send_document")
+                        "send_document", replyToTopMsg)
 
 
 def send_audio(peer_id, path, caption=None, parse_mode=None,
@@ -811,6 +863,19 @@ class AccountClient:
 # android_utils, and an ImportError at module level kills the whole plugin.
 from android_utils import log, run_on_ui_thread  # noqa: E402,F401
 
+
+_internal_modules = {}
+
+
+def _internal(name):
+    module = _internal_modules.get(name)
+    if module is None:
+        import importlib
+        module = importlib.import_module("extera_utils." + name)
+        _internal_modules[name] = module
+    return module
+
+
 # Alias used by some plugins for the same "topmost visible fragment" lookup.
 get_current_fragment = get_last_fragment
 
@@ -822,11 +887,22 @@ def get_client(account=None) -> AccountClient:
 
 # NotificationCenter
 
-class NotificationCenterDelegate:
+def _notification_delegate_base():
+    try:
+        from java import dynamic_proxy
+        return dynamic_proxy(_jclass(
+            "org.telegram.messenger.NotificationCenter$NotificationCenterDelegate"))
+    except Exception:
+        return object
+
+
+class NotificationCenterDelegate(_notification_delegate_base()):
     """Python base for NotificationCenter.NotificationCenterDelegate.
 
-    Subclass it and override didReceivedNotification(id, account, args).
-    Pass the `.java` proxy to Java APIs, or use start_observing().
+    The instance itself is the Java delegate: pass it straight to
+    addObserver/removeObserver, like on exteraGram. Override
+    didReceivedNotification(id, account, args) in a subclass or assign it on
+    the instance. `.java` is kept for plugins written against the old proxy.
 
     NOTE: the hook-account scope does NOT propagate into
     didReceivedNotification — bind explicitly with get_client(account)
@@ -836,27 +912,9 @@ class NotificationCenterDelegate:
     def didReceivedNotification(self, notification_id, account, args):
         """Override in a subclass. `args` is a Java Object[] array."""
 
-    def _create_proxy(self):
-        from java import dynamic_proxy
-
-        interface = _jclass(
-            "org.telegram.messenger.NotificationCenter$NotificationCenterDelegate")
-        outer = self
-
-        class _Proxy(dynamic_proxy(interface)):
-            def didReceivedNotification(self, notification_id, account, args):
-                outer.didReceivedNotification(notification_id, account, args)
-
-        return _Proxy()
-
     @property
     def java(self):
-        """The Java-side proxy of this delegate (created lazily)."""
-        proxy = self.__dict__.get("_java_proxy")
-        if proxy is None:
-            proxy = self._create_proxy()
-            self.__dict__["_java_proxy"] = proxy
-        return proxy
+        return self
 
     def start_observing(self, notification_id: int, account=None):
         """addObserver(self) on the account's NotificationCenter."""

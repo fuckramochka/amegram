@@ -166,4 +166,8 @@
     <string name="PluginWatchdogMuted">%1$s больше не будет предупреждать о тормозах. Вернуть предупреждения можно в настройках плагина.</string>
     <string name="PluginWatchdogWarnings">Предупреждать о тормозах</string>
     <string name="PluginWatchdogWarningsInfo">Сообщать, когда плагин надолго занимает главный поток или перестаёт отвечать.</string>
+    <string name="PluginDeniedGrant">Выдать</string>
+    <string name="PluginGrantedRestart">Разрешение выдано: %1$s. Если не подхватилось — перезапустите плагин.</string>
+    <string name="PluginGrantedRestartAction">Перезапустить</string>
+    <string name="PluginGrantTrustedConfirm">%1$s получит уровень доступа «Доверенный»: с ним плагин может менять код приложения. Выдать?</string>
 </resources>

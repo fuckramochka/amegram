@@ -122,6 +122,15 @@ class _IntentCallback:
         return None
 
 
+def _plugin_services():
+    try:
+        from app.exteraless.plugins import PluginServices
+        return PluginServices
+    except Exception:
+        from extera_utils.plugin_loader import engine_java_class
+        return engine_java_class("app.exteraless.plugins.PluginServices")
+
+
 class IntentsManager:
     """Registry of global intent/link handlers (see module docstring)."""
 
@@ -168,7 +177,7 @@ class IntentsManager:
             raise RuntimeError(
                 "IntentsManager handlers must be registered from a plugin "
                 "context (on_plugin_load / a hook callback)")
-        from app.exteraless.plugins import PluginServices
+        PluginServices = _plugin_services()
 
         filters_json = json.dumps(_build_filters(filters), ensure_ascii=False)
         handler_id = PluginServices.registerIntentHandler(
@@ -199,8 +208,7 @@ class IntentsManager:
             if bucket is not None:
                 bucket.discard(handler_id)
         try:
-            from app.exteraless.plugins import PluginServices
-            PluginServices.unregisterIntentHandler(record["plugin_id"], handler_id)
+            _plugin_services().unregisterIntentHandler(record["plugin_id"], handler_id)
         except Exception:
             pass
 
@@ -220,7 +228,7 @@ class IntentsManager:
         }
 
 
-# Called from BasePlugin._cleanup_resources() on plugin unload.
+# Called from BasePlugin._exteraless_cleanup_resources() on plugin unload.
 def _unhandle_all_for_plugin(plugin_id: str):
     if not plugin_id:
         return
@@ -231,7 +239,7 @@ def _unhandle_all_for_plugin(plugin_id: str):
     if not ids:
         return
     try:
-        from app.exteraless.plugins import PluginServices
+        PluginServices = _plugin_services()
         for handler_id in ids:
             try:
                 PluginServices.unregisterIntentHandler(plugin_id, handler_id)

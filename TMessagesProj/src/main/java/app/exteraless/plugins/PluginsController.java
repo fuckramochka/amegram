@@ -1241,9 +1241,9 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         }
     }
 
-    public void runOnPluginsQueue(Runnable runnable) {
+    public static void runOnPluginsQueue(Runnable runnable) {
         if (runnable != null) {
-            fileExecutor.execute(runnable);
+            getInstance().fileExecutor.execute(runnable);
         }
     }
 

@@ -171,4 +171,8 @@ Source:
     <string name="PluginWatchdogMuted">%1$s will no longer warn about slowdowns. You can bring the warnings back in the plugin settings.</string>
     <string name="PluginWatchdogWarnings">Slowdown warnings</string>
     <string name="PluginWatchdogWarningsInfo">Warn when this plugin holds the main thread for too long or stops responding.</string>
+    <string name="PluginDeniedGrant">Grant</string>
+    <string name="PluginGrantedRestart">Permission granted to %1$s. Restart the plugin if it doesn\'t pick it up.</string>
+    <string name="PluginGrantedRestartAction">Restart</string>
+    <string name="PluginGrantTrustedConfirm">%1$s will get the Trusted access level: with it, the plugin can change the app\'s code. Grant?</string>
 </resources>

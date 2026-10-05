@@ -10,6 +10,7 @@ the one exception to that rule: a denied permission is not a broken plugin, so
 it is logged and swallowed here.
 """
 
+import ast
 import contextlib
 import hashlib
 import importlib.machinery
@@ -18,6 +19,7 @@ import inspect
 import json
 import os
 import re
+import logging
 import sys
 import threading
 from collections import namedtuple
@@ -63,7 +65,8 @@ __all__ = [
     "call_app_event",
     "call_send_message_hook", "call_pre_request_hook", "call_post_request_hook",
     "call_update_hook", "call_updates_hook",
-    "get_settings_json", "notify_setting_changed", "dispatch_setting_click",
+    "get_settings_json", "notify_setting_changed", "invalidate_settings_mirror",
+    "dispatch_setting_click",
     "is_loaded", "plugins", "PluginRecord", "start_dev_server",
     "plugin_context", "current_plugin_id",
     # песочница
@@ -202,12 +205,20 @@ def _ensure_plugins_dir_on_path() -> None:
         sys.path.append(plugins_dir)
 
 
+_plugins_dir_cached: Optional[str] = None
+
+
 def _plugins_dir_path() -> Optional[str]:
+    global _plugins_dir_cached
+    if _plugins_dir_cached is not None:
+        return _plugins_dir_cached
     try:
-        import file_utils
-        return file_utils.get_plugins_dir() or None
+        file_utils = (_original_import or __import__)("file_utils")
+        path = file_utils.get_plugins_dir() or None
     except Exception:
         return None
+    _plugins_dir_cached = path
+    return path
 
 
 def _sdk_module_names() -> frozenset:
@@ -231,7 +242,7 @@ def _sdk_module_names() -> frozenset:
 _sdk_names_cache: Optional[frozenset] = None
 
 _JAVA_ROOT_PACKAGES = frozenset({
-    "java", "javax", "android", "androidx", "org", "com", "dalvik",
+    "java", "javax", "android", "androidx", "org", "com", "dalvik", "app",
     "kotlin", "kotlinx",
 })
 
@@ -386,7 +397,7 @@ _INTERNAL_MODULES = frozenset({
 
 def _deny_internal_import(name, fromlist=()) -> None:
     """Бросить ImportError, если плагин лезет во внутренний модуль движка."""
-    if type(name) is not str or unsafe_mode():
+    if type(name) is not str:
         return
     candidates = [name]
     if fromlist:
@@ -395,6 +406,8 @@ def _deny_internal_import(name, fromlist=()) -> None:
     for candidate in candidates:
         if candidate not in _INTERNAL_MODULES:
             continue
+        if unsafe_mode():
+            return
         try:
             pid = _direct_plugin_caller()
         except Exception:
@@ -459,11 +472,54 @@ _JAVA_CLASS_DENIED = frozenset({
     "java.lang.Process",
 })
 
+_DENIED_CLASS_PACKAGES = frozenset(
+    name.rpartition(".")[0] for name in _JAVA_CLASS_DENIED)
+
+
+def _deny_denied_java_class(name, fromlist=()) -> None:
+    if type(name) is not str:
+        return
+    if name not in _JAVA_CLASS_DENIED and name not in _DENIED_CLASS_PACKAGES:
+        return
+    candidates = [name]
+    if fromlist:
+        candidates.extend(f"{name}.{item}" for item in fromlist
+                          if isinstance(item, str) and item != "*")
+    for candidate in candidates:
+        if candidate not in _JAVA_CLASS_DENIED:
+            continue
+        if unsafe_mode() or _engine_lookup():
+            return
+        try:
+            pid = _direct_plugin_caller()
+        except Exception:
+            return
+        if pid is None:
+            return
+        _log_once(f"{pid}|denied-class|{candidate}",
+                  f"plugin {pid!r}: class {candidate!r} is not available "
+                  f"to plugins")
+        raise ImportError(f"{candidate} is not available to plugins")
+
+
+_class_permission_cache = {}
+_NO_PERMISSION = object()
+
 
 def java_class_permission(name):
     """Разрешение, нужное для класса, или None."""
     if not name:
         return None
+    cached = _class_permission_cache.get(name)
+    if cached is not None:
+        return None if cached is _NO_PERMISSION else cached
+    perm = _java_class_permission_uncached(name)
+    if len(_class_permission_cache) < 4096:
+        _class_permission_cache[name] = _NO_PERMISSION if perm is None else perm
+    return perm
+
+
+def _java_class_permission_uncached(name):
     exact = _JAVA_CLASS_RULES.get(name)
     if exact is not None:
         return exact
@@ -471,6 +527,39 @@ def java_class_permission(name):
         if prefix.endswith(".") and name.startswith(prefix):
             return perm
     return None
+
+
+def engine_java_class(name):
+    """Java-класс движка для кода SDK — в обход привязки к плагину.
+
+    `guard_java_class` считает просителем любой кадр плагина на стеке, и для
+    find_class это верно: SDK там пересылает просьбу плагина. Но сам SDK тоже
+    ходит за своими классами — `PluginServices`, `PythonBridge`, — и делает
+    это из кода, который запускают хуки и колбэки плагина. Такой запрос
+    записывался на плагин и отклонялся: `PluginServices` становился None, а
+    дальше hook_method молча возвращал None, и хуки не ставились при живых
+    разрешениях.
+
+    Флаг ставится только здесь и снимается сразу; плагину функция недоступна —
+    модуль лежит в _INTERNAL_MODULES.
+    """
+    previous = getattr(_context_state, "engine_lookup", False)
+    _context_state.engine_lookup = True
+    try:
+        from java import jclass
+        return jclass(name)
+    except Exception as e:
+        # Не через _log: он ходит в android_utils.log, а тот сам резолвит мост
+        # этой же функцией — на хосте без Chaquopy получалась бы рекурсия.
+        print(f"[exteraless:plugin_loader] engine class {name!r} unavailable: {e}",
+              file=sys.stderr)
+        return None
+    finally:
+        _context_state.engine_lookup = previous
+
+
+def _engine_lookup() -> bool:
+    return bool(getattr(_context_state, "engine_lookup", False))
 
 
 def guard_java_class(name):
@@ -487,7 +576,7 @@ def guard_java_class(name):
     (app.exteraless.plugins.PluginSinkGate), эта проверка лишь снимает самый
     ходовой путь: 178 плагинов зовут find_class, 94 — jclass.
     """
-    if unsafe_mode():
+    if unsafe_mode() or _engine_lookup():
         return True
     if name in _JAVA_CLASS_DENIED:
         pid = plugin_frame_owner()
@@ -508,6 +597,12 @@ def guard_java_class(name):
     perm = " или ".join(wanted)
     _log_once(f"{pid}|jclass|{name}",
               f"plugin {pid!r}: class {name!r} refused, missing {perm!r}")
+    try:
+        java = _permissions()
+        if java is not None:
+            java.check(pid, wanted[0], f"class {name}")
+    except Exception:
+        pass
     try:
         from . import audit_gate
         audit_gate.note_denied_class(pid, name, perm)
@@ -544,14 +639,23 @@ def log_denial(plugin_id: str, event: str, what: str) -> None:
               f"plugin {plugin_id!r}: {what} refused ({event})")
 
 
+def _drop_owner_cache(full: str, drop_unowned: bool) -> None:
+    for cached_path, cached_owner in list(_path_owner_cache.items()):
+        if (drop_unowned and cached_owner is None) \
+                or os.path.normcase(os.path.abspath(cached_path)) == full:
+            _path_owner_cache.pop(cached_path, None)
+
+
 def _register_owner(path: str, plugin_id: str) -> None:
-    _owner_files[os.path.normcase(os.path.abspath(path))] = plugin_id
-    _path_owner_cache.clear()
+    full = os.path.normcase(os.path.abspath(path))
+    _owner_files[full] = plugin_id
+    _drop_owner_cache(full, True)
 
 
 def _forget_owner(path: str) -> None:
-    _owner_files.pop(os.path.normcase(os.path.abspath(path)), None)
-    _path_owner_cache.clear()
+    full = os.path.normcase(os.path.abspath(path))
+    _owner_files.pop(full, None)
+    _drop_owner_cache(full, False)
 
 
 def _installed_plugin_owner(full: str) -> Optional[str]:
@@ -661,8 +765,11 @@ def plugin_frame_owner() -> Optional[str]:
         frame = sys._getframe(1)
     except Exception:
         frame = None
+    barrier = getattr(_context_state, "import_barrier", None)
     depth = 0
     while frame is not None and depth < _MAX_FRAMES:
+        if frame is barrier:
+            return None
         owner = _owner_of_frame(frame)
         if owner is not None:
             return owner
@@ -685,8 +792,11 @@ def _direct_plugin_caller() -> Optional[str]:
         frame = sys._getframe(1)
     except Exception:
         return None
+    barrier = getattr(_context_state, "import_barrier", None)
     depth = 0
     while frame is not None and depth < _MAX_FRAMES:
+        if frame is barrier:
+            return None
         if not _frame_is_machinery(frame):
             return _owner_of_frame(frame)
         frame = frame.f_back
@@ -858,12 +968,16 @@ def _sandboxed_import_module(name, package=None):
     """
     if package is None:
         _deny_internal_import(name)
+        _deny_denied_java_class(name)
     if package is None and type(name) is str \
             and name.partition(".")[0] in _GATED_ROOTS:
         try:
             _guard_import(name)
         except Exception:
             pass
+    neighbour = _unloaded_neighbour(name) if package is None else None
+    if neighbour is not None:
+        return _import_as_neighbour(neighbour, _original_import_module, name, package)
     return _original_import_module(name, package)
 
 
@@ -894,6 +1008,34 @@ def _log_neighbour_import_failure(name, exc) -> None:
         pass
 
 
+def _unloaded_neighbour(name) -> Optional[str]:
+    if type(name) is not str:
+        return None
+    root = name.partition(".")[0]
+    if root in sys.modules or root in _JAVA_ROOT_PACKAGES or not root.isidentifier():
+        return None
+    plugins_dir = _plugins_dir_path()
+    if not plugins_dir or not os.path.isfile(os.path.join(plugins_dir, root + ".py")):
+        return None
+    try:
+        caller = _direct_plugin_caller()
+    except Exception:
+        return None
+    if caller in (None, root):
+        return None
+    return root
+
+
+def _import_as_neighbour(plugin_id, importer, *args):
+    previous = getattr(_context_state, "import_barrier", None)
+    _context_state.import_barrier = sys._getframe()
+    try:
+        with plugin_context(plugin_id):
+            return importer(*args)
+    finally:
+        _context_state.import_barrier = previous
+
+
 def _sandboxed_import(name, globals=None, locals=None, fromlist=(), level=0):
     """Обёртка builtins.__import__.
 
@@ -903,6 +1045,7 @@ def _sandboxed_import(name, globals=None, locals=None, fromlist=(), level=0):
     """
     if level == 0:
         _deny_internal_import(name, fromlist)
+        _deny_denied_java_class(name, fromlist)
     if level == 0 and type(name) is str and name.partition(".")[0] in _GATED_ROOTS:
         try:
             _guard_import(name, fromlist)
@@ -910,7 +1053,11 @@ def _sandboxed_import(name, globals=None, locals=None, fromlist=(), level=0):
             pass
     if level != 0 or type(name) is not str \
             or name.partition(".")[0] not in _JAVA_ROOTS:
+        neighbour = _unloaded_neighbour(name) if level == 0 else None
         try:
+            if neighbour is not None:
+                return _import_as_neighbour(neighbour, _original_import,
+                                            name, globals, locals, fromlist, level)
             return _original_import(name, globals, locals, fromlist, level)
         except Exception as exc:
             _log_neighbour_import_failure(name, exc)
@@ -940,20 +1087,30 @@ def _sandboxed_open(file, mode="r", *args, **kwargs):
     обёртки разрешение "files" закрывало бы только парадный вход. Проверяется
     только прямой вызов из кода плагина: у SDK своя проверка в file_utils.
     """
+    checked = None
     try:
         pid = _direct_plugin_caller()
         target = file if isinstance(file, (str, bytes, os.PathLike)) else None
         if pid is not None and target is not None:
             from file_utils import _is_own_path
-            if not _is_own_path(pid, os.fsdecode(target)):
+            decoded = os.fsdecode(target)
+            if not _is_own_path(pid, decoded):
                 require_permission(PERM_FILES, "open a file",
-                                   detail=f"{os.fsdecode(target)} ({mode})",
+                                   detail=f"{decoded} ({mode})",
                                    plugin_id=pid)
+            checked = decoded
     except PermissionError:
         raise
     except Exception:
         pass  # сломанная проверка не должна ломать открытие файлов
-    return _original_open(file, mode, *args, **kwargs)
+    if checked is None:
+        return _original_open(file, mode, *args, **kwargs)
+    previous = getattr(_context_state, "open_checked", None)
+    _context_state.open_checked = checked
+    try:
+        return _original_open(file, mode, *args, **kwargs)
+    finally:
+        _context_state.open_checked = previous
 
 
 _sandboxed_open._exteraless_sandbox = True
@@ -1070,6 +1227,205 @@ def _install_thread_marking() -> None:
         print(f"[exteraless:plugin_loader] thread marking failed: {e}", file=sys.stderr)
 
 
+def _mirror_on_native_module(name, original, replacement) -> None:
+    try:
+        import java
+        native = sys.modules.get("java.chaquopy") or getattr(java, "chaquopy", None)
+        if native is not None and getattr(native, name, None) is original:
+            setattr(native, name, replacement)
+    except Exception as e:
+        print(f"[exteraless:plugin_loader] native {name} guard failed: {e}",
+              file=sys.stderr)
+
+
+_COLOR_SHIM_CLASSES = (
+    "android.graphics.Paint",
+    "android.text.TextPaint",
+    "android.view.View",
+    "android.widget.TextView",
+    "android.graphics.Canvas",
+)
+
+_COLOR_METHOD_NAMES = frozenset((
+    "setColor", "setColorFilter", "setShadowLayer", "drawColor", "drawARGB",
+    "setTextColor", "setHintTextColor", "setLinkTextColor", "setHighlightColor",
+    "setBackgroundColor",
+))
+
+_INT_MIN = -(2 ** 31)
+_INT_MAX = 2 ** 32
+
+
+_jint = None
+
+
+def _coerce_int_args(args):
+    global _jint
+    jint = _jint
+    if jint is None:
+        from java import jint
+        _jint = jint
+    out = []
+    for arg in args:
+        if type(arg) is int and _INT_MIN <= arg < _INT_MAX:
+            out.append(jint(arg, truncate=True))
+        else:
+            out.append(arg)
+    return out
+
+
+def _set_class_attr(cls, name, value):
+    try:
+        type.__setattr__(cls, name, value)
+        return
+    except Exception:
+        setattr(cls, name, value)
+
+
+def _int_shim(original):
+    def shim(self, *args):
+        try:
+            coerced = _coerce_int_args(args)
+        except Exception:
+            coerced = args
+        try:
+            bound = original.__get__(self, type(self))
+        except Exception:
+            return original(self, *coerced)
+        return bound(*coerced)
+
+    shim._exteraless_int_shim = True
+    return shim
+
+
+def _int_over_long_methods(class_name):
+    from java import jclass
+    signatures = {}
+    methods = jclass("java.lang.Class").forName(class_name).getMethods()
+    for i in range(len(methods)):
+        method = methods[i]
+        params = method.getParameterTypes()
+        types = tuple(str(params[j].getName()) for j in range(len(params)))
+        signatures.setdefault(str(method.getName()), set()).add(types)
+    out = []
+    for name, sigs in signatures.items():
+        wanted = False
+        for sig in sigs:
+            if "long" in sig:
+                twin = tuple("int" if t == "long" else t for t in sig)
+                if twin in sigs:
+                    wanted = True
+                    break
+            if "int" in sig and name in _COLOR_METHOD_NAMES:
+                wanted = True
+                break
+        if wanted:
+            out.append(name)
+    return out
+
+
+_color_shims_installed = False
+
+
+def _install_color_int_shims() -> None:
+    global _color_shims_installed
+    if _color_shims_installed:
+        return
+    _color_shims_installed = True
+    from java import jclass
+    for class_name in _COLOR_SHIM_CLASSES:
+        try:
+            cls = jclass(class_name)
+            names = _int_over_long_methods(class_name)
+        except Exception as e:
+            print(f"[exteraless:plugin_loader] int shim scan failed for {class_name}: {e}",
+                  file=sys.stderr)
+            continue
+        for name in names:
+            try:
+                original = getattr(cls, name, None)
+                if original is None or getattr(original, "_exteraless_int_shim", False):
+                    continue
+                _set_class_attr(cls, name, _int_shim(original))
+                if not getattr(getattr(cls, name, None), "_exteraless_int_shim", False):
+                    print(f"[exteraless:plugin_loader] int shim for {class_name}.{name} "
+                          f"did not stick", file=sys.stderr)
+            except Exception as e:
+                print(f"[exteraless:plugin_loader] int shim for {class_name}.{name} "
+                      f"failed: {e}", file=sys.stderr)
+
+
+_DUAL_MEMBER_CLASSES = (
+    "org.telegram.ui.Components.UItem",
+)
+
+_dual_members_installed = False
+
+
+def _dual_member_fields(class_name):
+    from java import jclass
+    klass = jclass("java.lang.Class").forName(class_name)
+    method_names = set()
+    methods = klass.getMethods()
+    for index in range(len(methods)):
+        method_names.add(str(methods[index].getName()))
+    fields = {}
+    public_fields = klass.getFields()
+    for index in range(len(public_fields)):
+        field = public_fields[index]
+        name = str(field.getName())
+        if name in method_names and not (int(field.getModifiers()) & 0x8):
+            fields[name] = field
+    return fields
+
+
+def _set_dual_field(field, target, value):
+    kind = str(field.getType().getName())
+    if kind == "boolean":
+        field.setBoolean(target, bool(value))
+    elif kind == "int":
+        field.setInt(target, int(value))
+    elif kind == "long":
+        field.setLong(target, int(value))
+    elif kind == "float":
+        field.setFloat(target, float(value))
+    elif kind == "double":
+        field.setDouble(target, float(value))
+    else:
+        field.set(target, value)
+
+
+def _install_dual_member_setters() -> None:
+    global _dual_members_installed
+    if _dual_members_installed:
+        return
+    _dual_members_installed = True
+    from java import jclass
+    for class_name in _DUAL_MEMBER_CLASSES:
+        try:
+            cls = jclass(class_name)
+            fields = _dual_member_fields(class_name)
+        except Exception as e:
+            print(f"[exteraless:plugin_loader] field setter scan failed for {class_name}: {e}",
+                  file=sys.stderr)
+            continue
+        if not fields:
+            continue
+        original = cls.__setattr__
+
+        def __setattr__(self, name, value, _fields=fields, _original=original):
+            field = _fields.get(name)
+            if field is None:
+                return _original(self, name, value)
+            _set_dual_field(field, self, value)
+
+        try:
+            _set_class_attr(cls, "__setattr__", __setattr__)
+        except Exception as e:
+            print(f"[exteraless:plugin_loader] field setters for {class_name} failed: {e}",
+                  file=sys.stderr)
+
+
 def _install_jclass_guard() -> None:
     """Обернуть java.jclass проверкой разрешений. Идемпотентно, не бросает.
 
@@ -1083,9 +1439,11 @@ def _install_jclass_guard() -> None:
         if original is None or getattr(original, "_exteraless_guard", False):
             return
 
+        from .class_aliases import resolve, adapt
+
         def jclass(name, *args, **kwargs):
+            requested = name
             try:
-                from .class_aliases import resolve
                 name = resolve(name)
             except Exception:
                 pass
@@ -1103,13 +1461,13 @@ def _install_jclass_guard() -> None:
                 pass  # сломанная проверка не должна ломать доступ к Java
             found = original(name, *args, **kwargs)
             try:
-                from .class_aliases import adapt
-                return adapt(name, found)
+                return adapt(requested, found)
             except Exception:
                 return found
 
         jclass._exteraless_guard = True
         java.jclass = jclass
+        _mirror_on_native_module("jclass", original, jclass)
     except Exception as e:
         print(f"[exteraless:plugin_loader] jclass guard failed: {e}", file=sys.stderr)
 
@@ -1127,7 +1485,25 @@ _PROXY_DEFAULTS = {
 }
 
 
+_proxy_defaults_cache = {}
+
+
 def _proxy_return_defaults(interfaces):
+    try:
+        key = tuple(interfaces)
+        cached = _proxy_defaults_cache.get(key)
+    except TypeError:
+        key = None
+        cached = None
+    if cached is not None:
+        return cached
+    defaults = _proxy_return_defaults_uncached(interfaces)
+    if key is not None:
+        _proxy_defaults_cache[key] = defaults
+    return defaults
+
+
+def _proxy_return_defaults_uncached(interfaces):
     defaults = {}
     for interface in interfaces:
         try:
@@ -1207,9 +1583,180 @@ def _install_dynamic_proxy_guard() -> None:
 
         dynamic_proxy._exteraless_guard = True
         java.dynamic_proxy = dynamic_proxy
+        _mirror_on_native_module("dynamic_proxy", original, dynamic_proxy)
     except Exception as e:
         print(f"[exteraless:plugin_loader] dynamic_proxy guard failed: {e}",
               file=sys.stderr)
+
+
+_CALLABLE_INTERFACE_PROXIES = {}
+
+_OBJECT_METHOD_NAMES = {"equals", "hashCode", "toString"}
+
+
+def _functional_method_name(interface):
+    try:
+        klass = interface.getClass()
+        if not klass.isInterface():
+            return None
+        methods = klass.getMethods()
+    except Exception:
+        return None
+    names = set()
+    for index in range(len(methods)):
+        try:
+            method = methods[index]
+            if int(method.getModifiers()) & 0x400:
+                names.add(str(method.getName()))
+        except Exception:
+            continue
+    names -= _OBJECT_METHOD_NAMES
+    return next(iter(names)) if len(names) == 1 else None
+
+
+_FUNCTIONAL_NAMES = {}
+_NO_FUNCTIONAL_NAME = object()
+
+
+def _callable_interface_proxy(interface, fn):
+    try:
+        name = _FUNCTIONAL_NAMES.get(interface)
+    except TypeError:
+        name = None
+    if name is None:
+        name = _functional_method_name(interface)
+        try:
+            _FUNCTIONAL_NAMES[interface] = _NO_FUNCTIONAL_NAME if name is None else name
+        except TypeError:
+            pass
+    if name is None or name is _NO_FUNCTIONAL_NAME:
+        return None
+    key = (interface, name)
+    proxy_class = _CALLABLE_INTERFACE_PROXIES.get(key)
+    if proxy_class is None:
+        import java
+        import types
+
+        def forward(self, *args):
+            return self._exteraless_callable(*args)
+
+        forward.__name__ = name
+        proxy_class = types.new_class(
+            "Callable" + str(getattr(interface, "__name__", "Interface")),
+            (java.dynamic_proxy(interface),),
+            exec_body=lambda namespace: namespace.update({name: forward}))
+        _CALLABLE_INTERFACE_PROXIES[key] = proxy_class
+    proxy = proxy_class()
+    proxy._exteraless_callable = fn
+    return proxy
+
+
+def _install_interface_call_shim() -> None:
+    try:
+        from java.chaquopy import JavaClass
+        original = JavaClass.__call__
+        if getattr(original, "_exteraless_guard", False):
+            return
+
+        def __call__(cls, *args, **kwargs):
+            try:
+                return original(cls, *args, **kwargs)
+            except TypeError:
+                fn = args[0] if len(args) == 1 and not kwargs else None
+                if fn is None or isinstance(fn, type) or not callable(fn) \
+                        or hasattr(fn, "getClass"):
+                    raise
+                try:
+                    proxy = _callable_interface_proxy(cls, fn)
+                except Exception:
+                    proxy = None
+                if proxy is None:
+                    raise
+                return proxy
+
+        __call__._exteraless_guard = True
+        JavaClass.__call__ = __call__
+    except Exception as e:
+        print(f"[exteraless:plugin_loader] interface call shim failed: {e}",
+              file=sys.stderr)
+
+
+_LOG_LEVELS = {10: "D", 20: "I", 30: "W", 40: "E", 50: "F"}
+
+
+def _forward_log(level: str, text: str) -> None:
+    java = _permissions()
+    if java is None or not text:
+        return
+    try:
+        owner = caller_plugin_id()
+    except Exception:
+        owner = None
+    try:
+        java.logStream(owner, level, text)
+    except Exception:
+        pass
+
+
+class _PluginLogStream:
+    def __init__(self, target, level: str):
+        self._target = target
+        self._level = level
+        self._local = threading.local()
+
+    def write(self, text):
+        result = self._target.write(text) if self._target is not None else len(text)
+        try:
+            self._capture(text)
+        except Exception:
+            pass
+        return result
+
+    def _capture(self, text) -> None:
+        if not isinstance(text, str) or getattr(self._local, "busy", False):
+            return
+        buffer = getattr(self._local, "buffer", "") + text
+        if "\n" in buffer:
+            head, _, buffer = buffer.rpartition("\n")
+        elif len(buffer) > 8192:
+            head, buffer = buffer, ""
+        else:
+            self._local.buffer = buffer
+            return
+        self._local.buffer = buffer
+        self._local.busy = True
+        try:
+            _forward_log(self._level, head)
+        finally:
+            self._local.busy = False
+
+    def flush(self):
+        if self._target is not None:
+            self._target.flush()
+
+    def __getattr__(self, name):
+        return getattr(self._target, name)
+
+
+class _PluginLogHandler(logging.Handler):
+    def emit(self, record):
+        try:
+            text = self.format(record)
+        except Exception:
+            return
+        _forward_log(_LOG_LEVELS.get(record.levelno, "I"), text)
+
+
+def _install_log_capture() -> None:
+    if not isinstance(sys.stdout, _PluginLogStream):
+        sys.stdout = _PluginLogStream(sys.stdout, "I")
+    if not isinstance(sys.stderr, _PluginLogStream):
+        sys.stderr = _PluginLogStream(sys.stderr, "W")
+    root = logging.getLogger()
+    if not any(isinstance(handler, _PluginLogHandler) for handler in root.handlers):
+        handler = _PluginLogHandler()
+        handler.setFormatter(logging.Formatter("%(name)s: %(message)s"))
+        root.addHandler(handler)
 
 
 def _install_sandbox() -> None:
@@ -1238,7 +1785,11 @@ def _install_sandbox() -> None:
         audit_gate.install(sys.modules[__name__])
         _install_thread_marking()
         _install_jclass_guard()
+        _install_color_int_shims()
+        _install_dual_member_setters()
+        _install_log_capture()
         _install_dynamic_proxy_guard()
+        _install_interface_call_shim()
         from . import class_aliases
         class_aliases.install_import_hook()
         if not any(isinstance(finder, _PermissionFinder) for finder in sys.meta_path):
@@ -1384,8 +1935,96 @@ def _overrides(cls, name: str) -> bool:
     return getattr(cls, name, None) is not getattr(BasePlugin, name, None)
 
 
+_HANDLED_HOOKS = (
+    ("app_event", "on_app_event"),
+    ("pre_request", "pre_request_hook"),
+    ("post_request", "post_request_hook"),
+    ("update", "on_update_hook"),
+    ("updates", "on_updates_hook"),
+    ("send_message", "on_send_message_hook"),
+)
+
+
+def _handled_hooks(cls) -> dict:
+    out = {}
+    for key, method in _HANDLED_HOOKS:
+        try:
+            out[key] = bool(_overrides(cls, method))
+        except Exception:
+            out[key] = True
+    return out
+
+
+def _preload_neighbour_plugins(path: str, plugin_id: str, visiting: Optional[set] = None) -> None:
+    plugins_dir = _plugins_dir_path()
+    if not plugins_dir:
+        return
+    try:
+        from .metadata_parser import import_roots
+        roots = import_roots(path)
+    except Exception:
+        return
+    visiting = set() if visiting is None else visiting
+    visiting.add(plugin_id)
+    for root in roots:
+        if root in visiting or root in sys.modules or _module_name_for(root) != root:
+            continue
+        neighbour = os.path.join(plugins_dir, root + ".py")
+        if not os.path.isfile(neighbour):
+            continue
+        _preload_neighbour_plugins(neighbour, root, visiting)
+        try:
+            _import_module(neighbour, root)
+        except Exception as e:
+            _log(f"cannot preload {root} for {plugin_id}: {type(e).__name__}: {e}")
+
+
+_TL_CONTAINERS = (
+    "update", "stories", "account", "chatlists", "stars", "bots", "phone", "payments",
+    "stats", "forum", "fragment", "iv", "aicompose", "communities", "ephemeral", "keyboard",
+)
+_TL_REFERENCE = re.compile(r"TLRPC\.(TL_\w+)")
+_TL_MISSING = set()
+
+
+def _attach_moved_tl_classes(path: str) -> None:
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as source:
+            names = set(_TL_REFERENCE.findall(source.read()))
+    except Exception:
+        return
+    if not names:
+        return
+    try:
+        from java import jclass
+        tlrpc = jclass("org.telegram.tgnet.TLRPC")
+    except Exception:
+        return
+    for name in names:
+        if name in _TL_MISSING:
+            continue
+        try:
+            getattr(tlrpc, name)
+            continue
+        except Exception:
+            pass
+        for container in _TL_CONTAINERS:
+            try:
+                moved = jclass(f"org.telegram.tgnet.tl.TL_{container}${name}")
+            except Exception:
+                continue
+            try:
+                _set_class_attr(tlrpc, name, moved)
+            except Exception:
+                pass
+            break
+        else:
+            _TL_MISSING.add(name)
+
+
 def _import_module(path: str, plugin_id: str):
     _ensure_plugins_dir_on_path()
+    _attach_moved_tl_classes(path)
     module_name = _module_name_for(plugin_id)
     existing = sys.modules.get(module_name)
     if existing is not None and _same_file(getattr(existing, "__file__", None), path):
@@ -1508,10 +2147,17 @@ def load_plugin(path: str, plugin_id: str) -> str:
         if meta.get("requirements"):
             _ensure_requirements(plugin_id, meta["requirements"])
 
+        _preload_neighbour_plugins(path, plugin_id)
         module, module_name = _import_module(path, plugin_id)
         plugin_class = _find_plugin_class(module, path, plugin_id)
         instance = plugin_class()
-        instance._attach(plugin_id)
+        instance._exteraless_attach(plugin_id)
+        for key in ("name", "description", "author", "version", "icon",
+                    "app_version", "sdk_version", "requirements"):
+            try:
+                setattr(instance, key, meta.get(key))
+            except Exception:
+                continue
         plugins[plugin_id] = PluginRecord(module=module, instance=instance, path=path,
                                           module_name=module_name)
 
@@ -1524,7 +2170,8 @@ def load_plugin(path: str, plugin_id: str) -> str:
             raise
 
         has_settings = _overrides(plugin_class, "create_settings")
-        return json.dumps({"ok": True, "error": None, "has_settings": has_settings},
+        return json.dumps({"ok": True, "error": None, "has_settings": has_settings,
+                           "handles": _handled_hooks(plugin_class)},
                           ensure_ascii=False)
     except Exception as e:
         return _error_json(e)
@@ -1561,7 +2208,8 @@ def _load_elyx_plugin(path: str, plugin_id: str) -> str:
             _unload_record(plugin_id, quiet=True)
             raise
         has_settings = _overrides(type(record.instance), "create_settings")
-        return json.dumps({"ok": True, "error": None, "has_settings": has_settings},
+        return json.dumps({"ok": True, "error": None, "has_settings": has_settings,
+                           "handles": _handled_hooks(type(record.instance))},
                           ensure_ascii=False)
     except Exception as e:
         return _error_json(e)
@@ -1579,9 +2227,9 @@ def _unload_record(plugin_id: str, quiet: bool):
                 instance.on_plugin_unload()
     finally:
         try:
-            if instance is not None and hasattr(instance, "_cleanup_resources"):
+            if instance is not None and hasattr(instance, "_exteraless_cleanup_resources"):
                 with plugin_context(plugin_id):
-                    instance._cleanup_resources()
+                    instance._exteraless_cleanup_resources()
         except Exception:
             pass
         if getattr(record, "_elyx", False):
@@ -1600,6 +2248,13 @@ def _unload_record(plugin_id: str, quiet: bool):
                 sys.modules.pop(name, None)
         if getattr(record, "path", None):
             _forget_owner(record.path)
+        try:
+            from . import classes as _classes
+            _classes.forget_plugin_classes(plugin_id)
+        except Exception:
+            pass
+        record.click_callbacks.clear()
+        record.custom_views.clear()
 
 
 def unload_plugin(plugin_id: str) -> None:
@@ -1680,29 +2335,37 @@ def _dispatch_hook(plugin_id: str, account: int, fn, *args, result_field=None):
     (PLUGINS-SECURITY.md: «Отказ не роняет плагин»). Остальные исключения
     уходят в Java как раньше.
     """
+    previous_plugin = getattr(_context_state, "plugin_id", None)
+    _context_state.plugin_id = plugin_id
+    previous_account = client_utils._enter_hook_account(account)
     try:
-        with client_utils.hook_scope(account), plugin_context(plugin_id):
-            result = fn(*args)
-            strategy = _strategy_of(result)
-            if result_field is not None and strategy in (HookStrategy.MODIFY, HookStrategy.MODIFY_FINAL):
-                value = getattr(result, result_field, None)
-                if value is None:
-                    value = getattr(result, "result", None)
-                if value is not None:
-                    return _HookDispatchResult(strategy, value)
-            return strategy
+        result = fn(*args)
+        if result is None:
+            return None
+        strategy = _strategy_of(result)
+        if strategy == HookStrategy.DEFAULT:
+            return None
+        value = None
+        if result_field is not None and strategy in (HookStrategy.MODIFY, HookStrategy.MODIFY_FINAL):
+            value = getattr(result, result_field, None)
+            if value is None:
+                value = getattr(result, "result", None)
+        return _HookDispatchResult(strategy, value)
     except PermissionError as e:
         _log_permission_error(plugin_id, e)
-        return HookStrategy.DEFAULT
+        return None
+    finally:
+        client_utils._exit_hook_account(previous_account)
+        _context_state.plugin_id = previous_plugin
 
 
 def call_send_message_hook(plugin_id: str, account: int, params) -> Any:
     record = plugins.get(plugin_id)
     if record is None:
-        return HookStrategy.DEFAULT
+        return None
     instance = record.instance
     if not _overrides(type(instance), "on_send_message_hook"):
-        return HookStrategy.DEFAULT
+        return None
     return _dispatch_hook(plugin_id, account,
                           instance.on_send_message_hook, account, params, result_field="params")
 
@@ -1710,10 +2373,10 @@ def call_send_message_hook(plugin_id: str, account: int, params) -> Any:
 def call_pre_request_hook(plugin_id: str, account: int, request_name: str, request) -> Any:
     record = plugins.get(plugin_id)
     if record is None:
-        return HookStrategy.DEFAULT
+        return None
     instance = record.instance
     if not _overrides(type(instance), "pre_request_hook"):
-        return HookStrategy.DEFAULT
+        return None
     return _dispatch_hook(plugin_id, account,
                           instance.pre_request_hook, request_name, account, request, result_field="request")
 
@@ -1722,10 +2385,10 @@ def call_post_request_hook(plugin_id: str, account: int, request_name: str,
                            response, error) -> Any:
     record = plugins.get(plugin_id)
     if record is None:
-        return HookStrategy.DEFAULT
+        return None
     instance = record.instance
     if not _overrides(type(instance), "post_request_hook"):
-        return HookStrategy.DEFAULT
+        return None
     return _dispatch_hook(plugin_id, account,
                           instance.post_request_hook, request_name, account, response, error, result_field="response")
 
@@ -1734,10 +2397,10 @@ def call_update_hook(plugin_id: str, account: int, update_name: str, update) -> 
     """Dispatch a single TL_update* to on_update_hook (Java routes by name)."""
     record = plugins.get(plugin_id)
     if record is None:
-        return HookStrategy.DEFAULT
+        return None
     instance = record.instance
     if not _overrides(type(instance), "on_update_hook"):
-        return HookStrategy.DEFAULT
+        return None
     return _dispatch_hook(plugin_id, account,
                           instance.on_update_hook, update_name, account, update, result_field="update")
 
@@ -1746,10 +2409,10 @@ def call_updates_hook(plugin_id: str, account: int, container_name: str, updates
     """Dispatch a TL_updates* container to on_updates_hook (Java routes by name)."""
     record = plugins.get(plugin_id)
     if record is None:
-        return HookStrategy.DEFAULT
+        return None
     instance = record.instance
     if not _overrides(type(instance), "on_updates_hook"):
-        return HookStrategy.DEFAULT
+        return None
     return _dispatch_hook(plugin_id, account,
                           instance.on_updates_hook, container_name, account, updates, result_field="updates")
 
@@ -1762,32 +2425,47 @@ def _put(data: dict, key: str, value):
         data[key] = value
 
 
-def _setting_identity_value(value):
+def _setting_identity_value(value, seen=None):
     if value is None or isinstance(value, (str, bool, int, float)):
         return value
     if isinstance(value, tuple):
-        return [_setting_identity_value(entry) for entry in value]
+        return [_setting_identity_value(entry, seen) for entry in value]
+    if inspect.isfunction(value) or inspect.ismethod(value):
+        return _setting_callback_ident(value, seen)
     return [type(value).__module__, type(value).__qualname__, id(value)]
 
 
-def _setting_callback_ident(callback):
+def _setting_shape_value(value):
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    if isinstance(value, tuple):
+        return [_setting_shape_value(entry) for entry in value]
+    return [type(value).__module__, type(value).__qualname__]
+
+
+def _setting_callback_ident(callback, seen=None):
     if callback is None:
         return None
+    seen = set() if seen is None else seen
     owner = None
     if inspect.ismethod(callback):
-        owner = _setting_identity_value(callback.__self__)
+        owner = _setting_identity_value(callback.__self__, seen)
         callback = callback.__func__
     if not inspect.isfunction(callback):
-        return _setting_identity_value(callback)
+        return _setting_identity_value(callback, seen)
+    code = callback.__code__
+    if id(callback) in seen:
+        return [code.co_filename, code.co_firstlineno, callback.__qualname__]
+    seen.add(id(callback))
     closure = []
     for cell in callback.__closure__ or ():
         try:
-            closure.append(_setting_identity_value(cell.cell_contents))
+            closure.append(_setting_identity_value(cell.cell_contents, seen))
         except ValueError:
             closure.append(None)
-    return [callback.__code__.co_filename, callback.__code__.co_firstlineno,
+    return [code.co_filename, code.co_firstlineno,
             callback.__qualname__,
-            [_setting_identity_value(value) for value in callback.__defaults__ or ()],
+            [_setting_identity_value(value, seen) for value in callback.__defaults__ or ()],
             closure, owner]
 
 
@@ -1805,7 +2483,7 @@ def _item_ident(item, scope: str, index: int) -> str:
                      for field in ("on_click", "on_long_click", "create_sub_fragment")]
         native_id = _setting_identity_value(getattr(getattr(item, "item", None), "id", None))
         custom = [getattr(item, field, None) for field in ("view", "factory", "factory_args")]
-        name.extend([callbacks, native_id, [_setting_identity_value(value) for value in custom]])
+        name.extend([callbacks, native_id, [_setting_shape_value(value) for value in custom]])
         if not any(name[1:4]) and not any(callbacks) and native_id is None and not any(value is not None for value in custom):
             name.append(index)
     return json.dumps([scope, type(item).__name__, name], ensure_ascii=False)
@@ -2046,7 +2724,11 @@ def _serialize_setting_data(item, record: PluginRecord, ident: str) -> Optional[
                 sub_page = []
                 identities = {}
                 for sub_index, sub_item in enumerate(sub_items):
-                    entry = _serialize_setting_item(sub_item, record, ident, sub_index, identities)
+                    try:
+                        entry = _serialize_setting_item(sub_item, record, ident, sub_index, identities)
+                    except Exception as e:
+                        instance.log(f"settings item skipped: {type(e).__name__}: {e}")
+                        continue
                     if entry is not None:
                         sub_page.append(entry)
                 if sub_page:
@@ -2068,7 +2750,11 @@ def _serialize_setting_data(item, record: PluginRecord, ident: str) -> Optional[
                 sub_page = []
                 identities = {}
                 for sub_index, sub_item in enumerate(sub_items):
-                    entry = _serialize_setting_item(sub_item, record, ident, sub_index, identities)
+                    try:
+                        entry = _serialize_setting_item(sub_item, record, ident, sub_index, identities)
+                    except Exception as e:
+                        instance.log(f"settings item skipped: {type(e).__name__}: {e}")
+                        continue
                     if entry is not None:
                         sub_page.append(entry)
                 if sub_page:
@@ -2076,6 +2762,24 @@ def _serialize_setting_data(item, record: PluginRecord, ident: str) -> Optional[
         return data
 
     return None  # unknown item type: skip defensively
+
+
+def _traceback_digest(exc, limit=10) -> str:
+    try:
+        import traceback
+        frames = [f"{os.path.basename(frame.filename)}:{frame.lineno} {frame.name}"
+                  for frame in traceback.extract_tb(exc.__traceback__)]
+    except Exception:
+        return ""
+    if not frames:
+        return ""
+    if isinstance(exc, RecursionError):
+        middle = frames[len(frames) // 2:len(frames) // 2 + 3 * limit]
+        for period in range(1, limit + 1):
+            if len(middle) >= 2 * period and all(
+                    middle[i] == middle[i + period] for i in range(len(middle) - period)):
+                return "\n\n" + "\n".join(middle[:period])
+    return "\n\n" + "\n".join(frames[-limit:])
 
 
 def get_settings_json(plugin_id: str) -> str:
@@ -2093,7 +2797,9 @@ def get_settings_json(plugin_id: str) -> str:
         # Показываем причину прямо строкой на месте настроек.
         import traceback
         print(f"[{plugin_id}] {summary}\n{traceback.format_exc()}", file=sys.stderr)
-        return json.dumps([{"type": "divider", "text": summary}], ensure_ascii=False)
+        instance.log(traceback.format_exc())
+        return json.dumps([{"type": "divider", "text": summary + _traceback_digest(e)}],
+                          ensure_ascii=False)
     if items is None:
         record.click_callbacks.clear()
         record.change_callbacks.clear()
@@ -2157,6 +2863,17 @@ def notify_setting_changed(plugin_id: str, key: str, json_value: str) -> None:
         except PermissionError as e:  # отказ разрешения — не поломка плагина
             _log_permission_error(plugin_id, e)
     return None
+
+
+def invalidate_settings_mirror(plugin_id: str) -> None:
+    record = plugins.get(plugin_id)
+    drop = getattr(getattr(record, "instance", None), "_exteraless_drop_settings_cache", None)
+    if callable(drop):
+        drop()
+    mirror = sys.modules.get("plugin_settings")
+    invalidate = getattr(mirror, "invalidate", None)
+    if callable(invalidate):
+        invalidate(plugin_id)
 
 
 def dispatch_setting_click(plugin_id: str, callback_id: str, view=None) -> None:

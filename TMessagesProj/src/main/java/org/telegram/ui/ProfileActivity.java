@@ -5700,8 +5700,15 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarImage.setHasStories(needInsetForStories());
         avatarImage.setOnLongClickListener(v -> {
             if ((userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
-                app.miogram.bridge.customui.MiogramCustomUiActivity.ProfileEditMenu.showForHeader(ProfileActivity.this, avatarImage);
-                return true;
+                boolean ameOn = true;
+                try {
+                    ameOn = app.amegram.hot.HotModulesManager.isModuleEnabled("ame");
+                } catch (Throwable ignore) {
+                }
+                if (ameOn) {
+                    app.miogram.bridge.customui.MiogramCustomUiActivity.ProfileEditMenu.showForHeader(ProfileActivity.this, avatarImage);
+                    return true;
+                }
             }
             if (avatarBig != null || isTopic) {
                 return false;
@@ -12861,7 +12868,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     otherItem.addSubItem(clear_cache, R.drawable.msg_delete, getString(R.string.ClearCache));
                     updateItemsUsername();
                 }
-                otherItem.addSubItem(13303816, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Оформлення профілю (Ame Studio)", "Оформление профиля (Ame Studio)", "Profile Design (Ame Studio)"));
+                try {
+                    if (app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) {
+                        otherItem.addSubItem(13303816, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Оформлення профілю (Ame Studio)", "Оформление профиля (Ame Studio)", "Profile Design (Ame Studio)"));
+                    }
+                } catch (Throwable ignore) {
+                    otherItem.addSubItem(13303816, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Оформлення профілю (Ame Studio)", "Оформление профиля (Ame Studio)", "Profile Design (Ame Studio)"));
+                }
                 if (app.miogram.bridge.badge.MiogramBadgeGrantSheet.canGrantBadges()) {
                     otherItem.addSubItem(13303815, R.drawable.msg_premium_liststar, app.miogram.bridge.MiogramLocale.get("Видати бейдж", "Выдать бейдж", "Grant Badge"));
                 }

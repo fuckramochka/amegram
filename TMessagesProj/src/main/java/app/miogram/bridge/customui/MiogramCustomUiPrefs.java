@@ -175,6 +175,14 @@ public class MiogramCustomUiPrefs {
         }
     }
 
+    public static boolean isEnabled() {
+        try {
+            return app.amegram.hot.HotModulesManager.isModuleEnabled("ame");
+        } catch (Throwable ignore) {
+            return true;
+        }
+    }
+
     public static boolean isCustomProfilePluginActive() {
         try {
             app.exteraless.plugins.Plugin p = app.exteraless.plugins.PluginsController.getInstance().getPlugin("custom_profile");
@@ -212,6 +220,7 @@ public class MiogramCustomUiPrefs {
     // --- Core Read/Write helpers ---
 
     public static boolean getBool(String key, boolean def) {
+        if (!isEnabled()) return def;
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getBoolean(key, def);
@@ -285,6 +294,7 @@ public class MiogramCustomUiPrefs {
     }
 
     public static int getInt(String key, int def) {
+        if (!isEnabled()) return def;
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getInt(key, def);
@@ -322,6 +332,7 @@ public class MiogramCustomUiPrefs {
     }
 
     public static int getColor(String key, int def) {
+        if (!isEnabled()) return def;
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getInt(key, def);
@@ -357,6 +368,7 @@ public class MiogramCustomUiPrefs {
     }
 
     public static String getString(String key, String def) {
+        if (!isEnabled()) return def;
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getString(key, def);
@@ -393,6 +405,7 @@ public class MiogramCustomUiPrefs {
     // 1. MESSAGE BUBBLES
     // =========================================================================
     public static boolean isBubbleColorEnabled() {
+        if (!isEnabled()) return false;
         if (hotTagOk()) {
             Boolean c = hotBubbleColor;
             if (c != null) return c;
@@ -447,6 +460,7 @@ public class MiogramCustomUiPrefs {
         setInt(KEY_BUBBLE_RADIUS, radius);
     }
     public static boolean isBubbleGlowEnabled() {
+        if (!isEnabled()) return false;
         if (hotTagOk()) {
             Boolean c = hotBubbleGlow;
             if (c != null) return c;
@@ -970,6 +984,7 @@ public class MiogramCustomUiPrefs {
     }
 
     public static boolean isDialogCardsEnabled() {
+        if (!isEnabled()) return false;
         if (hotTagOk()) {
             Boolean c = hotDialogCards;
             if (c != null) return c;

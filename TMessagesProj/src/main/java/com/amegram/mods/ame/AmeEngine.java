@@ -178,11 +178,7 @@ public class AmeEngine {
      */
     public static boolean isModuleEnabled() {
         try {
-            Context ctx = ApplicationLoader.applicationContext;
-            if (ctx != null) {
-                return ctx.getSharedPreferences("amegram_module_prefs", Context.MODE_PRIVATE)
-                        .getBoolean("ameprofile_enabled", true);
-            }
+            return app.amegram.hot.HotModulesManager.isModuleEnabled("ame");
         } catch (Throwable ignore) {
         }
         return true;

@@ -208,6 +208,10 @@ public class UiPrefs {
     // --- Core Read/Write helpers ---
 
     public static boolean getBool(String key, boolean def) {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) return def;
+        } catch (Throwable ignore) {
+        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getBoolean(key, def);
@@ -281,6 +285,10 @@ public class UiPrefs {
     }
 
     public static int getInt(String key, int def) {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) return def;
+        } catch (Throwable ignore) {
+        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getInt(key, def);
@@ -318,6 +326,10 @@ public class UiPrefs {
     }
 
     public static int getColor(String key, int def) {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) return def;
+        } catch (Throwable ignore) {
+        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getInt(key, def);
@@ -353,6 +365,10 @@ public class UiPrefs {
     }
 
     public static String getString(String key, String def) {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) return def;
+        } catch (Throwable ignore) {
+        }
         SharedPreferences local = getLocalPrefs();
         if (local != null && local.contains(key)) {
             return local.getString(key, def);
@@ -389,6 +405,10 @@ public class UiPrefs {
     // 1. MESSAGE BUBBLES
     // =========================================================================
     public static boolean isBubbleColorEnabled() {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) return false;
+        } catch (Throwable ignore) {
+        }
         if (hotTagOk()) {
             Boolean c = hotBubbleColor;
             if (c != null) return c;
@@ -443,6 +463,10 @@ public class UiPrefs {
         setInt(KEY_BUBBLE_RADIUS, radius);
     }
     public static boolean isBubbleGlowEnabled() {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) return false;
+        } catch (Throwable ignore) {
+        }
         if (hotTagOk()) {
             Boolean c = hotBubbleGlow;
             if (c != null) return c;
@@ -966,6 +990,10 @@ public class UiPrefs {
     }
 
     public static boolean isDialogCardsEnabled() {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleEnabled("ame")) return false;
+        } catch (Throwable ignore) {
+        }
         if (hotTagOk()) {
             Boolean c = hotDialogCards;
             if (c != null) return c;

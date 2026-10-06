@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """
-Автоматизований тест-сьют для перевірки повної модульної архітектури Amegram.
-Перевіряє всі 10 модулів, маніфести, пакети .hmod, sha256 хеші, каталоги та гейти.
+Тест хот-модулів (тонкий клієнт).
+Джерела модулів живуть в окремому репозиторії fuckramochka/yuimodules;
+тут перевіряємо: каталог-фолбек і .hmod-сіди в assets (з dex і sha),
+гейти ядра, точки входу в UI та менеджер без вбудованих impl.
 """
 
 import hashlib
 import json
 import os
 import sys
+import zipfile
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMPLATE_DIR = os.path.join(BASE_DIR, "hotmodules-template")
-MODULES_DIR = os.path.join(TEMPLATE_DIR, "modules")
-CATALOG_PATH = os.path.join(TEMPLATE_DIR, "modules.json")
 ASSETS_DIR = os.path.join(BASE_DIR, "TMessagesProj", "src", "main", "assets", "hotmodules")
+ASSET_CATALOG = os.path.join(ASSETS_DIR, "modules.json")
 JAVA_API_DIR = os.path.join(BASE_DIR, "TMessagesProj", "src", "main", "java", "app", "amegram", "hot", "api")
 JAVA_HOT_DIR = os.path.join(BASE_DIR, "TMessagesProj", "src", "main", "java", "app", "amegram", "hot")
 
@@ -30,6 +31,7 @@ REQUIRED_MODULES = [
     "demo"
 ]
 
+
 def sha256_file(path):
     h = hashlib.sha256()
     with open(path, "rb") as f:
@@ -40,45 +42,50 @@ def sha256_file(path):
             h.update(chunk)
     return h.hexdigest()
 
-def test_modules_exist():
-    print("[1] Перевірка директорій модулів...")
-    for mod in REQUIRED_MODULES:
-        d = os.path.join(MODULES_DIR, mod)
-        assert os.path.isdir(d), f"Відсутня папка модуля: {mod}"
-        mpath = os.path.join(d, "manifest.json")
-        assert os.path.isfile(mpath), f"Відсутній manifest.json у {mod}"
-        with open(mpath, "r", encoding="utf-8") as f:
-            data = json.load(f)
-            assert data.get("id") == mod, f"Невірний id у маніфесті {mod}"
-            assert "version" in data, f"Немає версії у {mod}"
-            assert "entry" in data, f"Немає entry у {mod}"
-            assert "name" in data, f"Немає name у {mod}"
-            assert "minApp" in data, f"Немає minApp у {mod}"
-    print("    -> Усі 10 модулів мають коректні manifest.json")
 
 def test_catalog():
-    print("[2] Перевірка каталогу modules.json...")
-    assert os.path.isfile(CATALOG_PATH), "Не знайдено modules.json"
-    with open(CATALOG_PATH, "r", encoding="utf-8") as f:
+    print("[1] Перевірка каталогу-фолбеку в assets...")
+    with open(ASSET_CATALOG, "r", encoding="utf-8") as f:
         catalog = json.load(f)
     cat_mods = {m["id"]: m for m in catalog.get("modules", [])}
     for mod in REQUIRED_MODULES:
-        assert mod in cat_mods, f"Модуль {mod} відсутній у каталозі modules.json"
-        entry = cat_mods[mod]
-        assert "stable" in entry.get("branches", {}), f"Немає stable гілки для {mod}"
-        sha = entry["branches"]["stable"].get("sha256", "")
-        assert len(sha) == 64, f"Невірний sha256 для {mod}: '{sha}'"
-    print("    -> Каталог містить усі 10 модулів з валідними sha256")
+        assert mod in cat_mods, f"Модуль {mod} відсутній у каталозі"
+        stable = cat_mods[mod].get("branches", {}).get("stable", {})
+        assert stable.get("version"), f"Немає stable-версії для {mod}"
+        assert stable.get("url", "").startswith("https://"), f"Немає url для {mod}"
+        assert len(stable.get("sha256", "")) == 64, f"Немає sha256 для {mod}"
+    print("    -> Каталог містить усі 10 модулів з версіями, url і sha256")
+
 
 def test_bundled_assets():
-    print("[3] Перевірка вбудованих ресурсів у assets/hotmodules/...")
-    assert os.path.isdir(ASSETS_DIR), f"Відсутня папка {ASSETS_DIR}"
-    assert os.path.isfile(os.path.join(ASSETS_DIR, "modules.json")), "Немає modules.json в assets"
+    print("[2] Перевірка .hmod-сідів в assets (мають містити classes.dex)...")
+    with open(ASSET_CATALOG, "r", encoding="utf-8") as f:
+        catalog = json.load(f)
+    cat_mods = {m["id"]: m for m in catalog.get("modules", [])}
     for mod in REQUIRED_MODULES:
-        hmod = os.path.join(ASSETS_DIR, f"{mod}-1.0.0.hmod")
-        assert os.path.isfile(hmod), f"Відсутній спакований {mod}-1.0.0.hmod в assets"
-        assert os.path.getsize(hmod) > 500, f"Занадто малий файл {hmod}"
-    print("    -> Усі 10 .hmod спаковано та присутні в assets для офлайн-роботи")
+        ver = cat_mods[mod]["branches"]["stable"]["version"]
+        path = os.path.join(ASSETS_DIR, f"{mod}-{ver}.hmod")
+        assert os.path.isfile(path), f"Відсутній сід {mod}-{ver}.hmod в assets"
+        with zipfile.ZipFile(path) as z:
+            names = z.namelist()
+            assert "classes.dex" in names, f"{mod}-{ver}.hmod без classes.dex (не завантажиться)"
+            assert "manifest.json" in names, f"{mod}-{ver}.hmod без manifest.json"
+        sha = sha256_file(path)
+        assert sha == cat_mods[mod]["branches"]["stable"]["sha256"], f"sha256 {mod} не збігається з каталогом"
+    print("    -> Усі .hmod з dex і коректними sha256")
+
+
+def test_no_builtin_impl():
+    print("[3] Перевірка тонкого клієнта (жодного вбудованого impl)...")
+    mods_dir = os.path.join(BASE_DIR, "TMessagesProj", "src", "main", "java", "com", "amegram", "mods")
+    assert not os.path.isdir(mods_dir), "com.amegram.mods має бути видалено з APK"
+    mgr_path = os.path.join(JAVA_HOT_DIR, "HotModulesManager.java")
+    with open(mgr_path, "r", encoding="utf-8") as f:
+        mgr = f.read()
+    assert "return new com.amegram.mods." not in mgr, "createBuiltinModule має повертати null"
+    assert "ensureBundledModulesInstalled();" in mgr, "attach має розпаковувати сід на старті"
+    print("    -> APK без impl-коду, завантаження тільки з диска")
+
 
 def test_java_gates():
     print("[4] Перевірка шлюзів та сервісів у ядрі...")
@@ -102,6 +109,7 @@ def test_java_gates():
             assert s in content, f"HotServices не містить константи {s}"
     print("    -> Усі шлюзи та сервісні інтерфейси присутні в ядрі")
 
+
 def test_ui_hooks():
     print("[5] Перевірка точок входу в UI...")
     alert_path = os.path.join(BASE_DIR, "TMessagesProj", "src", "main", "java", "org", "telegram", "ui", "Components", "AudioPlayerAlert.java")
@@ -122,12 +130,12 @@ def test_ui_hooks():
 
     print("    -> Усі хуки в AudioPlayerAlert, SettingsActivity та ApplicationLoader на місці")
 
+
 def test_lifecycle_and_clean_start():
-    print("[6] Перевірка життєвого циклу (чистий старт, реактивність, нативні бейджики)...")
+    print("[6] Перевірка життєвого циклу...")
     mgr_path = os.path.join(JAVA_HOT_DIR, "HotModulesManager.java")
     with open(mgr_path, "r", encoding="utf-8") as f:
         mgr = f.read()
-        assert "ensureBundledModulesInstalled();" not in mgr.split("attachEnabledAsync")[1].split("}")[0], "attachEnabledAsync не повинен авторозпаковувати всі модулі на старті"
         assert "ModulesChangeListener" in mgr, "HotModulesManager повинен мати ModulesChangeListener"
         assert "addListener" in mgr, "HotModulesManager повинен мати addListener"
         assert "deleteModule" in mgr, "HotModulesManager повинен підтримувати повне видалення модуля"
@@ -148,17 +156,18 @@ def test_lifecycle_and_clean_start():
         cat = f.read()
         assert "Встановити та ввімкнути" in cat, "HotCatalogSheet має містити галочку 'Встановити та ввімкнути'"
 
-    print("    -> Чистий старт, реактивні слухачі змін та нативні бейджики успішно верифіковано")
+    print("    -> Життєвий цикл, реактивні слухачі та нативні бейджики успішно верифіковано")
+
 
 if __name__ == "__main__":
     try:
-        test_modules_exist()
         test_catalog()
         test_bundled_assets()
+        test_no_builtin_impl()
         test_java_gates()
         test_ui_hooks()
         test_lifecycle_and_clean_start()
-        print("\n✅ УСІ ТЕСТИ ПРОЙДЕНО УСПІШНО! Модульна архітектура готова до пушу на GitHub.")
+        print("\nУСІ ТЕСТИ ПРОЙДЕНО УСПІШНО! Тонкий клієнт готовий до пушу на GitHub.")
     except AssertionError as e:
-        print(f"\n❌ ПОМИЛКА: {e}")
+        print(f"\nПОМИЛКА: {e}")
         sys.exit(1)

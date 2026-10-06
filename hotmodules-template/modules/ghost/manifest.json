@@ -1,8 +1,0 @@
-{
-  "id": "ghost",
-  "version": "1.0.1",
-  "branch": "stable",
-  "entry": "com.amegram.mods.ghost.GhostModule",
-  "name": "Режим привида",
-  "minApp": 7112
-}

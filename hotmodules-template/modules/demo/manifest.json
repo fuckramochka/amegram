@@ -1,8 +1,0 @@
-{
-  "id": "demo",
-  "version": "1.0.0",
-  "branch": "stable",
-  "entry": "com.amegram.mods.demo.DemoModule",
-  "name": "Демо-модуль",
-  "minApp": 7112
-}

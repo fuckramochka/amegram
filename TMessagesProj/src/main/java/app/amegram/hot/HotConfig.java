@@ -12,7 +12,7 @@ public final class HotConfig {
 
     /** Каталог модулей. Поменяй на свой репозиторий одной строкой. */
     public static volatile String CATALOG_URL =
-            "https://raw.githubusercontent.com/fuckramochka/amegram-modules/main/modules.json";
+            "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/modules.json";
 
     public static void setCatalogUrl(String url) {
         if (url != null && !url.isEmpty()) {

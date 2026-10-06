@@ -1,8 +1,0 @@
-{
-  "id": "stt",
-  "version": "1.0.0",
-  "branch": "stable",
-  "entry": "com.amegram.mods.stt.SttModule",
-  "name": "Розшифровка",
-  "minApp": 7112
-}

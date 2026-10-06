@@ -1,8 +1,0 @@
-{
-  "id": "ai",
-  "version": "1.0.1",
-  "branch": "stable",
-  "entry": "com.amegram.mods.ai.AiModule",
-  "name": "ШІ Супутник",
-  "minApp": 7112
-}

@@ -8,14 +8,23 @@
       "entry": "com.amegram.mods.player.PlayerModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.1.hmod",
+          "sha256": "25d1a89286dfcbc54dd5cb9cbbd68689f360d3c4cba1ac838d2d1111db03957e",
+          "minApp": 7112,
+          "changelog": "Тумблери прив'язані до реальних префів; фон/блур тільки в олівці плеєра."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/player-1.0.0/player-1.0.0.hmod",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.0.hmod",
           "sha256": "1cc980103ff76c0a3190767b34fd075d36204cc528401607270768bbe0a48428",
           "minApp": 7112,
           "changelog": "Повний пошук музики, відтворення, стрімінг та кешування."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "ghost",
@@ -24,14 +33,23 @@
       "entry": "com.amegram.mods.ghost.GhostModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.1.hmod",
+          "sha256": "a112430967cca660bc3e6a025f208f3659dbc8587e57ef0c25cc14338b9b8032",
+          "minApp": 7112,
+          "changelog": "Привид+видалені одним модулем; синк префів у ядро; гейт вимкнення."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ghost-1.0.0/ghost-1.0.0.hmod",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.0.hmod",
           "sha256": "9ee109bc98f44f3e5ec2c101805f468564246f98a9b2a85271010fcb08be95c5",
           "minApp": 7112,
           "changelog": "Перехоплення на рівні мережі: readHistory, readStories, typing та offline статус."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "ame",
@@ -41,10 +59,10 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ame-1.0.0/ame-1.0.0.hmod",
-          "sha256": "54fbe2f45c6b8ea5197016227b2482dd212b2538a956b9978486cafdeb979aa4",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ame-1.0.0.hmod",
+          "sha256": "3de3a3968a5bfca3fc084a358678147ed9b6f6344d408bbb903f0cb855c5f558",
           "minApp": 7112,
-          "changelog": "Повна кастомізація профіля та чатів."
+          "changelog": ""
         }
       },
       "history": []
@@ -57,10 +75,10 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/vault-1.0.0/vault-1.0.0.hmod",
-          "sha256": "6d6e360e571aeab974323028896a008dbded5d93ac60bdae41bdea62718efc59",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/vault-1.0.0.hmod",
+          "sha256": "54426aeb1a36491526eac3696bfc8b985201749e8ecdde730d78c99b2824c783",
           "minApp": 7112,
-          "changelog": "Шифрування файлів будь-якого розміру, папки-топіки, автосинхронізація."
+          "changelog": ""
         }
       },
       "history": []
@@ -73,10 +91,10 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/tiktok-1.0.0/tiktok-1.0.0.hmod",
-          "sha256": "2c7beb9264861bd3b8e7552830a03ca7b35f4c245e40bd55d4040b882d1bec35",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/tiktok-1.0.0.hmod",
+          "sha256": "6e057038be19e25cfe2eed9020c8b2d4329b334392814f94b2f3dc03e74c92c5",
           "minApp": 7112,
-          "changelog": "Плеєр без ватермарок, синхронізація акаунта, чисті URL."
+          "changelog": ""
         }
       },
       "history": []
@@ -89,10 +107,10 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/stt-1.0.0/stt-1.0.0.hmod",
-          "sha256": "6f1c480d5ba4519460bbb3cdb093962b9e10cf8abec25a2f910a410361a7ac6e",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.0.hmod",
+          "sha256": "228b1041ee59646d802c1d7f0db120fd40969e7300d3fe894bfc492fadd6415c",
           "minApp": 7112,
-          "changelog": "Миттєва транскрипція аудіо за власним ключем API."
+          "changelog": ""
         }
       },
       "history": []
@@ -104,14 +122,23 @@
       "entry": "com.amegram.mods.ai.AiModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.1.hmod",
+          "sha256": "55f07fd9dcb37df5c3c86b9e226768744e437be37c12fb939f207c26c69325c0",
+          "minApp": 7112,
+          "changelog": "Тільки Nano vs Gemini API (3.5-flash-lite); кнопка Get Key в AI Studio."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/ai-1.0.0/ai-1.0.0.hmod",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.0.hmod",
           "sha256": "9192bc35b59bfbce42ac74b9b1afd51125c6ed8c4b71eb9bac124b5d9695f532",
           "minApp": 7112,
           "changelog": "Чат зі супутником, персони Ame та KAngel."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "experimental",
@@ -120,14 +147,23 @@
       "entry": "com.amegram.mods.experimental.ExperimentalModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.1.hmod",
+          "sha256": "c9345f52c0c7c274592699b6c88866aed0465c6187dbb11a225c47fd8e3a0b17",
+          "minApp": 7112,
+          "changelog": "Видалені переїхали в привида; тут безліміти/буст/жести."
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/experimental-1.0.0/experimental-1.0.0.hmod",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.0.hmod",
           "sha256": "e933178f8474f3e64d78e9edb597915697e89641ba1f6002968888b5961da3b9",
           "minApp": 7112,
           "changelog": "Оптимізації клієнта, безліміти та збереження повідомлень."
         }
-      },
-      "history": []
+      ]
     },
     {
       "id": "automation",
@@ -137,10 +173,10 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/automation-1.0.0/automation-1.0.0.hmod",
-          "sha256": "a4d5b7528b26ed511236190c4d5857f1eed1e265fa415771465ab8aacf392cf4",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/automation-1.0.0.hmod",
+          "sha256": "5777bd6c50f47086bd1dee1da2bd1acf85d37b785944b916e788e5033244f6d5",
           "minApp": 7112,
-          "changelog": "Фонові планувальники та автобекапи."
+          "changelog": ""
         }
       },
       "history": []
@@ -153,10 +189,10 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "https://github.com/fuckramochka/amegram-modules/releases/download/demo-1.0.0/demo-1.0.0.hmod",
-          "sha256": "7d50d7d3217d76b14267c9a6543108ad8c37836f80b409b9a52a2bc453e81067",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
+          "sha256": "85c907a37e80d85ee0725cd101b9bf023e2cff394479d7e222767d7a397adf72",
           "minApp": 7112,
-          "changelog": "Демонстраційний шаблон."
+          "changelog": ""
         }
       },
       "history": []

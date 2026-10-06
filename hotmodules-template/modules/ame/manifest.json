@@ -1,8 +1,0 @@
-{
-  "id": "ame",
-  "version": "1.0.0",
-  "branch": "stable",
-  "entry": "com.amegram.mods.ame.AmeModule",
-  "name": "Кастомізація профіля та інтерфейсу",
-  "minApp": 7112
-}

@@ -60,6 +60,8 @@ jobs:
           echo "RJAR=$RJAR"
           MODCP="hotmodules-template/hot-api:$ANDROID_JAR:$APP_CLASSES"
           if [ -n "$RJAR" ]; then MODCP="$MODCP:$RJAR"; fi
+          DEPCP=$(find ~/.gradle/caches/transforms-4 ~/.gradle/caches/modules-2 -name "*.jar" 2>/dev/null | grep -v -- "-sources" | grep -v -- "-javadoc" | tr '\n' ':')
+          MODCP="$MODCP:$DEPCP"
           mkdir -p out-hmod
           FILTER="${{ inputs.modules }}"
           for moddir in hotmodules-template/modules/*/; do

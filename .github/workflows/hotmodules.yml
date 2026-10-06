@@ -76,7 +76,8 @@ jobs:
               -d "$OUT" "$moddir"*.java || { echo "javac failed for $mod"; exit 1; }
             DEXOUT=out-hmod/dex-$mod
             rm -rf "$DEXOUT" && mkdir -p "$DEXOUT"
-            "$D8" --min-api 27 --lib "$ANDROID_JAR" --lib "$APP_CLASSES" --output "$DEXOUT" "$OUT" || { echo "d8 failed for $mod"; exit 1; }
+            (cd "$OUT" && zip -q -r "../classes-$mod.jar" . -i "*.class") || { echo "zip failed for $mod"; exit 1; }
+            "$D8" --min-api 27 --lib "$ANDROID_JAR" --lib "$APP_CLASSES" --output "$DEXOUT" "out-hmod/classes-$mod.jar" || { echo "d8 failed for $mod"; exit 1; }
             python3 - "$moddir/manifest.json" "$DEXOUT/classes.dex" "out-hmod/$mod-$ver.hmod" <<'PY'
           import json, sys, zipfile
           manifest_src, dex_src, dest = sys.argv[1], sys.argv[2], sys.argv[3]

@@ -60,7 +60,9 @@ jobs:
           echo "RJAR=$RJAR"
           MODCP="hotmodules-template/hot-api:$ANDROID_JAR:$APP_CLASSES"
           if [ -n "$RJAR" ]; then MODCP="$MODCP:$RJAR"; fi
-          DEPCP=$(find ~/.gradle/caches/transforms-4 ~/.gradle/caches/modules-2 -name "*.jar" 2>/dev/null | grep -v -- "-sources" | grep -v -- "-javadoc" | tr '\n' ':')
+          DEPCP=$(find ~/.gradle/caches/transforms-4 ~/.gradle/caches/modules-2 "$GRADLE_USER_HOME/caches/transforms-4" "$GRADLE_USER_HOME/caches/modules-2" /home/runner/.gradle/caches/transforms-4 /home/runner/.gradle/caches/modules-2 -name "*.jar" 2>/dev/null | grep -v -- "-sources" | grep -v -- "-javadoc" | tr '\n' ':')
+          echo "DEPCP entries: $(echo "$DEPCP" | tr ':' '\n' | grep -c jar)"
+          echo "fragment jars: $(echo "$DEPCP" | tr ':' '\n' | grep -ci fragment)"
           MODCP="$MODCP:$DEPCP"
           mkdir -p out-hmod
           FILTER="${{ inputs.modules }}"

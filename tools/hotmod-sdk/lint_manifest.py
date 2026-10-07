@@ -93,7 +93,10 @@ def check_hmod(path):
         err(f"{path}: битий manifest.json ({e})")
     names = z.namelist()
     if not any(n.endswith(".dex") for n in names):
-        err(f"{path}: усередині нема .dex")
+        if any(n.endswith(".java") for n in names):
+            warn(f"{path}: legacy source-only (нема .dex — не вантажиться як модуль)")
+        else:
+            err(f"{path}: усередині нема .dex")
     if any("app/amegram/hot/api/" in n for n in names):
         err(f"{path}: api-класи вшиті в dex (мають бути compileOnly!)")
 

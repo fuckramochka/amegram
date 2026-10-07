@@ -661,20 +661,33 @@ public final class HotModulesManager {
                 }
                 boolean wasEnabled = prefs().getBoolean("enabled_" + moduleId, false);
                 prefs().edit().putString("installed_" + moduleId, m.version).apply();
-                if (autoEnable) {
-                    prefs().edit().putBoolean("enabled_" + moduleId, true).apply();
-                }
                 // Старий Handle кешований — без dropLoaded новий код не підхопиться.
-                // Вбудовані (createBuiltinModule) тінять .hmod з тим самим FQCN
-                // (parent-first), тому їх оновлення приїде з APK; кастомні — відразу.
                 dropLoaded(moduleId);
-                if (autoEnable || wasEnabled) {
+                clearLoadFailures(moduleId);
+                boolean enableNow = autoEnable || wasEnabled;
+                if (enableNow) {
                     prefs().edit().putBoolean("enabled_" + moduleId, true).apply();
-                    getHandle(moduleId);
+                    Handle h = getHandle(moduleId);
+                    if (h == null || h.instance == null) {
+                        // Скачалось, але не стартує: лишаємо встановленим, але вимкненим,
+                        // і віддаємо СПРАВЖНЮ причину замість німого "не завантажився".
+                        prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
+                        pruneOld(moduleId);
+                        prefs().edit().remove("uninstalled_" + moduleId).apply();
+                        notifyChanged();
+                        String why = getLastLoadError(moduleId);
+                        postProgress(cb, false, MiogramLocale.get(
+                                "Скачано v" + m.version + ", але не стартує"
+                                        + (why.isEmpty() ? "" : ": " + why),
+                                "Скачано v" + m.version + ", но не стартует"
+                                        + (why.isEmpty() ? "" : ": " + why),
+                                "Downloaded v" + m.version + " but failed to start"
+                                        + (why.isEmpty() ? "" : ": " + why)), null);
+                        return;
+                    }
                 }
                 pruneOld(moduleId);
                 clearUpdateAvailable(moduleId);
-                clearLoadFailures(moduleId);
                 prefs().edit().remove("uninstalled_" + moduleId).apply();
                 notifyChanged();
                 postProgress(cb, true, m.version, null);
@@ -741,7 +754,14 @@ public final class HotModulesManager {
                 if (h == null || h.instance == null) {
                     prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
                     notifyChanged();
-                    post(cb, false, "модуль не завантажився, залишено вимкненим", null);
+                    String why = getLastLoadError(moduleId);
+                    String q = isQuarantined(moduleId) ? MiogramLocale.get(
+                            " Карантин: перевстановіть або скиньте в деталці.",
+                            " Карантин: переустановите или сбросьте в деталке.",
+                            " Quarantined: reinstall or reset in details.") : "";
+                    post(cb, false, MiogramLocale.get(
+                            "Модуль не стартував", "Модуль не стартовал", "Module failed to start")
+                            + (why.isEmpty() ? "" : ": " + why) + q, null);
                     return;
                 }
             } else {
@@ -787,6 +807,31 @@ public final class HotModulesManager {
 
     public static HotModule createBuiltinModule(String moduleId) {
         return null;
+    }
+
+    // ---------- діагностика: ЧОМУ модуль не стартував ----------
+
+    private static volatile String lastLoadErrorModule = "";
+    private static volatile String lastLoadError = "";
+
+    private static void setLoadError(String moduleId, String err) {
+        lastLoadErrorModule = moduleId != null ? moduleId : "";
+        lastLoadError = err != null ? err : "";
+    }
+
+    /** Остання причина провалу старту ("" = невідомо/не було). */
+    public static String getLastLoadError(String moduleId) {
+        if (moduleId == null || !moduleId.equals(lastLoadErrorModule)) return "";
+        return lastLoadError;
+    }
+
+    private static String shortErr(Throwable e) {
+        if (e == null) return "невідома помилка";
+        String m = e.getMessage();
+        String n = e.getClass().getSimpleName();
+        if (m == null || m.isEmpty()) return n;
+        if (m.length() > 140) m = m.substring(0, 140) + "…";
+        return n + ": " + m;
     }
 
     // ---------- загрузка кода (только включённые) ----------
@@ -863,11 +908,14 @@ public final class HotModulesManager {
 
         if (m == null || entryClass == null) {
             // Немає реального .hmod на диску — модуля фактично немає (0 вбудованих).
+            setLoadError(moduleId, MiogramLocale.get("немає файлу модуля на диску",
+                    "нет файла модуля на диске", "module file missing on disk"));
             return null;
         }
 
         Class<?> cls = null;
         ClassLoader modLoader = null;
+        Throwable dexErr = null;
         // 1. Динамічний .hmod з диска — основний шлях (0 вбудованих в APK).
         // Кожен модуль вантажиться у ВЛАСНИЙ ізольований ClassLoader.
         if (hmod != null && hmod.exists()) {
@@ -877,6 +925,7 @@ public final class HotModulesManager {
                 modLoader = loader;
                 cls = Class.forName(entryClass, true, loader);
             } catch (Throwable dexEx) {
+                dexErr = dexEx;
                 FileLog.e("hotmods: DexClassLoader failed: " + moduleId, dexEx);
             }
         }
@@ -891,6 +940,10 @@ public final class HotModulesManager {
 
         if (cls == null) {
             FileLog.e("hotmods: load failed, class not found: " + moduleId + " (" + entryClass + ")");
+            setLoadError(moduleId, MiogramLocale.get("клас не знайдено",
+                    "класс не найден", "class not found")
+                    + " " + entryClass
+                    + (dexErr != null ? " (" + shortErr(dexErr) + ")" : ""));
             recordLoadFailure(moduleId);
             return null;
         }
@@ -899,6 +952,7 @@ public final class HotModulesManager {
             Object obj = cls.newInstance();
             if (!(obj instanceof HotModule)) {
                 FileLog.e("hotmods: entry is not HotModule: " + entryClass);
+                setLoadError(moduleId, "entry is not HotModule: " + entryClass);
                 recordLoadFailure(moduleId);
                 return null;
             }
@@ -916,13 +970,16 @@ public final class HotModulesManager {
                     mod.onDetach();
                 } catch (Throwable ignore) {
                 }
+                setLoadError(moduleId, "onAttach: " + shortErr(e));
                 recordLoadFailure(moduleId);
                 return null;
             }
             clearLoadFailures(moduleId);
+            setLoadError(moduleId, "");
             return handle;
         } catch (Throwable e) {
             FileLog.e("hotmods: instantiation failed for " + moduleId, e);
+            setLoadError(moduleId, shortErr(e));
             recordLoadFailure(moduleId);
             return null;
         }

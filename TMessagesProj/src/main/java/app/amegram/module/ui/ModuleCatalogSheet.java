@@ -246,12 +246,13 @@ public class ModuleCatalogSheet extends BottomSheet {
                     dismiss();
                 } catch (Throwable ignore) {
                 }
+                // Єдиний магазин — повноекранний HotStoreActivity.
                 try {
-                    app.amegram.hot.ui.HotCatalogSheet hot =
-                            new app.amegram.hot.ui.HotCatalogSheet(context, () -> {
-                                if (onChanged != null) onChanged.onChanged();
-                            });
-                    hot.show();
+                    org.telegram.ui.ActionBar.BaseFragment last =
+                            org.telegram.ui.LaunchActivity.getLastFragment();
+                    if (last != null) {
+                        last.presentFragment(new app.amegram.hot.ui.HotStoreActivity());
+                    }
                 } catch (Throwable ignore) {
                 }
             });

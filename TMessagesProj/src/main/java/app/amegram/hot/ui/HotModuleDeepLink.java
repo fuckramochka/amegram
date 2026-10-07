@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.net.Uri;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.LaunchActivity;
 
 import app.amegram.hot.HotCatalog;
 import app.amegram.hot.HotModulesManager;
@@ -14,9 +16,14 @@ import app.miogram.bridge.MiogramLocale;
 
 /**
  * Діплінки модулів: amegram://module/&lt;id&gt; — відкрити деталку,
- * amegram://modules — відкрити магазин. Схема amegram:// вже в маніфесті.
+ * amegram://modules — відкрити магазин (повноекранний HotStoreActivity).
+ * Схема amegram:// вже в маніфесті, гілка — в LaunchActivity.
  */
 public final class HotModuleDeepLink {
+
+    public interface OnChanged {
+        void onChanged();
+    }
 
     private HotModuleDeepLink() {
     }
@@ -34,7 +41,6 @@ public final class HotModuleDeepLink {
         if (uri == null) return "";
         if (!"amegram".equals(uri.getScheme())) return "";
         if (!"module".equals(uri.getHost())) {
-            // Підтримка форм amegram://modules/... не потрібна, amegram://module?id=x — так.
             if ("modules".equals(uri.getHost())) return "";
             String ssp = uri.getSchemeSpecificPart();
             if (ssp != null && ssp.startsWith("module/")) {
@@ -53,18 +59,22 @@ public final class HotModuleDeepLink {
         return uri != null && "amegram".equals(uri.getScheme()) && "modules".equals(uri.getHost());
     }
 
+    /** Відкрити магазин як повноекранний фрагмент. */
+    public static void openStore() {
+        AndroidUtilities.runOnUIThread(() -> {
+            try {
+                BaseFragment last = LaunchActivity.getLastFragment();
+                if (last != null) last.presentFragment(new HotStoreActivity());
+            } catch (Throwable ignore) {
+            }
+        });
+    }
+
     /** Відкрити лінк: магазин або деталку модуля (з докачкою каталога). */
-    public static void open(Context context, Uri uri, HotCatalogSheet.OnChanged onChanged) {
-        if (context == null || uri == null) return;
-        final HotModuleDetailSheet.OnChanged fwd = onChanged == null ? null : onChanged::onChanged;
-        if (context == null || uri == null) return;
+    public static void open(Context context, Uri uri, OnChanged onChanged) {
+        if (uri == null) return;
         if (isStoreLink(uri)) {
-            AndroidUtilities.runOnUIThread(() -> {
-                try {
-                    new HotCatalogSheet(context, onChanged).show();
-                } catch (Throwable ignore) {
-                }
-            });
+            openStore();
             return;
         }
         String id = parseModuleId(uri);
@@ -73,10 +83,18 @@ public final class HotModuleDeepLink {
         HotModulesManager.fetchCatalog(false, (ok, msg, catalog) -> {
             HotCatalog.Entry found = (ok && catalog != null) ? catalog.find(moduleId) : null;
             HotCatalog.Build sel = found != null ? found.defaultBuild() : null;
-            try {
-                new HotModuleDetailSheet(context, moduleId, found, sel, fwd).show();
-            } catch (Throwable ignore) {
-            }
+            final HotModuleDetailSheet.OnChanged fwd =
+                    onChanged == null ? null : onChanged::onChanged;
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    BaseFragment last = LaunchActivity.getLastFragment();
+                    Context act = (last != null && last.getParentActivity() != null)
+                            ? last.getParentActivity() : context;
+                    if (act == null) return;
+                    new HotModuleDetailSheet(act, moduleId, found, sel, fwd).show();
+                } catch (Throwable ignore) {
+                }
+            });
         });
     }
 

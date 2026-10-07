@@ -48,6 +48,8 @@ public class HotModuleDetailSheet extends BottomSheet {
 
     private TextView verLabel;
     private TextView trustLabel;
+    private TextView quarantineBox;
+    private TextView diagBox;
     private TextView descView;
     private TextView changelogBox;
     private LinearLayout chipsRow;
@@ -183,23 +185,33 @@ public class HotModuleDetailSheet extends BottomSheet {
         body.addView(stats, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
-        if (HotModulesManager.isQuarantined(moduleId)) {
-            TextView q = new TextView(context);
-            q.setText("⛔ " + MiogramLocale.get(
-                    "Модуль у карантині: падав 3+ рази. Перевстановіть, щоб спробувати знову.",
-                    "Модуль в карантине: падал 3+ раза. Переустановите, чтобы попробовать снова.",
-                    "Module quarantined: crashed 3+ times. Reinstall to retry."));
-            q.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
-            q.setTextColor(themed(Theme.key_text_RedRegular, 0xFFFF5A5A));
-            GradientDrawable qb = new GradientDrawable();
-            qb.setCornerRadius(AndroidUtilities.dp(12));
-            qb.setStroke(AndroidUtilities.dp(1), 0x66FF5A5A);
-            q.setBackground(qb);
-            q.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10),
-                    AndroidUtilities.dp(12), AndroidUtilities.dp(10));
-            body.addView(q, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                    LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
-        }
+        quarantineBox = new TextView(context);
+        quarantineBox.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        quarantineBox.setTextColor(themed(Theme.key_text_RedRegular, 0xFFFF5A5A));
+        GradientDrawable qb = new GradientDrawable();
+        qb.setCornerRadius(AndroidUtilities.dp(12));
+        qb.setStroke(AndroidUtilities.dp(1), 0x66FF5A5A);
+        quarantineBox.setBackground(qb);
+        quarantineBox.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10),
+                AndroidUtilities.dp(12), AndroidUtilities.dp(10));
+        quarantineBox.setOnClickListener(v -> {
+            HotModulesManager.unquarantine(moduleId);
+            if (onChanged != null) onChanged.onChanged();
+            refreshSelection();
+        });
+        body.addView(quarantineBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
+        diagBox = new TextView(context);
+        diagBox.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        diagBox.setTextColor(themed(Theme.key_dialogTextGray3, 0xFF8E8E93));
+        GradientDrawable db = new GradientDrawable();
+        db.setCornerRadius(AndroidUtilities.dp(12));
+        db.setStroke(AndroidUtilities.dp(1), 0x44FFFFFF);
+        diagBox.setBackground(db);
+        diagBox.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10),
+                AndroidUtilities.dp(12), AndroidUtilities.dp(10));
+        body.addView(diagBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
     }
 
     private String sizeText() {
@@ -420,6 +432,27 @@ public class HotModuleDetailSheet extends BottomSheet {
     }
 
     private void refreshSelection() {
+        if (quarantineBox != null) {
+            if (HotModulesManager.isQuarantined(moduleId)) {
+                quarantineBox.setVisibility(View.VISIBLE);
+                quarantineBox.setText("⛔ " + MiogramLocale.get(
+                        "Карантин: падав 3+ рази — торкніть щоб скинути.",
+                        "Карантин: падал 3+ раза — нажмите чтобы сбросить.",
+                        "Quarantined: crashed 3+ times — tap to reset."));
+            } else {
+                quarantineBox.setVisibility(View.GONE);
+            }
+        }
+        if (diagBox != null) {
+            String loadErr = HotModulesManager.getLastLoadError(moduleId);
+            if (!loadErr.isEmpty()) {
+                diagBox.setVisibility(View.VISIBLE);
+                diagBox.setText("⚠ " + MiogramLocale.get("Останній провал: ",
+                        "Последний провал: ", "Last failure: ") + loadErr);
+            } else {
+                diagBox.setVisibility(View.GONE);
+            }
+        }
         if (selected != null) {
             verLabel.setText(selected.branch + " • v" + selected.version);
         } else {

@@ -57,8 +57,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 if (id == -1) {
                     finishFragment();
                 } else if (id == MENU_ADD) {
-                    HotCatalogSheet sheet = new HotCatalogSheet(getContext(), () -> refresh());
-                    sheet.show();
+                    presentFragment(new HotStoreActivity());
                 } else if (id == MENU_UPDATES) {
                     checkUpdates(true);
                 } else if (id == MENU_BACKUP) {
@@ -221,8 +220,10 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                     }
                     refresh();
                     if (missing > 0) {
-                        HotCatalogSheet sheet = new HotCatalogSheet(context, () -> refresh());
-                        sheet.show();
+                        try {
+                            presentFragment(new HotStoreActivity());
+                        } catch (Throwable ignore) {
+                        }
                     }
                     try {
                         android.widget.Toast.makeText(context,
@@ -359,10 +360,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         btnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
         btnCatalog.setBackground(btnBg);
         btnCatalog.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
-        btnCatalog.setOnClickListener(v -> {
-            HotCatalogSheet sheet = new HotCatalogSheet(context, () -> refresh());
-            sheet.show();
-        });
+        btnCatalog.setOnClickListener(v -> presentFragment(new HotStoreActivity()));
         layout.addView(btnCatalog, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         return layout;
@@ -450,11 +448,15 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         if (HotModulesManager.isQuarantined(info.manifest.id)) {
             TextView qBadge = new TextView(context);
             qBadge.setText("⛔ " + MiogramLocale.get("карантин: падав "
-                    + HotModulesManager.getLoadFailures(info.manifest.id) + "×",
-                    "карантин: падал " + HotModulesManager.getLoadFailures(info.manifest.id) + "×",
-                    "quarantined: crashed " + HotModulesManager.getLoadFailures(info.manifest.id) + "×"));
+                    + HotModulesManager.getLoadFailures(info.manifest.id) + "× — торкніть щоб скинути",
+                    "карантин: падал " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — нажмите чтобы сбросить",
+                    "quarantined: crashed " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — tap to reset"));
             qBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             qBadge.setTextColor(YumiTheme.getError());
+            qBadge.setOnClickListener(v -> {
+                HotModulesManager.unquarantine(info.manifest.id);
+                refresh();
+            });
             infoCol.addView(qBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
         }
 
@@ -466,7 +468,16 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         View.OnClickListener toggleAction = v -> {
             boolean next = !sw.isChecked();
             sw.setChecked(next, true);
-            HotModulesManager.setEnabled(info.manifest.id, next, (ok, msg, data) -> refresh());
+            HotModulesManager.setEnabled(info.manifest.id, next, (ok, msg, data) -> {
+                if (!ok && msg != null && !msg.isEmpty()) {
+                    try {
+                        android.widget.Toast.makeText(context, msg,
+                                android.widget.Toast.LENGTH_LONG).show();
+                    } catch (Throwable ignore) {
+                    }
+                }
+                refresh();
+            });
         };
         sw.setOnClickListener(toggleAction);
         topRow.setOnClickListener(toggleAction);

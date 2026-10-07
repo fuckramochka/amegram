@@ -56,6 +56,8 @@ public final class HotModuleDeepLink {
     /** Відкрити лінк: магазин або деталку модуля (з докачкою каталога). */
     public static void open(Context context, Uri uri, HotCatalogSheet.OnChanged onChanged) {
         if (context == null || uri == null) return;
+        final HotModuleDetailSheet.OnChanged fwd = onChanged == null ? null : onChanged::onChanged;
+        if (context == null || uri == null) return;
         if (isStoreLink(uri)) {
             AndroidUtilities.runOnUIThread(() -> {
                 try {
@@ -72,7 +74,7 @@ public final class HotModuleDeepLink {
             HotCatalog.Entry found = (ok && catalog != null) ? catalog.find(moduleId) : null;
             HotCatalog.Build sel = found != null ? found.defaultBuild() : null;
             try {
-                new HotModuleDetailSheet(context, moduleId, found, sel, onChanged).show();
+                new HotModuleDetailSheet(context, moduleId, found, sel, fwd).show();
             } catch (Throwable ignore) {
             }
         });

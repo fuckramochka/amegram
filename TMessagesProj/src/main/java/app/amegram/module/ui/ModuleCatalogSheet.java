@@ -248,7 +248,9 @@ public class ModuleCatalogSheet extends BottomSheet {
                 }
                 try {
                     app.amegram.hot.ui.HotCatalogSheet hot =
-                            new app.amegram.hot.ui.HotCatalogSheet(context, onChanged);
+                            new app.amegram.hot.ui.HotCatalogSheet(context, () -> {
+                                if (onChanged != null) onChanged.onChanged();
+                            });
                     hot.show();
                 } catch (Throwable ignore) {
                 }

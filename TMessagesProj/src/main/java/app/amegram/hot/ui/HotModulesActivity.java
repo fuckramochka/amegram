@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import app.amegram.hot.HotCatalog;
 import app.amegram.hot.HotModulesManager;
 import app.miogram.bridge.MiogramLocale;
 
@@ -39,9 +40,12 @@ import app.miogram.bridge.MiogramLocale;
 public class HotModulesActivity extends BaseFragment implements HotModulesManager.ModulesChangeListener {
 
     private static final int MENU_ADD = 1;
+    private static final int MENU_UPDATES = 2;
+    private static final int MENU_BACKUP = 3;
 
     private UniversalRecyclerView listView;
     private final List<HotModulesManager.InstalledInfo> shown = new ArrayList<>();
+    private final java.util.Map<String, String> pendingUpdates = new java.util.LinkedHashMap<>();
 
     @Override
     public View createView(Context context) {
@@ -55,9 +59,15 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 } else if (id == MENU_ADD) {
                     HotCatalogSheet sheet = new HotCatalogSheet(getContext(), () -> refresh());
                     sheet.show();
+                } else if (id == MENU_UPDATES) {
+                    checkUpdates(true);
+                } else if (id == MENU_BACKUP) {
+                    showBackupDialog();
                 }
             }
         });
+        actionBar.createMenu().addItem(MENU_UPDATES, R.drawable.baseline_system_update_24);
+        actionBar.createMenu().addItem(MENU_BACKUP, R.drawable.baseline_share_24);
         actionBar.createMenu().addItem(MENU_ADD, R.drawable.filled_new_contact_24);
 
         fragmentView = listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
@@ -71,6 +81,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
     public void onResume() {
         super.onResume();
         refresh();
+        checkUpdates(false);
     }
 
     @Override
@@ -90,6 +101,144 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         }
     }
 
+    /** Перевірка оновлень з тротлінгом 6 год (force = з меню, одразу). */
+    private void checkUpdates(boolean force) {
+        Context context = getContext();
+        long last = 0;
+        try {
+            last = context.getSharedPreferences("hotmodules_prefs", Context.MODE_PRIVATE)
+                    .getLong("updates_time", 0);
+        } catch (Throwable ignore) {
+        }
+        if (!force && System.currentTimeMillis() - last < 6L * 60 * 60 * 1000L) {
+            reloadPendingUpdates();
+            return;
+        }
+        HotModulesManager.checkUpdatesAsync((ok, msg, found) -> {
+            try {
+                context.getSharedPreferences("hotmodules_prefs", Context.MODE_PRIVATE)
+                        .edit().putLong("updates_time", System.currentTimeMillis()).apply();
+            } catch (Throwable ignore) {
+            }
+            reloadPendingUpdates();
+            refresh();
+            if (force && context != null) {
+                try {
+                    android.widget.Toast.makeText(context,
+                            ok ? (found.isEmpty()
+                                    ? MiogramLocale.get("Оновлень нема ✓", "Обновлений нет ✓", "No updates ✓")
+                                    : MiogramLocale.get("Знайдено оновлень: ", "Найдено обновлений: ", "Updates found: ") + found.size())
+                                    : String.valueOf(msg),
+                            android.widget.Toast.LENGTH_SHORT).show();
+                } catch (Throwable ignore) {
+                }
+            }
+        });
+    }
+
+    private void reloadPendingUpdates() {
+        pendingUpdates.clear();
+        for (HotModulesManager.InstalledInfo info : HotModulesManager.listInstalled()) {
+            if (!info.active) continue;
+            String up = HotModulesManager.getUpdateAvailable(info.manifest.id);
+            if (!up.isEmpty() && up.compareTo(info.manifest.version) > 0) {
+                pendingUpdates.put(info.manifest.id, up);
+            }
+        }
+    }
+
+    /** Оновити все: качаємо кожен апдейт по черзі. */
+    private void updateAll() {
+        Context context = getContext();
+        if (context == null || pendingUpdates.isEmpty()) return;
+        HotModulesManager.fetchCatalog(false, (ok, msg, catalog) -> {
+            if (!ok || catalog == null) return;
+            List<String> ids = new ArrayList<>(pendingUpdates.keySet());
+            updateNext(ids, 0, catalog);
+        });
+    }
+
+    private void updateNext(List<String> ids, int idx, HotCatalog catalog) {
+        if (idx >= ids.size()) {
+            refresh();
+            return;
+        }
+        String id = ids.get(idx);
+        HotCatalog.Entry e = catalog.find(id);
+        HotCatalog.Build latest = e != null ? e.latestCompatible(HotModulesManager.appVersion()) : null;
+        if (latest == null || !HotModulesManager.isCompatible(latest)) {
+            updateNext(ids, idx + 1, catalog);
+            return;
+        }
+        HotModulesManager.downloadBuild(id, latest, true,
+                new HotModulesManager.ProgressCallback<Void>() {
+                    @Override public void onProgress(long d, long t) { }
+                    @Override public void onDone(boolean ok, String message, Void data) {
+                        updateNext(ids, idx + 1, catalog);
+                    }
+                });
+    }
+
+    /** Бекап набору: експорт у буфер / імпорт з тексту. */
+    private void showBackupDialog() {
+        Context context = getContext();
+        if (context == null) return;
+        AlertDialog.Builder b = new AlertDialog.Builder(context);
+        b.setTitle(MiogramLocale.get("Набір модулів", "Набор модулей", "Module set"));
+        String[] items = new String[]{
+                MiogramLocale.get("📤 Експорт (копіювати)", "📤 Экспорт (копировать)", "📤 Export (copy)"),
+                MiogramLocale.get("📥 Імпорт (вставити)", "📥 Импорт (вставить)", "📥 Import (paste)")};
+        b.setItems(items, (d, which) -> {
+            if (which == 0) {
+                try {
+                    String json = HotModulesManager.exportModuleSet();
+                    android.content.ClipboardManager cm = (android.content.ClipboardManager)
+                            context.getSystemService(Context.CLIPBOARD_SERVICE);
+                    if (cm != null) {
+                        cm.setPrimaryClip(android.content.ClipData.newPlainText("modules", json));
+                    }
+                    android.widget.Toast.makeText(context, json, android.widget.Toast.LENGTH_LONG).show();
+                } catch (Throwable ignore) {
+                }
+            } else {
+                android.widget.EditText input = new android.widget.EditText(context);
+                input.setHint("[{\"id\":\"ghost\",…}]");
+                AlertDialog.Builder b2 = new AlertDialog.Builder(context);
+                b2.setTitle(MiogramLocale.get("Вставте набір", "Вставьте набор", "Paste set"));
+                b2.setView(input);
+                b2.setPositiveButton(MiogramLocale.get("Імпортувати", "Импортировать", "Import"), (d2, w) -> {
+                    String txt = input.getText() != null ? input.getText().toString() : "";
+                    List<java.util.Map<String, String>> refs = HotModulesManager.parseModuleSet(txt);
+                    int missing = 0;
+                    for (java.util.Map<String, String> r : refs) {
+                        String id = r.get("id");
+                        boolean wantOn = "1".equals(r.get("enabled"));
+                        if (HotModulesManager.isModuleInstalled(id)) {
+                            HotModulesManager.setEnabled(id, wantOn, (ok, m, v) -> refresh());
+                        } else {
+                            missing++;
+                        }
+                    }
+                    refresh();
+                    if (missing > 0) {
+                        HotCatalogSheet sheet = new HotCatalogSheet(context, () -> refresh());
+                        sheet.show();
+                    }
+                    try {
+                        android.widget.Toast.makeText(context,
+                                MiogramLocale.get("Імпортовано: ", "Импортировано: ", "Imported: ") + refs.size()
+                                        + (missing > 0 ? MiogramLocale.get(" • добрати в магазині: ", " • добрать в магазине: ", " • get in store: ") + missing : ""),
+                                android.widget.Toast.LENGTH_LONG).show();
+                    } catch (Throwable ignore) {
+                    }
+                });
+                b2.setNegativeButton(MiogramLocale.get("Скасувати", "Отмена", "Cancel"), null);
+                b2.show();
+            }
+        });
+        b.show();
+    }
+
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         shown.clear();
         Context context = getContext();
@@ -103,8 +252,14 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             }
         }
         shown.addAll(byId.values());
+        reloadPendingUpdates();
 
-        items.add(UItem.asHeader(MiogramLocale.get("Встановлені модулі", "Установленные модули", "Installed modules")));
+        items.add(UItem.asHeader(MiogramLocale.get("Встановлені модулі", "Установленные модули", "Installed modules")
+                + " • 0 " + MiogramLocale.get("вбудовано", "встроено", "built-in")));
+
+        if (!pendingUpdates.isEmpty()) {
+            items.add(UItem.asCustom(buildUpdatesBanner(context)));
+        }
 
         if (shown.isEmpty()) {
             items.add(UItem.asCustom(buildEmptyStateView(context)));
@@ -117,9 +272,50 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         }
 
         items.add(UItem.asShadow(MiogramLocale.get(
-                "Модулі є пісочницею нативних розширень. Вимкнений модуль вивантажується з пам'яті (0 KB RAM). Керуйте функціоналом у головних налаштуваннях Amegram.",
-                "Модули являются песочницей нативных расширений. Выключенный модуль выгружается из памяти (0 KB RAM). Управляйте функционалом в главных настройках Amegram.",
-                "Modules are isolated native extensions. Disabled modules are unloaded (0 KB RAM). Configure features in main Amegram settings.")));
+                "Чистий клієнт: 0 модулів вбудовано — все ставиться з магазину. Вимкнений модуль вивантажується з пам'яті (0 KB RAM). Торкніть картку, щоб побачити опис і версії.",
+                "Чистый клиент: 0 модулей встроено — всё ставится из магазина. Выключенный модуль выгружается из памяти (0 KB RAM). Нажмите на карточку, чтобы увидеть описание и версии.",
+                "Clean client: 0 built-in — everything comes from the store. Disabled modules unload (0 KB RAM). Tap a card for details & versions.")));
+    }
+
+    private View buildUpdatesBanner(Context context) {
+        LinearLayout banner = new LinearLayout(context);
+        banner.setOrientation(LinearLayout.HORIZONTAL);
+        banner.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                new int[]{0xFF6C63FF, 0xFF9D7BFF});
+        bg.setCornerRadius(AndroidUtilities.dp(18));
+        banner.setBackground(bg);
+        banner.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(13),
+                AndroidUtilities.dp(16), AndroidUtilities.dp(13));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(5), AndroidUtilities.dp(14), AndroidUtilities.dp(5));
+        banner.setLayoutParams(lp);
+
+        TextView t = new TextView(context);
+        t.setText("↑ " + MiogramLocale.get("Оновлення: ", "Обновления: ", "Updates: ") + pendingUpdates.size());
+        t.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        t.setTypeface(AndroidUtilities.bold());
+        t.setTextColor(0xFFFFFFFF);
+        banner.addView(t, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+        TextView all = new TextView(context);
+        all.setText(MiogramLocale.get("Оновити все", "Обновить всё", "Update all"));
+        all.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        all.setTypeface(AndroidUtilities.bold());
+        all.setTextColor(0xFF5B50E6);
+        GradientDrawable ab = new GradientDrawable();
+        ab.setCornerRadius(AndroidUtilities.dp(11));
+        ab.setColor(0xFFFFFFFF);
+        all.setBackground(ab);
+        all.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(9),
+                AndroidUtilities.dp(16), AndroidUtilities.dp(9));
+        all.setOnClickListener(v -> {
+            all.setEnabled(false);
+            updateAll();
+        });
+        banner.addView(all);
+        return banner;
     }
 
     private View buildEmptyStateView(Context context) {
@@ -241,6 +437,27 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         descView.setMaxLines(2);
         infoCol.addView(descView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
+        // Бейджі: доступне оновлення • карантин
+        String upd = pendingUpdates.get(info.manifest.id);
+        if (upd != null) {
+            TextView upBadge = new TextView(context);
+            upBadge.setText("↑ v" + upd + MiogramLocale.get(" доступно", " доступно", " available"));
+            upBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            upBadge.setTypeface(AndroidUtilities.bold());
+            upBadge.setTextColor(YumiTheme.getPrimary());
+            infoCol.addView(upBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        }
+        if (HotModulesManager.isQuarantined(info.manifest.id)) {
+            TextView qBadge = new TextView(context);
+            qBadge.setText("⛔ " + MiogramLocale.get("карантин: падав "
+                    + HotModulesManager.getLoadFailures(info.manifest.id) + "×",
+                    "карантин: падал " + HotModulesManager.getLoadFailures(info.manifest.id) + "×",
+                    "quarantined: crashed " + HotModulesManager.getLoadFailures(info.manifest.id) + "×"));
+            qBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            qBadge.setTextColor(YumiTheme.getError());
+            infoCol.addView(qBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        }
+
         topRow.addView(infoCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 8, 0));
 
         // 3. Світч увімкнення/вимкнення — стабільний клік без рекурсії
@@ -308,102 +525,38 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         card.addView(bottomRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
 
         card.setOnClickListener(v -> {
-            if (info.enabled) {
-                presentFragment(new HotModuleSettingsActivity(info.manifest.id));
-            } else {
-                HotModuleVersionsSheet sheet = new HotModuleVersionsSheet(context, info.manifest.id, null, () -> refresh());
+            // Тап по картці → деталка: опис, велика кнопка знизу, вибір версій.
+            HotModulesManager.fetchCatalog(false, (ok, msg, catalog) -> {
+                HotCatalog.Entry found = (ok && catalog != null) ? catalog.find(info.manifest.id) : null;
+                HotCatalog.Build sel = null;
+                if (found != null) {
+                    for (HotCatalog.Build b : found.branches.values()) {
+                        if (b.version.equals(info.manifest.version)) {
+                            sel = b;
+                            break;
+                        }
+                    }
+                    if (sel == null) sel = found.defaultBuild();
+                }
+                HotModuleDetailSheet sheet = new HotModuleDetailSheet(context,
+                        info.manifest.id, found, sel, () -> refresh());
                 sheet.show();
-            }
+            });
         });
 
         return card;
     }
 
     private static int getModuleColor(String id) {
-        if ("ghost".equals(id)) return 0xFF8E24AA;        // Purple
-        if ("player".equals(id)) return 0xFF00ACC1;       // Cyan
-        if ("ame".equals(id)) return 0xFFE91E63;          // Pink
-        if ("vault".equals(id)) return 0xFFFF8F00;        // Amber
-        if ("tiktok".equals(id)) return 0xFFEE1D52;       // Red
-        if ("stt".equals(id)) return 0xFF00897B;          // Teal
-        if ("ai".equals(id)) return 0xFF7E57C2;           // Violet
-        if ("experimental".equals(id)) return 0xFF43A047; // Green
-        if ("automation".equals(id)) return 0xFF546E7A;   // Blue-Gray
-        return 0xFF2A87FF;                                // Blue
+        return HotModuleMeta.color(id);
     }
 
     private static int getModuleIcon(String id) {
-        if ("ghost".equals(id)) return R.drawable.msg_secret;
-        if ("player".equals(id)) return R.drawable.baseline_music_note_24;
-        if ("ame".equals(id)) return R.drawable.msg_customize;
-        if ("vault".equals(id)) return R.drawable.msg_saved;
-        if ("tiktok".equals(id)) return R.drawable.msg_video;
-        if ("stt".equals(id)) return R.drawable.msg_bot;
-        if ("ai".equals(id)) return R.drawable.baseline_stars_24;
-        if ("experimental".equals(id)) return R.drawable.msg_fave;
-        if ("automation".equals(id)) return R.drawable.msg_download_solar;
-        return R.drawable.msg_plugins;
+        return HotModuleMeta.icon(id);
     }
 
     private static String getModuleDescription(String id) {
-        if ("ghost".equals(id)) {
-            return MiogramLocale.get(
-                    "Приховування прочитання, історій, онлайну та набору тексту",
-                    "Скрытие прочитанного, историй, онлайна и набора текста",
-                    "Hide read receipts, stories views, online status & typing");
-        }
-        if ("player".equals(id)) {
-            return MiogramLocale.get(
-                    "Пошук музики з 6 сервісів, кастомний плеєр, візуалізатор, тексти LRC",
-                    "Поиск музыки из 6 сервисов, кастомный плеер, визуализатор, тексты LRC",
-                    "Search 6 music sources, custom player, visualizer, LRC lyrics");
-        }
-        if ("ame".equals(id)) {
-            return MiogramLocale.get(
-                    "Аме-студія XML-карток профіля, градієнти, картки діалогів, glass blur",
-                    "Аме-студия XML-карточек профиля, градиенты, карточки диалогов, glass blur",
-                    "Ame Studio XML cards, gradients, dialog cards, glass blur");
-        }
-        if ("vault".equals(id)) {
-            return MiogramLocale.get(
-                    "Шифрований AES-256-GCM віртуальний диск з автонарізанням на чанки",
-                    "Зашифрованный AES-256-GCM виртуальный диск с чанкованием",
-                    "Encrypted AES-256-GCM virtual drive with file chunking");
-        }
-        if ("tiktok".equals(id)) {
-            return MiogramLocale.get(
-                    "Вбудований плеєр без ватермарок, чисті URL та синхронізація акаунта",
-                    "Встроенный плеер без ватермарок, чистые URL и синхронизация аккаунта",
-                    "Watermark-free in-app player, clean URLs & account sync");
-        }
-        if ("stt".equals(id)) {
-            return MiogramLocale.get(
-                    "ШІ-розпізнавання голосових та відеоповідомлень через Gemini або Whisper",
-                    "ИИ-распознавание голосовых и видеосообщений через Gemini или Whisper",
-                    "AI transcription for voice & video notes via Gemini or Whisper");
-        }
-        if ("ai".equals(id)) {
-            return MiogramLocale.get(
-                    "ШІ-супутник Ame / KAngel з пам'яттю та окремим екраном чату",
-                    "ИИ-спутник Ame / KAngel с памятью и отдельным экраном чата",
-                    "AI companion Ame / KAngel with memory & dedicated chat screen");
-        }
-        if ("experimental".equals(id)) {
-            return MiogramLocale.get(
-                    "Безліміт закріплених чатів, upload boost, збереження видалених",
-                    "Безлимит закрепленных чатов, upload boost, сохранение удаленных",
-                    "Unlimited pinned chats, upload boost, save deleted messages");
-        }
-        if ("automation".equals(id)) {
-            return MiogramLocale.get(
-                    "Фонова автосинхронізація хмари, автобекап Обраного та очищення кешу",
-                    "Фоновая автосинхронизация облака, автобэкап Избранного и очистка кеша",
-                    "Background cloud auto-sync, Saved Messages backup & cache cleaner");
-        }
-        return MiogramLocale.get(
-                "Нативне розширення клієнта Amegram",
-                "Нативное расширение клиента Amegram",
-                "Native Amegram client extension");
+        return HotModuleMeta.fallbackDescription(id);
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {

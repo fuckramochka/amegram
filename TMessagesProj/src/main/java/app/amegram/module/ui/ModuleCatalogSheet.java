@@ -236,10 +236,23 @@ public class ModuleCatalogSheet extends BottomSheet {
         GradientDrawable actBg = new GradientDrawable();
         actBg.setCornerRadius(AndroidUtilities.dp(14));
         if (e.downloadUrl.isEmpty()) {
-            actionBtn.setText("\u0412\u0431\u0443\u0434\u043e\u0432\u0430\u043d\u043e \u2713");
-            actBg.setColor(android.graphics.Color.argb(30, 46, 204, 113));
-            actionBtn.setTextColor(0xFF2ECC71);
-            actionBtn.setOnClickListener(null);
+            // 0 вбудованих: мертвої кнопки "Вбудовано" більше немає.
+            // Ведемо в єдиний Hot-магазин, де модуль реально ставиться як .hmod.
+            actionBtn.setText("У Hot-магазин →");
+            actBg.setColor(accent);
+            actionBtn.setTextColor(0xFFFFFFFF);
+            actionBtn.setOnClickListener(v -> {
+                try {
+                    dismiss();
+                } catch (Throwable ignore) {
+                }
+                try {
+                    app.amegram.hot.ui.HotCatalogSheet hot =
+                            new app.amegram.hot.ui.HotCatalogSheet(context, onChanged);
+                    hot.show();
+                } catch (Throwable ignore) {
+                }
+            });
         } else {
             actionBtn.setText("\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438");
             actBg.setColor(accent);

@@ -1,0 +1,50 @@
+name: hotmodules-build
+
+on:
+  push:
+    paths:
+      - 'hmods/**'
+      - 'meta.json'
+      - 'modules.json'
+      - 'tools/**'
+  pull_request:
+    paths:
+      - 'hmods/**'
+      - 'meta.json'
+      - 'modules.json'
+      - 'tools/**'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lint .hmod files
+        run: |
+          fail=0
+          for f in hmods/*.hmod; do
+            python3 tools/lint_manifest.py "$f" || fail=1
+          done
+          exit $fail
+      - name: Lint catalog (strict)
+        run: python3 tools/lint_manifest.py --catalog modules.json --strict
+      - name: Verify catalog matches hmods
+        run: |
+          python3 - <<'EOF'
+          import json, hashlib, os, re
+          cat = json.load(open("modules.json", encoding="utf-8"))
+          bad = 0
+          for m in cat["modules"]:
+              for src in list((m.get("branches") or {}).values()) + (m.get("history") or []):
+                  fn = f"hmods/{m['id']}-{src['version']}.hmod"
+                  if not os.path.exists(fn):
+                      print("MISSING:", fn); bad = 1; continue
+                  h = hashlib.sha256(open(fn, "rb").read()).hexdigest()
+                  if h != src.get("sha256", ""):
+                      print("SHA-MISMATCH:", fn); bad = 1
+          raise SystemExit(bad)
+          EOF

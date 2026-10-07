@@ -1,0 +1,8 @@
+{
+  "id": "demo",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.example.hotmod.DemoModule",
+  "name": "Demo Module",
+  "minApp": 7112
+}

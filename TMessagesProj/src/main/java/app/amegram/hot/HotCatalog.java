@@ -10,10 +10,11 @@ import java.util.Map;
 
 /**
  * Модель каталога modules.json из отдельного репозитория.
- * Формат (см. hotmodules-template/modules.json):
- * { modules: [ { id, name, description, entry,
- *   branches: { stable: {version,url,sha256,minApp,changelog}, beta: {...} },
- *   history: [ {branch,version,url,sha256,minApp,changelog} ] } ] }
+ * Формат (см. tools/hotmod-sdk/ + docs/HOTMOD_SDK.md):
+ * { modules: [ { id, name, description, entry, author, category, featured,
+ *   branches: { stable: {version,url,sha256,signature,sizeBytes,minApp,changelog,permissions[]}, beta: {...} },
+ *   history: [ {branch,version,url,sha256,...} ] } ] }
+ * Усі нові поля опціональні — старий modules.json парситься як раніше.
  */
 public final class HotCatalog {
 
@@ -22,16 +23,29 @@ public final class HotCatalog {
         public final String version;
         public final String url;
         public final String sha256;
+        /** Опціональний detached-підпис (base64). Порожньо = лише sha256-довіра. */
+        public final String signature;
+        /** Розмір .hmod у байтах (0 = невідомо). */
+        public final long sizeBytes;
         public final int minApp;
         public final String changelog;
+        public final List<String> permissions;
 
-        Build(String branch, String version, String url, String sha256, int minApp, String changelog) {
+        Build(String branch, String version, String url, String sha256, String signature,
+              long sizeBytes, int minApp, String changelog, List<String> permissions) {
             this.branch = branch;
             this.version = version;
             this.url = url;
             this.sha256 = sha256;
+            this.signature = signature != null ? signature : "";
+            this.sizeBytes = sizeBytes;
             this.minApp = minApp;
-            this.changelog = changelog;
+            this.changelog = changelog != null ? changelog : "";
+            this.permissions = permissions != null ? permissions : new ArrayList<>();
+        }
+
+        public boolean isSigned() {
+            return signature != null && !signature.isEmpty();
         }
     }
 
@@ -40,14 +54,21 @@ public final class HotCatalog {
         public final String name;
         public final String description;
         public final String entry;
+        public final String author;
+        public final String category;
+        public final boolean featured;
         public final Map<String, Build> branches = new LinkedHashMap<>();
         public final List<Build> history = new ArrayList<>();
 
-        Entry(String id, String name, String description, String entry) {
+        Entry(String id, String name, String description, String entry,
+              String author, String category, boolean featured) {
             this.id = id;
             this.name = name;
             this.description = description;
             this.entry = entry;
+            this.author = author != null ? author : "";
+            this.category = category != null && !category.isEmpty() ? category : "other";
+            this.featured = featured;
         }
 
         public Build defaultBuild() {
@@ -55,6 +76,23 @@ public final class HotCatalog {
             if (b != null) return b;
             for (Build x : branches.values()) return x;
             return null;
+        }
+
+        /** Усі збірки: гілки + історія (для каруселі версій). */
+        public List<Build> allBuilds() {
+            List<Build> all = new ArrayList<>(branches.values());
+            all.addAll(history);
+            return all;
+        }
+
+        /** Найновіша сумісна збірка (minApp <= appVer), інакше defaultBuild. */
+        public Build latestCompatible(int appVer) {
+            Build def = defaultBuild();
+            if (appVer <= 0) return def;
+            for (Build b : branches.values()) {
+                if (b.minApp > 0 && b.minApp <= appVer) return b;
+            }
+            return def;
         }
     }
 
@@ -70,6 +108,15 @@ public final class HotCatalog {
             if (e.id.equals(id)) return e;
         }
         return null;
+    }
+
+    /** Унікальні категорії в порядку появи (для чипів фільтра). */
+    public List<String> categories() {
+        List<String> res = new ArrayList<>();
+        for (Entry e : modules) {
+            if (!res.contains(e.category)) res.add(e.category);
+        }
+        return res;
     }
 
     public static HotCatalog parse(String json) {
@@ -88,7 +135,9 @@ public final class HotCatalog {
                 String entry = o.optString("entry", "");
                 if (id.isEmpty() || entry.isEmpty()) continue;
                 Entry e = new Entry(id, o.optString("name", id),
-                        o.optString("description", ""), entry);
+                        o.optString("description", ""), entry,
+                        o.optString("author", ""), o.optString("category", "other"),
+                        o.optBoolean("featured", false));
                 JSONObject branches = o.optJSONObject("branches");
                 if (branches != null) {
                     for (String branch : new String[]{"stable", "beta", "alpha", "dev"}) {
@@ -134,7 +183,24 @@ public final class HotCatalog {
         String url = b.optString("url", "");
         if (version.isEmpty() || url.isEmpty()) return null;
         if (!url.startsWith("https://")) return null;
+        List<String> perms = new ArrayList<>();
+        JSONArray pa = b.optJSONArray("permissions");
+        if (pa != null) {
+            for (int i = 0; i < pa.length(); i++) {
+                String p = pa.optString(i, "");
+                if (!p.isEmpty()) perms.add(p);
+            }
+        }
         return new Build(branch, version, url, b.optString("sha256", ""),
-                b.optInt("minApp", 0), b.optString("changelog", ""));
+                b.optString("signature", ""), b.optLong("sizeBytes", 0),
+                b.optInt("minApp", 0), b.optString("changelog", ""), perms);
+    }
+
+    /** Людський розмір: 48 КБ / 1.9 МБ. */
+    public static String formatSize(long bytes) {
+        if (bytes <= 0) return "";
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return (bytes / 1024) + " КБ";
+        return String.format("%.1f МБ", bytes / (1024f * 1024f));
     }
 }

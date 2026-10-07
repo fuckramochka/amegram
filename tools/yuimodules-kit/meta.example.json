@@ -1,0 +1,26 @@
+{
+  "ghost": {
+    "name": "Режим привида",
+    "description": "Повна невидимість у мережі: приховування прочитання повідомлень, історій, статусу онлайн та набору тексту.",
+    "author": "AmeGram Team",
+    "category": "privacy",
+    "featured": true,
+    "branch": "stable",
+    "permissions": ["hook_net"],
+    "changelog": {
+      "1.0.1": "Привид+видалені одним модулем; синк префів у ядро; гейт вимкнення."
+    }
+  },
+  "player": {
+    "name": "Музика та плеєр",
+    "description": "Глобальний пошук музики з 6 джерел, візуалізатор та тексти пісень (LRC).",
+    "author": "AmeGram Team",
+    "category": "media",
+    "featured": true,
+    "branch": "stable",
+    "permissions": ["hook_ui", "network", "storage"],
+    "changelog": {
+      "1.0.1": "Тумблери прив'язані до реальних префів; фон/блур тільки в олівці плеєра."
+    }
+  }
+}

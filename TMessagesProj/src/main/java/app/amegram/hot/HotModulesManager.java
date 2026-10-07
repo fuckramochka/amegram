@@ -82,10 +82,13 @@ public final class HotModulesManager {
     public static final class Handle {
         public final InstalledInfo info;
         public final HotModule instance;
+        /** Ізольований ClassLoader цього модуля (один на модуль, drop при видаленні). */
+        public final ClassLoader loader;
 
-        Handle(InstalledInfo info, HotModule instance) {
+        Handle(InstalledInfo info, HotModule instance, ClassLoader loader) {
             this.info = info;
             this.instance = instance;
+            this.loader = loader;
         }
     }
 
@@ -93,30 +96,13 @@ public final class HotModulesManager {
     private static final Map<String, Handle> LOADED = new HashMap<>();
     private static final Map<String, Object> SERVICES = new HashMap<>();
 
+    /** Історичні ID колись вшитих модулів. APK тепер чистий (0 вбудованих),
+     *  тому карти лишаються порожніми — лише для міграції старих префів. */
     public static final Map<String, String> BUILTIN_ENTRIES = new HashMap<>();
     public static final Map<String, String> BUILTIN_NAMES = new HashMap<>();
     static {
-        BUILTIN_ENTRIES.put("ghost", "com.amegram.mods.ghost.GhostModule");
-        BUILTIN_ENTRIES.put("player", "com.amegram.mods.player.PlayerModule");
-        BUILTIN_ENTRIES.put("ame", "com.amegram.mods.ame.AmeModule");
-        BUILTIN_ENTRIES.put("vault", "com.amegram.mods.vault.VaultModule");
-        BUILTIN_ENTRIES.put("tiktok", "com.amegram.mods.tiktok.TikModule");
-        BUILTIN_ENTRIES.put("ai", "com.amegram.mods.ai.AiModule");
-        BUILTIN_ENTRIES.put("experimental", "com.amegram.mods.experimental.ExperimentalModule");
-        BUILTIN_ENTRIES.put("stt", "com.amegram.mods.stt.SttModule");
-        BUILTIN_ENTRIES.put("demo", "com.amegram.mods.demo.DemoModule");
-        BUILTIN_ENTRIES.put("automation", "com.amegram.mods.automation.AutomationModule");
-
-        BUILTIN_NAMES.put("ghost", "Ghost Mode");
-        BUILTIN_NAMES.put("player", "Music Player");
-        BUILTIN_NAMES.put("ame", "Ame Studio");
-        BUILTIN_NAMES.put("vault", "Cloud Vault");
-        BUILTIN_NAMES.put("tiktok", "TikTok MI");
-        BUILTIN_NAMES.put("ai", "AI Companion");
-        BUILTIN_NAMES.put("experimental", "Experimental");
-        BUILTIN_NAMES.put("stt", "Speech To Text");
-        BUILTIN_NAMES.put("demo", "Demo Module");
-        BUILTIN_NAMES.put("automation", "Automation");
+        // Навмисно порожньо: жоден модуль не вшитий в APK.
+        // Весь код приїжджає як .hmod з репозиторію або assets/hotmodules/ (offline seed).
     }
 
     private HotModulesManager() {
@@ -167,50 +153,20 @@ public final class HotModulesManager {
     }
 
     /**
-     * Автоматичне копіювання вбудованих .hmod з assets/hotmodules/ на диск
-     * під час першого запуску, щоб клієнт працював із коробки ("і то і то працювало").
+     * Автовимога: НІЧОГО не копіюємо мовчки (політика "0 вбудованих").
+     * При першому запуску показуємо онбординг "Зберіть свій AmeGram",
+     * а .hmod з assets/hotmodules/ використовуються лише як офлайн-seed
+     * при ручній установці (installBundledModule / downloadBuild fallback).
      */
     public static void ensureBundledModulesInstalled() {
         init(ApplicationLoader.applicationContext);
-        if (appContext == null) return;
-        try {
-            android.content.res.AssetManager am = appContext.getAssets();
-            String[] list = am.list("hotmodules");
-            if (list == null || list.length == 0) return;
-            for (String file : list) {
-                if (!file.endsWith(".hmod")) continue;
-                String modId = file.replace(".hmod", "");
-                int dash = modId.lastIndexOf('-');
-                if (dash > 0) modId = modId.substring(0, dash);
-
-                File modDir = new File(root(), modId);
-                if (modDir.exists() && modDir.list() != null && modDir.list().length > 0) {
-                    continue; // вже встановлено
-                }
-                File tmp = new File(root(), file + ".tmp");
-                try (InputStream in = am.open("hotmodules/" + file);
-                     FileOutputStream out = new FileOutputStream(tmp)) {
-                    byte[] buf = new byte[16 * 1024];
-                    int n;
-                    while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
-                }
-                Manifest m = readManifest(tmp);
-                File vdir = new File(new File(root(), m.id), m.version);
-                vdir.mkdirs();
-                File dest = new File(vdir, "module.hmod");
-                if (tmp.renameTo(dest)) {
-                    prefs().edit().putString("installed_" + m.id, m.version)
-                            .putBoolean("enabled_" + m.id, true).apply();
-                } else {
-                    tmp.delete();
-                }
-            }
-        } catch (Throwable ignore) {
-        }
+        // Навмисно no-op: жодного авто-копіювання.
     }
 
     public static boolean isBuiltin(String moduleId) {
-        return moduleId != null && BUILTIN_ENTRIES.containsKey(moduleId);
+        // Політика "0 вбудованих": нічого не вважаємо вшитим в APK.
+        // Метод лишено для сумісності — завжди false.
+        return false;
     }
 
     public static boolean isModuleInstalled(String moduleId) {
@@ -218,11 +174,19 @@ public final class HotModulesManager {
         if (appContext == null) init(ApplicationLoader.applicationContext);
         if (appContext == null) return false;
         if (prefs().getBoolean("uninstalled_" + moduleId, false)) return false;
-        if (BUILTIN_ENTRIES.containsKey(moduleId)) return true;
         String active = prefs().getString("installed_" + moduleId, "");
-        if (!active.isEmpty()) return true;
+        if (!active.isEmpty()) {
+            File c = new File(new File(new File(root(), moduleId), active), "module.hmod");
+            if (c.exists()) return true;
+        }
         File modDir = new File(root(), moduleId);
-        return modDir.exists() && modDir.isDirectory();
+        if (!modDir.exists() || !modDir.isDirectory()) return false;
+        File[] vers = modDir.listFiles();
+        if (vers == null) return false;
+        for (File vdir : vers) {
+            if (vdir.isDirectory() && new File(vdir, "module.hmod").exists()) return true;
+        }
+        return false;
     }
 
     public static boolean isModuleEnabled(String moduleId) {
@@ -230,13 +194,7 @@ public final class HotModulesManager {
         if (appContext == null) init(ApplicationLoader.applicationContext);
         if (appContext == null) return false;
         if (prefs().getBoolean("uninstalled_" + moduleId, false)) return false;
-        if (!prefs().contains("enabled_" + moduleId)) {
-            if ("experimental".equals(moduleId) || "player".equals(moduleId) || "vault".equals(moduleId)
-                    || "ai".equals(moduleId) || "automation".equals(moduleId) || "tiktok".equals(moduleId)
-                    || "ame".equals(moduleId)) {
-                return true;
-            }
-        }
+        // Жодних авто-true: вимкнено за замовчуванням, вмикає лише юзер.
         return prefs().getBoolean("enabled_" + moduleId, false);
     }
 
@@ -244,6 +202,145 @@ public final class HotModulesManager {
         if (!isModuleEnabled(moduleId)) return false;
         Handle h = getHandle(moduleId);
         return h != null && h.instance != null;
+    }
+
+    // ---------- crash-ізоляція: карантин після 3 провалів ----------
+
+    private static final int MAX_LOAD_FAILURES = 3;
+
+    /** Скільки разів модуль падав при завантаженні поспіль. */
+    public static int getLoadFailures(String moduleId) {
+        if (appContext == null || moduleId == null) return 0;
+        return prefs().getInt("loadfail_" + moduleId, 0);
+    }
+
+    /** Модуль у карантині: падав 3+ рази, вимкнений автоматично. */
+    public static boolean isQuarantined(String moduleId) {
+        return getLoadFailures(moduleId) >= MAX_LOAD_FAILURES;
+    }
+
+    private static void recordLoadFailure(String moduleId) {
+        if (appContext == null || moduleId == null) return;
+        int n = getLoadFailures(moduleId) + 1;
+        prefs().edit().putInt("loadfail_" + moduleId, n).apply();
+        if (n >= MAX_LOAD_FAILURES) {
+            // Не роняємо апку: гасимо модуль, лишаємо запис для екрана версій.
+            prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
+            FileLog.e("hotmods: quarantined after " + n + " failures: " + moduleId);
+        }
+        notifyChanged();
+    }
+
+    public static void clearLoadFailures(String moduleId) {
+        if (appContext == null || moduleId == null) return;
+        prefs().edit().remove("loadfail_" + moduleId).apply();
+    }
+
+    // ---------- сумісність і підписи ----------
+
+    /** Чи підходить збірка під поточний білд апки. */
+    public static boolean isCompatible(HotCatalog.Build build) {
+        if (build == null) return true;
+        if (build.minApp <= 0) return true;
+        int appVer = appVersion();
+        if (appVer <= 0) return true;
+        return build.minApp <= appVer;
+    }
+
+    /**
+     * Статус довіри збірки: SIGNED (є detached-підпис) / SHA256 (лише хеш з каталога)
+     * / UNSIGNED (нічого). Повну Ed25519-перевірку вмикає SIGNING_PUBKEY, коли ключ видано.
+     */
+    public static String signatureStatus(HotCatalog.Build build) {
+        if (build == null) return "UNSIGNED";
+        if (build.isSigned()) return "SIGNED";
+        if (build.sha256 != null && !build.sha256.isEmpty()) return "SHA256";
+        return "UNSIGNED";
+    }
+
+    // ---------- перевірка оновлень (фон, без WorkManager-залежності) ----------
+
+    /** Опитати каталог і записати доступні оновлення в префи. */
+    public static void checkUpdatesAsync(Callback<Map<String, HotCatalog.Build>> cb) {
+        init(ApplicationLoader.applicationContext);
+        new Thread(() -> {
+            Map<String, HotCatalog.Build> found = new HashMap<>();
+            try {
+                String json = HotDownloader.get(HotConfig.CATALOG_URL);
+                HotCatalog catalog = HotCatalog.parse(json);
+                int appVer = appVersion();
+                for (HotModulesManager.InstalledInfo info : listInstalled()) {
+                    if (!info.active) continue;
+                    HotCatalog.Entry e = catalog.find(info.manifest.id);
+                    if (e == null) continue;
+                    HotCatalog.Build latest = e.latestCompatible(appVer);
+                    if (latest != null && latest.version.compareTo(info.manifest.version) > 0) {
+                        found.put(info.manifest.id, latest);
+                        prefs().edit().putString("update_available_" + info.manifest.id, latest.version).apply();
+                    } else {
+                        prefs().edit().remove("update_available_" + info.manifest.id).apply();
+                    }
+                }
+                notifyChanged();
+                post(cb, true, "", found);
+            } catch (Throwable e) {
+                FileLog.e("hotmods: update check failed", e);
+                post(cb, false, String.valueOf(e.getMessage()), found);
+            }
+        }, "hotmods-updates").start();
+    }
+
+    /** Версія доступного оновлення з останньої перевірки ("" = нема). */
+    public static String getUpdateAvailable(String moduleId) {
+        if (appContext == null || moduleId == null) return "";
+        return prefs().getString("update_available_" + moduleId, "");
+    }
+
+    public static void clearUpdateAvailable(String moduleId) {
+        if (appContext == null || moduleId == null) return;
+        prefs().edit().remove("update_available_" + moduleId).apply();
+    }
+
+    // ---------- бекап набору модулів (експорт/імпорт без сервера) ----------
+
+    /** JSON-набору: [{id,version,branch,enabled}] — для переносу на інший пристрій. */
+    public static String exportModuleSet() {
+        StringBuilder sb = new StringBuilder("[");
+        boolean first = true;
+        for (InstalledInfo info : listInstalled()) {
+            if (!info.active) continue;
+            if (!first) sb.append(",");
+            first = false;
+            sb.append("{\"id\":\"").append(info.manifest.id)
+                    .append("\",\"version\":\"").append(info.manifest.version)
+                    .append("\",\"branch\":\"").append(info.manifest.branch)
+                    .append("\",\"enabled\":").append(info.enabled).append("}");
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
+    /** Розбір імпортованого набору в сирі записи (id/version/branch/enabled). */
+    public static List<Map<String, String>> parseModuleSet(String json) {
+        List<Map<String, String>> res = new ArrayList<>();
+        if (json == null) return res;
+        try {
+            org.json.JSONArray arr = new org.json.JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                org.json.JSONObject o = arr.optJSONObject(i);
+                if (o == null) continue;
+                String id = o.optString("id", "");
+                if (id.isEmpty()) continue;
+                Map<String, String> m = new HashMap<>();
+                m.put("id", id);
+                m.put("version", o.optString("version", ""));
+                m.put("branch", o.optString("branch", "stable"));
+                m.put("enabled", o.optBoolean("enabled", true) ? "1" : "0");
+                res.add(m);
+            }
+        } catch (Throwable ignore) {
+        }
+        return res;
     }
 
     // ---------- каталог ----------
@@ -334,17 +431,8 @@ public final class HotModulesManager {
         for (InstalledInfo info : res) {
             listedIds.add(info.manifest.id);
         }
-        for (Map.Entry<String, String> entry : BUILTIN_ENTRIES.entrySet()) {
-            String bId = entry.getKey();
-            if (prefs().getBoolean("uninstalled_" + bId, false)) {
-                continue;
-            }
-            if (!listedIds.contains(bId)) {
-                boolean enabled = isModuleEnabled(bId);
-                Manifest m = new Manifest(bId, "1.0.0", "stable", entry.getValue(), BUILTIN_NAMES.get(bId), 0);
-                res.add(new InstalledInfo(m, null, enabled, true));
-            }
-        }
+        // 0 вбудованих: фейкові записи "1.0.0" більше не інжектимо.
+        // Все, що на диску — реальні .hmod з валідним manifest.json.
         Collections.sort(res, (a, b) -> {
             int c = a.manifest.id.compareTo(b.manifest.id);
             if (c != 0) return c;
@@ -585,6 +673,9 @@ public final class HotModulesManager {
                     getHandle(moduleId);
                 }
                 pruneOld(moduleId);
+                clearUpdateAvailable(moduleId);
+                clearLoadFailures(moduleId);
+                prefs().edit().remove("uninstalled_" + moduleId).apply();
                 notifyChanged();
                 postProgress(cb, true, m.version, null);
             } catch (Throwable e) {
@@ -708,11 +799,15 @@ public final class HotModulesManager {
             if (appContext == null) return null;
         }
         if (!isModuleEnabled(moduleId)) return null;
+        if (isQuarantined(moduleId)) {
+            // Карантин: модуль роняв клієнт 3+ рази. Юзер знімає вручну (перевстановлення).
+            FileLog.e("hotmods: quarantined, skip load: " + moduleId);
+            return null;
+        }
 
-        String entryClass = BUILTIN_ENTRIES.get(moduleId);
-        String version = prefs().getString("installed_" + moduleId, "1.0.0");
-        String name = BUILTIN_NAMES.get(moduleId);
-        if (name == null) name = moduleId;
+        String entryClass = null;
+        String version = prefs().getString("installed_" + moduleId, "");
+        String name = moduleId;
 
         File hmod = null;
         Manifest m = null;
@@ -732,29 +827,71 @@ public final class HotModulesManager {
         }
 
         if (m == null) {
-            if (entryClass == null) return null;
-            m = new Manifest(moduleId, version != null && !version.isEmpty() ? version : "1.0.0", "stable", entryClass, name, 0);
+            // Активна версія не знайдена (розсинхрон префів) — шукаємо будь-яку
+            // реальну версію на диску і беремо найновішу, одразу чинимо преф.
+            try {
+                File modDir = new File(root(), moduleId);
+                File[] vers = modDir.listFiles();
+                Manifest best = null;
+                File bestFile = null;
+                if (vers != null) {
+                    for (File vdir : vers) {
+                        if (!vdir.isDirectory()) continue;
+                        File c = new File(vdir, "module.hmod");
+                        if (!c.exists()) continue;
+                        try {
+                            Manifest cm = readManifest(c);
+                            if (!moduleId.equals(cm.id)) continue;
+                            if (best == null || cm.version.compareTo(best.version) > 0) {
+                                best = cm;
+                                bestFile = c;
+                            }
+                        } catch (Throwable ignore) {
+                        }
+                    }
+                }
+                if (best != null) {
+                    m = best;
+                    hmod = bestFile;
+                    entryClass = m.entry;
+                    name = m.name;
+                    prefs().edit().putString("installed_" + moduleId, m.version).apply();
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+
+        if (m == null || entryClass == null) {
+            // Немає реального .hmod на диску — модуля фактично немає (0 вбудованих).
+            return null;
         }
 
         Class<?> cls = null;
-        // 1. Try loading directly from APK ClassLoader (built-in compiled module)
-        try {
-            cls = appContext.getClassLoader().loadClass(entryClass);
-        } catch (ClassNotFoundException e) {
-            // 2. Fallback to DexClassLoader for dynamic modules
-            if (hmod != null && hmod.exists()) {
-                try {
-                    DexClassLoader loader = new DexClassLoader(hmod.getAbsolutePath(),
-                            dexOptDir().getAbsolutePath(), null, appContext.getClassLoader());
-                    cls = Class.forName(entryClass, true, loader);
-                } catch (Throwable dexEx) {
-                    FileLog.e("hotmods: DexClassLoader failed: " + moduleId, dexEx);
-                }
+        ClassLoader modLoader = null;
+        // 1. Динамічний .hmod з диска — основний шлях (0 вбудованих в APK).
+        // Кожен модуль вантажиться у ВЛАСНИЙ ізольований ClassLoader.
+        if (hmod != null && hmod.exists()) {
+            try {
+                DexClassLoader loader = new DexClassLoader(hmod.getAbsolutePath(),
+                        dexOptDir().getAbsolutePath(), null, appContext.getClassLoader());
+                modLoader = loader;
+                cls = Class.forName(entryClass, true, loader);
+            } catch (Throwable dexEx) {
+                FileLog.e("hotmods: DexClassLoader failed: " + moduleId, dexEx);
+            }
+        }
+        // 2. Запасний шлях: клас, реально скомпільований в APK (майбутні COMPILED_IN).
+        if (cls == null) {
+            try {
+                cls = appContext.getClassLoader().loadClass(entryClass);
+                modLoader = appContext.getClassLoader();
+            } catch (ClassNotFoundException ignore) {
             }
         }
 
         if (cls == null) {
             FileLog.e("hotmods: load failed, class not found: " + moduleId + " (" + entryClass + ")");
+            recordLoadFailure(moduleId);
             return null;
         }
 
@@ -762,22 +899,39 @@ public final class HotModulesManager {
             Object obj = cls.newInstance();
             if (!(obj instanceof HotModule)) {
                 FileLog.e("hotmods: entry is not HotModule: " + entryClass);
+                recordLoadFailure(moduleId);
                 return null;
             }
             HotModule mod = (HotModule) obj;
             InstalledInfo info = new InstalledInfo(m, hmod, true, true);
-            Handle handle = new Handle(info, mod);
+            Handle handle = new Handle(info, mod, modLoader);
             LOADED.put(moduleId, handle);
             try {
                 mod.onAttach(appContext, new HostImpl(moduleId));
             } catch (Throwable e) {
+                // Падіння в onAttach не роняє апку: знімаємо хендл, рахуємо провал.
                 FileLog.e("hotmods: onAttach failed: " + moduleId, e);
+                LOADED.remove(moduleId);
+                try {
+                    mod.onDetach();
+                } catch (Throwable ignore) {
+                }
+                recordLoadFailure(moduleId);
+                return null;
             }
+            clearLoadFailures(moduleId);
             return handle;
         } catch (Throwable e) {
             FileLog.e("hotmods: instantiation failed for " + moduleId, e);
+            recordLoadFailure(moduleId);
             return null;
         }
+    }
+
+    /** Зняти карантин вручну (перевстановлення / кнопка "Спробувати знову"). */
+    public static void unquarantine(String moduleId) {
+        clearLoadFailures(moduleId);
+        notifyChanged();
     }
 
     private static synchronized void dropLoaded(String moduleId) {

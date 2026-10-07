@@ -1,0 +1,34 @@
+name: hotmodules
+
+on:
+  push:
+    paths:
+      - 'tools/hotmod-sdk/**'
+      - 'TMessagesProj/src/main/assets/hotmodules/**'
+      - '.github/workflows/hotmodules.yml'
+  pull_request:
+    paths:
+      - 'tools/hotmod-sdk/**'
+      - 'TMessagesProj/src/main/assets/hotmodules/**'
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Lint bundled .hmod files
+        run: |
+          fail=0
+          for f in TMessagesProj/src/main/assets/hotmodules/*.hmod; do
+            python3 tools/hotmod-sdk/lint_manifest.py "$f" || fail=1
+          done
+          exit $fail
+      - name: Lint asset catalog
+        run: |
+          if [ -f TMessagesProj/src/main/assets/hotmodules/modules.json ]; then
+            python3 tools/hotmod-sdk/lint_manifest.py --catalog TMessagesProj/src/main/assets/hotmodules/modules.json --strict
+          fi

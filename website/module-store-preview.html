@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, max-width=420">
+<title>AmeModule Store — 3 варіанти</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0b0d12;color:#fff;font-family:-apple-system,'Segoe UI',Roboto,Arial,sans-serif;min-height:100vh}
+  a{color:inherit}
+  .topbar{position:sticky;top:0;z-index:50;background:#0b0d12ee;backdrop-filter:blur(12px);padding:14px 16px;border-bottom:1px solid #ffffff14}
+  .topbar h1{font-size:15px;letter-spacing:.02em}
+  .topbar p{font-size:12px;color:#8b93a7;margin-top:2px}
+  .variant-switch{display:flex;gap:8px;margin-top:12px}
+  .variant-switch button{flex:1;padding:10px;border-radius:12px;border:1px solid #ffffff1f;background:#161a23;color:#cfd6e4;font-size:13px;font-weight:700;cursor:pointer}
+  .variant-switch button.active{background:#6c63ff;border-color:#6c63ff;color:#fff}
+  .variant{display:none;padding:16px 14px 90px;max-width:430px;margin:0 auto}
+  .variant.active{display:block}
+  .phone{border:1px solid #ffffff17;border-radius:26px;overflow:hidden;background:#10131a}
+  .note{font-size:12px;color:#8b93a7;background:#161a23;border:1px dashed #ffffff22;border-radius:12px;padding:10px 12px;margin-bottom:12px;line-height:1.5}
+  .note b{color:#fff}
+
+  /* ============ VARIANT A: Telegram native list ============ */
+  .a-header{padding:18px 16px 8px}
+  .a-title{font-size:20px;font-weight:800}
+  .a-sub{font-size:13px;color:#8b93a7;margin-top:4px}
+  .a-onboard{margin:12px 16px;background:linear-gradient(135deg,#6c63ff,#9d7bff);border-radius:18px;padding:16px}
+  .a-onboard h3{font-size:15px}
+  .a-onboard p{font-size:12.5px;opacity:.9;margin:6px 0 12px;line-height:1.5}
+  .a-onboard button{background:#fff;color:#5b50e6;border:0;border-radius:11px;padding:10px 14px;font-weight:800;font-size:13px;width:100%;cursor:pointer}
+  .a-search{margin:8px 16px;background:#1b2030;border-radius:12px;padding:11px 13px;font-size:13.5px;color:#8b93a7}
+  .a-tabs{display:flex;gap:8px;margin:10px 16px}
+  .a-tabs span{font-size:13px;font-weight:700;padding:7px 13px;border-radius:99px;background:#1b2030;color:#8b93a7;cursor:pointer}
+  .a-tabs span.on{background:#6c63ff22;color:#a79dff;border:1px solid #6c63ff55}
+  .a-card{display:flex;gap:12px;align-items:center;background:#161a23;border-radius:16px;padding:12px;margin:8px 16px;cursor:pointer;border:1px solid transparent}
+  .a-card:active{transform:scale(.99)}
+  .a-ico{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+  .a-meta{flex:1;min-width:0}
+  .a-name{font-size:14.5px;font-weight:700}
+  .a-desc{font-size:12.5px;color:#8b93a7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .a-ver{font-size:11px;color:#5f6b85;margin-top:3px}
+  .a-btn{background:#6c63ff;color:#fff;border:0;border-radius:11px;padding:8px 14px;font-size:12.5px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .a-btn.installed{background:#1f6f43}
+  .a-btn:active{opacity:.8}
+  /* detail A */
+  .sheet{position:fixed;inset:0;z-index:100;display:none;align-items:flex-end;justify-content:center;background:#000a}
+  .sheet.open{display:flex}
+  .sheet-box{width:100%;max-width:430px;background:#141824;border-radius:22px 22px 0 0;padding:18px;max-height:88vh;overflow:auto;animation:up .22s ease}
+  @keyframes up{from{transform:translateY(30px);opacity:0}}
+  .grab{width:40px;height:4px;border-radius:99px;background:#ffffff2c;margin:0 auto 14px}
+  .d-row{display:flex;gap:12px;align-items:center}
+  .d-ico{width:56px;height:56px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:30px}
+  .d-stats{display:flex;gap:14px;margin:14px 0;font-size:12px;color:#8b93a7}
+  .d-stats b{color:#fff;font-size:13px;display:block}
+  .d-desc{font-size:13.5px;line-height:1.6;color:#c6cddd}
+  .d-verchips{display:flex;gap:8px;margin:12px 0;flex-wrap:wrap}
+  .d-verchips button{padding:7px 12px;border-radius:99px;border:1px solid #ffffff22;background:#1b2030;color:#cfd6e4;font-size:12px;font-weight:700;cursor:pointer}
+  .d-verchips button.on{background:#6c63ff;border-color:#6c63ff;color:#fff}
+  .d-changelog{background:#1b2030;border-radius:12px;padding:10px 12px;font-size:12.5px;color:#9aa3b8;margin-top:8px;line-height:1.5}
+  .d-install{position:sticky;bottom:0;margin-top:16px;background:#6c63ff;border:0;width:100%;padding:14px;border-radius:14px;color:#fff;font-weight:800;font-size:14px;cursor:pointer}
+  .d-verbtn{width:100%;margin-top:8px;background:transparent;border:1px solid #ffffff22;padding:11px;border-radius:12px;color:#9aa3b8;font-size:13px;cursor:pointer}
+
+  /* ============ VARIANT B: Marketplace grid ============ */
+  .b-hero{padding:20px 16px 4px}
+  .b-hero h2{font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .b-hero h2 span{background:linear-gradient(90deg,#6c63ff,#00d4ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .b-hero p{font-size:13px;color:#8b93a7;margin-top:6px;line-height:1.5}
+  .b-zero{margin:14px 16px;border:1px solid #6c63ff44;background:#6c63ff14;border-radius:18px;padding:16px;text-align:center}
+  .b-zero .big{font-size:34px}
+  .b-zero button{margin-top:10px;background:#fff;color:#111;border:0;padding:10px 18px;border-radius:99px;font-weight:800;cursor:pointer}
+  .b-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px 16px}
+  .b-card{background:#161a23;border:1px solid #ffffff12;border-radius:18px;padding:14px;cursor:pointer;position:relative;overflow:hidden}
+  .b-card .banner{position:absolute;top:0;left:0;right:0;height:56px;opacity:.9}
+  .b-card .b-ico{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-top:34px;position:relative;border:2px solid #161a23}
+  .b-card h4{font-size:13.5px;margin-top:8px}
+  .b-card p{font-size:11.5px;color:#8b93a7;margin-top:4px;line-height:1.45;height:32px;overflow:hidden}
+  .b-card .meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:11px;color:#8b93a7}
+  .b-card .get{background:#fff;color:#111;border:0;border-radius:99px;padding:6px 14px;font-weight:800;font-size:12px;cursor:pointer;margin-top:8px;width:100%}
+  .b-card.wide{grid-column:1/-1;display:flex;gap:12px;align-items:center}
+  .b-card.wide .b-ico{margin-top:0}
+  .b-card.wide div{flex:1}
+  /* detail B */
+  .b-sheet-box{width:100%;max-width:430px;background:#10131a;border-radius:24px 24px 0 0;max-height:90vh;overflow:auto;animation:up .22s ease}
+  .b-cover{height:110px;position:relative;display:flex;align-items:flex-end;padding:14px}
+  .b-cover .b-ico2{width:60px;height:60px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-size:32px;border:3px solid #10131a;margin-bottom:-28px;background:#222}
+  .b-body{padding:36px 18px 18px}
+
+  /* ============ VARIANT C: Minimal premium ============ */
+  .c-wrap{background:#f6f6f4;color:#141414;border-radius:26px;overflow:hidden}
+  .c-head{padding:22px 20px 6px}
+  .c-head h2{font-size:24px;font-weight:800;letter-spacing:-.03em}
+  .c-head p{font-size:13px;color:#6b6b6b;margin-top:6px}
+  .c-empty{margin:14px 16px;background:#141414;color:#fff;border-radius:20px;padding:20px;text-align:left}
+  .c-empty button{background:#d8ff3e;color:#141414;border:0;padding:11px 18px;border-radius:99px;font-weight:800;margin-top:12px;cursor:pointer}
+  .c-list{padding:8px 12px 16px}
+  .c-card{display:flex;gap:13px;background:#fff;border-radius:18px;padding:14px;margin:8px 4px;cursor:pointer;box-shadow:0 1px 0 #00000008;align-items:center}
+  .c-ico{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .c-name{font-size:14.5px;font-weight:800}
+  .c-desc{font-size:12.5px;color:#777;margin-top:2px;line-height:1.45}
+  .c-pills{display:flex;gap:6px;margin-top:7px}
+  .c-pills i{font-style:normal;font-size:10.5px;font-weight:700;background:#f0f0ec;padding:3px 8px;border-radius:99px;color:#555}
+  .c-get{flex-shrink:0;background:#141414;color:#fff;border:0;border-radius:99px;padding:9px 16px;font-weight:800;font-size:12.5px;cursor:pointer}
+  .c-sheet-box{width:100%;max-width:430px;background:#fff;color:#141414;border-radius:24px 24px 0 0;padding:20px;max-height:90vh;overflow:auto;animation:up .22s ease}
+  .c-sheet-box .d-desc{color:#444}
+  .c-sheet-box .d-changelog{background:#f2f2ee;color:#555}
+  .c-sheet-box .d-install{background:#141414}
+  .c-verlist{margin-top:10px;border-top:1px solid #eee}
+  .c-verlist .row{display:flex;justify-content:space-between;align-items:center;padding:12px 2px;border-bottom:1px solid #eee;cursor:pointer;font-size:13px}
+  .c-verlist .row.on{font-weight:800}
+  .c-verlist .row small{color:#888;display:block;font-weight:400;margin-top:2px}
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#fff;color:#111;padding:11px 18px;border-radius:99px;font-size:13px;font-weight:700;display:none;z-index:200;box-shadow:0 8px 30px #0008}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>🧩 AmeModule Store — інтерактивний макет</h1>
+  <p>0 модулів в APK • перший запуск → онбординг → магазин • клік по картці → деталі + версії</p>
+  <div class="variant-switch">
+    <button id="btnA" class="active" onclick="show('A')">A · Telegram</button>
+    <button id="btnB" onclick="show('B')">B · Market</button>
+    <button id="btnC" onclick="show('C')">C · Minimal</button>
+  </div>
+</div>
+
+<!-- ================= VARIANT A ================= -->
+<div class="variant active" id="vA"><div class="phone">
+  <div class="a-header"><div class="a-title">Модулі</div><div class="a-sub" id="aCount">0 встановлено • 8 доступно</div></div>
+  <div class="a-onboard" id="aOnboard">
+    <h3>👋 Чистий клієнт — 0 модулів</h3>
+    <p>В APK нічого не вшито. Оберіть потрібне — все ставиться як .hmod з репозиторію або офлайн-копії.</p>
+    <button onclick="document.getElementById('aList').scrollIntoView({behavior:'smooth'})">Обрати модулі ↓</button>
+  </div>
+  <div class="a-search">🔍 &nbsp; Пошук модулів… (ghost, плеєр…)</div>
+  <div class="a-tabs"><span class="on" onclick="tabA('store',this)">Магазин</span><span onclick="tabA('installed',this)">Встановлені · <b id="aInstN">0</b></span></div>
+  <div id="aList"></div>
+  <div style="height:14px"></div>
+</div></div>
+
+<!-- ================= VARIANT B ================= -->
+<div class="variant" id="vB"><div class="phone">
+  <div class="b-hero"><h2>Магазин <span>модулів</span></h2><p>Розширюйте AmeGram як VS Code — ставте тільки те, чим користуєтесь.</p></div>
+  <div class="b-zero" id="bOnboard"><div class="big">📦</div><div style="font-weight:800;margin-top:6px">Почніть з чистого аркуша</div><div style="font-size:12.5px;color:#9aa3b8;margin-top:4px">0 модулів встановлено. Зберіть свій AmeGram за 1 хвилину.</div><button>Підібрати модулі ↓</button></div>
+  <div class="b-grid" id="bList"></div>
+</div></div>
+
+<!-- ================= VARIANT C ================= -->
+<div class="variant" id="vC"><div class="c-wrap">
+  <div class="c-head"><h2>Модулі</h2><p>Легкий клієнт. Нуль зайвого — тільки ваше.</p></div>
+  <div class="c-empty" id="cOnboard"><div style="font-size:13px;opacity:.7">ПЕРШИЙ ЗАПУСК · 0 МОДУЛІВ</div><div style="font-size:19px;font-weight:800;margin-top:6px">Зберіть свій AmeGram</div><div style="font-size:13px;opacity:.7;margin-top:4px">Ghost, плеєр, сховище… ставте в 1 тап.</div><button>Обрати модулі ↓</button></div>
+  <div class="c-list" id="cList"></div>
+</div></div>
+
+<!-- Detail sheet (shared logic, per-variant styling via class swap) -->
+<div class="sheet" id="sheet" onclick="if(event.target===this)closeSheet()"><div class="sheet-box" id="sheetBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const MODS = [
+ {id:'ghost', icon:'👻', c:'linear-gradient(135deg,#6c63ff,#9d7bff)', title:'Режим Привида', short:'Невидимка: без «online» і звітів прочитання', dl:'128K', rate:'4.9', size:'48 КБ', ver:[{v:'2.1.0',b:'stable',d:'12 вер 2026',t:'Приховування online + typing. Новий No-Op шлюз — без модуля клієнт працює як звичайний Telegram.',full:'Повний невидимий режим: приховує online, typing, звіти прочитання. Працює через типобезпечний шлюз GhostContract.'},{v:'2.0.3',b:'stable',d:'28 лип 2026',t:'Фікс мітки «was recently».',full:'Стабільна гілка 2.0.x. Тільки приховування online.'},{v:'2.2.0-beta',b:'beta',d:'02 жов 2026',t:'Бета: приховування запису голосових.',full:'Бета-гілка: + приховування recording voice. Можливі баги.'}]},
+ {id:'player', icon:'🎵', c:'linear-gradient(135deg,#ff6b9d,#ffa26b)', title:'Плеєр + Тексти', short:'Аудіоплеєр, тексти пісень і кеш треків', dl:'96K', rate:'4.8', size:'1.9 МБ', ver:[{v:'3.4.0',b:'stable',d:'01 жов 2026',t:'Тексти пісень синхронно + фоновий кеш.',full:'Повноцінний плеєр: плейлисти, синхронні тексти, офлайн-кеш. Найважчий модуль — 1.9 МБ.'},{v:'3.3.1',b:'stable',d:'15 вер 2026',t:'Фікс обкладинок.',full:'Попередній стабільний реліз.'},{v:'3.5.0-alpha',b:'alpha',d:'05 жов 2026',t:'Експеримент: еквалайзер.',full:'Альфа з еквалайзером. Тільки для тестів.'}]},
+ {id:'vault', icon:'🔐', c:'linear-gradient(135deg,#11998e,#38ef7d)', title:'Подвійне дно', short:'Приховані чати за другим PIN-кодом', dl:'74K', rate:'4.9', size:'96 КБ', ver:[{v:'1.8.0',b:'stable',d:'20 вер 2026',t:'Другий PIN + автоблокування за 30 сек.',full:'Сховище чатів: окремий простір за другим PIN. Паніка-жест ховає все миттєво.'},{v:'1.7.2',b:'stable',d:'02 вер 2026',t:'Фікс сповіщень сховища.',full:'Попередній стабільний.'}]},
+ {id:'antiblock', icon:'🛡️', c:'linear-gradient(135deg,#2193b0,#6dd5ed)', title:'Антиблок', short:'Обхід блокувань: MTProto-проксі авто-вибір', dl:'61K', rate:'4.7', size:'380 КБ', ver:[{v:'1.5.2',b:'stable',d:'25 вер 2026',t:'Авто-перебір проксі, ping-тест.',full:'Антиблокування: вбудований список проксі, авто-вибір найшвидшого, snowflake fallback.'},{v:'1.6.0-beta',b:'beta',d:'06 жов 2026',t:'DoH + фрагментація TLS.',full:'Бета з новим транспортом.'}]},
+ {id:'profile', icon:'💎', c:'linear-gradient(135deg,#f7971e,#ffd200)', title:'Аме-профіль', short:'Кастомні бейджі, статуси й оформлення', dl:'52K', rate:'4.6', size:'190 КБ', ver:[{v:'1.2.0',b:'stable',d:'18 вер 2026',t:'Анімований статус + кастом ID-кольори.',full:'Кастомізація профілю: бейджі, анімований емодзі-статус, кольоровий ID.'},{v:'1.1.4',b:'stable',d:'30 сер 2026',t:'Фікс темної теми.',full:'Попередній стабільний.'}]},
+ {id:'badges', icon:'🏅', c:'linear-gradient(135deg,#8e2de2,#4a00e0)', title:'Бейджики', short:'Ранги в чатах: адмін, олд, кит', dl:'38K', rate:'4.5', size:'280 КБ', ver:[{v:'1.0.9',b:'stable',d:'10 вер 2026',t:'Кастомні ранги + імпорт з чату.',full:'Бейджі біля ніку: ранг за активністю, кастомні титули.'}]},
+ {id:'hotfix', icon:'⚡', c:'linear-gradient(135deg,#333,#777)', title:'Хотфікси', short:'Термінові патчі без оновлення APK', dl:'44K', rate:'4.4', size:'48 КБ', ver:[{v:'1.0.4',b:'stable',d:'07 жов 2026',t:'Канал термінових патчів.',full:'Системний модуль: тягне термінові виправлення ядра без переустановки.'}]},
+ {id:'guide', icon:'🧭', c:'linear-gradient(135deg,#00c9ff,#92fe9d)', title:'Гід', short:'Навчання жестам і фішкам AmeGram', dl:'21K', rate:'4.7', size:'96 КБ', ver:[{v:'1.3.0',b:'stable',d:'05 вер 2026',t:'Інтерактивний тур після установки.',full:'Онбординг-гід: показує жести, сховані налаштування, гарячі клавіші.'}]},
+];
+let installed = {}; // id -> version string
+let sheetMod = null, sheetVerIdx = 0, styleMode = 'A';
+
+function show(v){
+  styleMode=v;
+  ['A','B','C'].forEach(x=>{
+    document.getElementById('v'+x).classList.toggle('active', x===v);
+    document.getElementById('btn'+x).classList.toggle('active', x===v);
+  });
+  window.scrollTo({top:0});
+}
+function toast(t){const e=document.getElementById('toast');e.textContent=t;e.style.display='block';clearTimeout(e._t);e._t=setTimeout(()=>e.style.display='none',1800);}
+function isInst(id){return !!installed[id];}
+
+/* ---- render A ---- */
+let tabMode='store';
+function tabA(m,el){tabMode=m;document.querySelectorAll('.a-tabs span').forEach(s=>s.classList.remove('on'));el.classList.add('on');renderA();}
+function renderA(){
+  const box=document.getElementById('aList');box.innerHTML='';
+  const list=MODS.filter(m=>tabMode==='store'?!isInst(m.id):isInst(m.id));
+  document.getElementById('aInstN').textContent=Object.keys(installed).length;
+  document.getElementById('aCount').textContent=Object.keys(installed).length+' встановлено • '+MODS.filter(m=>!isInst(m.id)).length+' доступно';
+  document.getElementById('aOnboard').style.display=Object.keys(installed).length?'none':'block';
+  if(!list.length){box.innerHTML='<div style="padding:26px;text-align:center;color:#8b93a7;font-size:13px">'+(tabMode==='store'?'✅ Все встановлено — загляньте у «Встановлені»':'Порожньо. Поставте щось із Магазину')+'</div>';return;}
+  list.forEach(m=>{
+    const v=m.ver[0];
+    const d=document.createElement('div');d.className='a-card';
+    d.innerHTML=`<div class="a-ico" style="background:${m.c}">${m.icon}</div>
+      <div class="a-meta"><div class="a-name">${m.title}</div><div class="a-desc">${m.short}</div><div class="a-ver">${v.b} • ${v.v} • ${m.size}</div></div>
+      <button class="a-btn ${isInst(m.id)?'installed':''}">${isInst(m.id)?'✓':'↓ '+(tabMode==='store'?'Взяти':'')}</button>`;
+    d.onclick=(e)=>{ if(e.target.tagName==='BUTTON'){install(m.id,m.ver[0].v);return;} openSheet(m.id,0); };
+    box.appendChild(d);
+  });
+}
+/* ---- render B ---- */
+function renderB(){
+  const box=document.getElementById('bList');box.innerHTML='';
+  document.getElementById('bOnboard').style.display=Object.keys(installed).length?'none':'block';
+  const list=MODS.filter(m=>!isInst(m.id)); // у магазині тільки НЕвстановлені
+  if(!list.length){box.innerHTML='<div style="grid-column:1/-1;text-align:center;color:#8b93a7;padding:20px">✅ Все встановлено</div>';return;}
+  list.forEach((m,i)=>{
+    const d=document.createElement('div');d.className='b-card'+(i===0?' wide':'');
+    d.innerHTML=`<div class="banner" style="background:${m.c}"></div>
+      <div class="b-ico" style="background:#22244a">${m.icon}</div>
+      <div><h4>${m.title}</h4><p>${m.short}</p><div class="meta"><span>★ ${m.rate} · ${m.dl}</span><span>${m.ver[0].v}</span></div>
+      <button class="get">Отримати</button></div>`;
+    d.onclick=(e)=>{ if(e.target.tagName==='BUTTON'){install(m.id,m.ver[0].v);return;} openSheet(m.id,0); };
+    box.appendChild(d);
+  });
+  // встановлені — окремою смугою знизу
+  const inst=MODS.filter(m=>isInst(m.id));
+  if(inst.length){
+    const h=document.createElement('div');h.style.cssText='grid-column:1/-1;color:#8b93a7;font-size:12px;margin-top:6px';h.textContent='ВСТАНОВЛЕНО · '+inst.length;box.appendChild(h);
+    inst.forEach(m=>{
+      const d=document.createElement('div');d.className='b-card';d.style.opacity='.75';
+      d.innerHTML=`<div class="b-ico" style="background:#1f6f43;margin-top:0">${m.icon}</div><h4>${m.title} ✓</h4><p>${installed[m.id]}</p>`;
+      d.onclick=()=>openSheet(m.id,0);box.appendChild(d);
+    });
+  }
+}
+/* ---- render C ---- */
+function renderC(){
+  const box=document.getElementById('cList');box.innerHTML='';
+  document.getElementById('cOnboard').style.display=Object.keys(installed).length?'none':'block';
+  const list=MODS.filter(m=>!isInst(m.id));
+  if(!list.length){box.innerHTML='<div style="text-align:center;padding:20px;color:#777">Все встановлено ✓</div>';return;}
+  list.forEach(m=>{
+    const d=document.createElement('div');d.className='c-card';
+    d.innerHTML=`<div class="c-ico" style="background:${m.c}22">${m.icon}</div>
+      <div style="flex:1"><div class="c-name">${m.title}</div><div class="c-desc">${m.short}</div>
+      <div class="c-pills"><i>${m.ver[0].b}</i><i>${m.ver[0].v}</i><i>★ ${m.rate}</i></div></div>
+      <button class="c-get">Взяти</button>`;
+    d.onclick=(e)=>{ if(e.target.tagName==='BUTTON'){install(m.id,m.ver[0].v);return;} openSheet(m.id,0); };
+    box.appendChild(d);
+  });
+}
+function install(id,v){installed[id]=v;toast('✓ '+id+' '+v+' встановлено');rerender();openSheet(id,0);}
+function removeMod(id){delete installed[id];toast('Видалено '+id);rerender();closeSheet();}
+function rerender(){renderA();renderB();renderC();}
+
+/* ---- detail sheet ---- */
+function openSheet(id,idx){
+  const m=MODS.find(x=>x.id===id);sheetMod=m;sheetVerIdx=idx;
+  const v=m.ver[idx];
+  const box=document.getElementById('sheetBox');
+  // стилізація під обраний варіант
+  box.className = styleMode==='C' ? 'c-sheet-box' : styleMode==='B' ? 'b-sheet-box' : 'sheet-box';
+  const btnLabel = isInst(id) ? (installed[id]===v.v ? '✓ Встановлено · Перевстановити' : 'Оновити до '+v.v) : 'Встановити '+m.title+' · '+v.v;
+  let inner='';
+  if(styleMode==='B'){
+    inner+=`<div class="b-cover" style="background:${m.c}"><div class="b-ico2">${m.icon}</div></div><div class="b-body">`;
+  } else {
+    inner+=`<div class="grab"></div><div class="d-row"><div class="d-ico" style="background:${m.c}">${m.icon}</div>
+      <div><div style="font-weight:800;font-size:16px">${m.title}</div><div style="font-size:12px;color:#8b93a7">★ ${m.rate} · ${m.dl} завантажень · ${m.size}</div></div></div><div>`;
+  }
+  inner+=`<div class="d-stats"><span><b>${v.v}</b>версія</span><span><b>${v.b}</b>гілка</span><span><b>${v.d}</b>реліз</span><span><b>${m.size}</b>розмір</span></div>
+    <div class="d-desc" id="dDesc">${v.full}</div>
+    <div style="font-size:12px;font-weight:800;color:#8b93a7;margin-top:14px">ВЕРСІЯ · натисни щоб змінити опис ↓</div>
+    <div class="d-verchips">${m.ver.map((x,i)=>`<button class="${i===idx?'on':''}" onclick="openSheet('${m.id}',${i})">${x.b} · ${x.v}</button>`).join('')}</div>
+    <div class="d-changelog">📝 <b>Що нового (${v.v}):</b> ${v.t}</div>
+    <button class="d-install" onclick="install('${m.id}','${v.v}')">${btnLabel}</button>
+    <button class="d-verbtn" onclick="openSheet('${m.id}',${idx})">▤ Всі версії (${m.ver.length}) — гортай чипи вище</button>
+    ${isInst(m.id)?`<button class="d-verbtn" style="color:#ff7a7a;border-color:#ff7a7a44" onclick="removeMod('${m.id}')">Видалити модуль</button>`:''}
+    <button class="d-verbtn" onclick="closeSheet()">Закрити</button></div>`;
+  box.innerHTML=inner;
+  document.getElementById('sheet').classList.add('open');
+}
+function closeSheet(){document.getElementById('sheet').classList.remove('open');}
+rerender();
+</script>
+</body>
+</html>

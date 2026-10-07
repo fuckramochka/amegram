@@ -1972,6 +1972,20 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     } catch (Throwable e) {
                         FileLog.e(e);
                     }
+                } else if ("amegram".equals(intent.getData() != null ? intent.getData().getScheme() : "")
+                        && ("module".equals(intent.getData().getHost()) || "modules".equals(intent.getData().getHost()))) {
+                    try {
+                        final android.net.Uri moduleUri = intent.getData();
+                        AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                app.amegram.hot.ui.HotModuleDeepLink.open(LaunchActivity.this, moduleUri, null);
+                            } catch (Throwable e) {
+                                FileLog.e(e);
+                            }
+                        }, 400);
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
                 } else if (Intent.ACTION_SEND_MULTIPLE.equals(intent.getAction())) {
                     boolean error = false;
                     try {

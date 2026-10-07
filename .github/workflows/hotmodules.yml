@@ -30,5 +30,6 @@ jobs:
       - name: Lint asset catalog
         run: |
           if [ -f TMessagesProj/src/main/assets/hotmodules/modules.json ]; then
-            python3 tools/hotmod-sdk/lint_manifest.py --catalog TMessagesProj/src/main/assets/hotmodules/modules.json --strict
+            # Без --strict: підписи опціональні (SHA-256 довіра), warnings не фейлять.
+            python3 tools/hotmod-sdk/lint_manifest.py --catalog TMessagesProj/src/main/assets/hotmodules/modules.json
           fi

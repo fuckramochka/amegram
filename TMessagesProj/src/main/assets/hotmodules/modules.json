@@ -10,14 +10,15 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.1.hmod",
-          "sha256": "25d1a89286dfcbc54dd5cb9cbbd68689f360d3c4cba1ac838d2d1111db03957e",
+          "sha256": "04ea0501ff1e9c41871473ce73b2c463a5f8611aefc46f21f9598d2d1093b357",
           "minApp": 7112,
           "changelog": "Тумблери прив'язані до реальних префів; фон/блур тільки в олівці плеєра.",
           "permissions": [
             "hook_ui",
             "network",
             "storage"
-          ]
+          ],
+          "sizeBytes": 36431
         }
       },
       "history": [
@@ -27,7 +28,13 @@
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.0.hmod",
           "sha256": "1cc980103ff76c0a3190767b34fd075d36204cc528401607270768bbe0a48428",
           "minApp": 7112,
-          "changelog": "Повний пошук музики, відтворення, стрімінг та кешування."
+          "changelog": "Повний пошук музики, відтворення, стрімінг та кешування.",
+          "permissions": [
+            "hook_ui",
+            "network",
+            "storage"
+          ],
+          "sizeBytes": 19523
         }
       ],
       "author": "AmeGram Team",
@@ -43,12 +50,13 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.1.hmod",
-          "sha256": "a112430967cca660bc3e6a025f208f3659dbc8587e57ef0c25cc14338b9b8032",
+          "sha256": "ed991c2847e608da694517c0fa7bb0d07f501b076e9f75a85d013e72626fb1e4",
           "minApp": 7112,
           "changelog": "Привид+видалені одним модулем; синк префів у ядро; гейт вимкнення.",
           "permissions": [
             "hook_net"
-          ]
+          ],
+          "sizeBytes": 3485
         }
       },
       "history": [
@@ -58,7 +66,11 @@
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.0.hmod",
           "sha256": "9ee109bc98f44f3e5ec2c101805f468564246f98a9b2a85271010fcb08be95c5",
           "minApp": 7112,
-          "changelog": "Перехоплення на рівні мережі: readHistory, readStories, typing та offline статус."
+          "changelog": "Перехоплення на рівні мережі: readHistory, readStories, typing та offline статус.",
+          "permissions": [
+            "hook_net"
+          ],
+          "sizeBytes": 2003
         }
       ],
       "author": "AmeGram Team",
@@ -74,13 +86,14 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ame-1.0.0.hmod",
-          "sha256": "3de3a3968a5bfca3fc084a358678147ed9b6f6344d408bbb903f0cb855c5f558",
+          "sha256": "e3c25317f87bad608d8a39810f9929d29ec61a14fae8652660a1b14c60d83774",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "hook_ui",
             "storage"
-          ]
+          ],
+          "sizeBytes": 45210
         }
       },
       "history": [],
@@ -97,13 +110,14 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/vault-1.0.0.hmod",
-          "sha256": "54426aeb1a36491526eac3696bfc8b985201749e8ecdde730d78c99b2824c783",
+          "sha256": "cafb88f935cdece7dfdc1d99aef683e57acad091c50fa763d1502575844c7e5e",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "storage",
             "network"
-          ]
+          ],
+          "sizeBytes": 50680
         }
       },
       "history": [],
@@ -120,13 +134,14 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/tiktok-1.0.0.hmod",
-          "sha256": "6e057038be19e25cfe2eed9020c8b2d4329b334392814f94b2f3dc03e74c92c5",
+          "sha256": "25315ac3c28526c1504395e82b97b6bb06995fe3129b8e8f7ba2e37e73561c96",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "network",
             "storage"
-          ]
+          ],
+          "sizeBytes": 19281
         }
       },
       "history": [],
@@ -143,12 +158,13 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.0.hmod",
-          "sha256": "228b1041ee59646d802c1d7f0db120fd40969e7300d3fe894bfc492fadd6415c",
+          "sha256": "46e4853e9becb7879752868ea020be8573f5cf068d909c7172b4cf0c1dc22095",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "network"
-          ]
+          ],
+          "sizeBytes": 5615
         }
       },
       "history": [],
@@ -165,12 +181,13 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.1.hmod",
-          "sha256": "55f07fd9dcb37df5c3c86b9e226768744e437be37c12fb939f207c26c69325c0",
+          "sha256": "d3491cb67586ba3b9a25ea50bc2c5b5e8b3687c9a14229b11ae9ae3b53e95f66",
           "minApp": 7112,
           "changelog": "Тільки Nano vs Gemini API (3.5-flash-lite); кнопка Get Key в AI Studio.",
           "permissions": [
             "network"
-          ]
+          ],
+          "sizeBytes": 10215
         }
       },
       "history": [
@@ -180,7 +197,11 @@
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.0.hmod",
           "sha256": "9192bc35b59bfbce42ac74b9b1afd51125c6ed8c4b71eb9bac124b5d9695f532",
           "minApp": 7112,
-          "changelog": "Чат зі супутником, персони Ame та KAngel."
+          "changelog": "Чат зі супутником, персони Ame та KAngel.",
+          "permissions": [
+            "network"
+          ],
+          "sizeBytes": 5751
         }
       ],
       "author": "AmeGram Team",
@@ -196,12 +217,13 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.1.hmod",
-          "sha256": "c9345f52c0c7c274592699b6c88866aed0465c6187dbb11a225c47fd8e3a0b17",
+          "sha256": "e9a7c99d0e027d61bbdb98ab7f50f3255eac94eb8f627bda10494c4c30b334a6",
           "minApp": 7112,
           "changelog": "Видалені переїхали в привида; тут безліміти/буст/жести.",
           "permissions": [
             "hook_net"
-          ]
+          ],
+          "sizeBytes": 4402
         }
       },
       "history": [
@@ -211,7 +233,11 @@
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.0.hmod",
           "sha256": "e933178f8474f3e64d78e9edb597915697e89641ba1f6002968888b5961da3b9",
           "minApp": 7112,
-          "changelog": "Оптимізації клієнта, безліміти та збереження повідомлень."
+          "changelog": "Оптимізації клієнта, безліміти та збереження повідомлень.",
+          "permissions": [
+            "hook_net"
+          ],
+          "sizeBytes": 3006
         }
       ],
       "author": "AmeGram Team",
@@ -227,13 +253,14 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/automation-1.0.0.hmod",
-          "sha256": "5777bd6c50f47086bd1dee1da2bd1acf85d37b785944b916e788e5033244f6d5",
+          "sha256": "9c37aa34a997bb587afd5c4ca6ac4c1bf641c930b6a1134116fddc885ec064af",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "background",
             "storage"
-          ]
+          ],
+          "sizeBytes": 2613
         }
       },
       "history": [],
@@ -250,10 +277,11 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
-          "sha256": "85c907a37e80d85ee0725cd101b9bf023e2cff394479d7e222767d7a397adf72",
+          "sha256": "004940bc6582cdc137d33977af0f9b8f26e4f86ff0f4792a1148f43739bb2b1d",
           "minApp": 7112,
           "changelog": "",
-          "permissions": []
+          "permissions": [],
+          "sizeBytes": 2209
         }
       },
       "history": [],

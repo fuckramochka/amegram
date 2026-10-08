@@ -202,6 +202,26 @@ public class MiogramPushSheet extends BottomSheet {
             refreshAll();
         });
 
+        boolean showTray = true;
+        try {
+            showTray = NaConfig.INSTANCE.getPushServiceTypeInAppDialog().Bool();
+        } catch (Throwable ignore) {}
+        final boolean curTray = showTray;
+        addAction(context, curTray
+                ? MiogramLocale.get("Приховати шторку сервісу (тихий фон)", "Скрыть шторку сервиса (тихий фон)", "Hide service notification (quiet)")
+                : MiogramLocale.get("Показати шторку сервісу", "Показать шторку сервиса", "Show service notification"),
+                curTray ? 0x3323836E : 0x18FFFFFF,
+                curTray ? 0xFFFFFFFF : 0xFFD2DBE3, v -> {
+            try {
+                NaConfig.INSTANCE.getPushServiceTypeInAppDialog().setConfigBool(!curTray);
+                ApplicationLoader.startPushService();
+                Toast.makeText(context, !curTray
+                        ? MiogramLocale.get("Шторка видима", "Шторка видима", "Tray icon visible")
+                        : MiogramLocale.get("Сервіс у тихому режимі", "Сервис в тихом режиме", "Service quiet"), Toast.LENGTH_SHORT).show();
+            } catch (Throwable ignore) {}
+            refreshAll();
+        });
+
         TextView hint = new TextView(context);
         hint.setText(MiogramLocale.get(
                 "Якщо токен OK, а пуші при закритому додатку все одно не йдуть — рветься серверна ланка (FCM-ключ api_id) або вбивця фону в прошивці. Keep-alive обходить обидві проблеми ціною батареї.",

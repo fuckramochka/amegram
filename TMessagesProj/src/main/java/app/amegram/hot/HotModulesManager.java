@@ -112,6 +112,10 @@ public final class HotModulesManager {
         if (appContext == null && context != null) {
             appContext = context.getApplicationContext();
         }
+        if (appContext != null) {
+            maybeResetQuarantineEpoch();
+            ensureInstalledAreReadOnly();
+        }
     }
 
     private static SharedPreferences prefs() {
@@ -590,6 +594,7 @@ public final class HotModulesManager {
                     post(cb, false, "rename failed", null);
                     return;
                 }
+                makeReadOnly(dest);
                 prefs().edit().putString("installed_" + m.id, m.version)
                         .putBoolean("enabled_" + m.id, enable).apply();
                 if (enable) {
@@ -688,6 +693,8 @@ public final class HotModulesManager {
                     postProgress(cb, false, "Не вдалося зберегти модуль", null);
                     return;
                 }
+                // Android ріже dex із файла на запис — одразу read-only.
+                makeReadOnly(dest);
                 boolean wasEnabled = prefs().getBoolean("enabled_" + moduleId, false);
                 prefs().edit().putString("installed_" + moduleId, m.version).apply();
                 // Старий Handle кешований — без dropLoaded новий код не підхопиться.
@@ -998,6 +1005,8 @@ public final class HotModulesManager {
         // Кожен модуль вантажиться у ВЛАСНИЙ ізольований ClassLoader.
         if (hmod != null && hmod.exists()) {
             try {
+                // Пояс безпеки: dex із writable-файла система відхиляє.
+                makeReadOnly(hmod);
                 DexClassLoader loader = new DexClassLoader(hmod.getAbsolutePath(),
                         dexOptDir().getAbsolutePath(), null, appContext.getClassLoader());
                 modLoader = loader;
@@ -1067,6 +1076,63 @@ public final class HotModulesManager {
     public static void unquarantine(String moduleId) {
         clearLoadFailures(moduleId);
         notifyChanged();
+    }
+
+    /**
+     * Епоха карантину: коли виправляється СИСТЕМНИЙ баг завантаження
+     * (напр. writable-dex), старі лічильники провалів втрачають сенс —
+     * зносимо їх мовчки один раз, щоб модулі не лишались мертвими назавжди.
+     */
+    private static final int QUARANTINE_EPOCH = 2;
+
+    private static void maybeResetQuarantineEpoch() {
+        try {
+            SharedPreferences p = prefs();
+            if (p.getInt("quarantine_epoch", 0) >= QUARANTINE_EPOCH) return;
+            SharedPreferences.Editor e = p.edit();
+            for (String k : new java.util.ArrayList<>(p.getAll().keySet())) {
+                if (k.startsWith("loadfail_")) e.remove(k);
+            }
+            e.putInt("quarantine_epoch", QUARANTINE_EPOCH).apply();
+        } catch (Throwable ignore) {
+        }
+    }
+
+    /**
+     * Android не вантажить dex із файла, доступного на запис
+     * (SecurityException: Writable dex file is not allowed).
+     * Тому кожен збережений .hmod одразу робимо read-only.
+     * Існуючі файли чинимо тут же — без перевстановлення.
+     */
+    private static void makeReadOnly(File f) {
+        try {
+            if (f == null || !f.exists()) return;
+            f.setReadOnly();
+            f.setWritable(false, false);
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private static volatile boolean readOnlySweepDone = false;
+
+    private static void ensureInstalledAreReadOnly() {
+        if (readOnlySweepDone) return;
+        readOnlySweepDone = true;
+        try {
+            File r = root();
+            File[] modDirs = r.listFiles();
+            if (modDirs == null) return;
+            for (File modDir : modDirs) {
+                if (!modDir.isDirectory()) continue;
+                File[] vers = modDir.listFiles();
+                if (vers == null) continue;
+                for (File vdir : vers) {
+                    if (!vdir.isDirectory()) continue;
+                    makeReadOnly(new File(vdir, "module.hmod"));
+                }
+            }
+        } catch (Throwable ignore) {
+        }
     }
 
     private static synchronized void dropLoaded(String moduleId) {

@@ -50,6 +50,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
     private int chatsRow;
     private int privacyRow;
     private int mioMomentsRow;
+    private int pushRow;
 
     // Group 2: Додаткові фішки, ШІ та плагіни
     private int headerExtrasRow;
@@ -99,6 +100,7 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         chatsRow = addRow();
         privacyRow = addRow();
         mioMomentsRow = addRow();
+        pushRow = addRow();
 
         // Штучний інтелект і плагіни
         headerAboutRow = addRow(); // using headerAboutRow as 3rd header
@@ -161,6 +163,10 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new MiogramPrivacySettingsActivity());
         } else if (position == mioMomentsRow) {
             presentFragment(new tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity());
+        } else if (position == pushRow) {
+            try {
+                new app.miogram.bridge.push.MiogramPushSheet(getParentActivity(), getResourceProvider()).show();
+            } catch (Throwable ignore) {}
         }
         // Штучний інтелект і плагіни
         else if (position == companionRow) {
@@ -346,6 +352,13 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
                                 R.drawable.msg_delete,
                                 false
                         );
+                    } else if (position == pushRow) {
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Сповіщення та фон", "Уведомления и фон", "Notifications & background"),
+                                app.miogram.bridge.push.MiogramPushSheet.getShortStatus(),
+                                R.drawable.msg_notifications_solar,
+                                true
+                        );
                     }
                     // Штучний інтелект і плагіни
                     else if (position == companionRow) {
@@ -431,6 +444,11 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
         }
         if (listAdapter != null) {
             listAdapter.notifyDataSetChanged();
+        }
+        // Проактивний нудж: батарея ріже фон — головна причина "вмираючих" пушів.
+        try {
+            app.miogram.bridge.push.MiogramPushNudge.maybeShow(this);
+        } catch (Throwable ignore) {
         }
     }
 

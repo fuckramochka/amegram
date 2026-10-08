@@ -463,6 +463,18 @@ public final class HotModulesManager {
         }
     }
 
+    /** Чи є в .hmod код (classes.dex). Legacy source-only збірки — ні. */
+    public static boolean zipHasDex(File hmod) {
+        try (ZipFile zip = new ZipFile(hmod)) {
+            java.util.Enumeration<? extends ZipEntry> en = zip.entries();
+            while (en.hasMoreElements()) {
+                if (en.nextElement().getName().endsWith(".dex")) return true;
+            }
+        } catch (Throwable ignore) {
+        }
+        return false;
+    }
+
     // ---------- реактивні слухачі змін ----------
 
     public interface ModulesChangeListener {
@@ -648,6 +660,16 @@ public final class HotModulesManager {
                 if (!m.id.equals(moduleId)) {
                     tmp.delete();
                     postProgress(cb, false, "Невідповідність id: " + m.id, null);
+                    return;
+                }
+                if (!zipHasDex(tmp)) {
+                    // Legacy source-only артефакт (є в історії 1.0.0): маніфест валідний,
+                    // але коду всередині нема — ставити нічого, ріжемо одразу зі змістом.
+                    tmp.delete();
+                    postProgress(cb, false, MiogramLocale.get(
+                            "Збірка v" + m.version + " без коду (legacy) — виберіть новішу",
+                            "Сборка v" + m.version + " без кода (legacy) — выберите новее",
+                            "Build v" + m.version + " has no code (legacy) — pick a newer one"), null);
                     return;
                 }
                 File vdir = new File(new File(root(), moduleId), m.version);

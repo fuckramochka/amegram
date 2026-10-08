@@ -27,6 +27,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import app.amegram.core.modules.ModuleManager;
+import app.amegram.hot.HotCatalog;
+import app.amegram.hot.HotModulesManager;
+import app.amegram.hot.ui.HotModuleDetailSheet;
+import app.amegram.hot.ui.HotStoreActivity;
 import app.amegram.module.AmegramConfig;
 import app.amegram.module.AmegramFeature;
 import app.amegram.module.AmegramFeatureManager;
@@ -56,6 +60,37 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private static class CardRef {
         String id;
         boolean isAmod;
+    }
+
+    /**
+     * Мапінг карток хаба на Hot-модулі (.hmod з магазину).
+     * badges/antiblock/hotfix повертають null: це функції ядра без .hmod —
+     * вони чесно підписані "ядро", без фейкових версій і видалення.
+     */
+    private static String hotIdFor(String legacyId) {
+        if ("ghost".equals(legacyId)) return "ghost";
+        if ("player".equals(legacyId)) return "player";
+        if ("ameprofile".equals(legacyId)) return "ame";
+        if ("doublebottom".equals(legacyId)) return "vault";
+        return null;
+    }
+
+    private static String installedHotVersion(String hotId) {
+        try {
+            for (HotModulesManager.InstalledInfo i : HotModulesManager.listInstalled()) {
+                if (i.manifest.id.equals(hotId) && i.active) return i.manifest.version;
+            }
+        } catch (Throwable ignore) {
+        }
+        return "";
+    }
+
+    private void toast(String msg) {
+        try {
+            android.widget.Toast.makeText(getParentActivity(), msg,
+                    android.widget.Toast.LENGTH_LONG).show();
+        } catch (Throwable ignore) {
+        }
     }
 
     private List<CardRef> cardRefs;
@@ -203,12 +238,21 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             }
             return "";
         }
-        return "v" + AmegramModule.MODULE_VERSION;
+        String hotId = hotIdFor(ref.id);
+        if (hotId != null) {
+            String v = installedHotVersion(hotId);
+            return v.isEmpty() ? "з магазину" : "v" + v;
+        }
+        return "ядро";
     }
 
     private static boolean enabledFor(CardRef ref) {
         if (ref.isAmod) {
             return AmegramConfig.getBool("amod_" + ref.id, true);
+        }
+        String hotId = hotIdFor(ref.id);
+        if (hotId != null) {
+            return HotModulesManager.isModuleEnabled(hotId);
         }
         AmegramFeature f = AmegramFeatureManager.get(ref.id);
         return f != null && f.isEnabled();
@@ -219,8 +263,17 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
         if (ref.isAmod) {
             base = "з каталогу";
         } else {
-            AmegramFeature f = AmegramFeatureManager.get(ref.id);
-            base = f != null ? f.ramEstimate() : "";
+            String hotId = hotIdFor(ref.id);
+            if (hotId != null) {
+                if (HotModulesManager.isModuleInstalled(hotId)) {
+                    base = HotModulesManager.getModuleLoadEstimate(hotId);
+                    return base;
+                }
+                base = "не встановлено";
+            } else {
+                AmegramFeature f = AmegramFeatureManager.get(ref.id);
+                base = (f != null ? f.ramEstimate() : "") + " • ядро";
+            }
         }
         return base + (enabledFor(ref) ? " \u2022 \u0443\u0432\u0456\u043c\u043a\u043d\u0435\u043d\u043e" : " \u2022 \u0441\u043f\u0438\u0442\u044c");
     }
@@ -239,7 +292,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     public void onItemClick(View view, int position, float x, float y) {
         if (position == plusRow) {
             try {
-                new ModuleCatalogSheet(getParentActivity(), this::refresh).show();
+                presentFragment(new HotStoreActivity());
             } catch (Throwable ignore) {
             }
         } else if (position == ghostReadRow) {
@@ -305,25 +358,86 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private void toggleCard(CardRef ref, boolean on) {
         if (ref.isAmod) {
             AmegramConfig.setBool("amod_" + ref.id, on);
-        } else {
-            AmegramFeatureManager.setEnabled(ref.id, on);
+            refresh();
+            return;
         }
-        refresh();
+        String hotId = hotIdFor(ref.id);
+        if (hotId == null) {
+            AmegramFeatureManager.setEnabled(ref.id, on);
+            refresh();
+            return;
+        }
+        if (!HotModulesManager.isModuleInstalled(hotId)) {
+            if (!on) {
+                refresh();
+                return;
+            }
+            // Модуля нема — качаємо stable з магазину і вмикаємо. Причина провалу — в тост.
+            toast("Качаю " + ref.id + " з магазину…");
+            HotModulesManager.fetchCatalog(false, (ok, msg, catalog) -> {
+                HotCatalog.Entry e = (ok && catalog != null) ? catalog.find(hotId) : null;
+                HotCatalog.Build def = e != null ? e.latestCompatible(HotModulesManager.appVersion()) : null;
+                if (def == null && e != null) def = e.defaultBuild();
+                if (e == null || def == null) {
+                    toast("Немає в каталозі: " + hotId);
+                    refresh();
+                    return;
+                }
+                HotModulesManager.downloadBuild(hotId, def, true, (ok2, msg2, d) -> {
+                    toast(ok2 ? "✓ " + hotId + " v" + msg2 + " увімкнено" : String.valueOf(msg2));
+                    refresh();
+                });
+            });
+            return;
+        }
+        HotModulesManager.setEnabled(hotId, on, (ok, msg, d) -> {
+            if (!ok && msg != null && !msg.isEmpty()) toast(msg);
+            refresh();
+        });
+    }
+
+    /** Тап по Hot-картці → деталка з описом, версіями і великою кнопкою. */
+    private void openHotDetail(String hotId) {
+        HotModulesManager.fetchCatalog(false, (ok, msg, catalog) -> {
+            HotCatalog.Entry found = (ok && catalog != null) ? catalog.find(hotId) : null;
+            HotCatalog.Build sel = null;
+            if (found != null) {
+                String iv = installedHotVersion(hotId);
+                for (HotCatalog.Build b : found.branches.values()) {
+                    if (b.version.equals(iv)) {
+                        sel = b;
+                        break;
+                    }
+                }
+                if (sel == null) sel = found.defaultBuild();
+            }
+            try {
+                new HotModuleDetailSheet(getParentActivity(), hotId, found, sel,
+                        AmegramModulesActivity.this::refresh).show();
+            } catch (Throwable ignore) {
+            }
+        });
     }
 
     private void deleteCard(CardRef ref) {
-        if (!ref.isAmod) {
+        if (ref.isAmod) {
+            try {
+                ModuleManager.uninstall(ref.id);
+            } catch (Throwable ignore) {
+            }
+            refresh();
             return;
         }
-        try {
-            ModuleManager.uninstall(ref.id);
-        } catch (Throwable ignore) {
+        String hotId = hotIdFor(ref.id);
+        if (hotId != null && HotModulesManager.isModuleInstalled(hotId)) {
+            HotModulesManager.deleteModule(hotId);
+            refresh();
         }
-        refresh();
     }
 
     private void refresh() {
         try {
+            HotModulesManager.init(getParentActivity().getApplicationContext());
             updateRows();
             if (listAdapter != null) {
                 listAdapter.notifyDataSetChanged();
@@ -624,10 +738,18 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 } else {
                     holder.rollbackBtn.setVisibility(View.GONE);
                 }
+            } else if (hotIdFor(ref.id) != null
+                    && HotModulesManager.isModuleInstalled(hotIdFor(ref.id))) {
+                holder.deleteBtn.setVisibility(View.VISIBLE);
+                holder.deleteBtn.setText("\u0412\u0438\u0434\u0430\u043b\u0438\u0442\u0438");
+                holder.rollbackBtn.setVisibility(View.GONE);
             } else {
                 holder.deleteBtn.setVisibility(View.GONE);
                 holder.rollbackBtn.setVisibility(View.GONE);
             }
+            final String hotTap = !ref.isAmod ? hotIdFor(ref.id) : null;
+            holder.itemView.setOnClickListener(hotTap != null
+                    ? v -> openHotDetail(hotTap) : null);
         }
     }
 

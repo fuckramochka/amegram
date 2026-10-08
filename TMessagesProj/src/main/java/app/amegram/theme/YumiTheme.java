@@ -32,6 +32,25 @@ public final class YumiTheme {
     public static final int SPACE_LG = 16;
     public static final int SPACE_XL = 24;
 
+    // --- Типографическая шкала Yumi (sp) ---
+    public static final float TEXT_DISPLAY = 22;
+    public static final float TEXT_TITLE = 17;
+    public static final float TEXT_HEAD = 15;
+    public static final float TEXT_BODY = 14;
+    public static final float TEXT_SMALL = 13;
+    public static final float TEXT_CAPTION = 12;
+    public static final float TEXT_MICRO = 11;
+
+    // --- Метрики компонентов Yumi (dp) ---
+    public static final int CARD_MARGIN_H = 14;
+    public static final int CARD_MARGIN_V = 5;
+    public static final int CARD_PAD_H = 16;
+    public static final int CARD_PAD_V = 14;
+    public static final int BTN_RADIUS = 14;
+    public static final int PILL_RADIUS = 12;
+    public static final int CHIP_PAD_H = 14;
+    public static final int CHIP_PAD_V = 8;
+
     // --- Цвета: Светлая тема ---
     public static final int LIGHT_PRIMARY = 0xFFE5486B;
     public static final int LIGHT_ON_PRIMARY = 0xFFFFFFFF;

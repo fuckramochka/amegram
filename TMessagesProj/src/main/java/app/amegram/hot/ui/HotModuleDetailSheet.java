@@ -24,6 +24,7 @@ import java.util.List;
 
 import app.amegram.hot.HotCatalog;
 import app.amegram.hot.HotModulesManager;
+import app.amegram.theme.YumiComponents;
 import app.amegram.theme.YumiTheme;
 import app.miogram.bridge.MiogramLocale;
 
@@ -84,12 +85,7 @@ public class HotModuleDetailSheet extends BottomSheet {
 
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable rootBg = new GradientDrawable();
-        rootBg.setCornerRadii(new float[]{
-                AndroidUtilities.dp(24), AndroidUtilities.dp(24),
-                AndroidUtilities.dp(24), AndroidUtilities.dp(24), 0, 0, 0, 0});
-        rootBg.setColor(bg);
-        root.setBackground(rootBg);
+        root.setBackground(YumiComponents.sheetBackground(context));
 
         ScrollView scroll = new ScrollView(context);
         scroll.setVerticalScrollBarEnabled(false);
@@ -118,27 +114,14 @@ public class HotModuleDetailSheet extends BottomSheet {
         int text = themed(Theme.key_dialogTextBlack, 0xFFFFFFFF);
         int sub = themed(Theme.key_dialogTextGray3, 0xFF8E8E93);
 
-        View grab = new View(context);
-        GradientDrawable g = new GradientDrawable();
-        g.setCornerRadius(AndroidUtilities.dp(99));
-        g.setColor(0x33FFFFFF);
-        grab.setBackground(g);
-        body.addView(grab, LayoutHelper.createLinear(40, 4, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 14));
+        body.addView(YumiComponents.grabHandle(context));
 
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER_VERTICAL);
 
-        int modColor = HotModuleMeta.color(moduleId);
-        FrameLayout iconFrame = new FrameLayout(context);
-        iconFrame.setBackground(YumiTheme.squircleIconBackground(modColor));
-        ImageView icon = new ImageView(context);
-        try {
-            icon.setImageResource(HotModuleMeta.icon(moduleId));
-        } catch (Throwable ignore) {
-        }
-        icon.setColorFilter(0xFFFFFFFF);
-        iconFrame.addView(icon, LayoutHelper.createFrame(28, 28, Gravity.CENTER));
+        FrameLayout iconFrame = YumiComponents.squircleIcon(context,
+                HotModuleMeta.icon(moduleId), modColor, 56, 28);
         row.addView(iconFrame, LayoutHelper.createLinear(56, 56, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
 
         LinearLayout meta = new LinearLayout(context);
@@ -326,15 +309,7 @@ public class HotModuleDetailSheet extends BottomSheet {
     }
 
     private TextView sectionTitle(Context context, String s) {
-        TextView v = new TextView(context);
-        v.setText(s.toUpperCase());
-        v.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
-        v.setTypeface(AndroidUtilities.bold());
-        v.setTextColor(themed(Theme.key_windowBackgroundWhiteBlueHeader, 0xFF6C63FF));
-        LinearLayout.LayoutParams lp = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.WRAP_CONTENT, 0, 4, 0, 6);
-        v.setLayoutParams(lp);
-        return v;
+        return YumiComponents.sectionHeader(context, s);
     }
 
     private void buildFooter(Context context, LinearLayout root) {
@@ -350,13 +325,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         foot.addView(progress, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
-        installBtn = new TextView(context);
-        installBtn.setGravity(Gravity.CENTER);
-        installBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        installBtn.setTypeface(AndroidUtilities.bold());
-        installBtn.setTextColor(0xFFFFFFFF);
-        installBtn.setBackground(YumiTheme.buttonRipple(accent, 14));
-        installBtn.setPadding(0, AndroidUtilities.dp(13), 0, AndroidUtilities.dp(13));
+        installBtn = YumiComponents.primaryButton(context, "");
         installBtn.setOnClickListener(v -> confirmAndInstall());
         foot.addView(installBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
@@ -424,18 +393,8 @@ public class HotModuleDetailSheet extends BottomSheet {
     }
 
     private TextView smallBtn(Context context, String s) {
-        TextView v = new TextView(context);
-        v.setText(s);
-        v.setGravity(Gravity.CENTER);
-        v.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        v.setTextColor(themed(Theme.key_dialogTextGray3, 0xFF8E8E93));
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(AndroidUtilities.dp(12));
-        bg.setStroke(AndroidUtilities.dp(1), 0x33FFFFFF);
-        bg.setColor(0x00000000);
-        v.setBackground(bg);
-        v.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10));
-        return v;
+        return YumiComponents.ghostButton(context, s,
+                themed(Theme.key_dialogTextGray3, 0xFF8E8E93));
     }
 
     private List<String> currentPermissions() {
@@ -553,26 +512,11 @@ public class HotModuleDetailSheet extends BottomSheet {
         for (HotCatalog.Build b : allBuilds) {
             if (shown >= 6) break;
             shown++;
-            TextView chip = new TextView(context);
-            boolean compat = HotModulesManager.isCompatible(b);
-            chip.setText(b.branch + " · " + b.version + (compat ? "" : " ⚠"));
-            chip.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            chip.setTypeface(AndroidUtilities.bold());
-            boolean on = selected != null && b.version.equals(selected.version) && b.branch.equals(selected.branch);
-            chip.setTextColor(on ? 0xFFFFFFFF : sub);
-            chip.setAlpha(compat ? 1f : 0.55f);
-            GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(AndroidUtilities.dp(99));
-            if (on) {
-                bg.setColor(accent);
-            } else {
-                bg.setStroke(AndroidUtilities.dp(1), 0x44FFFFFF);
-                bg.setColor(0x00000000);
-            }
-            chip.setBackground(bg);
-            chip.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8),
-                    AndroidUtilities.dp(12), AndroidUtilities.dp(8));
             final HotCatalog.Build bb = b;
+            TextView chip = YumiComponents.chip(context,
+                    b.branch + " · " + b.version + (HotModulesManager.isCompatible(b) ? "" : " ⚠"),
+                    selected != null && b.version.equals(selected.version) && b.branch.equals(selected.branch));
+            chip.setAlpha(HotModulesManager.isCompatible(b) ? 1f : 0.55f);
             chip.setOnClickListener(v -> {
                 selected = bb;
                 refreshSelection();

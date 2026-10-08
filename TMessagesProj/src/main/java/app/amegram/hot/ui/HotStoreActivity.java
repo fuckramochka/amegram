@@ -28,6 +28,7 @@ import java.util.List;
 
 import app.amegram.hot.HotCatalog;
 import app.amegram.hot.HotModulesManager;
+import app.amegram.theme.YumiComponents;
 import app.amegram.theme.YumiTheme;
 import app.miogram.bridge.MiogramLocale;
 
@@ -68,15 +69,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
 
-        searchView = new EditText(context);
-        searchView.setHint(MiogramLocale.get("Пошук модулів…", "Поиск модулей…", "Search modules…"));
-        searchView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        searchView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        searchView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        searchView.setSingleLine(true);
-        searchView.setBackground(YumiTheme.cardBackground(12));
-        searchView.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(11),
-                AndroidUtilities.dp(14), AndroidUtilities.dp(11));
+        searchView = YumiComponents.searchField(context,
+                MiogramLocale.get("Пошук модулів…", "Поиск модулей…", "Search modules…"));
         searchView.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
             @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
@@ -238,42 +232,17 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
     }
 
     private View cardWrap(Context context, View card) {
-        LinearLayout wrap = new LinearLayout(context);
-        wrap.setOrientation(LinearLayout.VERTICAL);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(5), AndroidUtilities.dp(14), AndroidUtilities.dp(5));
-        card.setLayoutParams(lp);
-        wrap.addView(card);
-        return wrap;
+        return YumiComponents.cardWrap(context, card);
     }
 
     private View buildOnboardBanner(Context context) {
-        LinearLayout banner = new LinearLayout(context);
-        banner.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable bg = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{0xFF6C63FF, 0xFF9D7BFF});
-        bg.setCornerRadius(AndroidUtilities.dp(18));
-        banner.setBackground(bg);
-        banner.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14),
-                AndroidUtilities.dp(16), AndroidUtilities.dp(14));
-        TextView h = new TextView(context);
-        h.setText(MiogramLocale.get("Чистий клієнт — 0 модулів",
-                "Чистый клиент — 0 модулей", "Clean client — 0 modules"));
-        h.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-        h.setTypeface(AndroidUtilities.bold());
-        h.setTextColor(0xFFFFFFFF);
-        banner.addView(h);
-        TextView p = new TextView(context);
-        p.setText(MiogramLocale.get(
-                "В APK нічого не вшито. Візьміть готовий пак або оберіть поштучно.",
-                "В APK ничего не вшито. Возьмите готовый пак или выберите поштучно.",
-                "Nothing is built in. Grab a pack or pick one by one."));
-        p.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        p.setTextColor(0xE8FFFFFF);
-        banner.addView(p, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
-        return cardWrap(context, banner);
+        return cardWrap(context, YumiComponents.banner(context,
+                MiogramLocale.get("Чистий клієнт — 0 модулів",
+                        "Чистый клиент — 0 модулей", "Clean client — 0 modules"),
+                MiogramLocale.get(
+                        "В APK нічого не вшито. Візьміть готовий пак або оберіть поштучно.",
+                        "В APK ничего не вшито. Возьмите готовый пак или выберите поштучно.",
+                        "Nothing is built in. Grab a pack or pick one by one.")));
     }
 
     private View buildPackCard(Context context, HotModuleMeta.Pack pack) {
@@ -308,14 +277,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         meta.addView(desc);
         card.addView(meta, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
-        TextView take = new TextView(context);
-        take.setText(MiogramLocale.get("Пак →", "Пак →", "Pack →"));
-        take.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
-        take.setTypeface(AndroidUtilities.bold());
-        take.setTextColor(0xFFFFFFFF);
-        take.setBackground(YumiTheme.buttonRipple(YumiTheme.getPrimary(), 10));
-        take.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(9),
-                AndroidUtilities.dp(14), AndroidUtilities.dp(9));
+        TextView take = YumiComponents.pillButton(context,
+                MiogramLocale.get("Пак →", "Пак →", "Pack →"));
         take.setOnClickListener(v -> {
             take.setEnabled(false);
             installPackSequentially(pack, 0, this::refresh);
@@ -375,23 +338,10 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
             }
         }
         for (String c : cats) {
-            TextView chip = new TextView(context);
-            boolean on = activeCat.equals(c);
-            chip.setText(c.isEmpty()
-                    ? MiogramLocale.get("Всі", "Все", "All")
-                    : HotModuleMeta.categoryTitle(c));
-            chip.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
-            chip.setTypeface(AndroidUtilities.bold());
-            chip.setTextColor(on ? 0xFFFFFFFF
-                    : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            GradientDrawable bg = new GradientDrawable();
-            bg.setCornerRadius(AndroidUtilities.dp(99));
-            if (on) bg.setColor(YumiTheme.getPrimary());
-            else bg.setColor(Theme.isCurrentThemeDark() ? 0x22FFFFFF : 0x14000000);
-            chip.setBackground(bg);
-            chip.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(8),
-                    AndroidUtilities.dp(14), AndroidUtilities.dp(8));
             final String cc = c;
+            TextView chip = YumiComponents.chip(context, c.isEmpty()
+                    ? MiogramLocale.get("Всі", "Все", "All")
+                    : HotModuleMeta.categoryTitle(c), activeCat.equals(cc));
             chip.setOnClickListener(v -> {
                 activeCat = cc;
                 refresh();
@@ -437,15 +387,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         card.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12),
                 AndroidUtilities.dp(12), AndroidUtilities.dp(12));
 
-        FrameLayout iconFrame = new FrameLayout(context);
-        iconFrame.setBackground(YumiTheme.squircleIconBackground(HotModuleMeta.color(e.id)));
-        ImageView icon = new ImageView(context);
-        try {
-            icon.setImageResource(HotModuleMeta.icon(e.id));
-        } catch (Throwable ignore) {
-        }
-        icon.setColorFilter(0xFFFFFFFF);
-        iconFrame.addView(icon, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+        FrameLayout iconFrame = YumiComponents.squircleIcon(context,
+                HotModuleMeta.icon(e.id), HotModuleMeta.color(e.id), 52, 24);
         card.addView(iconFrame, LayoutHelper.createLinear(52, 52, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
         LinearLayout meta = new LinearLayout(context);
@@ -502,15 +445,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         top.setOrientation(LinearLayout.HORIZONTAL);
         top.setGravity(Gravity.CENTER_VERTICAL);
 
-        FrameLayout iconFrame = new FrameLayout(context);
-        iconFrame.setBackground(YumiTheme.squircleIconBackground(HotModuleMeta.color(entry.id)));
-        ImageView icon = new ImageView(context);
-        try {
-            icon.setImageResource(HotModuleMeta.icon(entry.id));
-        } catch (Throwable ignore) {
-        }
-        icon.setColorFilter(0xFFFFFFFF);
-        iconFrame.addView(icon, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+        FrameLayout iconFrame = YumiComponents.squircleIcon(context,
+                HotModuleMeta.icon(entry.id), HotModuleMeta.color(entry.id), 48, 24);
         top.addView(iconFrame, LayoutHelper.createLinear(48, 48, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
         LinearLayout meta = new LinearLayout(context);
@@ -531,17 +467,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
                 ? entry.latestCompatible(HotModulesManager.appVersion()) : entry.defaultBuild();
         if (def == null) def = entry.defaultBuild();
         if (def != null) {
-            TextView badge = new TextView(context);
-            badge.setText("v" + def.version);
-            badge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-            badge.setTypeface(AndroidUtilities.bold());
-            badge.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            GradientDrawable badgeBg = new GradientDrawable();
-            badgeBg.setCornerRadius(AndroidUtilities.dp(99));
-            badgeBg.setColor(Theme.isCurrentThemeDark() ? 0x22FFFFFF : 0x14000000);
-            badge.setBackground(badgeBg);
-            badge.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(3),
-                    AndroidUtilities.dp(8), AndroidUtilities.dp(3));
+            TextView badge = YumiComponents.badge(context, "v" + def.version,
+                    Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             titleRow.addView(badge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT,
                     LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
         }
@@ -573,19 +500,12 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         ver.setText(def != null ? (def.branch + " • " + catName) : catName);
         bottom.addView(ver, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
-        TextView action = new TextView(context);
         final HotCatalog.Build d = def;
         final boolean compat = d == null || HotModulesManager.isCompatible(d);
-        action.setText(!compat ? "minApp " + d.minApp
-                : MiogramLocale.get("↓ Взяти", "↓ Взять", "↓ Get"));
-        action.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
-        action.setTypeface(AndroidUtilities.bold());
-        action.setTextColor(0xFFFFFFFF);
-        action.setGravity(Gravity.CENTER);
-        action.setBackground(YumiTheme.buttonRipple(YumiTheme.getPrimary(), 12));
+        TextView action = YumiComponents.pillButton(context,
+                !compat ? "minApp " + d.minApp
+                        : MiogramLocale.get("↓ Взяти", "↓ Взять", "↓ Get"));
         action.setAlpha(compat ? 1f : 0.5f);
-        action.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(9),
-                AndroidUtilities.dp(18), AndroidUtilities.dp(9));
         action.setOnClickListener(v -> {
             if (d == null || !compat) {
                 try {

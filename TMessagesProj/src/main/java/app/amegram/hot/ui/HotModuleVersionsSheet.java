@@ -20,6 +20,7 @@ import java.util.List;
 
 import app.amegram.hot.HotCatalog;
 import app.amegram.hot.HotModulesManager;
+import app.amegram.theme.YumiComponents;
 import app.amegram.theme.YumiTheme;
 import app.miogram.bridge.MiogramLocale;
 
@@ -53,21 +54,11 @@ public class HotModuleVersionsSheet extends BottomSheet {
 
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable rootBg = new GradientDrawable();
-        rootBg.setCornerRadii(new float[]{
-                AndroidUtilities.dp(24), AndroidUtilities.dp(24),
-                AndroidUtilities.dp(24), AndroidUtilities.dp(24), 0, 0, 0, 0});
-        rootBg.setColor(bg);
-        root.setBackground(rootBg);
+        root.setBackground(YumiComponents.sheetBackground(context));
         root.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(8),
                 AndroidUtilities.dp(20), AndroidUtilities.dp(20));
 
-        View grab = new View(context);
-        GradientDrawable grabBg = new GradientDrawable();
-        grabBg.setCornerRadius(AndroidUtilities.dp(99));
-        grabBg.setColor(0x33FFFFFF);
-        grab.setBackground(grabBg);
-        root.addView(grab, LayoutHelper.createLinear(40, 4, Gravity.CENTER_HORIZONTAL, 0, 4, 0, 12));
+        root.addView(YumiComponents.grabHandle(context));
 
         TextView title = new TextView(context);
         title.setText(MiogramLocale.get("Версії: ", "Версии: ", "Versions: ") + moduleId);
@@ -162,15 +153,7 @@ public class HotModuleVersionsSheet extends BottomSheet {
     }
 
     private View sectionLabel(Context context, String s) {
-        TextView v = new TextView(context);
-        v.setText(s.toUpperCase());
-        v.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
-        v.setTypeface(AndroidUtilities.bold());
-        v.setTextColor(themed(Theme.key_windowBackgroundWhiteBlueHeader, 0xFF6C63FF));
-        LinearLayout wrap = new LinearLayout(context);
-        wrap.addView(v, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.WRAP_CONTENT, 0, 12, 0, 6));
-        return wrap;
+        return YumiComponents.sectionHeader(context, s);
     }
 
     private View simpleRow(Context context, String s, int color) {
@@ -317,20 +300,13 @@ public class HotModuleVersionsSheet extends BottomSheet {
         checkBox.setChecked(true, false);
         row.addView(checkBox, LayoutHelper.createLinear(21, 21, 0, 4, 4, 0));
 
-        TextView dl = new TextView(context);
         final boolean compat = HotModulesManager.isCompatible(b);
-        dl.setText(!compat
+        TextView dl = YumiComponents.pillButton(context, !compat
                 ? "minApp " + b.minApp
                 : already
                 ? MiogramLocale.get("Перевстановити", "Переустановить", "Reinstall")
                 : MiogramLocale.get("Встановити", "Установить", "Install"));
-        dl.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
-        dl.setTypeface(AndroidUtilities.bold());
-        dl.setTextColor(0xFFFFFFFF);
         dl.setAlpha(compat ? 1f : 0.5f);
-        dl.setBackground(YumiTheme.buttonRipple(accent, 10));
-        dl.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(8),
-                AndroidUtilities.dp(14), AndroidUtilities.dp(8));
         dl.setOnClickListener(v -> {
             if (!compat) {
                 try {

@@ -502,16 +502,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 Context context = parent.getContext();
                 LinearLayout card = new LinearLayout(context);
                 card.setOrientation(LinearLayout.VERTICAL);
-                GradientDrawable cardBg = new GradientDrawable();
-                try {
-                    cardBg.setColor(getThemedColor(
-                            org.telegram.ui.ActionBar.Theme.key_windowBackgroundWhite));
-                } catch (Throwable t) {
-                    cardBg.setColor(0xFFFFFFFF);
-                }
-                cardBg.setCornerRadius(AndroidUtilities.dp(16));
-                cardBg.setStroke(AndroidUtilities.dp(1), Color.argb(25, 128, 128, 128));
-                card.setBackground(cardBg);
+                card.setBackground(app.amegram.theme.YumiTheme.cardBackground());
                 card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12),
                         AndroidUtilities.dp(16), AndroidUtilities.dp(12));
 

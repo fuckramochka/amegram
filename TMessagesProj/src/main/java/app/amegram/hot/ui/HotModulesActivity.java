@@ -21,6 +21,7 @@ import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
+import app.amegram.theme.YumiComponents;
 import app.amegram.theme.YumiTheme;
 
 import java.util.ArrayList;
@@ -348,18 +349,8 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         sub.setGravity(Gravity.CENTER);
         layout.addView(sub, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
 
-        TextView btnCatalog = new TextView(context);
-        btnCatalog.setText(MiogramLocale.get("Відкрити каталог модулів", "Открыть каталог модулей", "Open module catalog"));
-        btnCatalog.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
-        btnCatalog.setTypeface(AndroidUtilities.bold());
-        btnCatalog.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        btnCatalog.setGravity(Gravity.CENTER);
-
-        GradientDrawable btnBg = new GradientDrawable();
-        btnBg.setCornerRadius(AndroidUtilities.dp(10));
-        btnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        btnCatalog.setBackground(btnBg);
-        btnCatalog.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
+        TextView btnCatalog = YumiComponents.primaryButton(context,
+                MiogramLocale.get("Відкрити каталог модулів", "Открыть каталог модулей", "Open module catalog"));
         btnCatalog.setOnClickListener(v -> presentFragment(new HotStoreActivity()));
         layout.addView(btnCatalog, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
@@ -410,12 +401,8 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         titleRow.addView(titleView);
 
         // Бейдж версії
-        TextView verBadge = new TextView(context);
-        verBadge.setText("v" + info.manifest.version);
-        verBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
-        verBadge.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        verBadge.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(1), AndroidUtilities.dp(6), AndroidUtilities.dp(1));
-        verBadge.setBackground(YumiTheme.squircleIconBackground(Theme.isCurrentThemeDark() ? 0x22FFFFFF : 0x14000000));
+        TextView verBadge = YumiComponents.badge(context, "v" + info.manifest.version,
+                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         titleRow.addView(verBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 6, 0, 0, 0));
 
         infoCol.addView(titleRow);

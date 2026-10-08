@@ -383,10 +383,18 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                     refresh();
                     return;
                 }
-                HotModulesManager.downloadBuild(hotId, def, true, (ok2, msg2, d) -> {
-                    toast(ok2 ? "✓ " + hotId + " v" + msg2 + " увімкнено" : String.valueOf(msg2));
-                    refresh();
-                });
+                HotModulesManager.downloadBuild(hotId, def, true,
+                        new HotModulesManager.ProgressCallback<Void>() {
+                            @Override
+                            public void onProgress(long downloaded, long total) {
+                            }
+
+                            @Override
+                            public void onDone(boolean ok2, String msg2, Void d) {
+                                toast(ok2 ? "✓ " + hotId + " v" + msg2 + " увімкнено" : String.valueOf(msg2));
+                                refresh();
+                            }
+                        });
             });
             return;
         }

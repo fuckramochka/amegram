@@ -121,7 +121,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         row.setGravity(Gravity.CENTER_VERTICAL);
 
         FrameLayout iconFrame = YumiComponents.squircleIcon(context,
-                HotModuleMeta.icon(moduleId), modColor, 56, 28);
+                HotModuleMeta.icon(moduleId), HotModuleMeta.color(moduleId), 56, 28);
         row.addView(iconFrame, LayoutHelper.createLinear(56, 56, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
 
         LinearLayout meta = new LinearLayout(context);

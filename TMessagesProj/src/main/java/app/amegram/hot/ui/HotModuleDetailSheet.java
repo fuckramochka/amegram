@@ -210,6 +210,20 @@ public class HotModuleDetailSheet extends BottomSheet {
         diagBox.setBackground(db);
         diagBox.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10),
                 AndroidUtilities.dp(12), AndroidUtilities.dp(10));
+        diagBox.setOnClickListener(v -> {
+            try {
+                String diag = HotModulesManager.getLoadDiagnostics(moduleId);
+                android.content.ClipboardManager cm = (android.content.ClipboardManager)
+                        context.getSystemService(Context.CLIPBOARD_SERVICE);
+                if (cm != null) {
+                    cm.setPrimaryClip(android.content.ClipData.newPlainText("diag", diag));
+                }
+                android.widget.Toast.makeText(context,
+                        MiogramLocale.get("Діагностику скопійовано", "Диагностика скопирована", "Diagnostics copied"),
+                        android.widget.Toast.LENGTH_SHORT).show();
+            } catch (Throwable ignore) {
+            }
+        });
         body.addView(diagBox, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
     }
@@ -448,7 +462,10 @@ public class HotModuleDetailSheet extends BottomSheet {
             if (!loadErr.isEmpty()) {
                 diagBox.setVisibility(View.VISIBLE);
                 diagBox.setText("⚠ " + MiogramLocale.get("Останній провал: ",
-                        "Последний провал: ", "Last failure: ") + loadErr);
+                        "Последний провал: ", "Last failure: ") + loadErr
+                        + "\n\n⧉ " + MiogramLocale.get("Торкніться щоб скопіювати діагностику",
+                        "Нажмите чтобы скопировать диагностику",
+                        "Tap to copy diagnostics"));
             } else {
                 diagBox.setVisibility(View.GONE);
             }

@@ -125,7 +125,14 @@ public final class HotModulesManager {
     }
 
     private static File dexOptDir() {
-        File dir = new File(appContext.getCodeCacheDir(), "hot_dex");
+        try {
+            File dir = new File(appContext.getCodeCacheDir(), "hot_dex");
+            if (!dir.exists()) dir.mkdirs();
+            if (dir.exists()) return dir;
+        } catch (Throwable ignore) {
+        }
+        // Запасний варіант: getCodeCacheDir іноді недоступний — беремо filesDir.
+        File dir = new File(appContext.getFilesDir(), "hot_dex");
         if (!dir.exists()) dir.mkdirs();
         return dir;
     }
@@ -835,16 +842,65 @@ public final class HotModulesManager {
 
     private static volatile String lastLoadErrorModule = "";
     private static volatile String lastLoadError = "";
+    private static volatile String lastLoadStack = "";
 
-    private static void setLoadError(String moduleId, String err) {
+    private static void setLoadError(String moduleId, String err, Throwable e) {
         lastLoadErrorModule = moduleId != null ? moduleId : "";
         lastLoadError = err != null ? err : "";
+        if (e != null) {
+            try {
+                java.io.StringWriter sw = new java.io.StringWriter();
+                e.printStackTrace(new java.io.PrintWriter(sw));
+                String s = sw.toString();
+                lastLoadStack = s.length() > 2000 ? s.substring(0, 2000) : s;
+            } catch (Throwable ignore) {
+                lastLoadStack = "";
+            }
+        } else {
+            lastLoadStack = "";
+        }
+    }
+
+    private static void setLoadError(String moduleId, String err) {
+        setLoadError(moduleId, err, null);
     }
 
     /** Остання причина провалу старту ("" = невідомо/не було). */
     public static String getLastLoadError(String moduleId) {
         if (moduleId == null || !moduleId.equals(lastLoadErrorModule)) return "";
         return lastLoadError;
+    }
+
+    /** Повна діагностика для копіювання: модуль, версія, entry, помилка, стек. */
+    public static String getLoadDiagnostics(String moduleId) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("module=").append(moduleId).append("\n");
+        try {
+            String ver = appContext != null
+                    ? prefs().getString("installed_" + moduleId, "?") : "?";
+            sb.append("installed=").append(ver).append("\n");
+            if (appContext != null) {
+                File c = new File(new File(new File(root(), moduleId), ver), "module.hmod");
+                sb.append("file=").append(c.exists() ? ("OK " + c.length() + "b") : "MISSING").append("\n");
+                if (c.exists()) {
+                    try {
+                        Manifest m = readManifest(c);
+                        sb.append("entry=").append(m.entry).append("\n");
+                        sb.append("dex=").append(zipHasDex(c) ? "yes" : "NO").append("\n");
+                    } catch (Throwable e) {
+                        sb.append("manifest=BROKEN ").append(shortErr(e)).append("\n");
+                    }
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        sb.append("enabled=").append(isModuleEnabled(moduleId)).append("\n");
+        sb.append("quarantine=").append(getLoadFailures(moduleId)).append("\n");
+        sb.append("error=").append(getLastLoadError(moduleId)).append("\n");
+        if (moduleId != null && moduleId.equals(lastLoadErrorModule) && !lastLoadStack.isEmpty()) {
+            sb.append("stack:\n").append(lastLoadStack);
+        }
+        return sb.toString();
     }
 
     private static String shortErr(Throwable e) {
@@ -965,7 +1021,7 @@ public final class HotModulesManager {
             setLoadError(moduleId, MiogramLocale.get("клас не знайдено",
                     "класс не найден", "class not found")
                     + " " + entryClass
-                    + (dexErr != null ? " (" + shortErr(dexErr) + ")" : ""));
+                    + (dexErr != null ? " (" + shortErr(dexErr) + ")" : ""), dexErr);
             recordLoadFailure(moduleId);
             return null;
         }
@@ -992,7 +1048,7 @@ public final class HotModulesManager {
                     mod.onDetach();
                 } catch (Throwable ignore) {
                 }
-                setLoadError(moduleId, "onAttach: " + shortErr(e));
+                setLoadError(moduleId, "onAttach: " + shortErr(e), e);
                 recordLoadFailure(moduleId);
                 return null;
             }
@@ -1001,7 +1057,7 @@ public final class HotModulesManager {
             return handle;
         } catch (Throwable e) {
             FileLog.e("hotmods: instantiation failed for " + moduleId, e);
-            setLoadError(moduleId, shortErr(e));
+            setLoadError(moduleId, shortErr(e), e);
             recordLoadFailure(moduleId);
             return null;
         }

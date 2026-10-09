@@ -1,6 +1,18 @@
 name: Build Android APK on PR
 
 on:
+  push:
+    branches: [codex/client-modularization-settings-md3]
+    paths:
+      - 'TMessagesProj/**'
+      - 'build.gradle'
+      - 'build.gradle.kts'
+      - 'settings.gradle'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+      - 'gradle.properties'
+      - 'gradlew'
+      - '.github/workflows/verify-android.yml'
   pull_request:
     paths:
       - 'TMessagesProj/**'

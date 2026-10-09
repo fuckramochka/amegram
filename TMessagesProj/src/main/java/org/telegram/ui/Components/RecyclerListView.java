@@ -3543,8 +3543,11 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
                         == app.exteraless.appearance.AppearanceConfig.DIVIDER_SEGMENTS;
     }
 
-    /** Внутренний угол сегмента: у exteraGram min(радиус секции, 4dp). */
+    /** Внутренний угол сегмента: у exteraGram min(радиус секции, 4dp), у Yougram Expressive 6dp. */
     private float segmentInnerRadius() {
+        if (app.exteraless.appearance.AppearanceConfig.isYougramExpressive()) {
+            return dp(6);
+        }
         return Math.min(sectionRadius, dp(4));
     }
 
@@ -3594,11 +3597,12 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
         if (child instanceof JoinToSendSettingsView) {
             bottomMargin = ((JoinToSendSettingsView) child).getBottomInfoMargin();
         }
+        float gap = app.exteraless.appearance.AppearanceConfig.isYougramExpressive() ? dp(1) : 0;
         rect.set(
             child.getX(),
-            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child)),
+            Math.max(applyPaddingToSections ? getPaddingTop() : -sectionRadius, top(child) + gap),
             child.getX() + child.getWidth(),
-            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - bottomMargin)
+            Math.min(getHeight() - (applyPaddingToSections ? getPaddingBottom() : -sectionRadius), bottom(child) - bottomMargin - gap)
         );
         return rect.bottom >= rect.top;
     }

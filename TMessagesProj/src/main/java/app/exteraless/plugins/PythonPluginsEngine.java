@@ -8,6 +8,7 @@ import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 import com.chaquo.python.android.AndroidPlatform;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.FileLog;
 import org.telegram.ui.Components.UItem;
 
@@ -16,6 +17,8 @@ import app.exteraless.plugins.models.CustomSetting;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import app.exteraless.debug.PluginToggleTrace;
 
 /**
  * Python-рантайм движка плагинов (Chaquopy, CPython 3.12).
@@ -69,6 +72,10 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
     private PythonPluginsEngine() {
     }
 
+    public void runOnEngine(Runnable runnable) {
+        executor.execute(runnable);
+    }
+
     public boolean isStarted() {
         return started;
     }
@@ -92,6 +99,13 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
         }
     }
 
+    public String debugPythonStacks() {
+        if (!started || loader == null) {
+            return null;
+        }
+        return loader.callAttr("debug_python_stacks").toJava(String.class);
+    }
+
     public interface StartCallback {
         void onStarted(boolean ok);
     }
@@ -111,8 +125,10 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
                     Python.start(new AndroidPlatform(appContext));
                     FileLog.d("PluginsEngine: Python started in " + (System.currentTimeMillis() - t0) + " ms");
                 }
+                Python.getInstance().getModule("sys").callAttr("setswitchinterval", 0.001);
                 loader = Python.getInstance().getModule("extera_utils.plugin_loader");
                 started = true;
+                AndroidUtilities.runOnUIThread(PythonThreadState::pinCurrentThread);
                 // Dev-сервер (порт 42690) — только в developer mode; реализован в plugin_loader.
                 if (PluginsController.getInstance().isDeveloperMode()) {
                     try {
@@ -148,6 +164,9 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
     }
 
     public void setUnsafeMode(boolean value) {
+        if (PluginSinkGate.refuseFromPlugin("setUnsafeMode", false)) {
+            return;
+        }
         if (!started) {
             return;
         }
@@ -188,6 +207,9 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
 
     /** Забыть наблюдения плагина (удаление плагина, сброс профиля). */
     public void forgetAudit(String pluginId) {
+        if (PluginSinkGate.refuseFromPlugin("forgetAudit", false)) {
+            return;
+        }
         PluginAuditJournal.forget(pluginId);
         if (!started) {
             return;
@@ -221,6 +243,10 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
 
     /** Загрузить плагин (импорт модуля, инстанс BasePlugin, on_plugin_load). Синхронно. */
     public String loadPlugin(Plugin plugin) {
+        if (PluginSinkGate.refuseFromPlugin("loadPlugin", true)) {
+            return "{\"ok\":false,\"error\":\"not allowed\"}";
+        }
+        dropSettingsJson(plugin.id);
         if (!started) {
             return "{\"ok\":false,\"error\":\"engine not started\"}";
         }
@@ -232,8 +258,15 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
         PluginsWatchdog watchdog = PluginsController.getInstance().getWatchdog();
         // Загрузка — единственный заход, который пишется в маркер сразу.
         watchdog.notePluginEnter(plugin.id, true);
+        final PluginToggleTrace trace = PluginToggleTrace.current();
         try {
+            if (trace != null) {
+                trace.beforePython();
+            }
             String result = loader.callAttr("load_plugin", plugin.path, plugin.id).toJava(String.class);
+            if (trace != null) {
+                trace.afterPython(result);
+            }
             watchdog.notePluginExit(plugin.id);
             rememberInstance(plugin.id);
             return result;
@@ -277,14 +310,52 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
     }
 
     /** Выгрузить плагин (on_plugin_unload + очистка). Синхронно. */
-    public void unloadPlugin(Plugin plugin) {
+    public void unload(Plugin plugin) {
+        if (PluginSinkGate.refuseFromPlugin("unload", true)) {
+            return;
+        }
+        if (plugin == null) {
+            return;
+        }
+        unloadingPlugins.put(plugin.id, plugin);
+        try {
+            unloadPlugin(plugin.id);
+        } finally {
+            unloadingPlugins.remove(plugin.id);
+        }
+    }
+
+    private final java.util.concurrent.ConcurrentHashMap<String, Plugin> unloadingPlugins = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public void unloadPlugin(String pluginId) {
+        if (PluginSinkGate.refuseForeign(pluginId, "unloadPlugin")) {
+            return;
+        }
+        if (pluginId == null) {
+            return;
+        }
+        Plugin plugin = unloadingPlugins.get(pluginId);
+        if (plugin == null) {
+            plugin = PluginsController.getInstance().getPlugin(pluginId);
+        }
+        if (plugin == null) {
+            return;
+        }
+        dropSettingsJson(plugin.id);
         if (!started) {
             return;
         }
         PluginsWatchdog watchdog = PluginsController.getInstance().getWatchdog();
         watchdog.notePluginEnter(plugin.id);
+        final PluginToggleTrace trace = PluginToggleTrace.current();
         try {
-            loader.callAttr("unload_plugin", plugin.id);
+            if (trace != null) {
+                trace.beforePython();
+            }
+            PyObject result = loader.callAttr("unload_plugin", plugin.id);
+            if (trace != null) {
+                trace.afterPython(result == null ? null : result.toString());
+            }
         } catch (Throwable t) {
             FileLog.e("PluginsEngine: unload failed for " + plugin.id, t);
         } finally {
@@ -299,6 +370,9 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
     /** Полная деинсталляция на Python-стороне: pip-зависимости (refcount),
      *  вычистка elyx-экстракций. Звать ПОСЛЕ unloadPlugin. */
     public void uninstallPlugin(String pluginId) {
+        if (PluginSinkGate.refuseFromPlugin("uninstallPlugin", true)) {
+            return;
+        }
         if (!started) {
             return;
         }
@@ -343,14 +417,36 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
     // ---------- экран настроек плагина ----------
 
     /** @return JSON-список элементов настроек (ui.settings) с текущими значениями. */
+    private static final long SETTINGS_JSON_TTL_MS = 500;
+    private final java.util.concurrent.ConcurrentHashMap<String, Object[]> settingsJsonCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public void invalidateSettingsJson(String pluginId) {
+        dropSettingsJson(pluginId);
+    }
+
+    private void dropSettingsJson(String pluginId) {
+        if (pluginId != null) {
+            settingsJsonCache.remove(pluginId);
+        }
+    }
+
     public String getSettingsJson(String pluginId) {
         if (!started) {
             return null;
         }
+        Object[] cached = settingsJsonCache.get(pluginId);
+        long now = android.os.SystemClock.elapsedRealtime();
+        if (cached != null && now - (Long) cached[1] < SETTINGS_JSON_TTL_MS) {
+            return (String) cached[0];
+        }
         PluginsWatchdog watchdog = PluginsController.getInstance().getWatchdog();
         watchdog.notePluginEnter(pluginId);
         try {
-            return loader.callAttr("get_settings_json", pluginId).toJava(String.class);
+            String json = loader.callAttr("get_settings_json", pluginId).toJava(String.class);
+            if (json != null) {
+                settingsJsonCache.put(pluginId, new Object[]{json, now});
+            }
+            return json;
         } catch (Throwable t) {
             FileLog.e("PluginsEngine: getSettingsJson failed for " + pluginId, t);
             return null;
@@ -424,10 +520,24 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
     }
 
     public void notifySettingChanged(String pluginId, String key, String jsonValue) {
+        dropSettingsJson(pluginId);
         callSimple(pluginId, "notify_setting_changed", key, jsonValue);
     }
 
+    public void invalidateSettingsMirror(String pluginId) {
+        dropSettingsJson(pluginId);
+        if (!started) {
+            return;
+        }
+        try {
+            loader.callAttr("invalidate_settings_mirror", pluginId);
+        } catch (Throwable t) {
+            FileLog.e("PluginsEngine: cannot invalidate the settings mirror of " + pluginId, t);
+        }
+    }
+
     public void dispatchSettingClick(String pluginId, String callbackId, android.view.View view) {
+        dropSettingsJson(pluginId);
         callSimple(pluginId, "dispatch_setting_click", callbackId, view);
     }
 
@@ -443,6 +553,7 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
         }
         PluginsWatchdog watchdog = PluginsController.getInstance().getWatchdog();
         watchdog.notePluginEnter(pluginId);
+        String previousRuntime = PluginRuntime.enter(pluginId);
         try {
             Object[] callArgs = new Object[args.length + 1];
             callArgs[0] = pluginId;
@@ -452,6 +563,7 @@ public class PythonPluginsEngine extends com.exteragram.messenger.plugins.Python
             watchdog.handlePluginError(pluginId, t);
             return null;
         } finally {
+            PluginRuntime.exit(previousRuntime);
             watchdog.notePluginExit(pluginId);
         }
     }

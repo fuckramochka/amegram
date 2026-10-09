@@ -39,6 +39,7 @@ import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
 
     private int headerModeRow;
+    private int uiStyleModeRow;
     private int discordUiRow;
     private int customUiRow;
     private int ameProfileXmlRow;
@@ -73,6 +74,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         super.updateRows();
 
         headerModeRow = addRow();
+        uiStyleModeRow = addRow();
         discordUiRow = addRow();
         customUiRow = addRow();
         ameProfileXmlRow = addRow();
@@ -125,7 +127,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
 
     @Override
     public void onItemClick(View view, int position, float x, float y) {
-        if (position == discordUiRow) {
+        if (position == uiStyleModeRow) {
+            showUiStyleModeDialog();
+        } else if (position == discordUiRow) {
             showLayoutModeDialog();
         } else if (position == customUiRow) {
             presentFragment(new app.miogram.bridge.customui.MiogramCustomUiActivity());
@@ -189,6 +193,35 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                 }
             });
         }
+    }
+
+    private void showUiStyleModeDialog() {
+        Context ctx = getParentActivity();
+        if (ctx == null) return;
+
+        CharSequence[] options = new CharSequence[] {
+            MiogramLocale.get("1. Класичний інтерфейс Amegram\n(Стандартні картки та класичні розділювачі)",
+                    "1. Классический интерфейс Amegram\n(Стандартные карточки и классические разделители)",
+                    "1. Classic Amegram Interface\n(Standard cards & classic dividers)"),
+            MiogramLocale.get("2. Експериментальний Yougram Expressive (Кастомізований)\n(Рідке скло, сегментовані підложки M3 24dp/6dp, плаваючий блюр, розширений Monet)",
+                    "2. Экспериментальный Yougram Expressive (Кастомизированный)\n(Жидкое стекло, сегментированные подложки M3 24dp/6dp, плавающий блюр, расширенный Monet)",
+                    "2. Experimental Yougram Expressive (Enhanced)\n(Liquid Glass, segmented M3 24dp/6dp plates, floating blur, enhanced Monet)")
+        };
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+        builder.setTitle(MiogramLocale.get("Режим інтерфейсу", "Режим интерфейса", "Interface Mode"));
+        builder.setItems(options, (dialog, which) -> {
+            AppearanceConfig.uiStyleMode.setConfigInt(which);
+            listAdapter.notifyItemChanged(uiStyleModeRow);
+            AndroidUtilities.runOnUIThread(() -> {
+                if (LaunchActivity.instance != null && !LaunchActivity.instance.isFinishing()) {
+                    LaunchActivity.instance.rebuildAllFragments(false);
+                }
+            });
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     private void showLayoutModeDialog() {
@@ -356,7 +389,13 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                 case TYPE_SETTINGS: {
                     TextSettingsCell cell = (TextSettingsCell) holder.itemView;
                     cell.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                    if (position == discordUiRow) {
+                    if (position == uiStyleModeRow) {
+                        int mode = AppearanceConfig.uiStyleMode();
+                        String val = mode == AppearanceConfig.UI_STYLE_YOUGRAM_EXPRESSIVE
+                                ? MiogramLocale.get("Yougram Expressive (Експериментальний)", "Yougram Expressive (Экспериментальный)", "Yougram Expressive (Experimental)")
+                                : MiogramLocale.get("Класичний", "Классический", "Classic");
+                        cell.setTextAndValue(MiogramLocale.get("Стиль інтерфейсу", "Стиль интерфейса", "Interface Style"), val, true);
+                    } else if (position == discordUiRow) {
                         app.miogram.bridge.divine.MiogramDivineEngine.Preset current = app.miogram.bridge.divine.MiogramDivineEngine.getCurrentPreset(getSafeContext());
                         cell.setTextAndValue(MiogramLocale.get("Пресет оформлення", "Пресет оформления", "Layout Preset"), app.miogram.bridge.divine.MiogramDivineEngine.getPresetTitle(current), true);
                     } else if (position == customUiRow) {
@@ -386,9 +425,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == modeInfoRow) {
-                        cell.setText(MiogramLocale.get("Перемикання між Telegram та Discord структурою (ліва панель гільдій, канали та естетика Ame-chan).",
-                                "Переключение между Telegram и Discord структурой (левая панель гильдий, каналы и эстетика Ame-chan).",
-                                "Switch between Telegram Classic and Discord layouts with Needy Streamer Overload aesthetic."));
+                        cell.setText(MiogramLocale.get("Вибір між класичним інтерфейсом Amegram та експериментальним Yougram Expressive із сегментованими підложками M3 24dp/6dp, рідким склом та розширеним Monet.",
+                                "Выбор между классическим интерфейсом Amegram и экспериментальным Yougram Expressive с сегментированными подложками M3 24dp/6dp, жидким стеклом и расширенным Monet.",
+                                "Switch between Classic Amegram interface and Experimental Yougram Expressive with segmented M3 24dp/6dp plates, liquid glass, and enhanced Monet."));
                     } else if (position == glassInfoRow) {
                         cell.setText(MiogramLocale.get("Рідке скло накладає матовий світловий блік та люмінесцентну грань на панель заголовка.",
                                 "Жидкое стекло накладывает матовый световой блик и люминесцентную грань на панель заголовка.",

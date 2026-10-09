@@ -39,6 +39,26 @@ object AppearanceConfig {
     /** Прежний набор Monet, пришедший вместе с базой форка (токены вида `a1_100`). */
     const val MONET_STYLE_CLASSIC = 1
 
+    /** Режими інтерфейсу: 0 — Класичний (Classic Amegram), 1 — Експериментальний Yougram Expressive (Рідке скло + M3 сегменти). */
+    const val UI_STYLE_CLASSIC = 0
+    const val UI_STYLE_YOUGRAM_EXPRESSIVE = 1
+
+    @JvmField
+    val uiStyleMode =
+        addConfig("OEAppearanceUiStyleMode", ConfigItem.configTypeInt, UI_STYLE_CLASSIC)
+
+    @JvmStatic
+    fun uiStyleMode(): Int {
+        ensureLoaded()
+        return uiStyleMode.Int()
+    }
+
+    @JvmStatic
+    fun isYougramExpressive(): Boolean {
+        ensureLoaded()
+        return uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE
+    }
+
     @JvmStatic
     fun getPreferences(): SharedPreferences = NekoConfig.getPreferences()
 
@@ -102,6 +122,9 @@ object AppearanceConfig {
 
     @JvmStatic
     fun squareFab(): Boolean {
+        if (isYougramExpressive()) {
+            return true
+        }
         ensureLoaded()
         return squareFab.Bool()
     }
@@ -186,6 +209,9 @@ object AppearanceConfig {
 
     @JvmStatic
     fun glassMessageMenu(): Boolean {
+        if (isYougramExpressive()) {
+            return true
+        }
         ensureLoaded()
         return glassMessageMenu.Bool()
     }
@@ -235,6 +261,9 @@ object AppearanceConfig {
 
     @JvmStatic
     fun m3ListItems(): Boolean {
+        if (isYougramExpressive()) {
+            return true
+        }
         ensureLoaded()
         return m3ListItems.Bool()
     }
@@ -253,6 +282,9 @@ object AppearanceConfig {
 
     @JvmStatic
     fun newLoadingStyle(): Boolean {
+        if (isYougramExpressive()) {
+            return true
+        }
         ensureLoaded()
         return newLoadingStyle.Bool()
     }
@@ -265,6 +297,9 @@ object AppearanceConfig {
 
     @JvmStatic
     fun newNavigationBarStyle(): Boolean {
+        if (isYougramExpressive()) {
+            return true
+        }
         ensureLoaded()
         return newNavigationBarStyle.Bool()
     }
@@ -446,6 +481,9 @@ object AppearanceConfig {
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             return 10
         }
+        if (isYougramExpressive()) {
+            return 24
+        }
         ensureLoaded()
         return sectionRadius.Int()
     }
@@ -472,6 +510,9 @@ object AppearanceConfig {
     /** Стиль разделителя внутри карточки: 0 — скрыт, 1 — линия, 2 — сегменты. */
     @JvmStatic
     fun dividerStyle(): Int {
+        if (isYougramExpressive()) {
+            return DIVIDER_SEGMENTS
+        }
         ensureLoaded()
         return dividerStyle.Int()
     }

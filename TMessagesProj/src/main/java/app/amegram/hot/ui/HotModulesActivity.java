@@ -609,7 +609,6 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         bottomRow.setOrientation(LinearLayout.HORIZONTAL);
         bottomRow.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
 
-        String upd = pendingUpdates.get(info.manifest.id);
         if (upd != null) {
             TextView btnUpdate = new TextView(context);
             boolean isUpdating = updating.contains(info.manifest.id);

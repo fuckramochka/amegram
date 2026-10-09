@@ -31,6 +31,8 @@ object DoubleTap {
         10
     const val DOUBLE_TAP_ACTION_COPY_TEXT =
         11
+    const val DOUBLE_TAP_ACTION_FORWARD =
+        12
 
     init {
         doubleTapActionMap[DOUBLE_TAP_ACTION_NONE] =
@@ -80,6 +82,10 @@ object DoubleTap {
         doubleTapActionMap[DOUBLE_TAP_ACTION_COPY_TEXT] =
             getString(
                 R.string.Copy
+            )
+        doubleTapActionMap[DOUBLE_TAP_ACTION_FORWARD] =
+            getString(
+                R.string.Forward
             )
     }
 }

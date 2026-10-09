@@ -74,6 +74,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     // Sections (UI only)
     private int sectionsHeaderRow;
+    private int uiStyleModeRow;
     private int sectionRadiusRow;
     private int separateHeadersRow;
     private int dividerStyleRow;
@@ -238,6 +239,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         appearanceDividerRow = addRow();
 
         sectionsHeaderRow = addRow("sectionsHeader");
+        uiStyleModeRow = addRow("uiStyleMode");
         sectionRadiusRow = addRow("sectionRadius");
         separateHeadersRow = addRow("separateHeaders");
         dividerStyleRow = addRow("dividerStyle");
@@ -533,6 +535,15 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             return;
         } else if (position == hideAiIvRow) {
             toggleHideAi(view, AppearanceConfig.hideIvSummary);
+            return;
+        } else if (position == uiStyleModeRow) {
+            showSelector(position, "Режим інтерфейсу (UI Style)", new CharSequence[]{
+                    "1. Класичний (Classic Amegram)",
+                    "2. Експериментальний Yougram Expressive (Рідке скло + M3 сегменти)"
+            }, AppearanceConfig.uiStyleMode, () -> {
+                rebuildAll();
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+            });
             return;
         } else if (position == dividerStyleRow) {
             showSelector(position, getString(R.string.OEAppearanceDividerStyle), new CharSequence[]{
@@ -947,7 +958,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_SETTINGS: {
                     TextSettingsCell cell = (TextSettingsCell) holder.itemView;
-                    if (position == dividerStyleRow) {
+                    if (position == uiStyleModeRow) {
+                        String[] v = {"Класичний (Classic)", "Yougram Expressive (M3 + Скло)"};
+                        cell.setTextAndValue("Режим інтерфейсу", v[clamp(AppearanceConfig.uiStyleMode.Int(), v.length)], true);
+                    } else if (position == dividerStyleRow) {
                         String[] v = {getString(R.string.OEAppearanceDividerHidden), getString(R.string.OEAppearanceDividerLine), getString(R.string.OEAppearanceDividerSegments)};
                         cell.setTextAndValue(getString(R.string.OEAppearanceDividerStyle), v[clamp(AppearanceConfig.dividerStyle.Int(), v.length)], false);
                     } else if (position == glassOutlineRow) {
@@ -1055,7 +1069,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     || position == hideAiSummaryRow || position == hideAiIvRow
                     || position == iosNavBarRow || position == iosFolderTapRow) {
                 return TYPE_ROUND_CHECK;
-            } else if (position == dividerStyleRow || position == glassOutlineRow
+            } else if (position == uiStyleModeRow || position == dividerStyleRow || position == glassOutlineRow
                     || position == tabTitleStyleRow
                     || position == tabCounterRow || position == titleTextRow) {
                 return TYPE_SETTINGS;

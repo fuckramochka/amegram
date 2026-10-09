@@ -273,6 +273,33 @@ public class AndroidUtilities {
         return getTypeface(TYPEFACE_ROBOTO_REGULAR);
     }
 
+    private static volatile Typeface monoTypeface;
+
+    public static Typeface mono() {
+        Typeface typeface = monoTypeface;
+        if (typeface == null) {
+            typeface = Typeface.MONOSPACE;
+            try {
+                Paint paint = new Paint();
+                paint.setTextSize(100);
+                paint.setTypeface(Typeface.MONOSPACE);
+                float narrow = paint.measureText("iiii");
+                float wide = paint.measureText("WWWW");
+                if (wide <= 0 || Math.abs(wide - narrow) / wide > 0.02f) {
+                    typeface = TypefaceHelper.createTypefaceFromAsset(TYPEFACE_ROBOTO_MONO);
+                }
+            } catch (Exception e) {
+                FileLog.e(e);
+            }
+            monoTypeface = typeface;
+        }
+        return typeface;
+    }
+
+    public static boolean isMono(Typeface typeface) {
+        return typeface != null && (typeface == Typeface.MONOSPACE || typeface == mono());
+    }
+
     public static Typeface bold() {
         if (mediumTypeface == null) {
             if (SharedConfig.useSystemBoldFont && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

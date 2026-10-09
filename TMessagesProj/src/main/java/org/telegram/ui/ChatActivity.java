@@ -2235,6 +2235,12 @@ public class ChatActivity extends BaseFragment implements
                         return allowEdit && !isAyuDeleted;
                     case DoubleTap.DOUBLE_TAP_ACTION_DELETE:
                         return allowDelete;
+                    case DoubleTap.DOUBLE_TAP_ACTION_FORWARD:
+                        return !message.isSponsored() && chatMode != MODE_SCHEDULED && !isQuickRepliesOrWelcomeMessagesMode()
+                                && (!message.needDrawBluredPreview() || message.hasExtendedMediaPreview())
+                                && !message.isLiveLocation() && !message.isExpiredStory() && !isAyuDeleted
+                                && message.type != MessageObject.TYPE_PHONE_CALL
+                                && message.type != MessageObject.TYPE_STORY_MENTION;
                 }
             }
             return false;
@@ -2339,6 +2345,9 @@ public class ChatActivity extends BaseFragment implements
                         break;
                     case DoubleTap.DOUBLE_TAP_ACTION_DELETE:
                         processSelectedOption(OPTION_DELETE);
+                        break;
+                    case DoubleTap.DOUBLE_TAP_ACTION_FORWARD:
+                        processSelectedOption(OPTION_FORWARD);
                         break;
                     case DoubleTap.DOUBLE_TAP_ACTION_COPY_TEXT:
                         if (messageObject != null) {

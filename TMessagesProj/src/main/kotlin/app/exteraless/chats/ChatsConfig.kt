@@ -34,6 +34,30 @@ object ChatsConfig {
     @JvmField
     val stickerShape = addConfig("OEChatsStickerShape", ConfigItem.configTypeInt, 1)
 
+    @JvmField
+    val stickerTimeSide = addConfig("OEChatsStickerTimeSide", ConfigItem.configTypeBool, false)
+
+    const val STICKER_TIME_DEFAULT = 0
+    const val STICKER_TIME_SIDE = 1
+    const val STICKER_TIME_HIDDEN = 2
+
+    @JvmStatic
+    fun stickerTimeMode(): Int {
+        ensureLoaded()
+        return when {
+            NekoConfig.hideTimeForSticker.Bool() -> STICKER_TIME_HIDDEN
+            stickerTimeSide.Bool() -> STICKER_TIME_SIDE
+            else -> STICKER_TIME_DEFAULT
+        }
+    }
+
+    @JvmStatic
+    fun setStickerTimeMode(mode: Int) {
+        ensureLoaded()
+        NekoConfig.hideTimeForSticker.setConfigBool(mode == STICKER_TIME_HIDDEN)
+        stickerTimeSide.setConfigBool(mode == STICKER_TIME_SIDE)
+    }
+
     // ---- Ответы ----
 
     /** Цветной фон блока ответа. */
@@ -127,6 +151,12 @@ object ChatsConfig {
     @JvmField
     val hideCameraTile = addConfig("OEChatsHideCameraTile", ConfigItem.configTypeBool, false)
 
+    @JvmField
+    val inlineMathResult = addConfig("OEChatsInlineMathResult", ConfigItem.configTypeBool, true)
+
+    @JvmField
+    val inlineMathCurrency = addConfig("OEChatsInlineMathCurrency", ConfigItem.configTypeBool, true)
+
     /**
      * Отправлять фото в высоком качестве по умолчанию. Дефолт true, как в exteraGram.
      * При включённом бейдж на превью инвертируется: помечается не «HD», а «SD» —
@@ -134,6 +164,9 @@ object ChatsConfig {
      */
     @JvmField
     val alwaysSendInHD = addConfig("OEChatsAlwaysSendInHD", ConfigItem.configTypeBool, true)
+
+    @JvmField
+    val hdrPhotos = addConfig("OEChatsHdrPhotos", ConfigItem.configTypeBool, true)
 
     // ---- Стикеры и эмодзи ----
 
@@ -162,6 +195,30 @@ object ChatsConfig {
     /** Показывать результаты опроса до голосования (только UI). */
     @JvmField
     val showResultsBeforeVoting = addConfig("OEChatsShowResultsBeforeVoting", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val hideChannelSearchButton = addConfig("OEChatsHideChannelSearchButton", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val translateInSheet = addConfig("OEChatsTranslateInSheet", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val stripTrackingOnOpen = addConfig("OEChatsStripTrackingOnOpen", ConfigItem.configTypeBool, true)
+
+    @JvmField
+    val stripTrackingOnPaste = addConfig("OEChatsStripTrackingOnPaste", ConfigItem.configTypeBool, true)
+
+    @JvmStatic
+    fun stripTrackingOnOpen(): Boolean {
+        ensureLoaded()
+        return stripTrackingOnOpen.Bool()
+    }
+
+    @JvmStatic
+    fun stripTrackingOnPaste(): Boolean {
+        ensureLoaded()
+        return stripTrackingOnPaste.Bool()
+    }
 
     // ---- Камера (расширенные) ----
 

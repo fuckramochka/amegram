@@ -1728,6 +1728,38 @@ object NaConfig {
         }
     }
 
+    // ---- Порт з exteraless beta14 (флаги нових екранів/хуків) ----
+    val askBeforeOpeningStory =
+        addConfig(
+            "AskBeforeOpeningStory",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val hideGiftButtonInChannel =
+        addConfig(
+            "HideGiftButtonInChannel",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val saveInArchivedChats =
+        addConfig(
+            "SaveInArchivedChats",
+            ConfigItem.configTypeBool,
+            true
+        )
+    val saveReadDate =
+        addConfig(
+            "OEAyuSaveReadDate",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val sendLockedCustomEmojiAsSticker =
+        addConfig(
+            "SendLockedCustomEmojiAsSticker",
+            ConfigItem.configTypeBool,
+            true
+        )
+
     init {
         init()
     }

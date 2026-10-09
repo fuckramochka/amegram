@@ -33,10 +33,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
-          distribution: jetbrains
-          java-version: '21.0.11+1163.116'
+          distribution: temurin
+          java-version: '21'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'

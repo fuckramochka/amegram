@@ -10,6 +10,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AudioPlayerAlert;
 
+import app.exteraless.appearance.AppearanceConfig;
 
 public final class Md3Player {
 

@@ -64,6 +64,11 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
     private int monetStyleRow;
     private int uiInfoRow;
 
+    private int headerPlayerRow;
+    private int md3PlayerRow;
+    private int md3MiniPlayerRow;
+    private int playerInfoRow;
+
     @Override
     protected String getActionBarTitle() {
         return MiogramLocale.get("Зовнішній вигляд", "Внешний вид", "Appearance & Design");
@@ -102,6 +107,11 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         titleTextRow = addRow();
         monetStyleRow = addRow();
         uiInfoRow = addRow();
+
+        headerPlayerRow = addRow();
+        md3PlayerRow = addRow();
+        md3MiniPlayerRow = addRow();
+        playerInfoRow = addRow();
     }
 
     private Context getSafeContext() {
@@ -192,6 +202,18 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                     LaunchActivity.instance.rebuildAllFragments(false);
                 }
             });
+        } else if (position == md3PlayerRow) {
+            boolean next = !AppearanceConfig.md3Player();
+            AppearanceConfig.md3Player.setConfigBool(next);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(next);
+            }
+        } else if (position == md3MiniPlayerRow) {
+            boolean next = !AppearanceConfig.md3MiniPlayer();
+            AppearanceConfig.md3MiniPlayer.setConfigBool(next);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(next);
+            }
         }
     }
 
@@ -341,13 +363,14 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == headerModeRow || position == headerGlassRow || position == headerAvatarsRow || position == headerUiRow) {
+            if (position == headerModeRow || position == headerGlassRow || position == headerAvatarsRow || position == headerUiRow || position == headerPlayerRow) {
                 return TYPE_HEADER;
             } else if (position == ameVibeRow || position == activeLyricsLineRow
                     || position == glassToggleRow || position == singleCornerRadiusRow
-                    || position == senderMiniAvatarsRow || position == squareFabRow) {
+                    || position == senderMiniAvatarsRow || position == squareFabRow
+                    || position == md3PlayerRow || position == md3MiniPlayerRow) {
                 return TYPE_CHECK;
-            } else if (position == modeInfoRow || position == glassInfoRow || position == avatarsInfoRow || position == uiInfoRow) {
+            } else if (position == modeInfoRow || position == glassInfoRow || position == avatarsInfoRow || position == uiInfoRow || position == playerInfoRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_SETTINGS;
@@ -366,6 +389,8 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Аватарки та список чатів", "Аватарки и список чатов", "Avatars & Chat List"));
                     } else if (position == headerUiRow) {
                         cell.setText(MiogramLocale.get("Елементи інтерфейсу та Теми", "Элементы интерфейса и Темы", "UI & Themes"));
+                    } else if (position == headerPlayerRow) {
+                        cell.setText(MiogramLocale.get("Музичний плеєр (Material 3)", "Музыкальный плеер (Material 3)", "Music Player (Material 3)"));
                     }
                     break;
                 }
@@ -383,6 +408,10 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(MiogramLocale.get("Міні-аватарки відправників у чатах", "Мини-аватарки отправителей в чатах", "Mini-avatars of message senders"), AppearanceConfig.senderMiniAvatars.Bool(), false);
                     } else if (position == squareFabRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Квадратна («Squircle») плаваюча кнопка", "Квадратная («Squircle») плавающая кнопка", "Squircle Floating Action Button"), AppearanceConfig.squareFab.Bool(), true);
+                    } else if (position == md3PlayerRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("MD3-плеєр (PlayerSheet)", "MD3-плеер (PlayerSheet)", "MD3 Player (PlayerSheet)"), AppearanceConfig.md3Player(), true);
+                    } else if (position == md3MiniPlayerRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("MD3 міні-плеєр у чатах", "MD3 мини-плеер в чатах", "MD3 Mini Player in chats"), AppearanceConfig.md3MiniPlayer(), false);
                     }
                     break;
                 }
@@ -440,6 +469,10 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Керує динамічним кольоровим оформленням Material You та кнопками дії.",
                                 "Управляет динамическим цветовым оформлением Material You и кнопками действия.",
                                 "Controls dynamic Material You coloring and action buttons."));
+                    } else if (position == playerInfoRow) {
+                        cell.setText(MiogramLocale.get("Сучасний Material 3 плеєр з хвилястим повзунком WavySeekBar, синхронізованими караоке-текстами та динамічним забарвленням під обкладинку треку.",
+                                "Современный Material 3 плеер с волнистым ползунком WavySeekBar, синхронизированными караоке-текстами и динамической окраской под обложку трека.",
+                                "Modern Material 3 player featuring WavySeekBar, synchronized lyrics, and dynamic coloring based on album art."));
                     }
                     break;
                 }

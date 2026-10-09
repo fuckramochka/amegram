@@ -245,15 +245,15 @@ object AppearanceConfig {
     val m3ListItems =
         addConfig("OEAppearanceM3ListItems", ConfigItem.configTypeBool, false)
 
-    /** MD3-плеєр (повний шит). Дефолт false; джерело — модуль md3player, фолбек — вбудовані класи. */
+    /** MD3-плеєр (повний шит). Джерело — вбудовані класи app.exteraless.player або модуль md3player. */
     @JvmField
     val md3Player =
-        addConfig("OEAppearanceMd3Player", ConfigItem.configTypeBool, false)
+        addConfig("OEAppearanceMd3Player", ConfigItem.configTypeBool, true)
 
-    /** MD3-мініплеєр (плашка в чатах). Дефолт false. */
+    /** MD3-мініплеєр (плашка в чатах). */
     @JvmField
     val md3MiniPlayer =
-        addConfig("OEAppearanceMd3MiniPlayer", ConfigItem.configTypeBool, false)
+        addConfig("OEAppearanceMd3MiniPlayer", ConfigItem.configTypeBool, true)
 
     @JvmField
     val lrclibAllowed =
@@ -270,12 +270,18 @@ object AppearanceConfig {
 
     @JvmStatic
     fun md3Player(): Boolean {
+        if (isYougramExpressive()) {
+            return true
+        }
         ensureLoaded()
         return md3Player.Bool()
     }
 
     @JvmStatic
     fun md3MiniPlayer(): Boolean {
+        if (isYougramExpressive()) {
+            return true
+        }
         ensureLoaded()
         return md3MiniPlayer.Bool()
     }

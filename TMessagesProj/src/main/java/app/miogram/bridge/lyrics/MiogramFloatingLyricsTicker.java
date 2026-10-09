@@ -260,7 +260,7 @@ public class MiogramFloatingLyricsTicker implements NotificationCenter.Notificat
                     try {
                         BaseFragment fragment = currentActivity.getActionBarLayout() != null ? currentActivity.getActionBarLayout().getLastFragment() : null;
                         if (fragment != null) {
-                            fragment.showDialog(new org.telegram.ui.Components.AudioPlayerAlert(currentActivity, fragment.getResourceProvider()));
+                            fragment.showDialog(app.amegram.hot.Md3Router.create(currentActivity, fragment.getResourceProvider()));
                         }
                     } catch (Throwable ignored) {}
                 }

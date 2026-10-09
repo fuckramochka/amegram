@@ -141,10 +141,24 @@ public class MiogramSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new MiogramVisualsActivity());
         } else if (position == playerEditRow) {
             try {
-                AudioPlayerAlert alert = new AudioPlayerAlert(getParentActivity(), getResourceProvider());
-                showDialog(alert);
-                if (alert.getModernPlayerLayout() != null) {
-                    alert.getModernPlayerLayout().post(() -> alert.getModernPlayerLayout().setEditMode(true));
+                if (app.exteraless.appearance.AppearanceConfig.md3Player()) {
+                    org.telegram.messenger.MessageObject now = org.telegram.messenger.MediaController.getInstance().getPlayingMessageObject();
+                    if (now != null && now.isMusic()) {
+                        showDialog(app.amegram.hot.Md3Router.create(getParentActivity(), getResourceProvider()));
+                    } else {
+                        org.telegram.ui.Components.BulletinFactory.of(this).createSimpleBulletin(
+                                R.raw.info,
+                                MiogramLocale.get("Увімкніть музичний трек для відображення MD3-плеєра",
+                                        "Включите музыкальный трек для отображения MD3-плеера",
+                                        "Play a music track to view MD3 Player")
+                        ).show();
+                    }
+                } else {
+                    AudioPlayerAlert alert = new AudioPlayerAlert(getParentActivity(), getResourceProvider());
+                    showDialog(alert);
+                    if (alert.getModernPlayerLayout() != null) {
+                        alert.getModernPlayerLayout().post(() -> alert.getModernPlayerLayout().setEditMode(true));
+                    }
                 }
             } catch (Throwable ignore) {}
         } else if (position == badgeStudioRow) {

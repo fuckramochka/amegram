@@ -3367,7 +3367,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
                     // The Telegram context bar is the compact state; every tap opens
                     // the same full Miogram player, regardless of source screen.
-                    fragment.showDialog(new AudioPlayerAlert(this, null));
+                    fragment.showDialog(app.amegram.hot.Md3Router.create(this, null));
                 }
                 pushOpened = false;
             } else if (showLocations) {

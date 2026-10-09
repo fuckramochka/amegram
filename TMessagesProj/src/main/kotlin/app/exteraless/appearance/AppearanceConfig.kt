@@ -229,6 +229,10 @@ object AppearanceConfig {
     val md3MiniPlayer =
         addConfig("OEAppearanceMd3MiniPlayer", ConfigItem.configTypeBool, false)
 
+    @JvmField
+    val lrclibAllowed =
+        addConfig("OEPlayerLrclibAllowed", ConfigItem.configTypeBool, false)
+
     @JvmStatic
     fun m3ListItems(): Boolean {
         ensureLoaded()

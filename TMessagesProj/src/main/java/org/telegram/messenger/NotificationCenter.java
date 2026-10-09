@@ -307,6 +307,7 @@ public class NotificationCenter {
     public static final int didSetNewWallpapper = totalEvents++;
     public static final int proxySettingsChanged = totalEvents++;
     public static final int proxyCheckDone = totalEvents++;
+    public static final int proxyPingUpdated = totalEvents++;
     public static final int proxyChangedByRotation = totalEvents++;
     public static final int liveLocationsChanged = totalEvents++;
     public static final int newLocationAvailable = totalEvents++;
@@ -398,6 +399,7 @@ public class NotificationCenter {
     public static final int feedNeedReload = totalEvents++;
     public static final int feedTabVisibleToggled = totalEvents++;
     public static final int pillStackLayoutChanged = totalEvents++;
+    public static final int audioInfoLoaded = totalEvents++;
 
     private final SparseArray<ArrayList<NotificationCenterDelegate>> observers = new SparseArray<>();
     private final SparseArray<ArrayList<NotificationCenterDelegate>> removeAfterBroadcast = new SparseArray<>();

@@ -33,7 +33,15 @@ public final class ProxyController {
     }
 
     private static String keyOf(SharedConfig.ProxyInfo info) {
-        return info == null ? "" : info.settings.getLink();
+        return info == null ? "" : info.getLink();
+    }
+
+    /** Тип проксі за полями (WEB-типу в цьому форку немає: secret → MTProto, інакше SOCKS5). */
+    private static org.telegram.utils.proxy.ProxySettings.Type typeOf(SharedConfig.ProxyInfo info) {
+        if (info != null && !android.text.TextUtils.isEmpty(info.secret)) {
+            return org.telegram.utils.proxy.ProxySettings.Type.MTPROTO;
+        }
+        return org.telegram.utils.proxy.ProxySettings.Type.SOCKS5;
     }
 
     private synchronized void ensureLoaded() {
@@ -106,15 +114,13 @@ public final class ProxyController {
         }
         String name = getName(info);
         if (TextUtils.isEmpty(name)) {
-            name = info.settings.getType() == ProxySettings.Type.WEB
-                    ? info.settings.getAddress() + " (WEB)"
-                    : info.settings.getAddress() + ":" + info.settings.getPort();
+            name = info.address + ":" + info.port;
         }
         return name;
     }
 
     public synchronized String getProxyTypeName(SharedConfig.ProxyInfo info) {
-        ProxySettings.Type type = info == null ? ProxySettings.Type.SOCKS5 : info.settings.getType();
+        ProxySettings.Type type = info == null ? ProxySettings.Type.SOCKS5 : typeOf(info);
         int resId;
         if (type == ProxySettings.Type.WEB) {
             resId = R.string.UseProxyWeb;

@@ -53,6 +53,25 @@ public final class YougramExpressive {
         return enabled();
     }
 
+    // ---- Фон чата ----
+
+    private static android.graphics.drawable.ColorDrawable cachedWallpaper;
+
+    /**
+     * Плоский фон чата вместо шпалер темы. Theme.getCachedWallpaperNonBlocking
+     * отдаёт этот drawable целиком; ColorDrawable явно поддержан во всех
+     * потребителях (WallpaperBitmapProvider, calcDrawableColor, setBackgroundImage).
+     */
+    public static android.graphics.drawable.Drawable chatWallpaper(boolean dark) {
+        final int color = dark ? DARK_CHAT_BG : LIGHT_CHAT_BG;
+        if (cachedWallpaper == null) {
+            cachedWallpaper = new android.graphics.drawable.ColorDrawable(color);
+        } else if (cachedWallpaper.getColor() != color) {
+            cachedWallpaper.setColor(color);
+        }
+        return cachedWallpaper;
+    }
+
     // ---- Палитра ----
 
     private static final int DARK_BG = 0xFF121212;
@@ -123,6 +142,18 @@ public final class YougramExpressive {
         put(colors, Theme.key_chats_message, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
         put(colors, Theme.key_chats_message_threeLines, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
         put(colors, Theme.key_chats_date, dark ? DARK_MUTED : LIGHT_MUTED);
+
+        // ---- Скло: пігулка вкладок і панелі ----
+        // yougram Backdrop: tint ~45-55% поверх блюра, поверхня трохи піднята над фоном
+        final int glassSurface = dark ? 0xD91C1C1F : 0xE6FCFCFC;
+        put(colors, Theme.key_glass_targetMainTabs, glassSurface);
+        put(colors, Theme.key_glass_targetMainTopPanel, glassSurface);
+        // селектор виділеної вкладки: у yougram — onSurface з альфою (тут базовий колір,
+        // споживачі допусково застосовують свій множник альфи)
+        put(colors, Theme.key_glass_tabSelected, dark ? 0xFFFFFFFF : 0xFF111111);
+        put(colors, Theme.key_glass_tabSelectedText, accent);
+        put(colors, Theme.key_glass_defaultIcon, dark ? DARK_TEXT : LIGHT_TEXT);
+        put(colors, Theme.key_glass_defaultText, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
 
         // ---- Чат: плоский фон и пузыри Yougram ----
         final int chatBg = dark ? DARK_CHAT_BG : LIGHT_CHAT_BG;

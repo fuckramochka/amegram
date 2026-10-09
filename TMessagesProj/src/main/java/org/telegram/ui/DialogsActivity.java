@@ -541,6 +541,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private boolean storyHintShown;
     private FragmentFloatingButton floatingButton3;
     private FragmentFloatingButton floatingButtonStories;
+    /** Yougram Expressive: отдельная плавающая кнопка поиска над панелью (yougram MainScreen search button). */
+    private FragmentFloatingButton floatingButtonSearch;
     private View iosLargeHeaderView;
     private androidx.recyclerview.widget.RecyclerView.OnScrollListener iosCollapseListener;
     private ButtonWithCounterView addChatsToCommunityButton;
@@ -4985,6 +4987,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         floatingButton3 = new FragmentFloatingButton(context, resourceProvider);
         contentView.addView(floatingButton3, FragmentFloatingButton.createDefaultLayoutParams());
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            floatingButtonSearch = new FragmentFloatingButton(context, resourceProvider, true);
+            floatingButtonSearch.setContentDescription(getString(R.string.Search));
+            floatingButtonSearch.setImageResource(R.drawable.outline_header_search);
+            floatingButtonSearch.setOnClickListener(v -> {
+                app.miogram.bridge.customui.MiogramHaptic.tap(v);
+                if (searchItem != null && searchItem.getVisibility() == View.VISIBLE) {
+                    searchItem.performClick();
+                }
+            });
+            contentView.addView(floatingButtonSearch, FragmentFloatingButton.createSubButtonLayoutParams());
+        }
         floatingButton3.setOnClickListener(v -> {
             app.miogram.bridge.customui.MiogramHaptic.tap(v);
             if (parentLayout != null && parentLayout.isInPreviewMode()) {
@@ -9204,6 +9218,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled() || app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext())) {
             if (floatingButton3 != null) floatingButton3.setButtonVisible(false, animated);
             if (floatingButtonStories != null) floatingButtonStories.setButtonVisible(false, animated);
+            if (floatingButtonSearch != null) floatingButtonSearch.setButtonVisible(false, animated);
             return;
         }
         final boolean isVisible = !(onlySelect && initialDialogsType != 10 || folderId != 0 || communityId != 0 || inPreviewMode || (searching && !onlySelect) || floatingButtonHidden);
@@ -9213,6 +9228,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         if (floatingButtonStories != null) {
             floatingButtonStories.setButtonVisible(isVisible && !NaConfig.INSTANCE.getDisableStories().Bool(), animated);
+        }
+        if (floatingButtonSearch != null) {
+            // yougram: поиск всегда под рукой; прячется вместе с остальными плавающими кнопками
+            // и когда поиск недоступен в текущем режиме (onlySelect и т.п.)
+            floatingButtonSearch.setButtonVisible(
+                    isVisible && searchItem != null && searchItem.getVisibility() == View.VISIBLE, animated);
         }
     }
 
@@ -9229,6 +9250,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             if (storyHint != null) {
                 storyHint.setTranslationY(baseTranslationY - dp(52));
             }
+        }
+        if (floatingButtonSearch != null) {
+            // yougram: кнопка поиска в стопке над историей/карандашом
+            final boolean aboveStories = floatingButtonStories != null && floatingButtonStories.getButtonVisible();
+            floatingButtonSearch.setTranslationY(baseTranslationY - dp(aboveStories ? 104 : 52));
         }
     }
 

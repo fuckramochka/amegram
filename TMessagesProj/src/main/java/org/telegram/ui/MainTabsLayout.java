@@ -88,9 +88,13 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             if (preferences == null) {
                 return app.exteraless.appearance.AppearanceConfig.isYougramExpressive();
             }
-            // Yougram Expressive: контент під пігулкою edge-to-edge — floating дефолт
-            bottomNavigationFloating = preferences.getBoolean(KEY_BOTTOM_NAVIGATION_FLOATING,
-                    app.exteraless.appearance.AppearanceConfig.isYougramExpressive());
+            // Yougram Expressive: контент під пігулкою edge-to-edge — floating дефолт.
+            // Кешуємо лише свідомий вибір користувача, щоб перемикання режиму
+            // працювало без перезапуску.
+            if (!preferences.contains(KEY_BOTTOM_NAVIGATION_FLOATING)) {
+                return app.exteraless.appearance.AppearanceConfig.isYougramExpressive();
+            }
+            bottomNavigationFloating = preferences.getBoolean(KEY_BOTTOM_NAVIGATION_FLOATING, false);
         }
         return bottomNavigationFloating;
     }

@@ -486,7 +486,8 @@ object AppearanceConfig {
             return 10
         }
         if (isYougramExpressive()) {
-            return 24
+            // yougram Theme.kt: large 28dp — карточки-контейнеры M3 Expressive
+            return 28
         }
         ensureLoaded()
         return sectionRadius.Int()

@@ -10048,6 +10048,9 @@ public class Theme {
     }
 
     public static Drawable getCachedWallpaperNonBlocking() {
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            return app.exteraless.appearance.YougramExpressive.chatWallpaper(isCurrentThemeNight());
+        }
         if (themedWallpaper != null) {
             return themedWallpaper;
         } else {

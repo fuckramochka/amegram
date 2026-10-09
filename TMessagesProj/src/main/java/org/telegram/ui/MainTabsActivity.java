@@ -1339,10 +1339,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final float factor = animatorTabsVisible.getFloatValue();
 
         tabsViewWrapper.setTranslationY(lerp(hiddenY, normalY, factor));
-        // Amegram: keep the pill background swallowing taps while visible.
-        // (factor lives in 0..1, so the old `factor > 1` was dead code that unset it.)
+        // Keep empty areas of the visible pill from passing taps through to the
+        // fragment underneath. While it fades in/out, let the underlying screen
+        // receive touches again.
         tabsView.setClickable(true);
-        tabsView.setEnabled(factor > 1);
+        tabsView.setEnabled(factor >= 0.99f);
         tabsView.setAlpha(factor);
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
 

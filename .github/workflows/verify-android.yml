@@ -52,6 +52,11 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: 'platforms;android-37.0 build-tools;36.0.0 ndk;27.2.12479018'
+      - name: Create temporary CI signing key
+        run: >-
+          keytool -genkeypair -noprompt -keystore TMessagesProj/release.keystore
+          -storepass miogram -keypass miogram -alias miogram -keyalg RSA
+          -keysize 2048 -validity 10000 -dname "CN=Amegram CI Build"
       - name: Build release APK
         env:
           TELEGRAM_APP_ID: '1'

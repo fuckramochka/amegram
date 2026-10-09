@@ -385,6 +385,8 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         aiLyricsButton.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
         aiLyricsButton.setPadding(dp(12), dp(10), dp(12), dp(10));
         aiLyricsButton.setOnClickListener(v -> transcribeLyricsWithAi());
+        // Keep the fallback out of the way until the normal lyrics lookup fails.
+        aiLyricsButton.setVisibility(View.GONE);
         lyricsPanel.addView(aiLyricsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 4));
         layout.addView(lyricsPanel);
 
@@ -1007,6 +1009,9 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         cover.setMessage(mo);
         smallCover.setMessage(mo);
         if (changed) {
+            aiLyricsButton.setVisibility(View.GONE);
+            aiLyricsButton.setEnabled(true);
+            resetAiLyricsButton();
             Integer seed = PlayerArt.cachedSeed(mo);
             if (seed != null) {
                 animateColors(PlayerColors.fromSeed(seed, dark), animated);
@@ -1352,6 +1357,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         }
         if (OnlineLyrics.knownMissing(q)) {
             lyricsView.showState(LyricsView.STATE_NOT_FOUND);
+            aiLyricsButton.setVisibility(View.VISIBLE);
             return;
         }
         lyricsView.showState(LyricsView.STATE_LOADING);
@@ -1364,6 +1370,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
                 showLyrics(lyrics);
             } else {
                 lyricsView.showState(status == OnlineLyrics.ERROR ? LyricsView.STATE_ERROR : LyricsView.STATE_NOT_FOUND);
+                aiLyricsButton.setVisibility(View.VISIBLE);
             }
         });
     }

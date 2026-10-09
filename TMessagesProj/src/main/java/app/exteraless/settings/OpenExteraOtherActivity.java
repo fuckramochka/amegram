@@ -106,6 +106,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     private int nagramHeaderRow;
     private int nagramSettingsRow;
     private int ayuMomentsRow;
+    private int ayuMomentsScreenRow;
     private int ayuGhostRow;
     private int ayuRegexRow;
     private int ayuSaveLastSeenRow;
@@ -178,6 +179,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         nagramSettingsRow = addRow("nagramSettings");
         ayuGhostRow = addRow("ayuGhost");
         ayuMomentsRow = addRow("ayuMoments");
+        ayuMomentsScreenRow = addRow("ayuMomentsScreen");
         ayuRegexRow = ayuSaveLastSeenRow = ayuSaveDeletedRow = ayuSaveEditsRow = -1;
         ayuSaveMediaRow = ayuBotUserRow = ayuBotChatRow = ayuTranslucentRow = -1;
         ayuSaveDeletedPrivateRow = ayuSaveDeletedGroupsRow = ayuSaveDeletedChannelsRow = -1;
@@ -294,6 +296,8 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                 rebuildRowsAndNotify();
                 AyuData.loadSizes(this::refreshAyuDataSize);
             }
+        } else if (position == ayuMomentsScreenRow) {
+            presentFragment(new OpenExteraAyuMomentsActivity());
         } else if (position == ayuGhostRow) {
             presentFragment(new GhostModeActivity());
         } else if (position == ayuRegexRow) {
@@ -936,6 +940,9 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     if (position == ayuGhostRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.GhostMode), R.drawable.ayu_ghost, true);
+                    } else if (position == ayuMomentsScreenRow) {
+                        cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
+                        cell.setTextAndIcon(getString(R.string.OEGeneralAyuMoments), R.drawable.ayu_ghost, false);
                     } else if (position == exportEtgRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.OEGeneralExportEtgSettings), R.drawable.msg_shareout, true);
@@ -999,7 +1006,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                 return TYPE_INFO_PRIVACY;
             } else if (position == exportEtgRow || position == importEtgRow
                     || position == resetSettingsRow || position == deleteAccountRow
-                    || position == glyphRow || position == ayuGhostRow) {
+                    || position == glyphRow || position == ayuGhostRow || position == ayuMomentsScreenRow) {
                 return TYPE_TEXT;
             } else if (position == ayuDeletedMarkRow || position == ayuClearDbRow) {
                 return TYPE_SETTINGS;

@@ -301,6 +301,9 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
             org.telegram.ui.ActionBar.Theme.reloadMonetThemes();
         }
         app.exteraless.plugins.PluginsController.getInstance().init(applicationContext);
+        if (BuildConfig.DEBUG_TOOLS) {
+            app.exteraless.debug.EnergyProfiler.resumeIfEnabled(applicationContext);
+        }
         SharedPrefsHelper.init(applicationContext);
         try {
             FirebaseCrashlytics.getInstance().setCrashlyticsCollectionEnabled(AndroidUtil.shouldEnableCrashlytics());
@@ -448,6 +451,9 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         ProxyRotationController.init();
         app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().start();
         app.miogram.bridge.patch.AmegramPatchManager.getInstance().init(applicationContext);
+        app.exteraless.proxy.ProxyPingController.init();
+        app.exteraless.links.LinkCleaner.preloadIfEnabled();
+        app.exteraless.appearance.M3CircularProgress.prewarm();
     }
 
     // Local Push Service, TFoss implementation

@@ -324,7 +324,9 @@ public final class PluginInstallHelper {
     private static void showConsentSheet(Activity activity, File file, Plugin plugin,
                                          Map<String, List<String>> offered,
                                          Map<String, List<String>> capabilities) {
-        new PluginInstallSheet(activity, file, plugin, offered,
+        com.exteragram.messenger.plugins.ui.components.InstallPluginBottomSheet.PluginInstallParams params =
+                new com.exteragram.messenger.plugins.ui.components.InstallPluginBottomSheet.PluginInstallParams(file.getAbsolutePath(), false);
+        new app.exteraless.plugins.ui.PluginInstallBottomSheet(activity, file, params, plugin, offered,
                 (granted, enableAfterInstall) -> {
                     grantOnConsent(plugin, granted);
                     if (plugin != null && plugin.id != null) {

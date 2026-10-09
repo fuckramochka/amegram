@@ -1475,12 +1475,19 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
                     return;
                 }
             }
-            try {
-                AndroidUtilities.addToClipboard("" + userId);
-                BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createCopyLinkBulletin().show();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
+            final long ownerId = userId;
+            app.exteraless.chats.UserLookup.show(getContext(), currentAccount, resourcesProvider, ownerId, user -> {
+                if (user != null) {
+                    MessagesController.getInstance(currentAccount).openChatOrProfileWith(user, null, parentFragment, 0, false);
+                } else {
+                    try {
+                        AndroidUtilities.addToClipboard("" + ownerId);
+                        BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createCopyLinkBulletin().show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+            });
         } else if (id == menu_refresh) {
             stickerSet = null;
             loadStickerSet(true);

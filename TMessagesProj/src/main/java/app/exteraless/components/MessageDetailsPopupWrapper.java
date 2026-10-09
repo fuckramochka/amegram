@@ -357,9 +357,16 @@ public abstract class MessageDetailsPopupWrapper {
                 copy(String.valueOf(ownerId));
                 return;
             }
-            Bundle args = new Bundle();
-            args.putLong("user_id", ownerId);
-            fragment.presentFragment(new ProfileActivity(args));
+            long owner = ownerId;
+            app.exteraless.chats.UserLookup.show(activity, fragment.getCurrentAccount(), fragment.getResourceProvider(), owner, user -> {
+                if (user == null) {
+                    copy(String.valueOf(owner));
+                    return;
+                }
+                Bundle args = new Bundle();
+                args.putLong("user_id", user.id);
+                fragment.presentFragment(new ProfileActivity(args));
+            });
             return;
         }
         if (item.id == ITEM_LOCATION && geo != null) {

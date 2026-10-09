@@ -391,6 +391,8 @@ _INTERNAL_MODULES = frozenset({
     "extera_utils.capability_scan",
     "extera_utils.sandbox_main",
     "extera_utils.metadata_parser",
+    "extera_utils.hook_profile",
+    "extera_utils.thread_state",
     "dev_server",
 })
 

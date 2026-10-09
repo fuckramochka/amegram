@@ -20,6 +20,7 @@
 
     <string name="PillStackRam">RAM</string>
     <string name="PillStackCpu">CPU</string>
+    <string name="PillStackLastSeen">My Status</string>
     <string name="PillStackNetSpeed">Internet Speed</string>
     <string name="PillStackDcPing">DC Ping</string>
     <string name="PillStackDcPingValue">%1$d ms</string>

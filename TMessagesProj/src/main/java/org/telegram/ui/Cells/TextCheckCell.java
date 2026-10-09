@@ -175,7 +175,7 @@ public class TextCheckCell extends FrameLayout {
                 }
             }
         } else {
-            final int fixed = AndroidUtilities.dp(valueTextView.getVisibility() == VISIBLE ? 64 : height);
+            final int fixed = AndroidUtilities.dp(valueTextView.getVisibility() == VISIBLE ? app.exteraless.appearance.M3ListItems.detailRowHeight(64) : app.exteraless.appearance.M3ListItems.rowHeight(height));
             // Название в neko-ячейках переносится без ограничения по строкам,
             // а высота оставалась фиксированной — со второй строки текст резало.
             final int wanted = wrapText

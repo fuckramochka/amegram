@@ -740,6 +740,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                     button.setTextColor(getThemedColor(Theme.key_text_RedBold));
                 }
             } else {
+                app.amegram.hot.Md3Router.clearPlaylistStateForMini();
                 MediaController.getInstance().cleanupPlayer(true, true);
             }
         });
@@ -775,7 +776,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                         final LaunchActivity launchActivity = activity instanceof LaunchActivity
                                 ? (LaunchActivity) activity : LaunchActivity.instance;
                         if (AndroidUtilities.isContextSafe(launchActivity)) {
-                            fragment.showDialog(new AudioPlayerAlert(launchActivity, resourcesProvider));
+                            fragment.showDialog(app.amegram.hot.Md3Router.create(launchActivity, resourcesProvider));
                         }
                     } else {
                         long dialogId = 0;
@@ -1604,7 +1605,46 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     float micAmplitude;
 
     public int getStyleHeight() {
-        return currentStyle == STYLE_INACTIVE_GROUP_CALL ? 48 : 36;
+        return currentStyle == STYLE_INACTIVE_GROUP_CALL ? 48 : md3Music ? app.amegram.hot.Md3Router.miniBarHeightDp() : 36;
+    }
+
+    private android.view.View md3Bar;
+    private boolean md3Music;
+
+    private boolean computeMd3Music() {
+        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
+        return currentStyle == STYLE_AUDIO_PLAYER && app.amegram.hot.Md3Router.miniEnabled() && messageObject != null && messageObject.isMusic();
+    }
+
+    private void checkMd3Bar() {
+        boolean value = computeMd3Music();
+        boolean changed = value != md3Music;
+        md3Music = value;
+        if (value && md3Bar == null) {
+            md3Bar = app.amegram.hot.Md3Router.createMiniBar(getContext(), resourcesProvider, this::performClick, () -> closeButton.performClick());
+            if (md3Bar != null) {
+                addView(md3Bar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, app.amegram.hot.Md3Router.miniBarHeightDp(), Gravity.TOP | Gravity.LEFT));
+            }
+        }
+        if (md3Bar != null) {
+            md3Bar.setVisibility(value ? VISIBLE : GONE);
+        }
+        if (currentStyle == STYLE_AUDIO_PLAYER && md3Bar != null) {
+            int stock = value ? INVISIBLE : VISIBLE;
+            playButton.setVisibility(stock);
+            titleTextView.setVisibility(stock);
+            closeButton.setVisibility(stock);
+            if (playbackSpeedButton != null) {
+                playbackSpeedButton.setVisibility(stock);
+            }
+        }
+        if (changed) {
+            frameLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, getStyleHeight(), Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
+            if (topPadding > 0 && topPadding != AndroidUtilities.dp2(getStyleHeight())) {
+                setTopPadding(AndroidUtilities.dp2(getStyleHeight()));
+            }
+            requestLayout();
+        }
     }
 
     public boolean isCallTypeVisible() {
@@ -1898,6 +1938,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
             int prevStyle = currentStyle;
             updateStyle(STYLE_AUDIO_PLAYER);
+            checkMd3Bar();
             if (create && topPadding == 0) {
                 setTopPadding(AndroidUtilities.dp2(getStyleHeight()));
                 if (delegate != null) {

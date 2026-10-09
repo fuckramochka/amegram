@@ -1548,12 +1548,19 @@ public class EmojiPacksAlert extends BottomSheet implements NotificationCenter.N
                     return;
                 }
             }
-            try {
-                AndroidUtilities.addToClipboard("" + userId);
-                BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createCopyLinkBulletin().show();
-            } catch (Exception e) {
-                FileLog.e(e);
-            }
+            final long ownerId = userId;
+            app.exteraless.chats.UserLookup.show(getContext(), currentAccount, resourcesProvider, ownerId, user -> {
+                if (user != null) {
+                    MessagesController.getInstance(currentAccount).openChatOrProfileWith(user, null, fragment, 0, false);
+                } else {
+                    try {
+                        AndroidUtilities.addToClipboard("" + ownerId);
+                        BulletinFactory.of((FrameLayout) containerView, resourcesProvider).createCopyLinkBulletin().show();
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    }
+                }
+            });
         }
     }
 

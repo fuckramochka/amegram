@@ -115,6 +115,7 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         initialized = true;
         appContext = context.getApplicationContext();
         preferences = appContext.getSharedPreferences(PluginsConstants.PREFS_NAME, Context.MODE_PRIVATE);
+        PluginGrantStore.get();
         watchdog = new PluginsWatchdog(preferences);
         getPluginsDir().mkdirs();
         // Asset copies = file I/O, must not block cold start.
@@ -234,15 +235,22 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
 
     public boolean isUnsafeMode() {
         if (unsafeMode == null) {
-            unsafeMode = preferences != null
-                    && preferences.getBoolean(PluginsConstants.KEY_UNSAFE_MODE, false);
+            android.content.SharedPreferences s = PluginGrantStore.get();
+            if (s == null) {
+                s = preferences;
+            }
+            unsafeMode = s != null
+                    && s.getBoolean(PluginsConstants.KEY_UNSAFE_MODE, false);
         }
         return unsafeMode;
     }
 
     public void setUnsafeMode(boolean value) {
         unsafeMode = value;
-        if (preferences != null) {
+        android.content.SharedPreferences s = PluginGrantStore.get();
+        if (s != null) {
+            s.edit().putBoolean(PluginsConstants.KEY_UNSAFE_MODE, value).apply();
+        } else if (preferences != null) {
             preferences.edit().putBoolean(PluginsConstants.KEY_UNSAFE_MODE, value).apply();
         }
         FileLog.w("PluginsController: unsafe mode " + (value ? "ON" : "off"));

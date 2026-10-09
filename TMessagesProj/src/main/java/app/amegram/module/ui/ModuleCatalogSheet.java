@@ -40,6 +40,12 @@ public class ModuleCatalogSheet extends BottomSheet {
 
     private final LinearLayout itemsContainer;
     private final OnChanged onChanged;
+    private final List<Entry> allEntries = new ArrayList<>();
+    private String query = "";
+    private int textColor;
+    private int subColor;
+    private int accentColor;
+    private TextView statusView;
 
     private static class Entry {
         String id = "";
@@ -82,7 +88,39 @@ public class ModuleCatalogSheet extends BottomSheet {
         title.setTypeface(AndroidUtilities.bold());
         title.setTextColor(text);
         root.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+                LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+        this.textColor = text;
+        this.subColor = sub;
+        this.accentColor = accent;
+
+        android.widget.EditText search = new android.widget.EditText(context);
+        search.setHint("Пошук…");
+        search.setSingleLine(true);
+        search.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        try {
+            search.setTextColor(text);
+            search.setHintTextColor(sub);
+        } catch (Throwable ignore) {
+        }
+        search.setBackground(app.amegram.theme.YumiTheme.cardBackground(12));
+        search.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(10),
+                AndroidUtilities.dp(14), AndroidUtilities.dp(10));
+        search.addTextChangedListener(new android.text.TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void afterTextChanged(android.text.Editable s) {
+                query = s != null ? s.toString().trim().toLowerCase() : "";
+                renderEntries(filterEntries(), textColor, subColor, accentColor);
+            }
+        });
+        root.addView(search, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+
+        statusView = new TextView(context);
+        statusView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        statusView.setTextColor(sub);
+        root.addView(statusView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
         ScrollView scroll = new ScrollView(context);
         itemsContainer = new LinearLayout(context);
@@ -95,10 +133,27 @@ public class ModuleCatalogSheet extends BottomSheet {
     }
 
     private void loadCatalog(final int text, final int sub, final int accent) {
+        if (statusView != null) {
+            statusView.setText("Завантаження каталогу…");
+        }
         new Thread(() -> {
             final List<Entry> entries = fetchEntries();
-            AndroidUtilities.runOnUIThread(() -> renderEntries(entries, text, sub, accent));
+            AndroidUtilities.runOnUIThread(() -> {
+                allEntries.clear();
+                allEntries.addAll(entries);
+                renderEntries(filterEntries(), text, sub, accent);
+            });
         }, "amod-catalog").start();
+    }
+
+    private List<Entry> filterEntries() {
+        if (query == null || query.isEmpty()) return new ArrayList<>(allEntries);
+        List<Entry> out = new ArrayList<>();
+        for (Entry e : allEntries) {
+            String t = (e.title + " " + e.id + " " + e.description).toLowerCase();
+            if (t.contains(query)) out.add(e);
+        }
+        return out;
     }
 
     private List<Entry> fetchEntries() {
@@ -188,11 +243,41 @@ public class ModuleCatalogSheet extends BottomSheet {
             return;
         }
         itemsContainer.removeAllViews();
+        if (statusView != null) {
+            if (allEntries.isEmpty()) {
+                statusView.setText("Каталог недоступний. Перевірте мережу.");
+            } else if (entries.size() != allEntries.size()) {
+                statusView.setText("Показано " + entries.size() + " з " + allEntries.size());
+            } else {
+                statusView.setText("Модулів: " + allEntries.size());
+            }
+        }
         if (entries.isEmpty()) {
             TextView empty = new TextView(context);
-            empty.setText("\u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0438\u0439. \u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435 \u043c\u0435\u0440\u0435\u0436\u0443.");
+            empty.setText(allEntries.isEmpty()
+                    ? "\u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043d\u0435\u0434\u043e\u0441\u0442\u0443\u043f\u043d\u0438\u0439. \u041f\u0435\u0440\u0435\u0432\u0456\u0440\u0442\u0435 \u043c\u0435\u0440\u0435\u0436\u0443."
+                    : "Нічого не знайдено за запитом.");
             empty.setTextColor(sub);
+            empty.setPadding(0, AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16));
+            empty.setGravity(Gravity.CENTER);
             itemsContainer.addView(empty);
+            // Швидкий вихід в єдиний Hot-магазин, щоб не було тупика.
+            TextView goHot = app.amegram.theme.YumiComponents.pillButton(context, "У Hot-магазин →");
+            goHot.setOnClickListener(v -> {
+                try {
+                    dismiss();
+                } catch (Throwable ignore) {
+                }
+                try {
+                    org.telegram.ui.ActionBar.BaseFragment last =
+                            org.telegram.ui.LaunchActivity.getLastFragment();
+                    if (last != null) {
+                        last.presentFragment(new app.amegram.hot.ui.HotStoreActivity());
+                    }
+                } catch (Throwable ignore) {
+                }
+            });
+            itemsContainer.addView(goHot);
             return;
         }
         for (Entry e : entries) {
@@ -206,12 +291,7 @@ public class ModuleCatalogSheet extends BottomSheet {
         final Context context = getContext();
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
-        GradientDrawable cardBg = new GradientDrawable();
-        cardBg.setColor(getThemedColor(Theme.key_dialogBackground));
-        cardBg.setCornerRadius(AndroidUtilities.dp(16));
-        cardBg.setStroke(AndroidUtilities.dp(1),
-                android.graphics.Color.argb(25, 128, 128, 128));
-        card.setBackground(cardBg);
+        card.setBackground(app.amegram.theme.YumiTheme.cardBackground(16));
         card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12),
                 AndroidUtilities.dp(16), AndroidUtilities.dp(12));
 
@@ -220,27 +300,20 @@ public class ModuleCatalogSheet extends BottomSheet {
         topRow.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView nameView = new TextView(context);
-        nameView.setText(e.title + (e.version.isEmpty() ? "" : "  v" + e.version));
+        nameView.setText(e.title + (e.version.isEmpty() ? "" : "  • v" + e.version));
         nameView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         nameView.setTypeface(AndroidUtilities.bold());
         nameView.setTextColor(text);
+        nameView.setMaxLines(1);
+        nameView.setEllipsize(android.text.TextUtils.TruncateAt.END);
         topRow.addView(nameView, LayoutHelper.createLinear(
                 0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
-        final TextView actionBtn = new TextView(context);
-        actionBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
-        actionBtn.setTypeface(AndroidUtilities.bold());
-        actionBtn.setGravity(Gravity.CENTER);
-        actionBtn.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(6),
-                AndroidUtilities.dp(14), AndroidUtilities.dp(6));
-        GradientDrawable actBg = new GradientDrawable();
-        actBg.setCornerRadius(AndroidUtilities.dp(14));
+        final TextView actionBtn = app.amegram.theme.YumiComponents.pillButton(context, "");
         if (e.downloadUrl.isEmpty()) {
             // 0 вбудованих: мертвої кнопки "Вбудовано" більше немає.
             // Ведемо в єдиний Hot-магазин, де модуль реально ставиться як .hmod.
             actionBtn.setText("У Hot-магазин →");
-            actBg.setColor(accent);
-            actionBtn.setTextColor(0xFFFFFFFF);
             actionBtn.setOnClickListener(v -> {
                 try {
                     dismiss();
@@ -258,19 +331,27 @@ public class ModuleCatalogSheet extends BottomSheet {
             });
         } else {
             actionBtn.setText("\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u0438\u0442\u0438");
-            actBg.setColor(accent);
-            actionBtn.setTextColor(0xFFFFFFFF);
             actionBtn.setOnClickListener(v -> {
-                actionBtn.setText("...");
+                actionBtn.setText("…");
+                actionBtn.setEnabled(false);
+                actionBtn.setAlpha(0.6f);
                 ModuleManager.downloadAndInstall(e.downloadUrl, (ok, msg) -> {
+                    actionBtn.setEnabled(true);
+                    actionBtn.setAlpha(1f);
                     actionBtn.setText(ok ? "\u0412\u0441\u0442\u0430\u043d\u043e\u0432\u043b\u0435\u043d\u043e \u2713" : "\u041f\u043e\u043c\u0438\u043b\u043a\u0430");
+                    if (!ok && msg != null && !msg.isEmpty()) {
+                        try {
+                            android.widget.Toast.makeText(context, msg,
+                                    android.widget.Toast.LENGTH_SHORT).show();
+                        } catch (Throwable ignore) {
+                        }
+                    }
                     if (ok && onChanged != null) {
                         onChanged.onChanged();
                     }
                 });
             });
         }
-        actionBtn.setBackground(actBg);
         topRow.addView(actionBtn, LayoutHelper.createLinear(
                 LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
         card.addView(topRow, LayoutHelper.createLinear(

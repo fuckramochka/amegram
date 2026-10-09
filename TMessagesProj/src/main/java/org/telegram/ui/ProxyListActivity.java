@@ -183,7 +183,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
         }
 
         public void setProxy(SharedConfig.ProxyInfo proxyInfo) {
-            textView.setText(proxyInfo.address + ":" + proxyInfo.port);
+            textView.setText(app.exteraless.proxy.ProxyController.getInstance().getDisplayName(proxyInfo));
             currentInfo = proxyInfo;
         }
 
@@ -426,7 +426,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                                 continue;
                             }
                             if (!info.available) {
-                                SharedConfig.deleteProxy(info);
+                                app.exteraless.proxy.ProxyController.getInstance().deleteProxy(info);
                             }
                         }
                         if (SharedConfig.currentProxy == null) {
@@ -575,7 +575,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                 builder.setTitle(getString(R.string.DeleteProxyTitle));
                 builder.setPositiveButton(getString(R.string.Delete), (dialog, which) -> {
                     for (SharedConfig.ProxyInfo info : proxyList) {
-                        SharedConfig.deleteProxy(info);
+                        app.exteraless.proxy.ProxyController.getInstance().deleteProxy(info);
                     }
                     useProxyForCalls = false;
                     useProxySettings = false;
@@ -636,7 +636,7 @@ public class ProxyListActivity extends BaseFragment implements NotificationCente
                         builder.setTitle(getString(R.string.DeleteProxyTitle));
                         builder.setPositiveButton(getString(R.string.Delete), (dialog, which) -> {
                             for (SharedConfig.ProxyInfo info : selectedItems) {
-                                SharedConfig.deleteProxy(info);
+                                app.exteraless.proxy.ProxyController.getInstance().deleteProxy(info);
                             }
                             if (SharedConfig.currentProxy == null) {
                                 useProxyForCalls = false;

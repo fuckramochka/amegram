@@ -7,6 +7,8 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -456,6 +458,8 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     }
 
     private static class CardHolder extends RecyclerListView.Holder {
+        ImageView icon;
+        FrameLayout iconFrame;
         TextView title;
         TextView version;
         TextView desc;
@@ -509,6 +513,13 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 LinearLayout topRow = new LinearLayout(context);
                 topRow.setOrientation(LinearLayout.HORIZONTAL);
                 topRow.setGravity(Gravity.CENTER_VERTICAL);
+
+                FrameLayout iconFrame = new FrameLayout(context);
+                ImageView iconView = new ImageView(context);
+                iconView.setColorFilter(0xFFFFFFFF);
+                iconFrame.addView(iconView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
+                topRow.addView(iconFrame, LayoutHelper.createLinear(
+                        40, 40, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
                 LinearLayout titleBox = new LinearLayout(context);
                 titleBox.setOrientation(LinearLayout.VERTICAL);
@@ -591,6 +602,8 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                         LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
 
                 CardHolder holder = new CardHolder(card);
+                holder.icon = iconView;
+                holder.iconFrame = iconFrame;
                 holder.title = title;
                 holder.version = version;
                 holder.desc = desc;
@@ -715,6 +728,16 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             holder.ref = ref;
             if (ref == null) {
                 return;
+            }
+            // Іконка + колір: Hot-модулі через HotModuleMeta, ядро — нейтральний плагін.
+            try {
+                String hotTap = !ref.isAmod ? hotIdFor(ref.id) : null;
+                String metaId = hotTap != null ? hotTap : ref.id;
+                holder.icon.setImageResource(app.amegram.hot.ui.HotModuleMeta.icon(metaId));
+                holder.iconFrame.setBackground(
+                        app.amegram.theme.YumiTheme.squircleIconBackground(
+                                app.amegram.hot.ui.HotModuleMeta.color(metaId)));
+            } catch (Throwable ignore) {
             }
             holder.title.setText(titleFor(ref));
             holder.version.setText(versionFor(ref));

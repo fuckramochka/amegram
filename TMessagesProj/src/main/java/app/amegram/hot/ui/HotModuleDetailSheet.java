@@ -287,9 +287,12 @@ public class HotModuleDetailSheet extends BottomSheet {
 
         body.addView(sectionTitle(context, MiogramLocale.get("Версія", "Версия", "Version")));
 
+        android.widget.HorizontalScrollView chipsScroll = new android.widget.HorizontalScrollView(context);
+        chipsScroll.setHorizontalScrollBarEnabled(false);
         chipsRow = new LinearLayout(context);
         chipsRow.setOrientation(LinearLayout.HORIZONTAL);
-        body.addView(chipsRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+        chipsScroll.addView(chipsRow);
+        body.addView(chipsScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
         LinearLayout checkRow = new LinearLayout(context);
@@ -430,7 +433,14 @@ public class HotModuleDetailSheet extends BottomSheet {
             }
         }
         if (selected != null) {
-            verLabel.setText(selected.branch + " • v" + selected.version);
+            StringBuilder vb = new StringBuilder(selected.branch + " • v" + selected.version);
+            if (selected.sizeBytes > 0) {
+                vb.append(" • ").append(HotCatalog.formatSize(selected.sizeBytes));
+            }
+            if (selected.minApp > 0) {
+                vb.append(" • min ").append(selected.minApp);
+            }
+            verLabel.setText(vb.toString());
         } else {
             verLabel.setText("—");
         }
@@ -510,7 +520,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         }
         int shown = 0;
         for (HotCatalog.Build b : allBuilds) {
-            if (shown >= 6) break;
+            if (shown >= 12) break;
             shown++;
             final HotCatalog.Build bb = b;
             TextView chip = YumiComponents.chip(context,

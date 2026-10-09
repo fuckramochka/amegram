@@ -136,10 +136,7 @@ public abstract class BaseNekoSettingsActivity extends BaseFragment {
             var holder = listView.findViewHolderForAdapterPosition(position);
             var key = getKey();
             if (key != null && holder != null && listAdapter.isEnabled(holder) && rowMapReverse.containsKey(position)) {
-                showDialog(new AlertDialog.Builder(context).setItems(new CharSequence[]{getString(R.string.CopyLink)}, (dialogInterface, i) -> {
-                    AndroidUtilities.addToClipboard(String.format(Locale.getDefault(), "https://%s/%s?r=%s", getMessagesController().linkPrefix, tw.nekomimi.nekogram.helpers.SettingsHelper.linkPathFor(getKey()), rowMapReverse.get(position)));
-                    BulletinFactory.of(BaseNekoSettingsActivity.this).createCopyLinkBulletin().show();
-                }).create());
+                app.exteraless.settings.utils.SettingsRowMenu.show(this, view, String.format(Locale.getDefault(), "https://%s/%s?r=%s", getMessagesController().linkPrefix, tw.nekomimi.nekogram.helpers.SettingsHelper.linkPathFor(getKey()), rowMapReverse.get(position)));
                 return true;
             }
             return false;

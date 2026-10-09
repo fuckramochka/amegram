@@ -128,7 +128,12 @@ public final class PluginPermissions {
     }
 
     private static SharedPreferences prefs() {
-        SharedPreferences p = PluginsController.getInstance().getPreferences();
+        // Keystore-підписане сховище грантів (з міграцією зі старого файла всередині).
+        SharedPreferences p = PluginGrantStore.get();
+        if (p != null) {
+            return p;
+        }
+        p = PluginsController.getInstance().getPreferences();
         if (p != null) {
             return p;
         }

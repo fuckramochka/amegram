@@ -951,4 +951,17 @@ public class CameraXSession {
             }
         };
     }
+
+    @OptIn(markerClass = ExperimentalCamera2Interop.class)
+    public String getActiveCameraId() {
+        if (camera == null) {
+            return null;
+        }
+        try {
+            return Camera2CameraInfo.from(camera.getCameraInfo()).getCameraId();
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
+    }
 }

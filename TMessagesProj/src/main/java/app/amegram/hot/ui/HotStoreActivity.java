@@ -24,7 +24,11 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import app.amegram.hot.HotCatalog;
 import app.amegram.hot.HotModulesManager;
@@ -49,6 +53,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
     private String query = "";
     private String activeCat = "";
     private boolean loading = true;
+    /** Модулі, що зараз качаються: кнопка лишається заблокованою і після refresh. */
+    private final Set<String> downloading = new HashSet<>();
 
     @Override
     public View createView(Context context) {
@@ -188,6 +194,10 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
 
         if (installedCount == 0) {
             items.add(UItem.asCustom(buildOnboardBanner(context)));
+        }
+        // Паки видно завжди (раніше ховались після першої установки і їх не знайти).
+        if (query.isEmpty() && activeCat.isEmpty()) {
+            items.add(UItem.asHeader(MiogramLocale.get("📦 Паки в 1 тап", "📦 Паки в 1 тап", "📦 1-tap packs")));
             for (HotModuleMeta.Pack pack : HotModuleMeta.packs()) {
                 items.add(UItem.asCustom(buildPackCard(context, pack)));
             }
@@ -207,6 +217,9 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
             }
         }
 
+        if (installedCount > 0) {
+            items.add(UItem.asCustom(buildInstalledFooter(context, installedCount)));
+        }
         items.add(UItem.asShadow(MiogramLocale.get(
                 "Встановлені модулі приховані — керуйте ними у списку «Хот-модулі».",
                 "Установленные модули скрыты — управляйте ими в списке «Хот-модули».",
@@ -330,6 +343,18 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         hv.setHorizontalScrollBarEnabled(false);
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
+        // Лічильники по категоріях (тільки доступні, встановлені приховані як і раніше).
+        Map<String, Integer> counts = new HashMap<>();
+        int total = 0;
+        if (lastCatalog != null) {
+            for (HotCatalog.Entry e : lastCatalog.modules) {
+                if (HotModulesManager.isModuleInstalled(e.id)) continue;
+                String cat = e.category != null && !e.category.isEmpty()
+                        ? e.category : HotModuleMeta.category(e.id);
+                counts.put(cat, (counts.containsKey(cat) ? counts.get(cat) : 0) + 1);
+                total++;
+            }
+        }
         List<String> cats = new ArrayList<>();
         cats.add("");
         if (lastCatalog != null) {
@@ -339,9 +364,10 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         }
         for (String c : cats) {
             final String cc = c;
-            TextView chip = YumiComponents.chip(context, c.isEmpty()
-                    ? MiogramLocale.get("Всі", "Все", "All")
-                    : HotModuleMeta.categoryTitle(c), activeCat.equals(cc));
+            String label = c.isEmpty()
+                    ? MiogramLocale.get("Всі", "Все", "All") + " (" + total + ")"
+                    : HotModuleMeta.categoryTitle(c) + " (" + (counts.containsKey(c) ? counts.get(c) : 0) + ")";
+            TextView chip = YumiComponents.chip(context, label, activeCat.equals(cc));
             chip.setOnClickListener(v -> {
                 activeCat = cc;
                 refresh();
@@ -423,15 +449,65 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
     }
 
     private View emptyRow(Context context) {
+        boolean filtered = !query.isEmpty() || !activeCat.isEmpty();
+        LinearLayout col = new LinearLayout(context);
+        col.setOrientation(LinearLayout.VERTICAL);
+        col.setGravity(Gravity.CENTER_HORIZONTAL);
         TextView v = new TextView(context);
-        v.setText(!query.isEmpty() || !activeCat.isEmpty()
-                ? MiogramLocale.get("Нічого не знайдено", "Ничего не найдено", "Nothing found")
-                : "✅ " + MiogramLocale.get("Все встановлено", "Всё установлено", "All installed"));
+        v.setText(!filtered
+                ? "✅ " + MiogramLocale.get("Все встановлено", "Всё установлено", "All installed")
+                : MiogramLocale.get("Нічого не знайдено", "Ничего не найдено", "Nothing found"));
         v.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         v.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         v.setGravity(Gravity.CENTER);
-        v.setPadding(0, AndroidUtilities.dp(26), 0, AndroidUtilities.dp(26));
-        return v;
+        v.setPadding(0, AndroidUtilities.dp(26), 0, filtered ? AndroidUtilities.dp(10) : AndroidUtilities.dp(26));
+        col.addView(v, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        if (filtered) {
+            TextView reset = YumiComponents.ghostButton(context,
+                    MiogramLocale.get("✕ Скинути фільтр", "✕ Сбросить фильтр", "✕ Clear filter"),
+                    Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            reset.setOnClickListener(vv -> {
+                query = "";
+                activeCat = "";
+                try {
+                    if (searchView != null) searchView.setText("");
+                } catch (Throwable ignore) {
+                }
+                refresh();
+            });
+            LinearLayout wrap = new LinearLayout(context);
+            wrap.setGravity(Gravity.CENTER_HORIZONTAL);
+            wrap.addView(reset, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT,
+                    LayoutHelper.WRAP_CONTENT, 0, 0, 0, 18));
+            col.addView(wrap, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                    LayoutHelper.WRAP_CONTENT));
+        }
+        return col;
+    }
+
+    private View buildInstalledFooter(Context context, int installedCount) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setBackground(YumiTheme.cardBackground(16));
+        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12),
+                AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+        TextView t = new TextView(context);
+        t.setText(MiogramLocale.get("Встановлено: ", "Установлено: ", "Installed: ") + installedCount);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        t.setTypeface(AndroidUtilities.bold());
+        t.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        card.addView(t, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+        TextView open = YumiComponents.pillButton(context,
+                MiogramLocale.get("Мої модулі →", "Мои модули →", "My modules →"));
+        open.setOnClickListener(v -> {
+            try {
+                finishFragment();
+            } catch (Throwable ignore) {
+            }
+        });
+        card.addView(open);
+        return cardWrap(context, card);
     }
 
     private View buildCard(Context context, HotCatalog.Entry entry) {
@@ -497,26 +573,49 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         String catName = HotModuleMeta.categoryTitle(
                 entry.category != null && !entry.category.isEmpty()
                         ? entry.category : HotModuleMeta.category(entry.id));
-        ver.setText(def != null ? (def.branch + " • " + catName) : catName);
+        StringBuilder metaLine = new StringBuilder();
+        metaLine.append(def != null ? def.branch : "stable").append(" • ").append(catName);
+        if (def != null && def.sizeBytes > 0) {
+            metaLine.append(" • ").append(HotCatalog.formatSize(def.sizeBytes));
+        }
+        int permCount = def != null && def.permissions != null && !def.permissions.isEmpty()
+                ? def.permissions.size()
+                : HotModuleMeta.fallbackPermissions(entry.id).size();
+        if (permCount > 0) {
+            metaLine.append(" • ").append(MiogramLocale.get("доступів: ", "доступов: ", "perms: ")).append(permCount);
+        }
+        if (def != null && def.isSigned()) {
+            metaLine.append(" • 🔏");
+        } else if (def != null && def.sha256 != null && !def.sha256.isEmpty()) {
+            metaLine.append(" • 🔒");
+        }
+        ver.setText(metaLine.toString());
         bottom.addView(ver, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
         final HotCatalog.Build d = def;
         final boolean compat = d == null || HotModulesManager.isCompatible(d);
+        final boolean isDownloading = downloading.contains(entry.id);
         TextView action = YumiComponents.pillButton(context,
                 !compat ? "minApp " + d.minApp
+                        : isDownloading ? "…"
                         : MiogramLocale.get("↓ Взяти", "↓ Взять", "↓ Get"));
-        action.setAlpha(compat ? 1f : 0.5f);
+        action.setAlpha(compat && !isDownloading ? 1f : 0.5f);
+        action.setEnabled(compat && !isDownloading);
         action.setOnClickListener(v -> {
-            if (d == null || !compat) {
-                try {
-                    android.widget.Toast.makeText(context,
-                            MiogramLocale.get("Потрібен новіший AmeGram", "Нужен новее AmeGram", "Requires newer AmeGram"),
-                            android.widget.Toast.LENGTH_SHORT).show();
-                } catch (Throwable ignore) {
+            if (d == null || !compat || downloading.contains(entry.id)) {
+                if (d != null && !compat) {
+                    try {
+                        android.widget.Toast.makeText(context,
+                                MiogramLocale.get("Потрібен новіший AmeGram", "Нужен новее AmeGram", "Requires newer AmeGram"),
+                                android.widget.Toast.LENGTH_SHORT).show();
+                    } catch (Throwable ignore) {
+                    }
                 }
                 return;
             }
+            downloading.add(entry.id);
             action.setEnabled(false);
+            action.setAlpha(0.5f);
             action.setText("…");
             HotModulesManager.downloadBuild(entry.id, d, true,
                     new HotModulesManager.ProgressCallback<Void>() {
@@ -526,6 +625,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
 
                         @Override
                         public void onDone(boolean ok, String message, Void data) {
+                            downloading.remove(entry.id);
                             try {
                                 android.widget.Toast.makeText(context,
                                         ok ? "✓ " + entry.id + " v" + message : message,

@@ -195,6 +195,7 @@ android {
         buildConfigField 'int', 'APP_ID', appId
         buildConfigField 'String', 'APP_HASH', '"' + appHash + '"'
         buildConfigField 'long', 'BUILD_TIMESTAMP', buildTimestamp + 'L'
+        buildConfigField 'boolean', 'DEBUG_TOOLS', String.valueOf(project.findProperty('debugTools') == 'true')
 
         externalNativeBuild {
             cmake {
@@ -381,6 +382,8 @@ dependencies {
     // network
     implementation 'com.squareup.okhttp3:okhttp:5.5.0'
     implementation 'dnsjava:dnsjava:3.6.5'
+    // offline STT (app.exteraless.speech Vosk*): модели качаются в рантайме, API 64-bit
+    implementation 'com.alphacephei:vosk-android:0.3.75'
     // add for emoji
     implementation 'com.jaredrummler:truetypeparser-light:1.0.0'
     // add for UnifiedPush

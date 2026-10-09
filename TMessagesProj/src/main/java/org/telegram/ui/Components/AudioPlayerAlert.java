@@ -1600,14 +1600,15 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             itemTouchHelper.attachToRecyclerView(listView);
         }
 
-        // --- Amegram Core: player module OFF = stock Telegram player (all uses null-guarded) ---
-        // modern_layout OFF (але модуль увімкнено) = теж сток, пошук лишається в модулі.
+        // --- Amegram: сучасний плеєр вшитий нативно (не модулем).
+        // Простий вимикач — AmegramConfig "player_enabled" (default true), пошук
+        // музики лишається за хот-модулем player.
         boolean modernOn = true;
         try {
-            modernOn = app.amegram.hot.HotPlayerGate.isModernLayoutEnabled();
+            modernOn = app.amegram.module.AmegramConfig.getBool("player_enabled", true);
         } catch (Throwable ignore) {
         }
-        if (isPlayerModuleOn() && modernOn) {
+        if (modernOn) {
             lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
             lyricsView.setVisibility(View.VISIBLE);
 
@@ -1871,15 +1872,6 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
 
     public app.miogram.bridge.player.MiogramModernPlayerLayout getModernPlayerLayout() {
         return modernPlayerLayout;
-    }
-
-    /** Player master switch — єдине джерело: HotModules. Вимкнений = нема пошуку взагалі. */
-    private static boolean isPlayerModuleOn() {
-        try {
-            return app.amegram.hot.HotModulesManager.isModuleEnabled("player");
-        } catch (Throwable ignore) {
-        }
-        return false;
     }
 
     public void openMusicSearch() {

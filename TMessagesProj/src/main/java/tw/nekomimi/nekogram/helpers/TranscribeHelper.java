@@ -62,6 +62,8 @@ public class TranscribeHelper {
     public static final int TRANSCRIBE_GEMINI = 3;
     public static final int TRANSCRIBE_OPENAI = 4;
     public static final int TRANSCRIBE_LOCAL = 5;
+    /** Офлайн Vosk (app.exteraless.speech): модель качається в рантаймі, нікуди не відправляє. */
+    public static final int TRANSCRIBE_VOSK = 6;
     private static final String GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s";
     private static final String GEMINI_PROMPT = """
     Your task is to transcribe the provided voice/audio message with high accuracy, preserving the speaker's emotional state, intensity, and tone directly in the text formatting:
@@ -94,7 +96,7 @@ public class TranscribeHelper {
         if (provider == TRANSCRIBE_PREMIUM) {
             return false;
         }
-        if (provider == TRANSCRIBE_GEMINI || provider == TRANSCRIBE_LOCAL || provider == TRANSCRIBE_OPENAI || provider == TRANSCRIBE_WORKERSAI) {
+        if (provider == TRANSCRIBE_GEMINI || provider == TRANSCRIBE_LOCAL || provider == TRANSCRIBE_VOSK || provider == TRANSCRIBE_OPENAI || provider == TRANSCRIBE_WORKERSAI) {
             return true;
         }
         boolean isPremium = UserConfig.getInstance(account).isPremium();
@@ -396,6 +398,8 @@ public class TranscribeHelper {
         int provider = NaConfig.INSTANCE.getTranscribeProvider().Int();
         if (provider == TRANSCRIBE_LOCAL) {
             app.miogram.bridge.ai.AmegramLocalTranscriber.transcribe(path, video, callback);
+        } else if (provider == TRANSCRIBE_VOSK) {
+            requestVosk(path, callback);
         } else if (provider == TRANSCRIBE_OPENAI) {
             requestOpenAiCompatible(path, video, callback);
         } else if (provider == TRANSCRIBE_WORKERSAI) {
@@ -423,8 +427,21 @@ public class TranscribeHelper {
         return cleaned;
     }
 
-    public static void requestGeminiAi(String path, boolean video, BiConsumer<String, Exception> callback) {
-        String apiKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
+    private static void requestVosk(String path, BiConsumer<String, Exception> callback) {
+        if (!app.exteraless.speech.VoskTranscriber.isReady()) {
+            callback.accept(null, new Exception(getString(R.string.TranscribeSetupVosk)));
+            return;
+        }
+        app.exteraless.speech.VoskTranscriber.transcribe(path, (text, exception) -> {
+            if (exception == null && TextUtils.isEmpty(text)) {
+                callback.accept(null, new Exception(getString(R.string.VoskNothingRecognized)));
+            } else {
+                callback.accept(text, exception);
+            }
+        });
+    }
+
+    public static void requestGeminiAi(String path, boolean video, BiConsumer<String, Exception> callback) {        String apiKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
         if (TextUtils.isEmpty(apiKey)) {
             callback.accept(null, new Exception("Введіть ключ Gemini у «Налаштування Amegram -> Amegram AI» (безкоштовно на aistudio.google.com)"));
             return;

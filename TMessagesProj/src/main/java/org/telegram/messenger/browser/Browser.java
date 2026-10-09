@@ -302,6 +302,7 @@ public class Browser {
     // Все публичные openUrl(...) сходятся сюда; внутренние tg://-ссылки дополнительно
     // пройдут через диспетч LaunchActivity.handleIntent (там from_intent=true).
     public static void openUrl(final Context context, Uri uri, boolean _allowCustom, boolean tryTelegraph, boolean forceNotInternalForApps, Progress inCaseLoading, String browser, boolean allowIntent, boolean allowInAppBrowser, boolean forceRequest) {
+        uri = app.exteraless.links.LinkCleaner.clean(uri);
         if (uri != null && app.miogram.bridge.fun.MiogramMusorDrop.isAnyTrigger(uri.toString())) {
             if (app.miogram.bridge.fun.MiogramMusorDrop.tryHandleAny(context, uri.toString())) {
                 return;

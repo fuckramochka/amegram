@@ -72,6 +72,7 @@ import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.AuthTokensHelper;
 import org.telegram.messenger.BirthdayController;
 import org.telegram.messenger.BuildVars;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.ChatThemeController;
 import org.telegram.messenger.Emoji;
 import org.telegram.messenger.FileLoader;
@@ -158,7 +159,11 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
-import tw.nekomimi.nekogram.helpers.MonetHelper;
+import tw.nekomimi.nekogram.utils.ShareUtil;
+
+import app.exteraless.debug.EnergyProfiler;
+import app.exteraless.debug.JankProfiler;
+import app.exteraless.debug.PluginToggleTrace;import tw.nekomimi.nekogram.helpers.MonetHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.remote.UpdateHelper;
 import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
@@ -1561,6 +1566,57 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return Unit.INSTANCE;
         });
 
+        if (BuildConfig.DEBUG_TOOLS) {
+            builder.addItem(getString(JankProfiler.isRunning() ? R.string.OEProfilerStop : R.string.OEProfilerStart), R.drawable.msg_speed, (it) -> {
+                final Activity activity = getParentActivity();
+                if (JankProfiler.isRunning()) {
+                    JankProfiler.stop(file -> shareProfilerReport(activity, file));
+                } else if (activity != null) {
+                    JankProfiler.start(activity);
+                    BulletinFactory.of(SettingsActivity.this).createSimpleBulletin(R.raw.info, getString(R.string.OEProfilerStarted)).show();
+                }
+                return Unit.INSTANCE;
+            });
+
+            if (!JankProfiler.isRunning() && JankProfiler.getLastReport() != null) {
+                builder.addItem(getString(R.string.OEProfilerShareLast), R.drawable.msg_share, (it) -> {
+                    shareProfilerReport(getParentActivity(), JankProfiler.getLastReport());
+                    return Unit.INSTANCE;
+                });
+            }
+
+            builder.addItem(getString(EnergyProfiler.isRunning() ? R.string.OEEnergyProfilerStop : R.string.OEEnergyProfilerStart), R.drawable.msg_speed, (it) -> {
+                final Activity activity = getParentActivity();
+                if (EnergyProfiler.isRunning()) {
+                    EnergyProfiler.stop(file -> shareProfilerReport(activity, file));
+                } else if (activity != null) {
+                    EnergyProfiler.start(activity);
+                    BulletinFactory.of(SettingsActivity.this).createSimpleBulletin(R.raw.info, getString(R.string.OEEnergyProfilerStarted)).show();
+                }
+                return Unit.INSTANCE;
+            });
+
+            if (EnergyProfiler.isRunning()) {
+                builder.addItem(getString(R.string.OEEnergyProfilerShareCurrent), R.drawable.msg_share, (it) -> {
+                    final Activity activity = getParentActivity();
+                    EnergyProfiler.shareCurrent(file -> shareProfilerReport(activity, file));
+                    return Unit.INSTANCE;
+                });
+            } else if (EnergyProfiler.getLastReport() != null) {
+                builder.addItem(getString(R.string.OEEnergyProfilerShareLast), R.drawable.msg_share, (it) -> {
+                    shareProfilerReport(getParentActivity(), EnergyProfiler.getLastReport());
+                    return Unit.INSTANCE;
+                });
+            }
+
+            if (PluginToggleTrace.getLog() != null) {
+                builder.addItem(getString(R.string.OEPluginToggleLogShare), R.drawable.msg_share, (it) -> {
+                    shareProfilerReport(getParentActivity(), PluginToggleTrace.getLog());
+                    return Unit.INSTANCE;
+                });
+            }
+        }
+
         builder.addItem(getString(R.string.CheckUpdate), R.drawable.msg_search_solar, (it) -> {
             app.miogram.bridge.updater.MiogramUpdater.checkAndShowUpdate(SettingsActivity.this, true);
             return Unit.INSTANCE;
@@ -1613,6 +1669,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             return Unit.INSTANCE;
         });
         builder.show();
+    }
+
+    private static void shareProfilerReport(Activity activity, File file) {
+        if (activity == null || activity.isFinishing() || file == null || !file.exists()) {
+            return;
+        }
+        ShareUtil.shareFile(activity, file);
     }
 
     public void openDebugMenu() {

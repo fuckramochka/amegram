@@ -263,10 +263,15 @@ public class AndroidUtilities {
     public static final String TYPEFACE_RCONDENSED_BOLD = "fonts/rcondensedbold.ttf";
     // Инициалы на аватарках. Перенос из exteraGram 12.9.0, AndroidUtilities.java:247.
     public static final String TYPEFACE_NUNITO_EXTRABOLD = "fonts/nunito_extrabold.ttf";
+    public static final String TYPEFACE_ROBOTO_REGULAR = "fonts/rregular.ttf";
 
     public static Typeface mediumTypeface;
     public static ThreadLocal<byte[]> readBufferLocal = new ThreadLocal<>();
     public static ThreadLocal<byte[]> bufferLocal = new ThreadLocal<>();
+
+    public static Typeface regular() {
+        return getTypeface(TYPEFACE_ROBOTO_REGULAR);
+    }
 
     public static Typeface bold() {
         if (mediumTypeface == null) {

@@ -47,7 +47,8 @@ public final class PluginTrustLevel {
     }
 
     private static SharedPreferences prefs() {
-        return PluginsController.getInstance().getPreferences();
+        SharedPreferences p = PluginGrantStore.get();
+        return p != null ? p : PluginsController.getInstance().getPreferences();
     }
 
     /**

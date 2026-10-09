@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- ghost body -->
+    <path
+        android:fillColor="#F3EDFF"
+        android:pathData="M54,26c-13,0 -22,11 -22,25v25l7,-6 8,6 7,-6 7,6 8,-6 7,6v-25c0,-14 -9,-25 -22,-25z"/>
+    <!-- eyes -->
+    <path
+        android:fillColor="#1B1622"
+        android:pathData="M46,52m-3.6,0a3.6,4.4 0,1 0,7.2 0a3.6,4.4 0,1 0,-7.2 0"/>
+    <path
+        android:fillColor="#1B1622"
+        android:pathData="M62,52m-3.6,0a3.6,4.4 0,1 0,7.2 0a3.6,4.4 0,1 0,-7.2 0"/>
+    <!-- blush -->
+    <path
+        android:fillColor="#FF8FAB"
+        android:fillAlpha="0.7"
+        android:pathData="M39,59m-3,0a3,2.2 0,1 0,6 0a3,2.2 0,1 0,-6 0"/>
+    <path
+        android:fillColor="#FF8FAB"
+        android:fillAlpha="0.7"
+        android:pathData="M69,59m-3,0a3,2.2 0,1 0,6 0a3,2.2 0,1 0,-6 0"/>
+    <!-- bow -->
+    <path
+        android:fillColor="#FF8FAB"
+        android:pathData="M70,32L58,26L60,40Z"/>
+    <path
+        android:fillColor="#FF8FAB"
+        android:pathData="M70,32L82,26L80,40Z"/>
+    <path
+        android:fillColor="#F25C84"
+        android:pathData="M70,32m-3.6,0a3.6,3.6 0,1 0,7.2 0a3.6,3.6 0,1 0,-7.2 0"/>
+    <!-- mini crosses -->
+    <path
+        android:fillColor="#FF8FAB"
+        android:pathData="M24,70h8v3h-8zM26.5,65.5h3v12h-3z"/>
+    <path
+        android:fillColor="#FF8FAB"
+        android:pathData="M80,72h8v3h-8zM82.5,67.5h3v12h-3z"/>
+    <!-- sparkles -->
+    <path
+        android:fillColor="#F3EDFF"
+        android:pathData="M24,26c0.8,3 2,4.2 5,5c-3,0.8 -4.2,2 -5,5c-0.8,-3 -2,-4.2 -5,-5c3,-0.8 4.2,-2 5,-5z"/>
+</vector>

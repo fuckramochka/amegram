@@ -2,9 +2,12 @@ package app.amegram.hot.ui;
 
 import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -45,8 +48,11 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
     private static final int MENU_BACKUP = 3;
 
     private UniversalRecyclerView listView;
+    private EditText searchView;
+    private String query = "";
     private final List<HotModulesManager.InstalledInfo> shown = new ArrayList<>();
     private final java.util.Map<String, String> pendingUpdates = new java.util.LinkedHashMap<>();
+    private final java.util.Set<String> updating = new java.util.HashSet<>();
 
     @Override
     public View createView(Context context) {
@@ -70,8 +76,28 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         actionBar.createMenu().addItem(MENU_BACKUP, R.drawable.baseline_share_24);
         actionBar.createMenu().addItem(MENU_ADD, R.drawable.filled_new_contact_24);
 
-        fragmentView = listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
+        LinearLayout root = new LinearLayout(context);
+        root.setOrientation(LinearLayout.VERTICAL);
+        searchView = YumiComponents.searchField(context,
+                MiogramLocale.get("Пошук встановлених…", "Поиск установленных…", "Search installed…"));
+        searchView.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void onTextChanged(CharSequence s, int a, int b, int c) { }
+            @Override public void afterTextChanged(Editable s) {
+                query = s != null ? s.toString().trim().toLowerCase() : "";
+                refresh();
+            }
+        });
+        LinearLayout searchWrap = new LinearLayout(context);
+        searchWrap.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(10),
+                AndroidUtilities.dp(14), AndroidUtilities.dp(2));
+        searchWrap.addView(searchView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT));
+        root.addView(searchWrap);
+        listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
+        root.addView(listView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
         listView.setSections();
+        fragmentView = root;
         HotModulesManager.init(context.getApplicationContext());
         HotModulesManager.addListener(this);
         return fragmentView;
@@ -147,6 +173,40 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         }
     }
 
+    private boolean matchesQuery(HotModulesManager.InstalledInfo info) {
+        if (query == null || query.isEmpty()) return true;
+        String q = query.toLowerCase();
+        String name = info.manifest.name != null ? info.manifest.name.toLowerCase() : "";
+        String id = info.manifest.id != null ? info.manifest.id.toLowerCase() : "";
+        if (name.contains(q) || id.contains(q)) return true;
+        String desc = HotModuleMeta.fallbackDescription(info.manifest.id).toLowerCase();
+        return desc.contains(q);
+    }
+
+    /** Оновити один модуль до latestCompatible з каталогу. */
+    private void triggerUpdate(String moduleId) {
+        if (updating.contains(moduleId)) return;
+        updating.add(moduleId);
+        refresh();
+        HotModulesManager.fetchCatalog(false, (ok, msg, catalog) -> {
+            HotCatalog.Entry e = (ok && catalog != null) ? catalog.find(moduleId) : null;
+            HotCatalog.Build latest = e != null ? e.latestCompatible(HotModulesManager.appVersion()) : null;
+            if (latest == null || !HotModulesManager.isCompatible(latest)) {
+                updating.remove(moduleId);
+                refresh();
+                return;
+            }
+            HotModulesManager.downloadBuild(moduleId, latest, true,
+                    new HotModulesManager.ProgressCallback<Void>() {
+                        @Override public void onProgress(long d, long t) { }
+                        @Override public void onDone(boolean doneOk, String message, Void data) {
+                            updating.remove(moduleId);
+                            reloadPendingUpdates();
+                            refresh();
+                        }
+                    });
+        });
+    }
     /** Оновити все: качаємо кожен апдейт по черзі. */
     private void updateAll() {
         Context context = getContext();
@@ -197,7 +257,9 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                     if (cm != null) {
                         cm.setPrimaryClip(android.content.ClipData.newPlainText("modules", json));
                     }
-                    android.widget.Toast.makeText(context, json, android.widget.Toast.LENGTH_LONG).show();
+                    android.widget.Toast.makeText(context,
+                            MiogramLocale.get("✓ Набір скопійовано в буфер", "✓ Набор скопирован в буфер", "✓ Set copied to clipboard"),
+                            android.widget.Toast.LENGTH_SHORT).show();
                 } catch (Throwable ignore) {
                 }
             } else {
@@ -256,18 +318,56 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         shown.addAll(byId.values());
         reloadPendingUpdates();
 
+        // Пошук + сортування: оновлення першими, далі увімкнені, далі вимкнені, далі за назвою.
+        List<HotModulesManager.InstalledInfo> filtered = new ArrayList<>();
+        for (HotModulesManager.InstalledInfo info : shown) {
+            if (matchesQuery(info)) filtered.add(info);
+        }
+        filtered.sort((a, b) -> {
+            boolean au = pendingUpdates.containsKey(a.manifest.id);
+            boolean bu = pendingUpdates.containsKey(b.manifest.id);
+            if (au != bu) return au ? -1 : 1;
+            if (a.enabled != b.enabled) return a.enabled ? -1 : 1;
+            String an = a.manifest.name != null ? a.manifest.name : a.manifest.id;
+            String bn = b.manifest.name != null ? b.manifest.name : b.manifest.id;
+            return an.compareToIgnoreCase(bn);
+        });
+
+        int enabledCount = 0;
+        for (HotModulesManager.InstalledInfo i : filtered) {
+            if (i.enabled) enabledCount++;
+        }
         items.add(UItem.asHeader(MiogramLocale.get("Встановлені модулі", "Установленные модули", "Installed modules")
+                + " • " + filtered.size()
+                + MiogramLocale.get(" • увімкнено: ", " • включено: ", " • on: ") + enabledCount
                 + " • 0 " + MiogramLocale.get("вбудовано", "встроено", "built-in")));
 
-        if (!pendingUpdates.isEmpty()) {
+        if (!pendingUpdates.isEmpty() && query.isEmpty()) {
             items.add(UItem.asCustom(buildUpdatesBanner(context)));
         }
 
-        if (shown.isEmpty()) {
-            items.add(UItem.asCustom(buildEmptyStateView(context)));
+        if (filtered.isEmpty()) {
+            if (query.isEmpty()) {
+                items.add(UItem.asCustom(buildEmptyStateView(context)));
+            } else {
+                items.add(UItem.asCustom(buildNoResultsView(context)));
+            }
         } else {
-            for (int i = 0; i < shown.size(); i++) {
-                HotModulesManager.InstalledInfo info = shown.get(i);
+            String lastGroup = "";
+            for (int i = 0; i < filtered.size(); i++) {
+                HotModulesManager.InstalledInfo info = filtered.get(i);
+                String group;
+                if (pendingUpdates.containsKey(info.manifest.id)) {
+                    group = MiogramLocale.get("⬆ До оновлення", "⬆ К обновлению", "⬆ To update");
+                } else if (info.enabled) {
+                    group = MiogramLocale.get("🟢 Увімкнені", "🟢 Включены", "🟢 Enabled");
+                } else {
+                    group = MiogramLocale.get("⚪ Вимкнені", "⚪ Выключены", "⚪ Disabled");
+                }
+                if (!group.equals(lastGroup)) {
+                    items.add(UItem.asHeader(group));
+                    lastGroup = group;
+                }
                 View cardView = buildModuleCard(context, info, i);
                 items.add(UItem.asCustom(cardView));
             }
@@ -357,6 +457,33 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         return layout;
     }
 
+    private View buildNoResultsView(Context context) {
+        LinearLayout layout = new LinearLayout(context);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER_HORIZONTAL);
+        layout.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(28), AndroidUtilities.dp(24), AndroidUtilities.dp(28));
+        TextView title = new TextView(context);
+        title.setText(MiogramLocale.get("Нічого не знайдено", "Ничего не найдено", "Nothing found"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        title.setGravity(Gravity.CENTER);
+        layout.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
+        TextView reset = YumiComponents.ghostButton(context,
+                MiogramLocale.get("✕ Скинути пошук", "✕ Сбросить поиск", "✕ Clear search"),
+                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        reset.setOnClickListener(v -> {
+            query = "";
+            try {
+                if (searchView != null) searchView.setText("");
+            } catch (Throwable ignore) {
+            }
+            refresh();
+        });
+        layout.addView(reset, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        return layout;
+    }
+
     private View buildModuleCard(Context context, HotModulesManager.InstalledInfo info, int index) {
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
@@ -394,11 +521,15 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         titleRow.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView titleView = new TextView(context);
-        titleView.setText(info.manifest.name);
+        titleView.setText((info.enabled ? "● " : "○ ") + info.manifest.name);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         titleView.setTypeface(AndroidUtilities.bold());
-        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        titleRow.addView(titleView);
+        titleView.setTextColor(info.enabled
+                ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText)
+                : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        titleView.setMaxLines(1);
+        titleView.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        titleRow.addView(titleView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
         // Бейдж версії
         TextView verBadge = YumiComponents.badge(context, "v" + info.manifest.version,
@@ -467,15 +598,31 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             });
         };
         sw.setOnClickListener(toggleAction);
-        topRow.setOnClickListener(toggleAction);
+        // Тап по рядку більше НЕ тоглить: тап по картці відкриває деталку,
+        // тоглить тільки сам світч. Раніше topRow перехоплював тап і плутав юзера.
         topRow.addView(sw, LayoutHelper.createLinear(40, 26, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
         card.addView(topRow);
 
-        // Нижній рядок дій: [Налаштування (лише якщо увімкнено)] [Версії] [Видалити]
+        // Нижній рядок дій: [Оновити] [Налаштування] [Версії] [Видалити]
         LinearLayout bottomRow = new LinearLayout(context);
         bottomRow.setOrientation(LinearLayout.HORIZONTAL);
         bottomRow.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
+
+        String upd = pendingUpdates.get(info.manifest.id);
+        if (upd != null) {
+            TextView btnUpdate = new TextView(context);
+            boolean isUpdating = updating.contains(info.manifest.id);
+            btnUpdate.setText(isUpdating ? "…" : "↑ " + MiogramLocale.get("Оновити до v", "Обновить до v", "Update to v") + upd);
+            btnUpdate.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            btnUpdate.setTypeface(AndroidUtilities.bold());
+            btnUpdate.setTextColor(YumiTheme.getPrimary());
+            btnUpdate.setAlpha(isUpdating ? 0.5f : 1f);
+            btnUpdate.setEnabled(!isUpdating);
+            btnUpdate.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
+            btnUpdate.setOnClickListener(v -> triggerUpdate(info.manifest.id));
+            bottomRow.addView(btnUpdate);
+        }
 
         if (info.enabled) {
             TextView btnSettings = new TextView(context);

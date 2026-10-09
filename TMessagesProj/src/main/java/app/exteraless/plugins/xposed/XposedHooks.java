@@ -6,6 +6,7 @@ import com.chaquo.python.PyObject;
 import com.chaquo.python.Python;
 
 import org.json.JSONArray;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 
 import java.lang.reflect.Member;
@@ -58,6 +59,10 @@ public final class XposedHooks {
         return ensureInitialized();
     }
 
+    public static boolean isReady() {
+        return initAttempted && initOk;
+    }
+
     public static boolean isNativeHooksBroken() {
         SharedPreferences preferences = PluginsController.getInstance().getPreferences();
         return preferences != null
@@ -75,17 +80,33 @@ public final class XposedHooks {
             initAttempted = true;
             SharedPreferences preferences = PluginsController.getInstance().getPreferences();
             if (preferences != null) {
+                final long installStamp = installStamp();
                 if (preferences.getBoolean(PluginsConstants.KEY_NATIVE_HOOKS_BROKEN, false)) {
-                    FileLog.w("XposedHooks: native hooks disabled after an earlier process death");
-                    return false;
+                    if (preferences.getLong(PluginsConstants.KEY_NATIVE_HOOKS_BROKEN_STAMP, 0) == installStamp) {
+                        FileLog.w("XposedHooks: native hooks disabled after an earlier process death");
+                        return false;
+                    }
+                    preferences.edit()
+                            .remove(PluginsConstants.KEY_NATIVE_HOOKS_BROKEN)
+                            .remove(PluginsConstants.KEY_NATIVE_HOOKS_BROKEN_STAMP)
+                            .remove(PluginsConstants.KEY_NATIVE_HOOKS_STRIKES)
+                            .commit();
+                    FileLog.w("XposedHooks: app was reinstalled, retrying native hooks");
                 }
                 if (preferences.getBoolean(PluginsConstants.KEY_NATIVE_HOOKS_PENDING, false)) {
-                    preferences.edit()
-                            .remove(PluginsConstants.KEY_NATIVE_HOOKS_PENDING)
-                            .putBoolean(PluginsConstants.KEY_NATIVE_HOOKS_BROKEN, true)
-                            .commit();
-                    FileLog.e("XposedHooks: Aliuhook killed the process last time, hooks are off");
-                    return false;
+                    final int strikes = preferences.getInt(PluginsConstants.KEY_NATIVE_HOOKS_STRIKES, 0) + 1;
+                    if (strikes >= 2) {
+                        preferences.edit()
+                                .remove(PluginsConstants.KEY_NATIVE_HOOKS_PENDING)
+                                .remove(PluginsConstants.KEY_NATIVE_HOOKS_STRIKES)
+                                .putBoolean(PluginsConstants.KEY_NATIVE_HOOKS_BROKEN, true)
+                                .putLong(PluginsConstants.KEY_NATIVE_HOOKS_BROKEN_STAMP, installStamp)
+                                .commit();
+                        FileLog.e("XposedHooks: Aliuhook killed the process twice in a row, hooks are off");
+                        return false;
+                    }
+                    preferences.edit().putInt(PluginsConstants.KEY_NATIVE_HOOKS_STRIKES, strikes).commit();
+                    FileLog.w("XposedHooks: process died during hook init last time, retrying");
                 }
                 preferences.edit()
                         .putBoolean(PluginsConstants.KEY_NATIVE_HOOKS_PENDING, true)
@@ -103,14 +124,28 @@ public final class XposedHooks {
                 boolean profileSaverOff = XposedBridge.disableProfileSaver();
                 FileLog.d("XposedHooks: disableProfileSaver() -> " + profileSaverOff);
                 initOk = true;
+                HookGate.guardBridge();
             } catch (Throwable t) {
                 initOk = false;
                 FileLog.e("XposedHooks: Aliuhook init failed, method hooks disabled", t);
             }
             if (preferences != null) {
-                preferences.edit().remove(PluginsConstants.KEY_NATIVE_HOOKS_PENDING).commit();
+                final SharedPreferences.Editor editor = preferences.edit().remove(PluginsConstants.KEY_NATIVE_HOOKS_PENDING);
+                if (initOk) {
+                    editor.remove(PluginsConstants.KEY_NATIVE_HOOKS_STRIKES);
+                }
+                editor.commit();
             }
             return initOk;
+        }
+    }
+
+    private static long installStamp() {
+        try {
+            final android.content.Context context = ApplicationLoader.applicationContext;
+            return context.getPackageManager().getPackageInfo(context.getPackageName(), 0).lastUpdateTime;
+        } catch (Throwable t) {
+            return 0;
         }
     }
 
@@ -150,14 +185,36 @@ public final class XposedHooks {
         }
         try {
             XC_MethodHook hook = createHook(pluginId, handler, priority, filtersJson);
-            HookGate.prewarmAllMethods((Class<?>) clazz, methodName);
+            Class<?> target = declaringShimParent((Class<?>) clazz, methodName);
+            HookGate.prewarmAllMethods(target, methodName);
             Set<XC_MethodHook.Unhook> unhooks =
-                    XposedBridge.hookAllMethods((Class<?>) clazz, methodName, hook);
+                    XposedBridge.hookAllMethods(target, methodName, hook);
             return registerAll(pluginId, unhooks);
         } catch (Throwable t) {
             FileLog.e("XposedHooks.hookAllMethods failed for plugin " + pluginId, t);
             return "[]";
         }
+    }
+
+    private static boolean declares(Class<?> clazz, String methodName) {
+        for (java.lang.reflect.Method method : clazz.getDeclaredMethods()) {
+            if (method.getName().equals(methodName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static Class<?> declaringShimParent(Class<?> clazz, String methodName) {
+        Class<?> current = clazz;
+        while (current.getName().startsWith("com.exteragram.") && !declares(current, methodName)) {
+            Class<?> parent = current.getSuperclass();
+            if (parent == null || !parent.getName().startsWith("app.exteraless.") && !parent.getName().startsWith("com.exteragram.")) {
+                return clazz;
+            }
+            current = parent;
+        }
+        return declares(current, methodName) ? current : clazz;
     }
 
     public static String hookAllConstructors(String pluginId, Object clazz, PyObject handler,
@@ -196,6 +253,12 @@ public final class XposedHooks {
     }
 
     private static String register(String pluginId, XC_MethodHook.Unhook unhook) {
+        Object callback = unhook.getCallback();
+        if (callback instanceof PyMethodHook) {
+            ((PyMethodHook) callback).addTarget(unhook.getHookedMethod());
+        } else if (callback instanceof PyMethodReplacement) {
+            ((PyMethodReplacement) callback).addTarget(unhook.getHookedMethod());
+        }
         String id = UUID.randomUUID().toString();
         UNHOOKS.put(id, unhook);
         HOOK_OWNERS.put(id, pluginId);
@@ -347,10 +410,19 @@ public final class XposedHooks {
     private static volatile boolean hookBridgeResolved;
 
     /**
-     * base_plugin.dispatch_hook оборачивает MethodHookParam так, чтобы из Python
-     * работали обе формы: param.getResult()/setResult() и param.result. Если
-     * модуль почему-то недоступен, зовём обработчик напрямую — как раньше.
+     * base_plugin.bind_hook один раз связывает метод обработчика с обёрткой, которая
+     * отдаёт в Python MethodHookParam так, чтобы работали обе формы:
+     * param.getResult()/setResult() и param.result. Пустой метод MethodHook она не
+     * связывает вовсе. Если модуль почему-то недоступен, зовём метод обработчика напрямую.
      */
+    static PyObject bindHook(PyObject handler, String attr, int statId) {
+        PyObject bridge = hookBridge();
+        if (bridge == null) {
+            return handler.containsKey(attr) ? handler.get(attr) : null;
+        }
+        return bridge.callAttr("bind_hook", handler, attr, statId);
+    }
+
     private static PyObject hookBridge() {
         if (!hookBridgeResolved) {
             synchronized (XposedHooks.class) {
@@ -389,28 +461,35 @@ public final class XposedHooks {
      * захуканный метод приложения. Обёрнуто в notePluginEnter/notePluginExit
      * (атрибуция падений в watchdog).
      */
-    static PyResult callPython(String pluginId, PyObject handler, String attr,
-                               XC_MethodHook.MethodHookParam param) {
+    static PyResult callPython(String pluginId, PyObject callable,
+                               XC_MethodHook.MethodHookParam param, HookStats stats) {
+        app.exteraless.plugins.PythonThreadState.onCall();
         PluginsWatchdog watchdog = watchdog();
+        final boolean profiling = HookStats.enabled && stats != null;
+        final boolean main = profiling && HookStats.isMainThread();
+        final String blocker = main ? HookStats.findBlocker(watchdog) : null;
+        final long start = profiling ? System.nanoTime() : 0L;
         boolean entered = false;
+        String previousRuntime = app.exteraless.plugins.PluginRuntime.enter(pluginId);
         try {
             if (watchdog != null) {
                 watchdog.notePluginEnter(pluginId);
                 entered = true;
             }
-            PyObject bridge = hookBridge();
-            return PyResult.of(bridge != null
-                    ? bridge.callAttr("dispatch_hook", handler, attr, param)
-                    : handler.callAttr(attr, param));
+            return PyResult.of(callable.call(param));
         } catch (Throwable t) {
             reportError(pluginId, t);
             return PyResult.ERROR;
         } finally {
+            app.exteraless.plugins.PluginRuntime.exit(previousRuntime);
             if (entered) {
                 try {
                     watchdog.notePluginExit(pluginId);
                 } catch (Throwable ignored) {
                 }
+            }
+            if (profiling) {
+                stats.record(System.nanoTime() - start, main, blocker);
             }
         }
     }

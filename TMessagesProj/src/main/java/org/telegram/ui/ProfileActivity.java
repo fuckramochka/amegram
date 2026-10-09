@@ -11655,7 +11655,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             MediaController.getInstance().getPlaylist().clear();
             MediaController.getInstance().getPlaylist().addAll(savedMusicList.list);
             if (!sameList) MediaController.getInstance().playMessage(savedMusicList.list.get(0));
-            showDialog(new AudioPlayerAlert(getContext(), getResourceProvider()));
+            showDialog(app.amegram.hot.Md3Router.create(getContext(), getResourceProvider()));
         }
     }
 
@@ -11975,7 +11975,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         newString2 = getString(R.string.StarRatingLevelNegative).toLowerCase(Locale.ROOT);
                     } else {
                         if (!NekoConfig.sendOnlinePackets.Bool() || NekoConfig.sendOfflinePacketAfterOnline.Bool()) {
-                            newString2 = getString(R.string.VoipOfflineTitle);
+                            final int lastSeen = app.exteraless.ghost.OwnLastSeen.seconds(currentAccount, user);
+                            newString2 = lastSeen > 0 ? app.exteraless.ghost.OwnLastSeen.format(lastSeen) : getString(R.string.VoipOfflineTitle);
                         } else {
                             newString2 = LocaleController.getString(R.string.Online);
                         }

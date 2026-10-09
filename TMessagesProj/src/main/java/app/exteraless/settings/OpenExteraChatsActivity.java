@@ -4,7 +4,9 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
 import android.animation.ValueAnimator;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.view.Gravity;
 import android.view.View;
@@ -19,9 +21,13 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
+import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessagesController;
+import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
@@ -31,9 +37,11 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextCheckCell2;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Cells.TextSettingsCell;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.SeekBarView;
+import org.telegram.ui.LaunchActivity;
 import org.telegram.ui.Stories.recorder.DualCameraView;
 import org.telegram.ui.ThemeActivity;
 
@@ -43,14 +51,19 @@ import java.util.List;
 import java.util.Locale;
 
 import app.exteraless.OpenExteraConfig;
+import app.exteraless.appearance.AppearanceConfig;
 import app.exteraless.chats.ChatsConfig;
 import app.exteraless.chats.DoubleTapCell;
 import app.exteraless.chats.StickerShapeCell;
+import app.exteraless.chats.TextStyleDialog;
 import app.exteraless.chats.WideChannelPostsPreviewCell;
 import app.exteraless.icons.BaseIconPacks;
+import app.exteraless.links.LinkCleaner;
 import kotlin.Unit;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.ConfigItem;
+import tw.nekomimi.nekogram.helpers.AppRestartHelper;
+import tw.nekomimi.nekogram.helpers.TranscribeHelper;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.PopupBuilder;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
@@ -68,6 +81,13 @@ import xyz.nextalone.nagram.helper.DoubleTap;
  * Extended Settings, Auto-Pause) сделаны разворачивающимися: строка «x/y» + чекбоксы.
  */
 public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
+
+    public static final int SCREEN_CHATS = 0;
+    public static final int SCREEN_MENUS = 1;
+    public static final int SCREEN_MEDIA = 2;
+    public static final int SCREEN_HIDING = 3;
+
+    private final int screen;
 
     private static final int TYPE_STICKER_SIZE = 100;
     private static final int TYPE_STICKER_SHAPE = 101;
@@ -92,165 +112,318 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     private boolean hideReactionsExpanded;
     private boolean unlimitedExpanded;
     private boolean quickTransitionExpanded;
+    private boolean chatMenuExpanded;
     private boolean messageMenuExpanded;
     private boolean mediaViewerMenuExpanded;
     private boolean actionBarButtonsExpanded;
     private boolean extendedSettingsExpanded;
     private boolean pauseExpanded;
+    private boolean premiumElementsExpanded;
+    private boolean deleteMenuExpanded;
+    private boolean askWhenExpanded;
+    private boolean stripTrackingExpanded;
+    private boolean hideAiExpanded;
+    private boolean hideSettingsExpanded;
 
     // Sticker Size
-    private int stickerSizeRow;
-    private int hideTimeOnStickersRow;
-    private int repliesGroupRow;
-    private int replyColorsRow;
-    private int replyEmojiRow;
-    private int replyBackgroundRow;
-    private int stickerSizeDividerRow;
+    private int stickerSizeRow = -1;
+    private int stickerTimeRow = -1;
+    private int repliesGroupRow = -1;
+    private int replyColorsRow = -1;
+    private int replyEmojiRow = -1;
+    private int replyBackgroundRow = -1;
+    private int stickerSizeDividerRow = -1;
 
     // Sticker Shape
-    private int stickerShapeHeaderRow;
-    private int stickerShapeRow;
-    private int stickerShapeDividerRow;
+    private int stickerShapeHeaderRow = -1;
+    private int stickerShapeRow = -1;
+    private int stickerShapeDividerRow = -1;
 
     // Links
-    private int linksHeaderRow;
-    private int aiChatRow;
-    private int chatSettingsRow;
-    private int linksDividerRow;
+    private int linksHeaderRow = -1;
+    private int menusRow = -1;
+    private int mediaRow = -1;
+    private int aiChatRow = -1;
+    private int chatSettingsRow = -1;
+    private int linksDividerRow = -1;
 
     // Stickers and Emoji
-    private int stickersHeaderRow;
-    private int unlimitedGroupRow;
-    private int unlimitedStickersRow;
-    private int unlimitedGifsRow;
-    private int hideReactionsGroupRow;
-    private int hideReactionsChannelsRow;
-    private int hideReactionsGroupsRow;
-    private int hideReactionsPrivateRow;
-    private int stickersDividerRow;
+    private int stickersHeaderRow = -1;
+    private int disableTrendingRow = -1;
+    private int hideGroupStickerRow = -1;
+    private int lockedEmojiAsStickerRow = -1;
+    private int unlimitedGroupRow = -1;
+    private int unlimitedStickersRow = -1;
+    private int unlimitedGifsRow = -1;
+    private int hideReactionsGroupRow = -1;
+    private int hideReactionsChannelsRow = -1;
+    private int hideReactionsGroupsRow = -1;
+    private int hideReactionsPrivateRow = -1;
+    private int stickersDividerRow = -1;
 
     // Double Tap
-    private int doubleTapHeaderRow;
-    private int doubleTapRow;
-    private int doubleTapIncomingRow;
-    private int doubleTapOutgoingRow;
-    private int doubleTapReactionRow;
-    private int doubleTapDividerRow;
+    private int doubleTapHeaderRow = -1;
+    private int doubleTapRow = -1;
+    private int doubleTapIncomingRow = -1;
+    private int doubleTapOutgoingRow = -1;
+    private int doubleTapReactionRow = -1;
+    private int doubleTapDividerRow = -1;
 
     // Chats
-    private int chatsHeaderRow;
-    private int bottomButtonRow;
-    private int adminShortcutsRow;
-    private int quickTransitionGroupRow;
-    private int quickTransitionChannelsRow;
-    private int quickTransitionTopicsRow;
-    private int disableGreetingRow;
-    private int hideKeyboardOnScrollRow;
-    private int disableGlobalSearchRow;
-    private int addCommaRow;
-    private int hideSendAsPeerRow;
-    private int tapToSwitchRecordRow;
-    private int keepAttachButtonRow;
-    private int chatsDividerRow;
+    private int chatsHeaderRow = -1;
+    private int bottomButtonRow = -1;
+    private int adminShortcutsRow = -1;
+    private int quickTransitionGroupRow = -1;
+    private int quickTransitionChannelsRow = -1;
+    private int quickTransitionTopicsRow = -1;
+    private int disableGreetingRow = -1;
+    private int deleteChatForBothSidesRow = -1;
+    private int hideKeyboardOnScrollRow = -1;
+    private int disableGlobalSearchRow = -1;
+    private int searchHashtagChatRow = -1;
+    private int searchHashtagChannelRow = -1;
+    private int addCommaRow = -1;
+    private int inlineMathRow = -1;
+    private int inlineMathCurrencyRow = -1;
+    private int hideSendAsPeerRow = -1;
+    private int tapToSwitchRecordRow = -1;
+    private int keepAttachButtonRow = -1;
+    private int chatsDividerRow = -1;
+
+    private int inputHeaderRow = -1;
+    private int inputDividerRow = -1;
+    private int searchHeaderRow = -1;
+    private int searchDividerRow = -1;
 
     // Messages
-    private int messagesHeaderRow;
-    private int removeMessageTailRow;
-    private int replaceEditedRow;
-    private int showOnlineStatusRow;
-    private int hideShareButtonRow;
-    private int showResultsBeforeVotingRow;
-    private int messageMenuGroupRow;
-    private int menuCopyPhotoRow;
-    private int menuSaveRow;
-    private int menuRepeatRow;
-    private int menuClearRow;
-    private int menuHistoryRow;
-    private int menuReportRow;
-    private int menuDetailsRow;
-    private int menuReactionsRow;
-    private int menuReplyInPrivateRow;
-    private int menuCopyLinkRow;
-    private int menuCopyFrameRow;
-    private int menuCopyAsStickerRow;
-    private int menuAddToStickersRow;
-    private int menuAddToFavoritesRow;
-    private int menuNoQuoteForwardRow;
-    private int menuSetReminderRow;
-    private int menuBookmarkRow;
-    private int menuRepeatAsCopyRow;
-    private int menuTranslateRow;
-    private int menuTranslateLlmRow;
-    private int menuShareRow;
-    private int menuHideRow;
-    private int menuAdminActionsRow;
-    private int menuPermissionsRow;
-    private int mediaViewerMenuGroupRow;
-    private int mediaMenuForwardRow;
-    private int mediaMenuNoQuoteForwardRow;
-    private int mediaMenuCopyFrameRow;
-    private int mediaMenuCopyPhotoRow;
-    private int mediaMenuProfilePhotoRow;
-    private int mediaMenuQrRow;
-    private int actionBarButtonsGroupRow;
-    private int actionBarReplyRow;
-    private int actionBarEditRow;
-    private int actionBarSelectBetweenRow;
-    private int actionBarCopyRow;
-    private int actionBarForwardRow;
-    private int groupedMessageMenuRow;
-    private int messagesDividerRow;
+    private int messagesHeaderRow = -1;
+    private int removeMessageTailRow = -1;
+    private int replaceEditedRow = -1;
+    private int showOnlineStatusRow = -1;
+    private int hideShareButtonRow = -1;
+    private int hideGiftButtonRow = -1;
+    private int hideSearchButtonRow = -1;
+    private int showResultsBeforeVotingRow = -1;
+    private int dateOfForwardedMsgRow = -1;
+    private int showTimeHintRow = -1;
+    private int rememberAllRepliesRow = -1;
+    private int chatMenuGroupRow = -1;
+    private int chatMenuAdminsRow = -1;
+    private int chatMenuRecentActionsRow = -1;
+    private int chatMenuStatisticsRow = -1;
+    private int chatMenuPermissionsRow = -1;
+    private int chatMenuMembersRow = -1;
+    private int chatMenuBoostRow = -1;
+    private int chatMenuLinkedChatRow = -1;
+    private int chatMenuToBeginningRow = -1;
+    private int chatMenuGoToMessageRow = -1;
+    private int chatMenuHideTitleRow = -1;
+    private int chatMenuViewDeletedRow = -1;
+    private int chatMenuClearDeletedRow = -1;
+    private int chatMenuDeleteOwnRow = -1;
+    private int messageMenuGroupRow = -1;
+    private int menuCopyPhotoRow = -1;
+    private int menuSaveRow = -1;
+    private int menuRepeatRow = -1;
+    private int menuClearRow = -1;
+    private int menuHistoryRow = -1;
+    private int menuReportRow = -1;
+    private int menuDetailsRow = -1;
+    private int menuReactionsRow = -1;
+    private int menuReplyInPrivateRow = -1;
+    private int menuCopyLinkRow = -1;
+    private int menuCopyFrameRow = -1;
+    private int menuCopyAsStickerRow = -1;
+    private int menuAddToStickersRow = -1;
+    private int menuAddToFavoritesRow = -1;
+    private int menuNoQuoteForwardRow = -1;
+    private int menuSetReminderRow = -1;
+    private int menuBookmarkRow = -1;
+    private int menuRepeatAsCopyRow = -1;
+    private int menuTranslateRow = -1;
+    private int menuTranslateLlmRow = -1;
+    private int menuShareRow = -1;
+    private int menuHideRow = -1;
+    private int menuAdminActionsRow = -1;
+    private int menuPermissionsRow = -1;
+    private int mediaViewerMenuGroupRow = -1;
+    private int mediaMenuForwardRow = -1;
+    private int mediaMenuNoQuoteForwardRow = -1;
+    private int mediaMenuCopyFrameRow = -1;
+    private int mediaMenuCopyPhotoRow = -1;
+    private int mediaMenuProfilePhotoRow = -1;
+    private int mediaMenuQrRow = -1;
+    private int actionBarButtonsGroupRow = -1;
+    private int actionBarReplyRow = -1;
+    private int actionBarEditRow = -1;
+    private int actionBarSelectBetweenRow = -1;
+    private int actionBarCopyRow = -1;
+    private int actionBarForwardRow = -1;
+    private int premiumElementsGroupRow = -1;
+    private int premiumEmojiStatusRow = -1;
+    private int premiumEmojiInRepliesRow = -1;
+    private int premiumColorsInRepliesRow = -1;
+    private int premiumWallpapersRow = -1;
+    private int premiumVideoAvatarsRow = -1;
+    private int premiumStarReactionsRow = -1;
+    private int premiumStickerEffectsRow = -1;
+    private int premiumBoostsRow = -1;
+    private int deleteMenuGroupRow = -1;
+    private int deleteMenuBanUsersRow = -1;
+    private int deleteMenuReportSpamRow = -1;
+    private int deleteMenuDeleteAllRow = -1;
+    private int deleteMenuCommonGroupsRow = -1;
+    private int groupedMessageMenuRow = -1;
+    private int textStyleRow = -1;
+    private int messagesDividerRow = -1;
 
-    private int channelPostsHeaderRow;
-    private int wideChannelPostsPreviewRow;
-    private int wideChannelPostsRow;
-    private int wideFeedPostsRow;
-    private int channelPostsDividerRow;
+    private int buttonsHeaderRow = -1;
+    private int buttonsDividerRow = -1;
+    private int menusHeaderRow = -1;
+    private int menusDividerRow = -1;
+
+    private int linkConfirmationsHeaderRow = -1;
+    private int fixLinkPreviewRow = -1;
+    private int disableLinkPreviewRow = -1;
+    private int openLinkConfirmationRow = -1;
+    private int askWhenGroupRow = -1;
+    private int confirmAVMessageRow = -1;
+    private int askBeforeCallRow = -1;
+    private int repeatConfirmRow = -1;
+    private int disableClickCommandToSendRow = -1;
+    private int stripTrackingGroupRow = -1;
+    private int stripTrackingOpenRow = -1;
+    private int stripTrackingPasteRow = -1;
+    private int trackingFilterRow = -1;
+    private int linkConfirmationsDividerRow = -1;
+
+    private int channelPostsHeaderRow = -1;
+    private int wideChannelPostsPreviewRow = -1;
+    private int wideChannelPostsRow = -1;
+    private int wideFeedPostsRow = -1;
+    private int channelPostsDividerRow = -1;
 
     // Camera
-    private int cameraHeaderRow;
-    private int cameraTypeRow;
-    private int extendedSettingsGroupRow;
-    private int seamlessSwitchingRow;
-    private int extendedFpsRow;
-    private int cameraStabilizationRow;
-    private int cameraMirrorModeRow;
-    private int startWithWideAngleRow;
-    private int videoMessagesCameraRow;
-    private int rememberLastUsedCameraRow;
-    private int zoomSliderRow;
-    private int staticZoomRow;
-    private int cameraDividerRow;
+    private int cameraHeaderRow = -1;
+    private int cameraTypeRow = -1;
+    private int extendedSettingsGroupRow = -1;
+    private int seamlessSwitchingRow = -1;
+    private int extendedFpsRow = -1;
+    private int cameraStabilizationRow = -1;
+    private int cameraMirrorModeRow = -1;
+    private int startWithWideAngleRow = -1;
+    private int videoMessagesCameraRow = -1;
+    private int rememberLastUsedCameraRow = -1;
+    private int zoomSliderRow = -1;
+    private int staticZoomRow = -1;
+    private int cameraDividerRow = -1;
 
     // Photos
-    private int photoHeaderRow;
-    private int alwaysSendHdRow;
-    private int hideCameraTileRow;
-    private int photoDividerRow;
+    private int photoHeaderRow = -1;
+    private int alwaysSendHdRow = -1;
+    private int hdrPhotosRow = -1;
+    private int disableInstantCameraRow = -1;
+    private int hideCameraTileRow = -1;
+    private int photoDividerRow = -1;
 
     // Videos
-    private int videosHeaderRow;
-    private int doubleTapSeekDurationRow;
-    private int preferOriginalQualityRow;
-    private int swipeToPipRow;
-    private int unmuteWithVolumeButtonsRow;
-    private int pauseGroupRow;
-    private int pauseVideoRow;
-    private int pauseVoiceRow;
-    private int pauseRoundRow;
-    private int videosDividerRow;
+    private int videosHeaderRow = -1;
+    private int doubleTapSeekDurationRow = -1;
+    private int preferOriginalQualityRow = -1;
+    private int enhancedVideoBitrateRow = -1;
+    private int videoPlayerDecoderRow = -1;
+    private int swipeToPipRow = -1;
+    private int unmuteWithVolumeButtonsRow = -1;
+    private int showSmallGifRow = -1;
+    private int dontAutoPlayNextVoiceRow = -1;
+    private int disableProximityEventsRow = -1;
+    private int pauseGroupRow = -1;
+    private int pauseVideoRow = -1;
+    private int pauseVoiceRow = -1;
+    private int pauseRoundRow = -1;
+    private int videosDividerRow = -1;
+    private int playbackHeaderRow = -1;
+    private int playbackDividerRow = -1;
+    private int voiceHeaderRow = -1;
+    private int voiceEnhancementsRow = -1;
+    private int voiceDividerRow = -1;
+
+    private int transcribeHeaderRow = -1;
+    private int transcribeProviderRow = -1;
+    private int cloudflareCredentialsRow = -1;
+    private int geminiApiKeyRow = -1;
+    private int openAiCredentialsRow = -1;
+    private int voskModelsRow = -1;
+    private int transcribeDividerRow = -1;
+
+    private int hidingChatListHeaderRow = -1;
+    private int hideActionBarStatusRow = -1;
+    private int hideStoriesRow = -1;
+    private int hideFloatingButtonRow = -1;
+    private int hideSearchBarRow = -1;
+    private int hideAllChatsRow = -1;
+    private int hidingChatListDividerRow = -1;
+    private int hidingChatsHeaderRow = -1;
+    private int hidingChatsDividerRow = -1;
+    private int hidingStickersHeaderRow = -1;
+    private int hidingStickersDividerRow = -1;
+    private int hidingAiHeaderRow = -1;
+    private int hideAiGroupRow = -1;
+    private int hideAiEditorRow = -1;
+    private int hideAiSummaryRow = -1;
+    private int hideAiIvRow = -1;
+    private int hidingAiDividerRow = -1;
+    private int hidingSettingsHeaderRow = -1;
+    private int hideSettingsGroupRow = -1;
+    private int hidePremiumSectionRow = -1;
+    private int hideHelpSectionRow = -1;
+    private int hidingSettingsDividerRow = -1;
 
     public OpenExteraChatsActivity() {
+        this(SCREEN_CHATS);
+    }
+
+    public OpenExteraChatsActivity(int screen) {
         super();
+        this.screen = screen;
         ChatsConfig.ensureLoaded();
+        if (screen == SCREEN_HIDING) {
+            AppearanceConfig.ensureLoaded();
+        }
+    }
+
+    @Override
+    protected List<CollapsibleGroup> collapsibleGroups() {
+        if (screen != SCREEN_HIDING) {
+            return super.collapsibleGroups();
+        }
+        return Arrays.asList(
+                new CollapsibleGroup(() -> hideAiExpanded, expanded -> hideAiExpanded = expanded),
+                new CollapsibleGroup(() -> hideSettingsExpanded, expanded -> hideSettingsExpanded = expanded));
     }
 
     @Override
     protected void updateRows() {
         super.updateRows();
+        switch (screen) {
+            case SCREEN_MENUS:
+                updateMenuRows();
+                break;
+            case SCREEN_MEDIA:
+                updateMediaRows();
+                break;
+            case SCREEN_HIDING:
+                updateHidingRows();
+                break;
+            default:
+                updateChatRows();
+                break;
+        }
+    }
 
+    private void updateChatRows() {
         stickerSizeRow = addRow("stickerSize");
-        hideTimeOnStickersRow = addRow("hideTimeOnStickers");
+        stickerTimeRow = addRow("stickerTime", "hideTimeOnStickers");
         repliesGroupRow = addRow("replies");
         if (repliesExpanded) {
             replyColorsRow = addRow();
@@ -265,12 +438,8 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         stickerShapeRow = addRow("stickerShape");
         stickerShapeDividerRow = addRow();
 
-        linksHeaderRow = addRow("linksHeader");
-        aiChatRow = addRow("aiChat");
-        chatSettingsRow = addRow("chatSettings");
-        linksDividerRow = addRow();
-
         stickersHeaderRow = addRow("stickersHeader");
+        lockedEmojiAsStickerRow = addRow(NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker().getKey());
         unlimitedGroupRow = addRow("unlimited", "unlimitedRecentStickers");
         if (unlimitedExpanded) {
             unlimitedStickersRow = addRow();
@@ -278,15 +447,14 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         } else {
             unlimitedStickersRow = unlimitedGifsRow = -1;
         }
-        hideReactionsGroupRow = addRow("hideReactions");
-        if (hideReactionsExpanded) {
-            hideReactionsChannelsRow = addRow();
-            hideReactionsGroupsRow = addRow();
-            hideReactionsPrivateRow = addRow();
-        } else {
-            hideReactionsChannelsRow = hideReactionsGroupsRow = hideReactionsPrivateRow = -1;
-        }
         stickersDividerRow = addRow();
+
+        linksHeaderRow = addRow("linksHeader");
+        menusRow = addRow("menus");
+        mediaRow = addRow("media");
+        aiChatRow = addRow("aiChat");
+        chatSettingsRow = addRow("chatSettings");
+        linksDividerRow = addRow();
 
         doubleTapHeaderRow = addRow("doubleTapHeader");
         doubleTapRow = addRow("doubleTapPreview");
@@ -301,8 +469,6 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         doubleTapDividerRow = addRow();
 
         chatsHeaderRow = addRow("chatsHeader");
-        bottomButtonRow = addRow("bottomButton");
-        adminShortcutsRow = addRow("adminShortcuts");
         quickTransitionGroupRow = addRow("quickTransition");
         if (quickTransitionExpanded) {
             quickTransitionChannelsRow = addRow();
@@ -310,21 +476,95 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         } else {
             quickTransitionChannelsRow = quickTransitionTopicsRow = -1;
         }
-        disableGreetingRow = addRow("disableGreeting");
+        deleteChatForBothSidesRow = addRow("deleteChatForBothSides", "DeleteChatForBothSides");
         hideKeyboardOnScrollRow = addRow("hideKeyboardOnScroll");
-        disableGlobalSearchRow = addRow("disableGlobalSearch");
-        addCommaRow = addRow("addCommaAfterMention");
-        hideSendAsPeerRow = addRow("hideSendAsPeer");
-        tapToSwitchRecordRow = addRow("tapToSwitchRecord");
-        keepAttachButtonRow = addRow("keepAttachButton");
         chatsDividerRow = addRow();
+
+        inputHeaderRow = addRow("inputHeader");
+        addCommaRow = addRow("addCommaAfterMention");
+        inlineMathRow = addRow("inlineMathResult");
+        inlineMathCurrencyRow = ChatsConfig.inlineMathResult.Bool() ? addRow("inlineMathCurrency") : -1;
+        tapToSwitchRecordRow = addRow("tapToSwitchRecord", "UseChatAttachEnterMenu");
+        keepAttachButtonRow = addRow("keepAttachButton");
+        inputDividerRow = addRow();
+
+        searchHeaderRow = addRow("searchHeader");
+        disableGlobalSearchRow = addRow("disableGlobalSearch");
+        searchHashtagChatRow = addRow("searchHashtagChat", "SearchHashtagDefaultPageChat");
+        searchHashtagChannelRow = addRow("searchHashtagChannel", "SearchHashtagDefaultPageChannel");
+        searchDividerRow = addRow();
 
         messagesHeaderRow = addRow("messagesHeader");
         removeMessageTailRow = addRow("removeMessageTail");
         replaceEditedRow = addRow("replaceEdited");
         showOnlineStatusRow = addRow("showOnlineStatus");
-        hideShareButtonRow = addRow("hideShareButton");
         showResultsBeforeVotingRow = addRow("showResultsBeforeVoting");
+        dateOfForwardedMsgRow = addRow("dateOfForwardedMsg", "DateOfForwardedMsg");
+        showTimeHintRow = addRow("showTimeHint", "ShowTimeHint");
+        rememberAllRepliesRow = addRow("rememberAllBackMessages", "rememberAllBackMessages");
+        messagesDividerRow = addRow();
+
+        linkConfirmationsHeaderRow = addRow("linkConfirmationsHeader");
+        fixLinkPreviewRow = addRow("fixLinkPreview", "FixLinkPreview");
+        disableLinkPreviewRow = addRow("disableLinkPreviewByDefault", "DisableLinkPreviewByDefault");
+        openLinkConfirmationRow = addRow("openLinkConfirmation", "SkipOpenLinkConfirm", "ConfirmAllLinks");
+        askWhenGroupRow = addRow("askWhen", "confirmAVMessage", "ConfirmAVMessage", "askBeforeCalling",
+                "AskBeforeCalling", "repeatConfirm", "DisableClickCommandToSend");
+        if (askWhenExpanded) {
+            confirmAVMessageRow = NekoConfig.useChatAttachMediaMenu.Bool() ? -1 : addRow();
+            askBeforeCallRow = addRow();
+            repeatConfirmRow = addRow();
+            disableClickCommandToSendRow = addRow();
+        } else {
+            confirmAVMessageRow = askBeforeCallRow = repeatConfirmRow = disableClickCommandToSendRow = -1;
+        }
+        stripTrackingGroupRow = addRow("stripTracking");
+        if (stripTrackingExpanded) {
+            stripTrackingOpenRow = addRow();
+            stripTrackingPasteRow = addRow();
+        } else {
+            stripTrackingOpenRow = stripTrackingPasteRow = -1;
+        }
+        trackingFilterRow = addRow("trackingFilter");
+        linkConfirmationsDividerRow = addRow();
+
+        channelPostsHeaderRow = addRow("channelPostsHeader");
+        wideChannelPostsPreviewRow = addRow("wideChannelPostsPreview");
+        wideChannelPostsRow = addRow("wideChannelPosts");
+        wideFeedPostsRow = addRow("wideFeedPosts");
+        channelPostsDividerRow = addRow();
+    }
+
+    private void updateMenuRows() {
+        buttonsHeaderRow = addRow("buttonsHeader");
+        bottomButtonRow = addRow("bottomButton");
+        adminShortcutsRow = addRow("adminShortcuts");
+        buttonsDividerRow = addRow();
+
+        menusHeaderRow = addRow("menusHeader");
+        chatMenuGroupRow = addRow("chatMenu");
+        if (chatMenuExpanded) {
+            chatMenuAdminsRow = addRow();
+            chatMenuRecentActionsRow = addRow();
+            chatMenuStatisticsRow = addRow();
+            chatMenuPermissionsRow = addRow();
+            chatMenuMembersRow = addRow();
+            chatMenuBoostRow = addRow();
+            chatMenuLinkedChatRow = addRow();
+            chatMenuToBeginningRow = addRow();
+            chatMenuGoToMessageRow = addRow();
+            chatMenuHideTitleRow = addRow();
+            chatMenuViewDeletedRow = addRow();
+            chatMenuClearDeletedRow = addRow();
+            chatMenuDeleteOwnRow = addRow();
+        } else {
+            chatMenuAdminsRow = chatMenuRecentActionsRow = chatMenuStatisticsRow = -1;
+            chatMenuPermissionsRow = chatMenuMembersRow = chatMenuBoostRow = -1;
+            chatMenuLinkedChatRow = chatMenuToBeginningRow = chatMenuGoToMessageRow = -1;
+            chatMenuHideTitleRow = chatMenuViewDeletedRow = chatMenuClearDeletedRow = -1;
+            chatMenuDeleteOwnRow = -1;
+        }
+        groupedMessageMenuRow = addRow("groupedMessageMenu");
         messageMenuGroupRow = addRow("messageMenu");
         if (messageMenuExpanded) {
             menuReactionsRow = addRow();
@@ -359,6 +599,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             menuTranslateRow = menuTranslateLlmRow = menuShareRow = menuHideRow = -1;
             menuReportRow = menuAdminActionsRow = menuPermissionsRow = menuDetailsRow = -1;
         }
+        textStyleRow = addRow("textStyle", "TextStyle");
         mediaViewerMenuGroupRow = addRow("mediaViewerMenu");
         if (mediaViewerMenuExpanded) {
             mediaMenuForwardRow = addRow();
@@ -382,15 +623,19 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             actionBarReplyRow = actionBarEditRow = actionBarSelectBetweenRow = -1;
             actionBarCopyRow = actionBarForwardRow = -1;
         }
-        groupedMessageMenuRow = addRow("groupedMessageMenu");
-        messagesDividerRow = addRow();
+        deleteMenuGroupRow = addRow("defaultDeleteMenu", "DefaultDeleteMenu");
+        if (deleteMenuExpanded) {
+            deleteMenuBanUsersRow = addRow();
+            deleteMenuReportSpamRow = addRow();
+            deleteMenuDeleteAllRow = addRow();
+            deleteMenuCommonGroupsRow = addRow();
+        } else {
+            deleteMenuBanUsersRow = deleteMenuReportSpamRow = deleteMenuDeleteAllRow = deleteMenuCommonGroupsRow = -1;
+        }
+        menusDividerRow = addRow();
+    }
 
-        channelPostsHeaderRow = addRow("channelPostsHeader");
-        wideChannelPostsPreviewRow = addRow("wideChannelPostsPreview");
-        wideChannelPostsRow = addRow("wideChannelPosts");
-        wideFeedPostsRow = addRow("wideFeedPosts");
-        channelPostsDividerRow = addRow();
-
+    private void updateMediaRows() {
         cameraHeaderRow = addRow("cameraHeader");
         cameraTypeRow = addRow("cameraType");
         seamlessSwitchingRow = extendedFpsRow = cameraStabilizationRow = -1;
@@ -401,7 +646,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             extendedSettingsGroupRow = addRow("extendedSettings");
             if (extendedSettingsExpanded) {
                 // Бесшовное переключение есть не на всяком железе.
-                if (isSeamlessSwitchingAvailable()) {
+                if (cameraTypeIndex() != CAMERA_TYPE_TELEGRAM && isSeamlessSwitchingAvailable()) {
                     seamlessSwitchingRow = addRow();
                 }
                 extendedFpsRow = addRow();
@@ -432,12 +677,19 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
         photoHeaderRow = addRow("photoHeader");
         alwaysSendHdRow = addRow("alwaysSendInHD");
-        hideCameraTileRow = addRow("hideCameraTile");
+        hdrPhotosRow = addRow("hdrPhotos");
+        disableInstantCameraRow = addRow("disableInstantCamera", "DisableInstantCamera");
         photoDividerRow = addRow();
 
         videosHeaderRow = addRow("videosHeader");
-        doubleTapSeekDurationRow = addRow("doubleTapSeekDuration");
         preferOriginalQualityRow = addRow("preferOriginalQuality");
+        enhancedVideoBitrateRow = addRow("enhancedVideoBitrate", "EnhancedVideoBitrate");
+        videoPlayerDecoderRow = addRow("videoPlayerDecoder", "VideoPlayerDecoder");
+        showSmallGifRow = addRow("showSmallGIF", "ShowSmallGIF");
+        videosDividerRow = addRow();
+
+        playbackHeaderRow = addRow("playbackHeader");
+        doubleTapSeekDurationRow = addRow("doubleTapSeekDuration");
         swipeToPipRow = addRow("swipeToPip");
         unmuteWithVolumeButtonsRow = addRow("unmuteWithVolumeButtons");
         pauseGroupRow = addRow("pauseOnMinimize");
@@ -448,22 +700,132 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         } else {
             pauseVideoRow = pauseVoiceRow = pauseRoundRow = -1;
         }
-        videosDividerRow = addRow();
+        playbackDividerRow = addRow();
+
+        voiceHeaderRow = addRow("voiceHeader");
+        voiceEnhancementsRow = addRow("noiseSuppressAndVoiceEnhance", "NoiseSuppressAndVoiceEnhance");
+        dontAutoPlayNextVoiceRow = addRow("dontAutoPlayNextVoice", "DontAutoPlayNextVoice");
+        disableProximityEventsRow = addRow("disableProximityEvents", "DisableProximityEvents");
+        voiceDividerRow = addRow();
+
+        transcribeHeaderRow = addRow("transcribeHeader");
+        transcribeProviderRow = addRow("transcribeProvider", "TranscribeProviderShort");
+        cloudflareCredentialsRow = addRow("cloudflareCredentials", "CloudflareCredentials");
+        geminiApiKeyRow = addRow("llmProviderGeminiKey", "LlmProviderGeminiKey");
+        openAiCredentialsRow = NaConfig.INSTANCE.getTranscribeProvider().Int() == TranscribeHelper.TRANSCRIBE_OPENAI
+                ? addRow("transcribeProviderOpenAI", "TranscribeProviderOpenAI") : -1;
+        voskModelsRow = NaConfig.INSTANCE.getTranscribeProvider().Int() == TranscribeHelper.TRANSCRIBE_VOSK
+                ? addRow("voskModels", "VoskModelsShort") : -1;
+        transcribeDividerRow = addRow();
+    }
+
+    private void updateHidingRows() {
+        hidingChatListHeaderRow = addRow("hidingChatListHeader");
+        hideActionBarStatusRow = getUserConfig().isPremium() ? addRow("hideActionBarStatus") : -1;
+        hideStoriesRow = addRow("hideStories", "HideStoriesFromHeader", "DisableStories");
+        hideFloatingButtonRow = addRow("hideFloatingButton");
+        hideSearchBarRow = addRow("hideSearchBar");
+        hideAllChatsRow = addRow("hideAllChats");
+        hidingChatListDividerRow = addRow();
+
+        hidingChatsHeaderRow = addRow("hidingChatsHeader");
+        hideSendAsPeerRow = addRow("hideSendAsPeer");
+        hideShareButtonRow = addRow("hideShareButton");
+        hideGiftButtonRow = addRow("hideGiftButton");
+        hideSearchButtonRow = addRow("hideSearchButton");
+        hideReactionsGroupRow = addRow("hideReactions");
+        if (hideReactionsExpanded) {
+            hideReactionsChannelsRow = addRow();
+            hideReactionsGroupsRow = addRow();
+            hideReactionsPrivateRow = addRow();
+        } else {
+            hideReactionsChannelsRow = hideReactionsGroupsRow = hideReactionsPrivateRow = -1;
+        }
+        hideCameraTileRow = addRow("hideCameraTile");
+        hidingChatsDividerRow = addRow();
+
+        hidingStickersHeaderRow = addRow("hidingStickersHeader");
+        disableTrendingRow = addRow("disableTrending", "DisableTrending");
+        hideGroupStickerRow = addRow("hideGroupSticker");
+        disableGreetingRow = addRow("disableGreeting");
+        hidingStickersDividerRow = addRow();
+
+        hidingAiHeaderRow = addRow("hidingAiHeader");
+        hideAiGroupRow = addRow("hideAi");
+        if (hideAiExpanded) {
+            hideAiEditorRow = addRow("hideAiEditor");
+            hideAiSummaryRow = addRow("hideAiSummary");
+            hideAiIvRow = addRow("hideAiIv");
+        } else {
+            hideAiEditorRow = hideAiSummaryRow = hideAiIvRow = -1;
+        }
+        premiumElementsGroupRow = addRow("premiumElements", "PremiumElements");
+        if (premiumElementsExpanded) {
+            premiumEmojiStatusRow = addRow();
+            premiumEmojiInRepliesRow = addRow();
+            premiumColorsInRepliesRow = addRow();
+            premiumWallpapersRow = addRow();
+            premiumVideoAvatarsRow = addRow();
+            premiumStarReactionsRow = addRow();
+            premiumStickerEffectsRow = addRow();
+            premiumBoostsRow = addRow();
+        } else {
+            premiumEmojiStatusRow = premiumEmojiInRepliesRow = premiumColorsInRepliesRow = premiumWallpapersRow = -1;
+            premiumVideoAvatarsRow = premiumStarReactionsRow = premiumStickerEffectsRow = premiumBoostsRow = -1;
+        }
+        hidingAiDividerRow = addRow();
+
+        hidingSettingsHeaderRow = addRow("hidingSettingsHeader");
+        hideSettingsGroupRow = addRow("hideSettingsSections", "HidePremiumSection", "HideHelpSection");
+        if (hideSettingsExpanded) {
+            hidePremiumSectionRow = addRow("hidePremiumSection", "HidePremiumSection");
+            hideHelpSectionRow = addRow("hideHelpSection", "HideHelpSection");
+        } else {
+            hidePremiumSectionRow = hideHelpSectionRow = -1;
+        }
+        hidingSettingsDividerRow = addRow();
     }
 
     @Override
     protected String getActionBarTitle() {
-        return getString(R.string.OpenExteraChats);
+        switch (screen) {
+            case SCREEN_MENUS:
+                return getString(R.string.OEChatsMenus);
+            case SCREEN_MEDIA:
+                return getString(R.string.OEChatsMedia);
+            case SCREEN_HIDING:
+                return getString(R.string.OEAppearanceHiding);
+            default:
+                return getString(R.string.OpenExteraChats);
+        }
     }
 
     @Override
     public int getSearchGuid() {
-        return 22000;
+        switch (screen) {
+            case SCREEN_MENUS:
+                return 29100;
+            case SCREEN_MEDIA:
+                return 29200;
+            case SCREEN_HIDING:
+                return 29300;
+            default:
+                return 22000;
+        }
     }
 
     @Override
     public int getSearchIcon() {
-        return R.drawable.msg_discussion;
+        switch (screen) {
+            case SCREEN_MENUS:
+                return R.drawable.msg_list;
+            case SCREEN_MEDIA:
+                return R.drawable.msg_camera;
+            case SCREEN_HIDING:
+                return R.drawable.msg_archive_hide;
+            default:
+                return R.drawable.msg_discussion;
+        }
     }
 
     @Override
@@ -473,7 +835,16 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getKey() {
-        return "exteraless_chats";
+        switch (screen) {
+            case SCREEN_MENUS:
+                return "exteraless_menus";
+            case SCREEN_MEDIA:
+                return "exteraless_media";
+            case SCREEN_HIDING:
+                return "exteraless_hiding";
+            default:
+                return "exteraless_chats";
+        }
     }
 
     @Override
@@ -500,7 +871,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         View view = super.createView(context);
         // Кнопка сброса размера стикеров в шапке: появляется, как только
         // размер отличается от стандартного.
-        if (actionBar != null) {
+        if (actionBar != null && screen == SCREEN_CHATS) {
             resetItem = actionBar.createMenu().addItem(0, R.drawable.msg_reset);
             resetItem.setContentDescription(getString(R.string.Reset));
             // Только через updateViewVisibilityAnimated: она проставляет и видимость,
@@ -544,6 +915,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     private static final int HIDE_REACTIONS_TOTAL = 3;
     private static final int UNLIMITED_TOTAL = 2;
     private static final int QUICK_TRANSITIONS_TOTAL = 2;
+    private static final int CHAT_MENU_TOTAL = 13;
     private static final int MESSAGE_MENU_TOTAL = 24;
     private static final int MEDIA_VIEWER_MENU_TOTAL = 6;
     private static final int ACTION_BAR_BUTTONS_TOTAL = 5;
@@ -564,6 +936,22 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
     private static int quickTransitionsSelectedCount() {
         return count(quickTransitionForChannels(), quickTransitionForTopics());
+    }
+
+    private static int chatMenuSelectedCount() {
+        return count(NaConfig.INSTANCE.getShortcutsAdministrators().Bool(),
+                NaConfig.INSTANCE.getShortcutsRecentActions().Bool(),
+                NaConfig.INSTANCE.getShortcutsStatistics().Bool(),
+                NaConfig.INSTANCE.getShortcutsPermissions().Bool(),
+                NaConfig.INSTANCE.getShortcutsMembers().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemBoostGroup().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemLinkedChat().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemToBeginning().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemGoToMessage().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemHideTitle().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemViewDeleted().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemClearDeleted().Bool(),
+                NaConfig.INSTANCE.getChatMenuItemDeleteOwnMessages().Bool());
     }
 
     private static int messageMenuSelectedCount() {
@@ -609,6 +997,9 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
      * CameraXSession, другим движкам их передать некуда.
      */
     private static int cameraSettingsTotal() {
+        if (ChatsConfig.cameraType() == CAMERA_TYPE_TELEGRAM) {
+            return 2;
+        }
         int total = isSeamlessSwitchingAvailable() ? 3 : 2;
         if (ChatsConfig.cameraType() == CAMERA_TYPE_CAMERA_X) {
             total += 2;  // зеркало и широкий угол
@@ -618,6 +1009,9 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
     private static int cameraSettingsSelected() {
         int selected = count(ChatsConfig.extendedFramesPerSecond.Bool(), ChatsConfig.cameraStabilization.Bool());
+        if (ChatsConfig.cameraType() == CAMERA_TYPE_TELEGRAM) {
+            return selected;
+        }
         if (isSeamlessSwitchingAvailable() && isSeamlessSwitchingEnabled()) {
             selected++;
         }
@@ -659,6 +1053,25 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         boolean enable = quickTransitionsSelectedCount() == 0;
         NekoConfig.disableSwipeToNext.setConfigBool(!enable);
         NekoConfig.disableSwipeToNextTopic.setConfigBool(!enable);
+        reloadList();
+    }
+
+    private void toggleAllChatMenu() {
+        boolean enable = chatMenuSelectedCount() == 0;
+        NaConfig.INSTANCE.getShortcutsAdministrators().setConfigBool(enable);
+        NaConfig.INSTANCE.getShortcutsRecentActions().setConfigBool(enable);
+        NaConfig.INSTANCE.getShortcutsStatistics().setConfigBool(enable);
+        NaConfig.INSTANCE.getShortcutsPermissions().setConfigBool(enable);
+        NaConfig.INSTANCE.getShortcutsMembers().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemBoostGroup().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemLinkedChat().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemToBeginning().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemGoToMessage().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemHideTitle().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemViewDeleted().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemClearDeleted().setConfigBool(enable);
+        NaConfig.INSTANCE.getChatMenuItemDeleteOwnMessages().setConfigBool(enable);
+        rebuildChats();
         reloadList();
     }
 
@@ -716,8 +1129,10 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
     private void toggleAllCameraSettings() {
         boolean enable = cameraSettingsSelected() == 0;
-        // При недоступном железе флаг всегда гасится.
-        setSeamlessSwitching(enable && isSeamlessSwitchingAvailable());
+        if (ChatsConfig.cameraType() != CAMERA_TYPE_TELEGRAM) {
+            // При недоступном железе флаг всегда гасится.
+            setSeamlessSwitching(enable && isSeamlessSwitchingAvailable());
+        }
         ChatsConfig.extendedFramesPerSecond.setConfigBool(enable);
         ChatsConfig.cameraStabilization.setConfigBool(enable);
         reloadList();
@@ -729,6 +1144,201 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         ChatsConfig.pauseOnMinimizeVoice.setConfigBool(enable);
         ChatsConfig.pauseOnMinimizeRound.setConfigBool(enable);
         reloadList();
+    }
+
+    private static ConfigItem[] premiumElementItems() {
+        return new ConfigItem[]{
+                NaConfig.INSTANCE.getPremiumItemEmojiStatus(),
+                NaConfig.INSTANCE.getPremiumItemEmojiInReplies(),
+                NaConfig.INSTANCE.getPremiumItemCustomColorInReplies(),
+                NaConfig.INSTANCE.getPremiumItemCustomWallpaper(),
+                NaConfig.INSTANCE.getPremiumItemVideoAvatar(),
+                NaConfig.INSTANCE.getPremiumItemStarInReactions(),
+                NaConfig.INSTANCE.getPremiumItemStickerEffects(),
+                NaConfig.INSTANCE.getPremiumItemBoosts()
+        };
+    }
+
+    private static ConfigItem[] deleteMenuItems() {
+        return new ConfigItem[]{
+                NaConfig.INSTANCE.getDefaultDeleteMenuBanUsers(),
+                NaConfig.INSTANCE.getDefaultDeleteMenReportSpam(),
+                NaConfig.INSTANCE.getDefaultDeleteMenuDeleteAll(),
+                NaConfig.INSTANCE.getDefaultDeleteMenuDoActionsInCommonGroups()
+        };
+    }
+
+    private static int selectedCount(ConfigItem[] items) {
+        int selected = 0;
+        for (ConfigItem item : items) {
+            if (item.Bool()) {
+                selected++;
+            }
+        }
+        return selected;
+    }
+
+    private static void setAll(ConfigItem[] items, boolean value) {
+        for (ConfigItem item : items) {
+            item.setConfigBool(value);
+        }
+    }
+
+    private void toggleAllPremiumElements() {
+        ConfigItem[] items = premiumElementItems();
+        setAll(items, selectedCount(items) == 0);
+        if (stickerSizeCell != null) {
+            stickerSizeCell.invalidate();
+        }
+        rebuildChats();
+        reloadList();
+    }
+
+    private void toggleAllDeleteMenu() {
+        ConfigItem[] items = deleteMenuItems();
+        setAll(items, selectedCount(items) == 0);
+        reloadList();
+    }
+
+    private static ConfigItem[] askWhenItems() {
+        if (NekoConfig.useChatAttachMediaMenu.Bool()) {
+            return new ConfigItem[]{
+                    NekoConfig.askBeforeCall,
+                    NekoConfig.repeatConfirm,
+                    NaConfig.INSTANCE.getDisableClickCommandToSend()
+            };
+        }
+        return new ConfigItem[]{
+                NekoConfig.confirmAVMessage,
+                NekoConfig.askBeforeCall,
+                NekoConfig.repeatConfirm,
+                NaConfig.INSTANCE.getDisableClickCommandToSend()
+        };
+    }
+
+    private void toggleAllAskWhen() {
+        ConfigItem[] items = askWhenItems();
+        setAll(items, selectedCount(items) == 0);
+        reloadList();
+    }
+
+    private static ConfigItem[] stripTrackingItems() {
+        return new ConfigItem[]{ChatsConfig.stripTrackingOnOpen, ChatsConfig.stripTrackingOnPaste};
+    }
+
+    private void toggleAllStripTracking() {
+        ConfigItem[] items = stripTrackingItems();
+        setAll(items, selectedCount(items) == 0);
+        reloadList();
+        LinkCleaner.preloadIfEnabled();
+    }
+
+    private static ConfigItem[] hideAiItems() {
+        return new ConfigItem[]{AppearanceConfig.hideAiEditor, AppearanceConfig.hideMessageSummary,
+                AppearanceConfig.hideIvSummary};
+    }
+
+    private void toggleAllHideAi() {
+        ConfigItem[] items = hideAiItems();
+        setAll(items, selectedCount(items) == 0);
+        rebuildChats();
+        reloadList();
+    }
+
+    private static ConfigItem[] hideSettingsItems() {
+        return new ConfigItem[]{NaConfig.INSTANCE.getHidePremiumSection(), NaConfig.INSTANCE.getHideHelpSection()};
+    }
+
+    private void toggleAllHideSettings() {
+        ConfigItem[] items = hideSettingsItems();
+        setAll(items, selectedCount(items) == 0);
+        rebuildChats();
+        reloadList();
+        showRestartHint();
+    }
+
+    private void showRestartHint() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        BulletinFactory.of(this)
+                .createSimpleBulletin(R.raw.info, getString(R.string.OEAppearanceNeedRestart),
+                        getString(R.string.OEAppearanceRestartNow),
+                        () -> {
+                            Activity activity = getParentActivity();
+                            if (activity != null) {
+                                AppRestartHelper.triggerRebirth(activity, new Intent(activity, LaunchActivity.class));
+                            }
+                        })
+                .show();
+    }
+
+    private CharSequence[] storiesOptions() {
+        return new CharSequence[]{
+                getString(R.string.OEAppearanceStoriesShow),
+                getString(R.string.OEAppearanceStoriesHideHeader),
+                getString(R.string.OEAppearanceStoriesDisable)
+        };
+    }
+
+    private static int storiesIndex() {
+        if (NaConfig.INSTANCE.getDisableStories().Bool()) {
+            return 2;
+        }
+        return NaConfig.INSTANCE.getHideStoriesFromHeader().Bool() ? 1 : 0;
+    }
+
+    private void showStoriesOptions(View view, int position) {
+        showOptions(view, storiesOptions(), index -> {
+            boolean wasDisabled = NaConfig.INSTANCE.getDisableStories().Bool();
+            NaConfig.INSTANCE.getHideStoriesFromHeader().setConfigBool(index != 0);
+            NaConfig.INSTANCE.getDisableStories().setConfigBool(index == 2);
+            listAdapter.notifyItemChanged(position);
+            rebuildChats();
+            if (wasDisabled != (index == 2)) {
+                showRestartHint();
+            }
+        });
+    }
+
+    private void showTrackingFilterOptions(View view) {
+        boolean override = LinkCleaner.isUsingOverride();
+        CharSequence[] options = override
+                ? new CharSequence[]{getString(R.string.OEChatsTrackingFilterUpdate), getString(R.string.OEChatsTrackingFilterRevert)}
+                : new CharSequence[]{getString(R.string.OEChatsTrackingFilterUpdate)};
+        showOptions(view, options, index -> {
+            if (index == 0) {
+                updateTrackingFilter();
+            } else {
+                Utilities.globalQueue.postRunnable(() -> {
+                    LinkCleaner.resetToBundled();
+                    AndroidUtilities.runOnUIThread(this::onTrackingFilterChanged);
+                });
+            }
+        });
+    }
+
+    private void updateTrackingFilter() {
+        Utilities.globalQueue.postRunnable(() -> {
+            int result;
+            try {
+                result = LinkCleaner.fetchLatest() ? R.string.OEChatsTrackingFilterUpdated : R.string.OEChatsTrackingFilterLatest;
+            } catch (Exception e) {
+                FileLog.e(e);
+                result = R.string.OEChatsTrackingFilterFailed;
+            }
+            final int text = result;
+            AndroidUtilities.runOnUIThread(() -> {
+                onTrackingFilterChanged();
+                BulletinFactory.of(this).createSimpleBulletin(text == R.string.OEChatsTrackingFilterFailed ? R.raw.error : R.raw.done, getString(text)).show();
+            });
+        });
+    }
+
+    private void onTrackingFilterChanged() {
+        if (listAdapter != null && trackingFilterRow >= 0) {
+            listAdapter.notifyItemChanged(trackingFilterRow);
+        }
     }
 
     // ---- Настройки, которые лежат не в ConfigItem ----
@@ -764,6 +1374,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     private static final int CAMERA_TYPE_SYSTEM = 0;
     private static final int CAMERA_TYPE_CAMERA2 = 1;
     private static final int CAMERA_TYPE_CAMERA_X = 2;
+    private static final int CAMERA_TYPE_TELEGRAM = 3;
     /** Индекс варианта «спрашивать каждый раз» в NaConfig.cameraInVideoMessages. */
     private static final int VIDEO_CAMERA_ASK = 2;
 
@@ -805,6 +1416,14 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 .setConfigBool(index == ChatsConfig.BOTTOM_BUTTON_HIDE);
     }
 
+    private CharSequence[] stickerTimeOptions() {
+        return new CharSequence[]{
+                getString(R.string.Default),
+                getString(R.string.OEChatsStickerTimeSide),
+                getString(R.string.OEChatsStickerTimeHidden)
+        };
+    }
+
     private CharSequence[] bottomButtonOptions() {
         return new CharSequence[]{
                 getString(R.string.Hide),
@@ -813,11 +1432,47 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         };
     }
 
+    private static final int OPEN_LINK_CONFIRM_HIDDEN = 0;
+    private static final int OPEN_LINK_CONFIRM_ALL = 1;
+    private static final int OPEN_LINK_CONFIRM_NEVER = 2;
+
+    private static int openLinkConfirmation() {
+        if (NaConfig.INSTANCE.getConfirmAllLinks().Bool()) {
+            return OPEN_LINK_CONFIRM_ALL;
+        }
+        return NekoConfig.skipOpenLinkConfirm.Bool() ? OPEN_LINK_CONFIRM_NEVER : OPEN_LINK_CONFIRM_HIDDEN;
+    }
+
+    private static void setOpenLinkConfirmation(int index) {
+        NaConfig.INSTANCE.getConfirmAllLinks().setConfigBool(index == OPEN_LINK_CONFIRM_ALL);
+        NekoConfig.skipOpenLinkConfirm.setConfigBool(index == OPEN_LINK_CONFIRM_NEVER);
+    }
+
+    private CharSequence[] openLinkConfirmationOptions() {
+        return new CharSequence[]{
+                getString(R.string.OEChatsOpenLinkConfirmationHidden),
+                getString(R.string.OEChatsOpenLinkConfirmationAll),
+                getString(R.string.OEChatsOpenLinkConfirmationNever)
+        };
+    }
+
+    private CharSequence[] transcribeProviderOptions() {
+        return new CharSequence[]{
+                getString(R.string.TranscribeProviderAuto),
+                getString(R.string.TelegramPremium),
+                getString(R.string.TranscribeProviderWorkersAI),
+                getString(R.string.TranscribeProviderGemini),
+                getString(R.string.TranscribeProviderOpenAI),
+                getString(R.string.TranscribeProviderVosk)
+        };
+    }
+
     private CharSequence[] cameraTypeOptions() {
         return new CharSequence[]{
                 getString(R.string.Default),
                 getString(R.string.OEChatsCameraTypeCamera2),
-                getString(R.string.OEChatsCameraTypeCameraX)
+                getString(R.string.OEChatsCameraTypeCameraX),
+                getString(R.string.OEChatsCameraTypeTelegram)
         };
     }
 
@@ -861,6 +1516,22 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         });
     }
 
+    private CharSequence[] searchHashtagPageOptions() {
+        return new CharSequence[]{
+                getString(R.string.SearchThisChat),
+                getString(R.string.SearchMyMessages),
+                getString(R.string.SearchPublicPosts),
+        };
+    }
+
+    private CharSequence[] videoPlayerDecoderOptions() {
+        return new CharSequence[]{
+                getString(R.string.VideoPlayerDecoderHardware),
+                getString(R.string.VideoPlayerDecoderPreferHW),
+                getString(R.string.VideoPlayerDecoderPreferSW),
+        };
+    }
+
     private interface OnIndexSelected {
         void run(int index);
     }
@@ -890,7 +1561,8 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             R.drawable.msg_copy,
             R.drawable.msg_edit,
             R.drawable.msg_translate,
-            R.drawable.msg_delete
+            R.drawable.msg_delete,
+            R.drawable.msg_forward
     };
 
     /**
@@ -908,6 +1580,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         types.add(DoubleTap.DOUBLE_TAP_ACTION_TRANSLATE);
         types.add(DoubleTap.DOUBLE_TAP_ACTION_TRANSLATE_LLM);
         types.add(DoubleTap.DOUBLE_TAP_ACTION_REPLY);
+        types.add(DoubleTap.DOUBLE_TAP_ACTION_FORWARD);
         types.add(DoubleTap.DOUBLE_TAP_ACTION_SAVE);
         types.add(DoubleTap.DOUBLE_TAP_ACTION_REPEAT);
         types.add(DoubleTap.DOUBLE_TAP_ACTION_REPEAT_AS_COPY);
@@ -1033,6 +1706,10 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             quickTransitionExpanded = !quickTransitionExpanded;
             reloadList();
             return;
+        } else if (position == chatMenuGroupRow) {
+            chatMenuExpanded = !chatMenuExpanded;
+            reloadList();
+            return;
         } else if (position == messageMenuGroupRow) {
             messageMenuExpanded = !messageMenuExpanded;
             reloadList();
@@ -1053,6 +1730,33 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             pauseExpanded = !pauseExpanded;
             reloadList();
             return;
+        } else if (position == premiumElementsGroupRow) {
+            premiumElementsExpanded = !premiumElementsExpanded;
+            reloadList();
+            return;
+        } else if (position == deleteMenuGroupRow) {
+            deleteMenuExpanded = !deleteMenuExpanded;
+            reloadList();
+            return;
+        } else if (position == askWhenGroupRow) {
+            askWhenExpanded = !askWhenExpanded;
+            reloadList();
+            return;
+        } else if (position == stripTrackingGroupRow) {
+            stripTrackingExpanded = !stripTrackingExpanded;
+            reloadList();
+            return;
+        } else if (position == hideAiGroupRow) {
+            hideAiExpanded = !hideAiExpanded;
+            reloadList();
+            return;
+        } else if (position == hideSettingsGroupRow) {
+            hideSettingsExpanded = !hideSettingsExpanded;
+            reloadList();
+            return;
+        } else if (position == trackingFilterRow) {
+            showTrackingFilterOptions(view);
+            return;
         }
 
         if (groupHeaderFor(position) != -1) {
@@ -1069,6 +1773,15 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             return;
         } else if (position == doubleTapReactionRow) {
             DoubleTapCell.SetReactionCell.showSelectStatusDialog((DoubleTapCell.SetReactionCell) view, this);
+            return;
+        } else if (position == stickerTimeRow) {
+            showOptions(view, stickerTimeOptions(), index -> {
+                ChatsConfig.setStickerTimeMode(index);
+                listAdapter.notifyItemChanged(position);
+                if (stickerSizeCell != null) {
+                    stickerSizeCell.invalidate();
+                }
+            });
             return;
         } else if (position == bottomButtonRow) {
             showOptions(view, bottomButtonOptions(), index -> {
@@ -1094,17 +1807,62 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         } else if (position == doubleTapSeekDurationRow) {
             showOptions(view, position, seekDurationOptions(), ChatsConfig.doubleTapSeekDuration);
             return;
+        } else if (position == videoPlayerDecoderRow) {
+            showOptions(view, position, videoPlayerDecoderOptions(), NaConfig.INSTANCE.getPlayerDecoder());
+            return;
+        } else if (position == searchHashtagChatRow) {
+            showOptions(view, position, searchHashtagPageOptions(), NaConfig.INSTANCE.getSearchHashtagDefaultPageChat());
+            return;
+        } else if (position == searchHashtagChannelRow) {
+            showOptions(view, position, searchHashtagPageOptions(), NaConfig.INSTANCE.getSearchHashtagDefaultPageChannel());
+            return;
         } else if (position == alwaysSendHdRow) {
             toggleHighQualityPhoto(view);
             return;
         } else if (position == adminShortcutsRow) {
             toggleQuickAdminShortcuts(view);
             return;
+        } else if (position == menusRow) {
+            presentFragment(new OpenExteraChatsActivity(SCREEN_MENUS));
+            return;
+        } else if (position == mediaRow) {
+            presentFragment(new OpenExteraChatsActivity(SCREEN_MEDIA));
+            return;
+        } else if (position == hideStoriesRow) {
+            showStoriesOptions(view, position);
+            return;
         } else if (position == chatSettingsRow) {
             presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
             return;
         } else if (position == aiChatRow) {
             presentFragment(new app.exteraless.ai.ui.AiSettingsActivity());
+            return;
+        } else if (position == textStyleRow) {
+            showDialog(TextStyleDialog.create(getParentActivity()));
+            return;
+        } else if (position == openLinkConfirmationRow) {
+            showOptions(view, openLinkConfirmationOptions(), index -> {
+                setOpenLinkConfirmation(index);
+                listAdapter.notifyItemChanged(position);
+            });
+            return;
+        } else if (position == transcribeProviderRow) {
+            showOptions(view, transcribeProviderOptions(), index -> {
+                NaConfig.INSTANCE.getTranscribeProvider().setConfigInt(index);
+                reloadList();
+            });
+            return;
+        } else if (position == cloudflareCredentialsRow) {
+            TranscribeHelper.showCfCredentialsDialog(this);
+            return;
+        } else if (position == geminiApiKeyRow) {
+            TranscribeHelper.showGeminiApiKeyDialog(this);
+            return;
+        } else if (position == openAiCredentialsRow) {
+            TranscribeHelper.showOpenAiCredentialsDialog(this);
+            return;
+        } else if (position == voskModelsRow) {
+            presentFragment(new app.exteraless.speech.VoskSettingsActivity());
             return;
         }
 
@@ -1113,6 +1871,16 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             NekoConfig.useChatAttachMediaMenu.setConfigBool(!tapToSwitch);
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(tapToSwitch);
+            }
+            int wasConfirmAVMessageRow = confirmAVMessageRow;
+            updateRows();
+            if (listAdapter != null) {
+                if (wasConfirmAVMessageRow != -1 && confirmAVMessageRow == -1) {
+                    listAdapter.notifyItemRemoved(wasConfirmAVMessageRow);
+                } else if (wasConfirmAVMessageRow == -1 && confirmAVMessageRow != -1) {
+                    listAdapter.notifyItemInserted(confirmAVMessageRow);
+                }
+                listAdapter.notifyItemChanged(askWhenGroupRow);
             }
             return;
         }
@@ -1125,15 +1893,23 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         if (view instanceof TextCheckCell) {
             ((TextCheckCell) view).setChecked(value);
         }
-        if (position == hideTimeOnStickersRow && stickerSizeCell != null) {
-            stickerSizeCell.invalidate();
+        if (position == inlineMathRow) {
+            int wasCurrencyRow = inlineMathCurrencyRow;
+            updateRows();
+            if (listAdapter != null) {
+                if (wasCurrencyRow != -1 && inlineMathCurrencyRow == -1) {
+                    listAdapter.notifyItemRemoved(wasCurrencyRow);
+                } else if (wasCurrencyRow == -1 && inlineMathCurrencyRow != -1) {
+                    listAdapter.notifyItemInserted(inlineMathCurrencyRow);
+                }
+            }
         } else if (position == removeMessageTailRow) {
             // Пузырь рисуется закешированным drawable — без сброса эффекта не видно.
             // Обнуление и пересоздание — строго вместе: Theme.createChatResources
             // восстанавливает весь блок именно по условию chat_msgInDrawable == null.
             // Обнулить без активити означало бы оставить статик null и уронить
             // отрисовку первого же пузыря.
-            android.app.Activity activity = getParentActivity();
+            Activity activity = getParentActivity();
             if (activity != null) {
                 Theme.chat_msgInDrawable = null;
                 Theme.createChatResources(activity, false);
@@ -1147,6 +1923,17 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             }
             rebuildChats();
         } else if (position == wideFeedPostsRow) {
+            rebuildChats();
+        } else if (position == showSmallGifRow || position == dateOfForwardedMsgRow) {
+            rebuildChats();
+        } else if (position == disableProximityEventsRow) {
+            MediaController.getInstance().recreateProximityWakeLock();
+        } else if (position == hideActionBarStatusRow || position == hideFloatingButtonRow
+                || position == hideSearchBarRow) {
+            rebuildChats();
+        } else if (position == hideAllChatsRow) {
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
+            getNotificationCenter().postNotificationName(NotificationCenter.mainUserInfoChanged);
             rebuildChats();
         }
     }
@@ -1167,9 +1954,21 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 stickerSizeCell.invalidate();
             }
             rebuildChats();
-        } else if (header == messageMenuGroupRow) {
+        } else if (header == chatMenuGroupRow || header == messageMenuGroupRow) {
             // Меню сообщения собирается при создании фрагмента чата.
             rebuildChats();
+        } else if (header == premiumElementsGroupRow) {
+            if (stickerSizeCell != null) {
+                stickerSizeCell.invalidate();
+            }
+            rebuildChats();
+        } else if (header == stripTrackingGroupRow) {
+            LinkCleaner.preloadIfEnabled();
+        } else if (header == hideAiGroupRow) {
+            rebuildChats();
+        } else if (header == hideSettingsGroupRow) {
+            rebuildChats();
+            showRestartHint();
         }
     }
 
@@ -1199,6 +1998,14 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 || position == menuShareRow || position == menuHideRow
                 || position == menuAdminActionsRow || position == menuPermissionsRow) {
             return messageMenuGroupRow;
+        } else if (position == chatMenuAdminsRow || position == chatMenuRecentActionsRow
+                || position == chatMenuStatisticsRow || position == chatMenuPermissionsRow
+                || position == chatMenuMembersRow || position == chatMenuBoostRow
+                || position == chatMenuLinkedChatRow || position == chatMenuToBeginningRow
+                || position == chatMenuGoToMessageRow || position == chatMenuHideTitleRow
+                || position == chatMenuViewDeletedRow || position == chatMenuClearDeletedRow
+                || position == chatMenuDeleteOwnRow) {
+            return chatMenuGroupRow;
         } else if (position == mediaMenuForwardRow || position == mediaMenuNoQuoteForwardRow
                 || position == mediaMenuCopyFrameRow || position == mediaMenuCopyPhotoRow
                 || position == mediaMenuProfilePhotoRow || position == mediaMenuQrRow) {
@@ -1213,6 +2020,23 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             return extendedSettingsGroupRow;
         } else if (position == pauseVideoRow || position == pauseVoiceRow || position == pauseRoundRow) {
             return pauseGroupRow;
+        } else if (position == premiumEmojiStatusRow || position == premiumEmojiInRepliesRow
+                || position == premiumColorsInRepliesRow || position == premiumWallpapersRow
+                || position == premiumVideoAvatarsRow || position == premiumStarReactionsRow
+                || position == premiumStickerEffectsRow || position == premiumBoostsRow) {
+            return premiumElementsGroupRow;
+        } else if (position == deleteMenuBanUsersRow || position == deleteMenuReportSpamRow
+                || position == deleteMenuDeleteAllRow || position == deleteMenuCommonGroupsRow) {
+            return deleteMenuGroupRow;
+        } else if (position == confirmAVMessageRow || position == askBeforeCallRow
+                || position == repeatConfirmRow || position == disableClickCommandToSendRow) {
+            return askWhenGroupRow;
+        } else if (position == stripTrackingOpenRow || position == stripTrackingPasteRow) {
+            return stripTrackingGroupRow;
+        } else if (position == hideAiEditorRow || position == hideAiSummaryRow || position == hideAiIvRow) {
+            return hideAiGroupRow;
+        } else if (position == hidePremiumSectionRow || position == hideHelpSectionRow) {
+            return hideSettingsGroupRow;
         }
         return -1;
     }
@@ -1250,7 +2074,6 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     }
 
     private ConfigItem configForRow(int position) {
-        if (position == hideTimeOnStickersRow) return NekoConfig.hideTimeForSticker;
         if (position == replyColorsRow) return ChatsConfig.replyColors;
         if (position == replyEmojiRow) return ChatsConfig.replyEmoji;
         if (position == replyBackgroundRow) return ChatsConfig.replyBackground;
@@ -1262,12 +2085,16 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         if (position == hideKeyboardOnScrollRow) return NekoConfig.hideKeyboardOnChatScroll;
         if (position == disableGlobalSearchRow) return NaConfig.INSTANCE.getDisableGlobalSearch();
         if (position == addCommaRow) return OpenExteraConfig.addCommaAfterMention;
+        if (position == inlineMathRow) return ChatsConfig.inlineMathResult;
+        if (position == inlineMathCurrencyRow) return ChatsConfig.inlineMathCurrency;
         if (position == hideSendAsPeerRow) return NekoConfig.hideSendAsChannel;
         if (position == keepAttachButtonRow) return ChatsConfig.keepAttachButton;
         if (position == removeMessageTailRow) return ChatsConfig.removeMessageTail;
         if (position == replaceEditedRow) return NaConfig.INSTANCE.getUseEditedIcon();
         if (position == showOnlineStatusRow) return NaConfig.INSTANCE.getShowOnlineStatus();
         if (position == hideShareButtonRow) return NaConfig.INSTANCE.getHideShareButtonInChannel();
+        if (position == hideGiftButtonRow) return NaConfig.INSTANCE.getHideGiftButtonInChannel();
+        if (position == hideSearchButtonRow) return ChatsConfig.hideChannelSearchButton;
         if (position == showResultsBeforeVotingRow) return ChatsConfig.showResultsBeforeVoting;
         if (position == menuCopyPhotoRow) return NaConfig.INSTANCE.getShowCopyPhoto();
         if (position == menuSaveRow) return NekoConfig.showAddToSavedMessages;
@@ -1276,6 +2103,19 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         if (position == menuHistoryRow) return NekoConfig.showViewHistory;
         if (position == menuReportRow) return NekoConfig.showReport;
         if (position == menuDetailsRow) return NekoConfig.showMessageDetails;
+        if (position == chatMenuAdminsRow) return NaConfig.INSTANCE.getShortcutsAdministrators();
+        if (position == chatMenuRecentActionsRow) return NaConfig.INSTANCE.getShortcutsRecentActions();
+        if (position == chatMenuStatisticsRow) return NaConfig.INSTANCE.getShortcutsStatistics();
+        if (position == chatMenuPermissionsRow) return NaConfig.INSTANCE.getShortcutsPermissions();
+        if (position == chatMenuMembersRow) return NaConfig.INSTANCE.getShortcutsMembers();
+        if (position == chatMenuBoostRow) return NaConfig.INSTANCE.getChatMenuItemBoostGroup();
+        if (position == chatMenuLinkedChatRow) return NaConfig.INSTANCE.getChatMenuItemLinkedChat();
+        if (position == chatMenuToBeginningRow) return NaConfig.INSTANCE.getChatMenuItemToBeginning();
+        if (position == chatMenuGoToMessageRow) return NaConfig.INSTANCE.getChatMenuItemGoToMessage();
+        if (position == chatMenuHideTitleRow) return NaConfig.INSTANCE.getChatMenuItemHideTitle();
+        if (position == chatMenuViewDeletedRow) return NaConfig.INSTANCE.getChatMenuItemViewDeleted();
+        if (position == chatMenuClearDeletedRow) return NaConfig.INSTANCE.getChatMenuItemClearDeleted();
+        if (position == chatMenuDeleteOwnRow) return NaConfig.INSTANCE.getChatMenuItemDeleteOwnMessages();
         if (position == menuReactionsRow) return NaConfig.INSTANCE.getShowReactions();
         if (position == menuReplyInPrivateRow) return NaConfig.INSTANCE.getShowReplyInPrivate();
         if (position == menuCopyLinkRow) return NaConfig.INSTANCE.getShowCopyLink();
@@ -1315,12 +2155,55 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         if (position == zoomSliderRow) return ChatsConfig.zoomSlider;
         if (position == staticZoomRow) return ChatsConfig.staticZoom;
         if (position == hideCameraTileRow) return ChatsConfig.hideCameraTile;
+        if (position == hdrPhotosRow) return ChatsConfig.hdrPhotos;
         if (position == preferOriginalQualityRow) return ChatsConfig.preferOriginalQuality;
         if (position == swipeToPipRow) return ChatsConfig.swipeToPip;
         if (position == unmuteWithVolumeButtonsRow) return ChatsConfig.unmuteWithVolumeButtons;
         if (position == pauseVideoRow) return NekoConfig.autoPauseVideo;
         if (position == pauseVoiceRow) return ChatsConfig.pauseOnMinimizeVoice;
         if (position == pauseRoundRow) return ChatsConfig.pauseOnMinimizeRound;
+        if (position == disableTrendingRow) return NekoConfig.disableTrending;
+        if (position == hideGroupStickerRow) return NekoConfig.hideGroupSticker;
+        if (position == lockedEmojiAsStickerRow) return NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker();
+        if (position == deleteChatForBothSidesRow) return NaConfig.INSTANCE.getDeleteChatForBothSides();
+        if (position == dateOfForwardedMsgRow) return NaConfig.INSTANCE.getDateOfForwardedMsg();
+        if (position == showTimeHintRow) return NaConfig.INSTANCE.getShowTimeHint();
+        if (position == rememberAllRepliesRow) return NekoConfig.rememberAllBackMessages;
+        if (position == premiumEmojiStatusRow) return NaConfig.INSTANCE.getPremiumItemEmojiStatus();
+        if (position == premiumEmojiInRepliesRow) return NaConfig.INSTANCE.getPremiumItemEmojiInReplies();
+        if (position == premiumColorsInRepliesRow) return NaConfig.INSTANCE.getPremiumItemCustomColorInReplies();
+        if (position == premiumWallpapersRow) return NaConfig.INSTANCE.getPremiumItemCustomWallpaper();
+        if (position == premiumVideoAvatarsRow) return NaConfig.INSTANCE.getPremiumItemVideoAvatar();
+        if (position == premiumStarReactionsRow) return NaConfig.INSTANCE.getPremiumItemStarInReactions();
+        if (position == premiumStickerEffectsRow) return NaConfig.INSTANCE.getPremiumItemStickerEffects();
+        if (position == premiumBoostsRow) return NaConfig.INSTANCE.getPremiumItemBoosts();
+        if (position == deleteMenuBanUsersRow) return NaConfig.INSTANCE.getDefaultDeleteMenuBanUsers();
+        if (position == deleteMenuReportSpamRow) return NaConfig.INSTANCE.getDefaultDeleteMenReportSpam();
+        if (position == deleteMenuDeleteAllRow) return NaConfig.INSTANCE.getDefaultDeleteMenuDeleteAll();
+        if (position == deleteMenuCommonGroupsRow) return NaConfig.INSTANCE.getDefaultDeleteMenuDoActionsInCommonGroups();
+        if (position == fixLinkPreviewRow) return NaConfig.INSTANCE.getFixLinkPreview();
+        if (position == disableLinkPreviewRow) return NekoConfig.disableLinkPreviewByDefault;
+        if (position == confirmAVMessageRow) return NekoConfig.confirmAVMessage;
+        if (position == stripTrackingOpenRow) return ChatsConfig.stripTrackingOnOpen;
+        if (position == stripTrackingPasteRow) return ChatsConfig.stripTrackingOnPaste;
+        if (position == askBeforeCallRow) return NekoConfig.askBeforeCall;
+        if (position == repeatConfirmRow) return NekoConfig.repeatConfirm;
+        if (position == disableClickCommandToSendRow) return NaConfig.INSTANCE.getDisableClickCommandToSend();
+        if (position == disableInstantCameraRow) return NekoConfig.disableInstantCamera;
+        if (position == showSmallGifRow) return NaConfig.INSTANCE.getShowSmallGIF();
+        if (position == dontAutoPlayNextVoiceRow) return NaConfig.INSTANCE.getDontAutoPlayNextVoice();
+        if (position == disableProximityEventsRow) return NekoConfig.disableProximityEvents;
+        if (position == enhancedVideoBitrateRow) return NaConfig.INSTANCE.getEnhancedVideoBitrate();
+        if (position == voiceEnhancementsRow) return NaConfig.INSTANCE.getNoiseSuppressAndVoiceEnhance();
+        if (position == hideActionBarStatusRow) return AppearanceConfig.hideActionBarStatus;
+        if (position == hideFloatingButtonRow) return NaConfig.INSTANCE.getDisableDialogsFloatingButton();
+        if (position == hideSearchBarRow) return NaConfig.INSTANCE.getHideDialogsSearchField();
+        if (position == hideAllChatsRow) return NekoConfig.hideAllTab;
+        if (position == hideAiEditorRow) return AppearanceConfig.hideAiEditor;
+        if (position == hideAiSummaryRow) return AppearanceConfig.hideMessageSummary;
+        if (position == hideAiIvRow) return AppearanceConfig.hideIvSummary;
+        if (position == hidePremiumSectionRow) return NaConfig.INSTANCE.getHidePremiumSection();
+        if (position == hideHelpSectionRow) return NaConfig.INSTANCE.getHideHelpSection();
         return null;
     }
 
@@ -1465,6 +2348,11 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 case TYPE_WIDE_CHANNEL_PREVIEW:
                     wideChannelPostsPreviewCell = new WideChannelPostsPreviewCell(mContext,
                             OpenExteraChatsActivity.this);
+                    wideChannelPostsPreviewCell.setOnResized(() -> {
+                        if (listView != null && !listView.getSelectorRect().isEmpty()) {
+                            listView.updateSelector();
+                        }
+                    });
                     view = wideChannelPostsPreviewCell;
                     break;
                 case TYPE_SET_REACTION:
@@ -1555,7 +2443,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             if (position == stickerShapeHeaderRow) {
                 cell.setText(getString(R.string.OEChatsStickerShape));
             } else if (position == linksHeaderRow) {
-                cell.setText(getString(R.string.Other));
+                cell.setText(getString(R.string.OEChatsSections));
             } else if (position == stickersHeaderRow) {
                 cell.setText(getString(R.string.OEChatsStickersAndEmoji));
             } else if (position == doubleTapHeaderRow) {
@@ -1572,6 +2460,32 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 cell.setText(getString(R.string.OEChatsPhoto));
             } else if (position == videosHeaderRow) {
                 cell.setText(getString(R.string.OEChatsVideos));
+            } else if (position == linkConfirmationsHeaderRow) {
+                cell.setText(getString(R.string.OEChatsLinksAndConfirmations));
+            } else if (position == transcribeHeaderRow) {
+                cell.setText(getString(R.string.PremiumPreviewVoiceToText));
+            } else if (position == inputHeaderRow) {
+                cell.setText(getString(R.string.OEChatsInputHeader));
+            } else if (position == searchHeaderRow) {
+                cell.setText(getString(R.string.Search));
+            } else if (position == buttonsHeaderRow) {
+                cell.setText(getString(R.string.OEChatsButtonsHeader));
+            } else if (position == menusHeaderRow) {
+                cell.setText(getString(R.string.OEChatsMenusHeader));
+            } else if (position == playbackHeaderRow) {
+                cell.setText(getString(R.string.OEChatsPlaybackHeader));
+            } else if (position == voiceHeaderRow) {
+                cell.setText(getString(R.string.OEChatsVoiceHeader));
+            } else if (position == hidingChatListHeaderRow) {
+                cell.setText(getString(R.string.OEAppearanceChatList));
+            } else if (position == hidingChatsHeaderRow) {
+                cell.setText(getString(R.string.OEAppearanceHidingInChats));
+            } else if (position == hidingStickersHeaderRow) {
+                cell.setText(getString(R.string.StickersName));
+            } else if (position == hidingAiHeaderRow) {
+                cell.setText(getString(R.string.OEAppearanceHidingAiPremium));
+            } else if (position == hidingSettingsHeaderRow) {
+                cell.setText(getString(R.string.Settings));
             }
         }
 
@@ -1589,49 +2503,96 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             if (position == repliesGroupRow) {
                 int selected = repliesSelectedCount();
                 cell.setTextAndCheck(getString(R.string.OEChatsReplies), selected > 0, repliesExpanded);
-                cell.setCollapseArrow(ratio(selected, REPLIES_TOTAL), !repliesExpanded,
+                cell.setCollapseArrow(ratio(selected, REPLIES_TOTAL), !repliesExpanded, sameGroup(cell, R.string.OEChatsReplies),
                         OpenExteraChatsActivity.this::toggleAllReplies);
             } else if (position == hideReactionsGroupRow) {
                 int selected = hideReactionsSelectedCount();
                 cell.setTextAndCheck(getString(R.string.OEChatsHideReactions), selected > 0, hideReactionsExpanded);
-                cell.setCollapseArrow(ratio(selected, HIDE_REACTIONS_TOTAL), !hideReactionsExpanded,
+                cell.setCollapseArrow(ratio(selected, HIDE_REACTIONS_TOTAL), !hideReactionsExpanded, sameGroup(cell, R.string.OEChatsHideReactions),
                         OpenExteraChatsActivity.this::toggleAllHideReactions);
             } else if (position == unlimitedGroupRow) {
                 int selected = unlimitedSelectedCount();
-                cell.setTextAndCheck(getString(R.string.OEChatsUnlimited), selected > 0, true);
-                cell.setCollapseArrow(ratio(selected, UNLIMITED_TOTAL), !unlimitedExpanded,
+                cell.setTextAndCheck(getString(R.string.OEChatsUnlimited), selected > 0, unlimitedExpanded);
+                cell.setCollapseArrow(ratio(selected, UNLIMITED_TOTAL), !unlimitedExpanded, sameGroup(cell, R.string.OEChatsUnlimited),
                         OpenExteraChatsActivity.this::toggleAllUnlimited);
             } else if (position == quickTransitionGroupRow) {
                 int selected = quickTransitionsSelectedCount();
                 cell.setTextAndCheck(getString(R.string.OEChatsQuickTransitions), selected > 0, quickTransitionExpanded);
-                cell.setCollapseArrow(ratio(selected, QUICK_TRANSITIONS_TOTAL), !quickTransitionExpanded,
+                cell.setCollapseArrow(ratio(selected, QUICK_TRANSITIONS_TOTAL), !quickTransitionExpanded, sameGroup(cell, R.string.OEChatsQuickTransitions),
                         OpenExteraChatsActivity.this::toggleAllQuickTransitions);
+            } else if (position == chatMenuGroupRow) {
+                int selected = chatMenuSelectedCount();
+                cell.setTextAndCheck(getString(R.string.ChatMenu), selected > 0, chatMenuExpanded);
+                cell.setCollapseArrow(ratio(selected, CHAT_MENU_TOTAL), !chatMenuExpanded, sameGroup(cell, R.string.ChatMenu),
+                        OpenExteraChatsActivity.this::toggleAllChatMenu);
             } else if (position == messageMenuGroupRow) {
                 int selected = messageMenuSelectedCount();
                 cell.setTextAndCheck(getString(R.string.MessageMenu), selected > 0, messageMenuExpanded);
-                cell.setCollapseArrow(ratio(selected, MESSAGE_MENU_TOTAL), !messageMenuExpanded,
+                cell.setCollapseArrow(ratio(selected, MESSAGE_MENU_TOTAL), !messageMenuExpanded, sameGroup(cell, R.string.MessageMenu),
                         OpenExteraChatsActivity.this::toggleAllMessageMenu);
             } else if (position == mediaViewerMenuGroupRow) {
                 int selected = mediaViewerMenuSelectedCount();
                 cell.setTextAndCheck(getString(R.string.MediaViewerMenu), selected > 0, mediaViewerMenuExpanded);
-                cell.setCollapseArrow(ratio(selected, MEDIA_VIEWER_MENU_TOTAL), !mediaViewerMenuExpanded,
+                cell.setCollapseArrow(ratio(selected, MEDIA_VIEWER_MENU_TOTAL), !mediaViewerMenuExpanded, sameGroup(cell, R.string.MediaViewerMenu),
                         OpenExteraChatsActivity.this::toggleAllMediaViewerMenu);
             } else if (position == actionBarButtonsGroupRow) {
                 int selected = actionBarButtonsSelectedCount();
                 cell.setTextAndCheck(getString(R.string.ActionBarButtons), selected > 0, actionBarButtonsExpanded);
-                cell.setCollapseArrow(ratio(selected, ACTION_BAR_BUTTONS_TOTAL), !actionBarButtonsExpanded,
+                cell.setCollapseArrow(ratio(selected, ACTION_BAR_BUTTONS_TOTAL), !actionBarButtonsExpanded, sameGroup(cell, R.string.ActionBarButtons),
                         OpenExteraChatsActivity.this::toggleAllActionBarButtons);
             } else if (position == extendedSettingsGroupRow) {
                 int selected = cameraSettingsSelected();
                 cell.setTextAndCheck(getString(R.string.OEChatsExtendedSettings), selected > 0, extendedSettingsExpanded);
-                cell.setCollapseArrow(ratio(selected, cameraSettingsTotal()), !extendedSettingsExpanded,
+                cell.setCollapseArrow(ratio(selected, cameraSettingsTotal()), !extendedSettingsExpanded, sameGroup(cell, R.string.OEChatsExtendedSettings),
                         OpenExteraChatsActivity.this::toggleAllCameraSettings);
             } else if (position == pauseGroupRow) {
                 int selected = pauseSelectedCount();
                 cell.setTextAndCheck(getString(R.string.OEChatsPauseOnMinimize), selected > 0, pauseExpanded);
-                cell.setCollapseArrow(ratio(selected, PAUSE_TOTAL), !pauseExpanded,
+                cell.setCollapseArrow(ratio(selected, PAUSE_TOTAL), !pauseExpanded, sameGroup(cell, R.string.OEChatsPauseOnMinimize),
                         OpenExteraChatsActivity.this::toggleAllPause);
+            } else if (position == premiumElementsGroupRow) {
+                ConfigItem[] items = premiumElementItems();
+                int selected = selectedCount(items);
+                cell.setTextAndCheck(getString(R.string.PremiumElements), selected > 0, premiumElementsExpanded);
+                cell.setCollapseArrow(ratio(selected, items.length), !premiumElementsExpanded, sameGroup(cell, R.string.PremiumElements),
+                        OpenExteraChatsActivity.this::toggleAllPremiumElements);
+            } else if (position == deleteMenuGroupRow) {
+                ConfigItem[] items = deleteMenuItems();
+                int selected = selectedCount(items);
+                cell.setTextAndCheck(getString(R.string.DefaultDeleteMenu), selected > 0, deleteMenuExpanded);
+                cell.setCollapseArrow(ratio(selected, items.length), !deleteMenuExpanded, sameGroup(cell, R.string.DefaultDeleteMenu),
+                        OpenExteraChatsActivity.this::toggleAllDeleteMenu);
+            } else if (position == askWhenGroupRow) {
+                ConfigItem[] items = askWhenItems();
+                int selected = selectedCount(items);
+                cell.setTextAndCheck(getString(R.string.OEChatsAskWhen), selected > 0, askWhenExpanded);
+                cell.setCollapseArrow(ratio(selected, items.length), !askWhenExpanded, sameGroup(cell, R.string.OEChatsAskWhen),
+                        OpenExteraChatsActivity.this::toggleAllAskWhen);
+            } else if (position == stripTrackingGroupRow) {
+                ConfigItem[] items = stripTrackingItems();
+                int selected = selectedCount(items);
+                cell.setTextAndCheck(getString(R.string.OEChatsStripTracking), selected > 0, stripTrackingExpanded);
+                cell.setCollapseArrow(ratio(selected, items.length), !stripTrackingExpanded, sameGroup(cell, R.string.OEChatsStripTracking),
+                        OpenExteraChatsActivity.this::toggleAllStripTracking);
+            } else if (position == hideAiGroupRow) {
+                ConfigItem[] items = hideAiItems();
+                int selected = selectedCount(items);
+                cell.setTextAndCheck(getString(R.string.OEAppearanceHideAi), selected > 0, true);
+                cell.setCollapseArrow(ratio(selected, items.length), !hideAiExpanded, sameGroup(cell, R.string.OEAppearanceHideAi),
+                        OpenExteraChatsActivity.this::toggleAllHideAi);
+            } else if (position == hideSettingsGroupRow) {
+                ConfigItem[] items = hideSettingsItems();
+                int selected = selectedCount(items);
+                cell.setTextAndCheck(getString(R.string.OEAppearanceHideSettingsSections), selected > 0, hideSettingsExpanded);
+                cell.setCollapseArrow(ratio(selected, items.length), !hideSettingsExpanded, sameGroup(cell, R.string.OEAppearanceHideSettingsSections),
+                        OpenExteraChatsActivity.this::toggleAllHideSettings);
             }
+        }
+
+        private boolean sameGroup(TextCheckCell2 cell, int titleRes) {
+            final boolean same = Integer.valueOf(titleRes).equals(cell.getTag());
+            cell.setTag(titleRes);
+            return same;
         }
 
         private void bindRoundCheck(CheckBoxCell cell, int position) {
@@ -1646,11 +2607,11 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             } else if (position == hideReactionsGroupsRow) {
                 cell.setText(getString(R.string.OEChatsHideReactionsGroups), "", ChatsConfig.hideReactionsInGroups.Bool(), true, true);
             } else if (position == hideReactionsPrivateRow) {
-                cell.setText(getString(R.string.OEChatsHideReactionsPrivate), "", ChatsConfig.hideReactionsInPrivate.Bool(), false, true);
+                cell.setText(getString(R.string.OEChatsHideReactionsPrivate), "", ChatsConfig.hideReactionsInPrivate.Bool(), true, true);
             } else if (position == unlimitedStickersRow) {
                 cell.setText(getString(R.string.OEChatsUnlimitedStickers), "", isUnlimitedRecentStickers(), true, true);
             } else if (position == unlimitedGifsRow) {
-                cell.setText(getString(R.string.OEChatsUnlimitedGifs), "", NaConfig.INSTANCE.getUnlimitedSavedGifs().Bool(), true, true);
+                cell.setText(getString(R.string.OEChatsUnlimitedGifs), "", NaConfig.INSTANCE.getUnlimitedSavedGifs().Bool(), false, true);
             } else if (position == quickTransitionChannelsRow) {
                 cell.setText(getString(R.string.OEChatsQuickTransitionChannels), "", quickTransitionForChannels(), true, true);
             } else if (position == quickTransitionTopicsRow) {
@@ -1669,6 +2630,32 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 cell.setText(getString(R.string.OEChatsMenuReport), "", NekoConfig.showReport.Bool(), true, true);
             } else if (position == menuDetailsRow) {
                 cell.setText(getString(R.string.OEChatsMenuDetails), "", NekoConfig.showMessageDetails.Bool(), true, true);
+            } else if (position == chatMenuAdminsRow) {
+                cell.setText(getString(R.string.ChannelAdministrators), "", NaConfig.INSTANCE.getShortcutsAdministrators().Bool(), true, true);
+            } else if (position == chatMenuRecentActionsRow) {
+                cell.setText(getString(R.string.EventLog), "", NaConfig.INSTANCE.getShortcutsRecentActions().Bool(), true, true);
+            } else if (position == chatMenuStatisticsRow) {
+                cell.setText(getString(R.string.Statistics), "", NaConfig.INSTANCE.getShortcutsStatistics().Bool(), true, true);
+            } else if (position == chatMenuPermissionsRow) {
+                cell.setText(getString(R.string.ChannelPermissions), "", NaConfig.INSTANCE.getShortcutsPermissions().Bool(), true, true);
+            } else if (position == chatMenuMembersRow) {
+                cell.setText(getString(R.string.GroupMembers), "", NaConfig.INSTANCE.getShortcutsMembers().Bool(), true, true);
+            } else if (position == chatMenuBoostRow) {
+                cell.setText(getString(R.string.BoostingBoostGroupMenu), "", NaConfig.INSTANCE.getChatMenuItemBoostGroup().Bool(), true, true);
+            } else if (position == chatMenuLinkedChatRow) {
+                cell.setText(getString(R.string.LinkedGroupChat), "", NaConfig.INSTANCE.getChatMenuItemLinkedChat().Bool(), true, true);
+            } else if (position == chatMenuToBeginningRow) {
+                cell.setText(getString(R.string.ToTheBeginning), "", NaConfig.INSTANCE.getChatMenuItemToBeginning().Bool(), true, true);
+            } else if (position == chatMenuGoToMessageRow) {
+                cell.setText(getString(R.string.ToTheMessage), "", NaConfig.INSTANCE.getChatMenuItemGoToMessage().Bool(), true, true);
+            } else if (position == chatMenuHideTitleRow) {
+                cell.setText(getString(R.string.HideTitle), "", NaConfig.INSTANCE.getChatMenuItemHideTitle().Bool(), true, true);
+            } else if (position == chatMenuViewDeletedRow) {
+                cell.setText(getString(R.string.ViewDeleted), "", NaConfig.INSTANCE.getChatMenuItemViewDeleted().Bool(), true, true);
+            } else if (position == chatMenuClearDeletedRow) {
+                cell.setText(getString(R.string.ClearDeleted), "", NaConfig.INSTANCE.getChatMenuItemClearDeleted().Bool(), true, true);
+            } else if (position == chatMenuDeleteOwnRow) {
+                cell.setText(getString(R.string.DeleteAllFromSelf), "", NaConfig.INSTANCE.getChatMenuItemDeleteOwnMessages().Bool(), true, true);
             } else if (position == menuReactionsRow) {
                 cell.setText(getString(R.string.Reactions), "", NaConfig.INSTANCE.getShowReactions().Bool(), true, true);
             } else if (position == menuReplyInPrivateRow) {
@@ -1741,6 +2728,52 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 cell.setText(getString(R.string.OEChatsPauseVoice), "", ChatsConfig.pauseOnMinimizeVoice.Bool(), true, true);
             } else if (position == pauseRoundRow) {
                 cell.setText(getString(R.string.OEChatsPauseRound), "", ChatsConfig.pauseOnMinimizeRound.Bool(), false, true);
+            } else if (position == premiumEmojiStatusRow) {
+                cell.setText(getString(R.string.PremiumItemEmojiStatus), "", NaConfig.INSTANCE.getPremiumItemEmojiStatus().Bool(), true, true);
+            } else if (position == premiumEmojiInRepliesRow) {
+                cell.setText(getString(R.string.PremiumItemEmojiInReplies), "", NaConfig.INSTANCE.getPremiumItemEmojiInReplies().Bool(), true, true);
+            } else if (position == premiumColorsInRepliesRow) {
+                cell.setText(getString(R.string.PremiumItemCustomColorInReplies), "", NaConfig.INSTANCE.getPremiumItemCustomColorInReplies().Bool(), true, true);
+            } else if (position == premiumWallpapersRow) {
+                cell.setText(getString(R.string.PremiumItemCustomWallpaper), "", NaConfig.INSTANCE.getPremiumItemCustomWallpaper().Bool(), true, true);
+            } else if (position == premiumVideoAvatarsRow) {
+                cell.setText(getString(R.string.PremiumItemVideoAvatar), "", NaConfig.INSTANCE.getPremiumItemVideoAvatar().Bool(), true, true);
+            } else if (position == premiumStarReactionsRow) {
+                cell.setText(getString(R.string.PremiumItemStarInReactions), "", NaConfig.INSTANCE.getPremiumItemStarInReactions().Bool(), true, true);
+            } else if (position == premiumStickerEffectsRow) {
+                cell.setText(getString(R.string.PremiumItemStickerEffects), "", NaConfig.INSTANCE.getPremiumItemStickerEffects().Bool(), true, true);
+            } else if (position == premiumBoostsRow) {
+                cell.setText(getString(R.string.PremiumItemBoosts), "", NaConfig.INSTANCE.getPremiumItemBoosts().Bool(), false, true);
+            } else if (position == deleteMenuBanUsersRow) {
+                cell.setText(getString(R.string.DeleteBanUsers), "", NaConfig.INSTANCE.getDefaultDeleteMenuBanUsers().Bool(), true, true);
+            } else if (position == deleteMenuReportSpamRow) {
+                cell.setText(getString(R.string.DeleteReportSpam), "", NaConfig.INSTANCE.getDefaultDeleteMenReportSpam().Bool(), true, true);
+            } else if (position == deleteMenuDeleteAllRow) {
+                cell.setText(getString(R.string.DeleteAll), "", NaConfig.INSTANCE.getDefaultDeleteMenuDeleteAll().Bool(), true, true);
+            } else if (position == deleteMenuCommonGroupsRow) {
+                cell.setText(getString(R.string.DoActionsInCommonGroups), "", NaConfig.INSTANCE.getDefaultDeleteMenuDoActionsInCommonGroups().Bool(), false, true);
+            } else if (position == confirmAVMessageRow) {
+                cell.setText(getString(R.string.OEChatsAskWhenVoiceVideo), "", NekoConfig.confirmAVMessage.Bool(), true, true);
+            } else if (position == askBeforeCallRow) {
+                cell.setText(getString(R.string.OEChatsAskWhenCalling), "", NekoConfig.askBeforeCall.Bool(), true, true);
+            } else if (position == repeatConfirmRow) {
+                cell.setText(getString(R.string.OEChatsAskWhenRepeating), "", NekoConfig.repeatConfirm.Bool(), true, true);
+            } else if (position == disableClickCommandToSendRow) {
+                cell.setText(getString(R.string.OEChatsAskWhenBotCommands), "", NaConfig.INSTANCE.getDisableClickCommandToSend().Bool(), false, true);
+            } else if (position == stripTrackingOpenRow) {
+                cell.setText(getString(R.string.OEChatsStripTrackingOnOpen), "", ChatsConfig.stripTrackingOnOpen.Bool(), true, true);
+            } else if (position == stripTrackingPasteRow) {
+                cell.setText(getString(R.string.OEChatsStripTrackingOnPaste), "", ChatsConfig.stripTrackingOnPaste.Bool(), false, true);
+            } else if (position == hideAiEditorRow) {
+                cell.setText(getString(R.string.OEAppearanceHideAiEditor), "", AppearanceConfig.hideAiEditor.Bool(), true, true);
+            } else if (position == hideAiSummaryRow) {
+                cell.setText(getString(R.string.OEAppearanceHideAiSummary), "", AppearanceConfig.hideMessageSummary.Bool(), true, true);
+            } else if (position == hideAiIvRow) {
+                cell.setText(getString(R.string.OEAppearanceHideAiIv), "", AppearanceConfig.hideIvSummary.Bool(), true, true);
+            } else if (position == hidePremiumSectionRow) {
+                cell.setText(getString(R.string.TelegramPremium), "", NaConfig.INSTANCE.getHidePremiumSection().Bool(), true, true);
+            } else if (position == hideHelpSectionRow) {
+                cell.setText(getString(R.string.SettingsHelp), "", NaConfig.INSTANCE.getHideHelpSection().Bool(), false, true);
             }
             cell.setPad(1);
             // По умолчанию ячейка этого типа красит текст серым; вложенные пункты
@@ -1749,18 +2782,24 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         }
 
         private void bindCheck(TextCheckCell cell, int position) {
-            if (position == hideTimeOnStickersRow) {
-                cell.setTextAndCheck(getString(R.string.OEChatsHideTimeOnStickers), NekoConfig.hideTimeForSticker.Bool(), true);
-            } else if (position == adminShortcutsRow) {
-                cell.setTextAndCheck(getString(R.string.OEChatsAdminShortcuts), isQuickAdminShortcuts(), true);
+            if (position == adminShortcutsRow) {
+                cell.setTextAndCheck(getString(R.string.OEChatsAdminShortcuts), isQuickAdminShortcuts(), false);
             } else if (position == disableGreetingRow) {
-                cell.setTextAndCheck(getString(R.string.OEChatsDisableGreetingSticker), NekoConfig.dontSendGreetingSticker.Bool(), true);
+                cell.setTextAndCheck(getString(R.string.OEChatsDisableGreetingSticker), NekoConfig.dontSendGreetingSticker.Bool(), false);
             } else if (position == hideKeyboardOnScrollRow) {
-                cell.setTextAndCheck(getString(R.string.HideKeyboardOnChatScroll), NekoConfig.hideKeyboardOnChatScroll.Bool(), true);
+                cell.setTextAndCheck(getString(R.string.HideKeyboardOnChatScroll), NekoConfig.hideKeyboardOnChatScroll.Bool(), false);
             } else if (position == disableGlobalSearchRow) {
                 cell.setTextAndCheck(getString(R.string.OEChatsDisableGlobalSearch), NaConfig.INSTANCE.getDisableGlobalSearch().Bool(), true);
             } else if (position == addCommaRow) {
                 cell.setTextAndCheck(getString(R.string.AddCommaAfterMention), OpenExteraConfig.addCommaAfterMention.Bool(), true);
+            } else if (position == inlineMathRow) {
+                cell.setTextAndValueAndCheck(getString(R.string.OEChatsInlineMath),
+                        getString(R.string.OEChatsInlineMathInfo),
+                        ChatsConfig.inlineMathResult.Bool(), true, true);
+            } else if (position == inlineMathCurrencyRow) {
+                cell.setTextAndValueAndCheck(getString(R.string.OEChatsInlineMathCurrency),
+                        getString(R.string.OEChatsInlineMathCurrencyInfo),
+                        ChatsConfig.inlineMathCurrency.Bool(), true, true);
             } else if (position == hideSendAsPeerRow) {
                 cell.setTextAndCheck(getString(R.string.OEChatsHideSendAsPeer), NekoConfig.hideSendAsChannel.Bool(), true);
             } else if (position == tapToSwitchRecordRow) {
@@ -1779,6 +2818,12 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 // В подпись подставляется название кнопки «Share».
                 cell.setTextAndCheck(LocaleController.formatString(R.string.OEChatsHideShareButton,
                         getString(R.string.ShareFile)), NaConfig.INSTANCE.getHideShareButtonInChannel().Bool(), true);
+            } else if (position == hideGiftButtonRow) {
+                cell.setTextAndCheck(getString(R.string.OEChatsHideGiftButton),
+                        NaConfig.INSTANCE.getHideGiftButtonInChannel().Bool(), true);
+            } else if (position == hideSearchButtonRow) {
+                cell.setTextAndCheck(getString(R.string.OEChatsHideSearchButton),
+                        ChatsConfig.hideChannelSearchButton.Bool(), true);
             } else if (position == showResultsBeforeVotingRow) {
                 cell.setTextAndValueAndCheck(getString(R.string.OEChatsShowResultsBeforeVoting),
                         getString(R.string.OEChatsShowResultsBeforeVotingInfo),
@@ -1790,7 +2835,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 cell.setTextAndCheck(getString(R.string.OEChatsWideFeedPosts),
                         ChatsConfig.wideFeedPosts.Bool(), false, true);
             } else if (position == groupedMessageMenuRow) {
-                cell.setTextAndCheck(getString(R.string.GroupedMessageMenu), NaConfig.INSTANCE.getGroupedMessageMenu().Bool(), false);
+                cell.setTextAndCheck(getString(R.string.GroupedMessageMenu), NaConfig.INSTANCE.getGroupedMessageMenu().Bool(), true);
             } else if (position == rememberLastUsedCameraRow) {
                 cell.setTextAndValueAndCheck(getString(R.string.OEChatsRememberLastUsedCamera),
                         getString(R.string.OEChatsRememberLastUsedCameraInfo),
@@ -1803,6 +2848,10 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 cell.setTextAndCheck(getString(R.string.OEChatsStaticZoom), ChatsConfig.staticZoom.Bool(), false);
             } else if (position == alwaysSendHdRow) {
                 cell.setTextAndCheck(getString(R.string.OEChatsAlwaysSendInHD), ChatsConfig.alwaysSendInHD.Bool(), true);
+            } else if (position == hdrPhotosRow) {
+                cell.setTextAndValueAndCheck(getString(R.string.OEChatsHdrPhotos),
+                        getString(R.string.OEChatsHdrPhotosInfo),
+                        ChatsConfig.hdrPhotos.Bool(), true, true);
             } else if (position == hideCameraTileRow) {
                 cell.setTextAndCheck(getString(R.string.OEChatsHideCameraTile), ChatsConfig.hideCameraTile.Bool(), false);
             } else if (position == preferOriginalQualityRow) {
@@ -1813,11 +2862,61 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 cell.setTextAndValueAndCheck(getString(R.string.OEChatsUnmuteWithVolumeButtons),
                         getString(R.string.OEChatsUnmuteWithVolumeButtonsInfo),
                         ChatsConfig.unmuteWithVolumeButtons.Bool(), true, true);
+            } else if (position == disableTrendingRow) {
+                cell.setTextAndCheck(getString(R.string.DisableTrending), NekoConfig.disableTrending.Bool(), true);
+            } else if (position == hideGroupStickerRow) {
+                cell.setTextAndCheck(getString(R.string.hideGroupSticker), NekoConfig.hideGroupSticker.Bool(), true);
+            } else if (position == lockedEmojiAsStickerRow) {
+                cell.setTextAndValueAndCheck(getString(R.string.SendLockedCustomEmojiAsSticker),
+                        getString(R.string.SendLockedCustomEmojiAsStickerInfo),
+                        NaConfig.INSTANCE.getSendLockedCustomEmojiAsSticker().Bool(), true, true);
+            } else if (position == deleteChatForBothSidesRow) {
+                cell.setTextAndCheck(getString(R.string.DeleteChatForBothSides), NaConfig.INSTANCE.getDeleteChatForBothSides().Bool(), true);
+            } else if (position == dateOfForwardedMsgRow) {
+                cell.setTextAndCheck(getString(R.string.DateOfForwardedMsg), NaConfig.INSTANCE.getDateOfForwardedMsg().Bool(), true);
+            } else if (position == showTimeHintRow) {
+                cell.setTextAndCheck(getString(R.string.ShowTimeHint), NaConfig.INSTANCE.getShowTimeHint().Bool(), true);
+            } else if (position == rememberAllRepliesRow) {
+                cell.setTextAndCheck(getString(R.string.rememberAllBackMessages), NekoConfig.rememberAllBackMessages.Bool(), false);
+            } else if (position == fixLinkPreviewRow) {
+                cell.setTextAndValueAndCheck(getString(R.string.FixLinkPreview), "x.com → fixupx.com",
+                        NaConfig.INSTANCE.getFixLinkPreview().Bool(), false, true);
+            } else if (position == disableLinkPreviewRow) {
+                cell.setTextAndCheck(getString(R.string.DisableLinkPreviewByDefault), NekoConfig.disableLinkPreviewByDefault.Bool(), true);
+            } else if (position == disableInstantCameraRow) {
+                cell.setTextAndCheck(getString(R.string.DisableInstantCamera), NekoConfig.disableInstantCamera.Bool(), false);
+            } else if (position == showSmallGifRow) {
+                cell.setTextAndCheck(getString(R.string.ShowSmallGIF), NaConfig.INSTANCE.getShowSmallGIF().Bool(), false);
+            } else if (position == dontAutoPlayNextVoiceRow) {
+                cell.setTextAndCheck(getString(R.string.DontAutoPlayNextVoice), NaConfig.INSTANCE.getDontAutoPlayNextVoice().Bool(), true);
+            } else if (position == disableProximityEventsRow) {
+                cell.setTextAndCheck(getString(R.string.DisableProximityEvents), NekoConfig.disableProximityEvents.Bool(), false);
+            } else if (position == enhancedVideoBitrateRow) {
+                cell.setTextAndCheck(getString(R.string.EnhancedVideoBitrate), NaConfig.INSTANCE.getEnhancedVideoBitrate().Bool(), true);
+            } else if (position == voiceEnhancementsRow) {
+                cell.setTextAndCheck(getString(R.string.NoiseSuppressAndVoiceEnhance),
+                        NaConfig.INSTANCE.getNoiseSuppressAndVoiceEnhance().Bool(), true);
+            } else if (position == hideActionBarStatusRow) {
+                cell.setTextAndCheck(getString(R.string.OEAppearanceHideActionBarStatus), AppearanceConfig.hideActionBarStatus.Bool(), true);
+            } else if (position == hideFloatingButtonRow) {
+                cell.setTextAndCheck(getString(R.string.OEAppearanceHideFloatingButton),
+                        NaConfig.INSTANCE.getDisableDialogsFloatingButton().Bool(), true);
+            } else if (position == hideSearchBarRow) {
+                cell.setTextAndCheck(getString(R.string.OEAppearanceHideSearchBar), NaConfig.INSTANCE.getHideDialogsSearchField().Bool(), true);
+            } else if (position == hideAllChatsRow) {
+                cell.setTextAndCheck(LocaleController.formatString(R.string.OEAppearanceHideAllChats,
+                        getString(R.string.FilterAllChats)), NekoConfig.hideAllTab.Bool(), false);
             }
         }
 
         private void bindText(TextCell cell, int position) {
-            if (position == aiChatRow) {
+            if (position == menusRow) {
+                cell.setTextAndIcon(getString(R.string.OEChatsMenus), R.drawable.msg_list, true);
+                cell.setSubtitle(getString(R.string.OEChatsMenusInfo));
+            } else if (position == mediaRow) {
+                cell.setTextAndIcon(getString(R.string.OEChatsMedia), R.drawable.msg_camera, true);
+                cell.setSubtitle(getString(R.string.OEChatsMediaInfo));
+            } else if (position == aiChatRow) {
                 cell.setTextAndIcon(getString(R.string.OEChatsAiChat), aiChatIcon(), true);
                 cell.setSubtitle(getString(R.string.OEChatsAiChatInfo));
             } else if (position == chatSettingsRow) {
@@ -1832,12 +2931,22 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         }
 
         private void bindSettings(TextSettingsCell cell, int position) {
-            if (position == doubleTapIncomingRow) {
+            if (position == textStyleRow) {
+                cell.setText(getString(R.string.TextStyle), true);
+            } else if (position == trackingFilterRow) {
+                String updated = LinkCleaner.lastUpdated();
+                cell.setTextAndValue(getString(R.string.OEChatsTrackingFilter),
+                        updated == null ? "AdGuard" : LocaleController.formatString(R.string.OEChatsTrackingFilterValue, updated), false);
+            } else if (position == doubleTapIncomingRow) {
                 cell.setTextAndValue(getString(R.string.DoubleTapIncoming),
                         DoubleTap.doubleTapActionMap.get(NaConfig.INSTANCE.getDoubleTapAction().Int()), true);
             } else if (position == doubleTapOutgoingRow) {
                 cell.setTextAndValue(getString(R.string.DoubleTapOutgoing),
                         DoubleTap.doubleTapActionMap.get(NaConfig.INSTANCE.getDoubleTapActionOut().Int()), doubleTapReactionRow != -1);
+            } else if (position == stickerTimeRow) {
+                CharSequence[] options = stickerTimeOptions();
+                cell.setTextAndValue(getString(R.string.OEChatsStickerTime),
+                        options[clampIndex(ChatsConfig.stickerTimeMode(), options.length)], true);
             } else if (position == bottomButtonRow) {
                 CharSequence[] options = bottomButtonOptions();
                 cell.setTextAndValue(getString(R.string.OEChatsBottomButton),
@@ -1854,27 +2963,55 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 CharSequence[] options = seekDurationOptions();
                 cell.setTextAndValue(getString(R.string.OEChatsDoubleTapSeekDuration),
                         options[clampIndex(ChatsConfig.doubleTapSeekDuration.Int(), options.length)], true);
+            } else if (position == videoPlayerDecoderRow) {
+                CharSequence[] options = videoPlayerDecoderOptions();
+                cell.setTextAndValue(getString(R.string.VideoPlayerDecoder),
+                        options[clampIndex(NaConfig.INSTANCE.getPlayerDecoder().Int(), options.length)], true);
+            } else if (position == searchHashtagChatRow) {
+                CharSequence[] options = searchHashtagPageOptions();
+                cell.setTextAndValue(getString(R.string.SearchHashtagDefaultPageChat),
+                        options[clampIndex(NaConfig.INSTANCE.getSearchHashtagDefaultPageChat().Int(), options.length)], true);
+            } else if (position == searchHashtagChannelRow) {
+                CharSequence[] options = searchHashtagPageOptions();
+                cell.setTextAndValue(getString(R.string.SearchHashtagDefaultPageChannel),
+                        options[clampIndex(NaConfig.INSTANCE.getSearchHashtagDefaultPageChannel().Int(), options.length)], false);
+            } else if (position == openLinkConfirmationRow) {
+                cell.setTextAndValue(getString(R.string.OEChatsOpenLinkConfirmation),
+                        openLinkConfirmationOptions()[openLinkConfirmation()], true);
+            } else if (position == transcribeProviderRow) {
+                CharSequence[] options = transcribeProviderOptions();
+                cell.setTextAndValue(getString(R.string.TranscribeProviderShort),
+                        options[clampIndex(NaConfig.INSTANCE.getTranscribeProvider().Int(), options.length)], true);
+            } else if (position == cloudflareCredentialsRow) {
+                cell.setText(getString(R.string.CloudflareCredentials), true);
+            } else if (position == geminiApiKeyRow) {
+                cell.setText(getString(R.string.LlmProviderGeminiKey),
+                        openAiCredentialsRow != -1 || voskModelsRow != -1);
+            } else if (position == openAiCredentialsRow) {
+                cell.setText(getString(R.string.TranscribeProviderOpenAI), false);
+            } else if (position == voskModelsRow) {
+                cell.setText(getString(R.string.VoskModelsShort), false);
+            } else if (position == hideStoriesRow) {
+                cell.setTextAndValue(getString(R.string.OEAppearanceStories), storiesOptions()[storiesIndex()], true);
             }
         }
 
         private void bindInfo(TextInfoPrivacyCell cell, int position) {
-            boolean bottom = position == videosDividerRow;
+            boolean bottom = position == rowCount - 1;
             cell.setFixedSize(0);
             if (position == doubleTapDividerRow) {
                 cell.setText(getString(R.string.OEChatsDoubleTapInfo));
-            } else if (position == chatsDividerRow) {
+            } else if (position == hidingChatsDividerRow) {
                 cell.setText(getString(R.string.OEChatsHideSendAsPeerInfo));
-            } else if (position == stickersDividerRow) {
-                cell.setText(getString(R.string.OEChatsHideReactionsInfo));
-            } else if (position == messagesDividerRow) {
+            } else if (position == linkConfirmationsDividerRow) {
+                cell.setText(getString(R.string.OEChatsStripTrackingInfo));
+            } else if (position == menusDividerRow) {
                 cell.setText(getString(R.string.OEChatsGlassMessageMenuInfo));
             } else if (position == channelPostsDividerRow) {
                 cell.setText(getString(R.string.OEChatsWideChannelPostsFooter));
             } else if (position == cameraDividerRow) {
                 cell.setText(getString(R.string.OEChatsStaticZoomInfo));
-            } else if (position == photoDividerRow) {
-                cell.setText(getString(R.string.OEChatsHideCameraTileInfo));
-            } else if (position == videosDividerRow) {
+            } else if (position == playbackDividerRow) {
                 cell.setText(getString(R.string.OEChatsPauseOnMinimizeInfo));
             } else {
                 cell.setText(null);
@@ -1896,7 +3033,9 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             if (position == doubleTapReactionRow) return TYPE_SET_REACTION;
             if (isHeader(position)) return TYPE_HEADER;
             if (isDivider(position)) return TYPE_INFO_PRIVACY;
-            if (position == aiChatRow || position == chatSettingsRow) return TYPE_TEXT;
+            if (position == aiChatRow || position == chatSettingsRow || position == menusRow || position == mediaRow) {
+                return TYPE_TEXT;
+            }
             if (isGroupHeader(position)) return TYPE_EXPANDABLE_SWITCH;
             if (groupHeaderFor(position) != -1) return TYPE_ROUND_CHECK;
             if (isSettings(position)) return TYPE_SETTINGS;
@@ -1910,7 +3049,14 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                     || position == chatsHeaderRow || position == messagesHeaderRow
                     || position == channelPostsHeaderRow
                     || position == cameraHeaderRow
-                    || position == photoHeaderRow || position == videosHeaderRow;
+                    || position == photoHeaderRow || position == videosHeaderRow
+                    || position == linkConfirmationsHeaderRow || position == transcribeHeaderRow
+                    || position == inputHeaderRow || position == searchHeaderRow
+                    || position == buttonsHeaderRow || position == menusHeaderRow
+                    || position == playbackHeaderRow || position == voiceHeaderRow
+                    || position == hidingChatListHeaderRow || position == hidingChatsHeaderRow
+                    || position == hidingStickersHeaderRow || position == hidingAiHeaderRow
+                    || position == hidingSettingsHeaderRow;
         }
 
         private boolean isDivider(int position) {
@@ -1920,21 +3066,39 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                     || position == messagesDividerRow
                     || position == channelPostsDividerRow
                     || position == cameraDividerRow || position == photoDividerRow
-                    || position == videosDividerRow;
+                    || position == videosDividerRow || position == linkConfirmationsDividerRow
+                    || position == transcribeDividerRow
+                    || position == inputDividerRow || position == searchDividerRow
+                    || position == buttonsDividerRow || position == menusDividerRow
+                    || position == playbackDividerRow || position == voiceDividerRow
+                    || position == hidingChatListDividerRow || position == hidingChatsDividerRow
+                    || position == hidingStickersDividerRow || position == hidingAiDividerRow
+                    || position == hidingSettingsDividerRow;
         }
 
         private boolean isGroupHeader(int position) {
             return position == repliesGroupRow || position == hideReactionsGroupRow
                     || position == unlimitedGroupRow
-                    || position == quickTransitionGroupRow || position == messageMenuGroupRow
+                    || position == quickTransitionGroupRow || position == chatMenuGroupRow
+                    || position == messageMenuGroupRow
                     || position == mediaViewerMenuGroupRow || position == actionBarButtonsGroupRow
-                    || position == extendedSettingsGroupRow || position == pauseGroupRow;
+                    || position == extendedSettingsGroupRow || position == pauseGroupRow
+                    || position == premiumElementsGroupRow || position == deleteMenuGroupRow
+                    || position == askWhenGroupRow || position == stripTrackingGroupRow
+                    || position == hideAiGroupRow || position == hideSettingsGroupRow;
         }
 
         private boolean isSettings(int position) {
             return position == doubleTapIncomingRow || position == doubleTapOutgoingRow
-                    || position == bottomButtonRow || position == cameraTypeRow
-                    || position == videoMessagesCameraRow || position == doubleTapSeekDurationRow;
+                    || position == bottomButtonRow || position == cameraTypeRow || position == stickerTimeRow
+                    || position == videoMessagesCameraRow || position == doubleTapSeekDurationRow
+                    || position == videoPlayerDecoderRow
+                    || position == searchHashtagChatRow || position == searchHashtagChannelRow
+                    || position == openLinkConfirmationRow || position == transcribeProviderRow
+                    || position == cloudflareCredentialsRow || position == geminiApiKeyRow
+                    || position == openAiCredentialsRow || position == voskModelsRow
+                    || position == textStyleRow || position == trackingFilterRow
+                    || position == hideStoriesRow;
         }
     }
 }

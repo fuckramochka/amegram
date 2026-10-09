@@ -29,6 +29,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
 
     private static final int ROW_VERSION = 1;
     private static final int ROW_CHECK = 2;
+    private static final int ROW_GITHUB_CHECK = 9;
     private static final int ROW_CHANNEL = 3;
     private static final int ROW_AUTOCHECK = 5;
     private static final int ROW_WIFIONLY = 6;
@@ -68,6 +69,10 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         items.add(YumiSettingCell.Factory.of(ROW_CHECK, R.drawable.msg_retry, 0xFF2A87FF,
                 MiogramLocale.get("Перевірити наявність оновлень", "Проверить наличие обновлений", "Check for updates"),
                 MiogramLocale.get("Запит свіжих релізів з GitHub", "Запрос свежих релизов с GitHub", "Query latest releases from GitHub")));
+
+        items.add(YumiSettingCell.Factory.of(ROW_GITHUB_CHECK, R.drawable.msg_download_solar, 0xFF7E57C2,
+                MiogramLocale.get("Перевірити через GitHub-шит", "Проверить через GitHub-шит", "Check via GitHub sheet"),
+                MiogramLocale.get("Той самий репозиторій, але з шитом версій і прогресом", "Тот же репозиторий, но с шитом версий и прогрессом", "Same repo, version sheet with progress")));
 
         items.add(UItem.asShadow(null));
 
@@ -112,6 +117,14 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == ROW_CHECK || item.id == ROW_VERSION) {
             MiogramUpdater.checkAndShowUpdate(this, true);
+            AndroidUtilities.runOnUIThread(() -> {
+                if (listView != null && listView.adapter != null) listView.adapter.update(true);
+            }, 1200);
+        } else if (item.id == ROW_GITHUB_CHECK) {
+            try {
+                app.exteraless.updater.GitHubUpdater.check(true);
+            } catch (Throwable ignore) {
+            }
             AndroidUtilities.runOnUIThread(() -> {
                 if (listView != null && listView.adapter != null) listView.adapter.update(true);
             }, 1200);

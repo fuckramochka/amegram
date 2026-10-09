@@ -214,6 +214,39 @@ object AppearanceConfig {
     val newNavigationBarStyle =
         addConfig("OEAppearanceNewNavigationBarStyle", ConfigItem.configTypeBool, false)
 
+    /** M3-рядки списків (вищі рядки, кольорові іконки). Дефолт false. */
+    @JvmField
+    val m3ListItems =
+        addConfig("OEAppearanceM3ListItems", ConfigItem.configTypeBool, false)
+
+    /** MD3-плеєр (повний шит). Дефолт false; джерело — модуль md3player, фолбек — вбудовані класи. */
+    @JvmField
+    val md3Player =
+        addConfig("OEAppearanceMd3Player", ConfigItem.configTypeBool, false)
+
+    /** MD3-мініплеєр (плашка в чатах). Дефолт false. */
+    @JvmField
+    val md3MiniPlayer =
+        addConfig("OEAppearanceMd3MiniPlayer", ConfigItem.configTypeBool, false)
+
+    @JvmStatic
+    fun m3ListItems(): Boolean {
+        ensureLoaded()
+        return m3ListItems.Bool()
+    }
+
+    @JvmStatic
+    fun md3Player(): Boolean {
+        ensureLoaded()
+        return md3Player.Bool()
+    }
+
+    @JvmStatic
+    fun md3MiniPlayer(): Boolean {
+        ensureLoaded()
+        return md3MiniPlayer.Bool()
+    }
+
     @JvmStatic
     fun newLoadingStyle(): Boolean {
         ensureLoaded()

@@ -1,0 +1,8 @@
+{
+  "id": "md3player",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.md3player.Md3PlayerModule",
+  "name": "MD3-плеєр",
+  "minApp": 7112
+}

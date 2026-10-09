@@ -24,6 +24,7 @@ public final class HotModuleMeta {
         if ("experimental".equals(id)) return 0xFF43A047;
         if ("automation".equals(id)) return 0xFF546E7A;
         if ("demo".equals(id)) return 0xFF78909C;
+        if ("md3player".equals(id)) return 0xFF7E57C2;
         return 0xFF2A87FF;
     }
 
@@ -37,6 +38,7 @@ public final class HotModuleMeta {
         if ("ai".equals(id)) return R.drawable.baseline_stars_24;
         if ("experimental".equals(id)) return R.drawable.msg_fave;
         if ("automation".equals(id)) return R.drawable.msg_download_solar;
+        if ("md3player".equals(id)) return R.drawable.baseline_music_note_24;
         return R.drawable.msg_plugins;
     }
 
@@ -45,6 +47,7 @@ public final class HotModuleMeta {
         if ("ghost".equals(id) || "vault".equals(id)) return "privacy";
         if ("player".equals(id) || "tiktok".equals(id) || "stt".equals(id)) return "media";
         if ("ai".equals(id) || "automation".equals(id) || "experimental".equals(id)) return "power";
+        if ("md3player".equals(id)) return "media";
         if ("ame".equals(id)) return "custom";
         return "other";
     }
@@ -109,6 +112,8 @@ public final class HotModuleMeta {
         } else if ("automation".equals(id)) {
             res.add("background");
             res.add("storage");
+        } else if ("md3player".equals(id)) {
+            res.add("hook_ui");
         }
         return res;
     }
@@ -205,6 +210,12 @@ public final class HotModuleMeta {
                     "Автосинхронізація хмари, бекап Обраного, чистка кешу",
                     "Автосинхронизация облака, бэкап Избранного, чистка кэша",
                     "Cloud auto-sync, backup & cache cleaner");
+        }
+        if ("md3player".equals(id)) {
+            return MiogramLocale.get(
+                    "MD3-шит і міні-бар плеєра з лірикою та morph-переходом",
+                    "MD3-шит и мини-бар плеера с лирикой и morph-переходом",
+                    "MD3 player sheet & mini bar with lyrics and morph transition");
         }
         return MiogramLocale.get(
                 "Нативне розширення клієнта Amegram",

@@ -535,6 +535,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     "1. Класичний (Classic Amegram)",
                     "2. Експериментальний Yougram Expressive (Рідке скло + M3 сегменти)"
             }, AppearanceConfig.uiStyleMode, () -> {
+                AppearanceConfig.markUiStyleModeTouched();
                 rebuildAll();
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
             });

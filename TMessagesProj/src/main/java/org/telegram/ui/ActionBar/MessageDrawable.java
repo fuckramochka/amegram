@@ -323,6 +323,8 @@ public class MessageDrawable extends Drawable {
             newRad = overrideRoundRadius;
         } else if (overrideRounding > 0) {
             newRad = 0;
+        } else if (app.exteraless.appearance.YougramExpressive.bubbleRadiusDp() > 0) {
+            newRad = dp(app.exteraless.appearance.YougramExpressive.bubbleRadiusDp());
         } else {
             newRad = dp(SharedConfig.bubbleRadius);
         }
@@ -573,6 +575,9 @@ public class MessageDrawable extends Drawable {
         } else if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             rad = dp(16);
             nearRad = dp(8);
+        } else if (app.exteraless.appearance.YougramExpressive.bubbleRadiusDp() > 0) {
+            rad = dp(app.exteraless.appearance.YougramExpressive.bubbleRadiusDp());
+            nearRad = dp(6);
         } else {
             rad = dp(SharedConfig.bubbleRadius);
             nearRad = dp(Math.min(6, SharedConfig.bubbleRadius));
@@ -635,6 +640,9 @@ public class MessageDrawable extends Drawable {
             nearRad = AndroidUtilities.lerp(dp(Math.min(6, SharedConfig.bubbleRadius)), Math.min(bounds.width(), bounds.height()) / 2, overrideRounding);
         } else if (currentType == TYPE_PREVIEW) {
             rad = dp(6);
+            nearRad = dp(6);
+        } else if (app.exteraless.appearance.YougramExpressive.bubbleRadiusDp() > 0) {
+            rad = dp(app.exteraless.appearance.YougramExpressive.bubbleRadiusDp());
             nearRad = dp(6);
         } else {
             rad = dp(SharedConfig.bubbleRadius);
@@ -866,13 +874,16 @@ public class MessageDrawable extends Drawable {
         this.resourcesProvider = resourcesProvider;
     }
 
-    /** openExtera: убрать «хвостик» пузыря сообщения (ChatsConfig.removeMessageTail). */
+    /** openExtera: убрать «хвостик» пузыря сообщения (ChatsConfig.removeMessageTail); Yougram Expressive — всегда. */
     private static boolean oeRemoveMessageTail() {
         try {
+            if (app.exteraless.appearance.YougramExpressive.removeMessageTail()) {
+                return true;
+            }
             app.exteraless.chats.ChatsConfig.ensureLoaded();
             return app.exteraless.chats.ChatsConfig.removeMessageTail.Bool();
         } catch (Exception e) {
-            return false;
+            return app.exteraless.appearance.YougramExpressive.removeMessageTail();
         }
     }
 

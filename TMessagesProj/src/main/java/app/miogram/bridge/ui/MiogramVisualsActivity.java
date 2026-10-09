@@ -226,6 +226,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         builder.setTitle(MiogramLocale.get("Режим інтерфейсу", "Режим интерфейса", "Interface Mode"));
         builder.setItems(options, (dialog, which) -> {
             AppearanceConfig.uiStyleMode.setConfigInt(which);
+            AppearanceConfig.markUiStyleModeTouched();
             listAdapter.notifyItemChanged(uiStyleModeRow);
             AndroidUtilities.runOnUIThread(() -> {
                 if (LaunchActivity.instance != null && !LaunchActivity.instance.isFinishing()) {

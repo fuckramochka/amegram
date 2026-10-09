@@ -6217,6 +6217,7 @@ public class Theme {
         if (accent != null) {
             shouldDrawGradientIcons = accent.fillAccentColors(currentColorsNoAccent, currentColors);
         }
+        app.exteraless.appearance.YougramExpressive.applyOverrides(currentColors, currentTheme.isDark());
         applyCalculatedTableColors(currentColorsNoAccent, currentColors, currentTheme.isDark());
         applyCalculatedArticleCodeColors(currentColorsNoAccent, currentColors, currentTheme.isDark());
         if (!messages) {

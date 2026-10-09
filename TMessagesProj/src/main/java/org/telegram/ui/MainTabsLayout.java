@@ -86,9 +86,11 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         if (bottomNavigationFloating == null) {
             final SharedPreferences preferences = getBottomNavigationPreferences();
             if (preferences == null) {
-                return false;
+                return app.exteraless.appearance.AppearanceConfig.isYougramExpressive();
             }
-            bottomNavigationFloating = preferences.getBoolean(KEY_BOTTOM_NAVIGATION_FLOATING, false);
+            // Yougram Expressive: контент під пігулкою edge-to-edge — floating дефолт
+            bottomNavigationFloating = preferences.getBoolean(KEY_BOTTOM_NAVIGATION_FLOATING,
+                    app.exteraless.appearance.AppearanceConfig.isYougramExpressive());
         }
         return bottomNavigationFloating;
     }
@@ -129,7 +131,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             width = maxWidthPx;
         }
 
-        final boolean fillWidth = MainTabsUiHelper.isMaterial3NavigationBar() || MainTabsUiHelper.isIosNavigationBar();
+        final boolean fillWidth = MainTabsUiHelper.isMaterial3NavigationBar() || MainTabsUiHelper.isIosNavigationBar() || MainTabsUiHelper.isFloatingPill();
         final int maxTotalWidthForTabs = width - getPaddingLeft() - getPaddingRight();
         final int minTotalWidthForTabs = fillWidth
                 ? maxTotalWidthForTabs

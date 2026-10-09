@@ -36,6 +36,17 @@ public final class MainTabsUiHelper {
     }
 
     /**
+     * Yougram Expressive: плаваюча скляна «пігулка» 60dp з відступом 8dp від країв
+     * (yougram MainScreen.kt: BottomBarHeight 60, BottomBarMargin 8). Має пріоритет
+     * над M3/iOS-гілками — це і є образ yougram, а не ще один варіант панелі.
+     */
+    public static boolean isFloatingPill() {
+        return AppearanceConfig.isYougramExpressive()
+                && !app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)
+                && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled();
+    }
+
+    /**
      * Панель как в Telegram iOS: капсула почти во всю ширину экрана, 60dp высотой,
      * вкладки растянуты по ширине. Это та же не-M3 ветка, только шире и выше,
      * поэтому все размеры считаются через MainTabsHelper. M3 приоритетнее.
@@ -46,16 +57,22 @@ public final class MainTabsUiHelper {
 
     /** В iOS-стиле обёртка добавляет к системным инсетам ещё 8dp по бокам — вместе с подложкой выходит 16dp. */
     private static int getWrapperSideInset() {
-        return isIosNavigationBar() ? AndroidUtilities.dp(8) : 0;
+        return isIosNavigationBar() || isFloatingPill() ? AndroidUtilities.dp(8) : 0;
     }
 
-    /** M3 — 64dp, иначе высота из MainTabsHelper. */
+    /** M3 — 64dp, пігулка yougram — 60dp, иначе высота из MainTabsHelper. */
     public static int getTabsViewHeightDp() {
+        if (isFloatingPill()) {
+            return 60;
+        }
         return isMaterial3NavigationBar() ? 64 : MainTabsHelper.getMainTabsHeightWithMargins();
     }
 
     /** M3 — dp(64) плюс системный отступ снизу, иначе высота из MainTabsHelper. */
     public static int getTabsViewHeight(int bottomInset) {
+        if (isFloatingPill()) {
+            return AndroidUtilities.dp(60) + bottomInset + AndroidUtilities.dp(8);
+        }
         return isMaterial3NavigationBar()
                 ? AndroidUtilities.dp(64) + bottomInset
                 : AndroidUtilities.dp(MainTabsHelper.getMainTabsHeightWithMargins());
@@ -63,18 +80,21 @@ public final class MainTabsUiHelper {
 
     /** В iOS-стиле капсула на 4dp выше, но таб внутри остаётся 48dp — лишнее уходит в паддинг. */
     public static int getTabsInnerPaddingVertical() {
-        if (isMaterial3NavigationBar()) {
+        if (isFloatingPill() || isMaterial3NavigationBar()) {
             return 0;
         }
         return AndroidUtilities.dp(MainTabsHelper.getMainTabsMargin() + (isIosNavigationBar() ? 6 : 4));
     }
 
     public static int getTabsInnerPaddingHorizontal() {
-        return isMaterial3NavigationBar() ? 0 : AndroidUtilities.dp(MainTabsHelper.getMainTabsMargin() + 4);
+        return isFloatingPill() || isMaterial3NavigationBar() ? 0 : AndroidUtilities.dp(MainTabsHelper.getMainTabsMargin() + 4);
     }
 
     /** В M3 подложка без отступа от краёв. */
     public static int getBackgroundInset() {
+        if (isFloatingPill()) {
+            return AndroidUtilities.dp(8);
+        }
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             return 0;
         }
@@ -83,6 +103,9 @@ public final class MainTabsUiHelper {
 
     /** В M3 подложка прямоугольная, иначе скругление в половину высоты. */
     public static float getBackgroundRadius() {
+        if (isFloatingPill()) {
+            return AndroidUtilities.dp(30);
+        }
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             return 0;
         }
@@ -91,6 +114,9 @@ public final class MainTabsUiHelper {
 
     /** В M3 и iOS-стиле панель растянута на всю ширину. */
     public static int getTabsViewWidth() {
+        if (isFloatingPill()) {
+            return LayoutHelper.MATCH_PARENT;
+        }
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             return LayoutHelper.MATCH_PARENT;
         }
@@ -99,6 +125,9 @@ public final class MainTabsUiHelper {
 
     /** Сдвиг кнопки «написать» над панелью: в M3 всегда 64. */
     public static int getTabsFabOffsetDp() {
+        if (isFloatingPill()) {
+            return 60 + 8;
+        }
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             return 56;
         }
@@ -107,6 +136,11 @@ public final class MainTabsUiHelper {
 
     /** В M3 и iOS-стиле панель во всю ширину (в M3 ещё и без внутренних отступов). */
     public static void applyTabsLayoutStyle(MainTabsLayout layout, int legacyMaxWidthPx) {
+        if (isFloatingPill()) {
+            layout.setPadding(0, 0, 0, 0);
+            layout.setMaxWidth(0);
+            return;
+        }
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             layout.setPadding(0, 0, 0, 0);
             layout.setMaxWidth(0);
@@ -121,8 +155,23 @@ public final class MainTabsUiHelper {
     /**
      * В M3 нижний системный отступ уходит внутрь панели, а обёртка его не держит.
      * Левый и правый инсеты несёт обёртка, поэтому переданы отдельно.
+     * В пігулці yougram панель крім того висить на 8dp вище системного відступу.
      */
     public static void applyTabsBottomInset(MainTabsLayout layout, View wrapper, int bottomInset, int leftInset, int rightInset) {
+        if (isFloatingPill()) {
+            final int paddingBottom = bottomInset + AndroidUtilities.dp(8);
+            if (layout.getPaddingBottom() != paddingBottom) {
+                layout.setPadding(layout.getPaddingLeft(), layout.getPaddingTop(), layout.getPaddingRight(), paddingBottom);
+            }
+            final ViewGroup.LayoutParams lp = layout.getLayoutParams();
+            final int height = getTabsViewHeight(bottomInset);
+            if (lp != null && lp.height != height) {
+                lp.height = height;
+                layout.setLayoutParams(lp);
+            }
+            wrapper.setPadding(leftInset + AndroidUtilities.dp(8), 0, rightInset + AndroidUtilities.dp(8), 0);
+            return;
+        }
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             applyTabsBottomInset(layout, bottomInset);
             wrapper.setPadding(leftInset, 0, rightInset, 0);
@@ -140,7 +189,9 @@ public final class MainTabsUiHelper {
             lp.height = height;
             layout.setLayoutParams(lp);
         }
-        final int paddingBottom = getTabsInnerPaddingVertical() + (isMaterial3NavigationBar() ? bottomInset : 0);
+        final int paddingBottom = getTabsInnerPaddingVertical()
+                + (isFloatingPill() ? bottomInset + AndroidUtilities.dp(8) : 0)
+                + (isMaterial3NavigationBar() ? bottomInset : 0);
         if (layout.getPaddingBottom() != paddingBottom) {
             layout.setPadding(layout.getPaddingLeft(), layout.getPaddingTop(), layout.getPaddingRight(), paddingBottom);
         }
@@ -161,6 +212,13 @@ public final class MainTabsUiHelper {
     }
 
     public static void setBlurBounds(RectF rectF, View view, int bottomInset) {
+        if (isFloatingPill()) {
+            // пігулка 60dp на 8dp над системним відступом, боки — за інсетом обгортки
+            final int bottom = view.getMeasuredHeight() - bottomInset - AndroidUtilities.dp(8);
+            final int top = bottom - AndroidUtilities.dp(60);
+            rectF.set(AndroidUtilities.dp(8), top, view.getMeasuredWidth() - AndroidUtilities.dp(8), bottom);
+            return;
+        }
         final int bottom;
         final int top;
         if (isMaterial3NavigationBar()) {

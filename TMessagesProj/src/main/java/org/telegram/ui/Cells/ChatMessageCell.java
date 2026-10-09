@@ -11246,7 +11246,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 int tl, tr, bl, br;
                 int minRad = dp(4);
                 int rad;
-                if (SharedConfig.bubbleRadius > 2) {
+                if (app.exteraless.appearance.YougramExpressive.bubbleMediaRadiusDp() > 0) {
+                    rad = dp(app.exteraless.appearance.YougramExpressive.bubbleMediaRadiusDp());
+                } else if (SharedConfig.bubbleRadius > 2) {
                     rad = dp(SharedConfig.bubbleRadius - 2);
                 } else {
                     rad = dp(SharedConfig.bubbleRadius);

@@ -45,7 +45,22 @@ object AppearanceConfig {
 
     @JvmField
     val uiStyleMode =
-        addConfig("OEAppearanceUiStyleMode", ConfigItem.configTypeInt, UI_STYLE_CLASSIC)
+        addConfig("OEAppearanceUiStyleMode", ConfigItem.configTypeInt, UI_STYLE_YOUGRAM_EXPRESSIVE)
+
+    /**
+     * Чи користувач свідомо обирав режим інтерфейсу. Поки false — [uiStyleMode]
+     * тримається на дефолті ([UI_STYLE_YOUGRAM_EXPRESSIVE]): старі інсталяції,
+     * що ніколи не торкалися цього налаштування, мігрують на Expressive.
+     */
+    @JvmField
+    val uiStyleModeTouched =
+        addConfig("OEAppearanceUiStyleModeTouched", ConfigItem.configTypeBool, false)
+
+    /** Звати після того, як користувач обрав режим інтерфейсу у налаштуваннях. */
+    @JvmStatic
+    fun markUiStyleModeTouched() {
+        uiStyleModeTouched.setConfigBool(true)
+    }
 
     @JvmStatic
     fun uiStyleMode(): Int {
@@ -289,9 +304,6 @@ object AppearanceConfig {
 
     @JvmStatic
     fun newNavigationBarStyle(): Boolean {
-        if (isYougramExpressive()) {
-            return true
-        }
         ensureLoaded()
         return newNavigationBarStyle.Bool()
     }
@@ -627,6 +639,11 @@ object AppearanceConfig {
     }
 
     private fun migrateLegacyKeys() {
+        // Одноразова міграція: усі, хто не обирав режим свідомо, отримують
+        // Yougram Expressive як новий дефолт.
+        if (!uiStyleModeTouched.Bool() && uiStyleMode.Int() != UI_STYLE_YOUGRAM_EXPRESSIVE) {
+            uiStyleMode.setConfigInt(UI_STYLE_YOUGRAM_EXPRESSIVE)
+        }
         val legacyHidden = getPreferences().getBoolean("HideDividers", false)
         if (legacyHidden && dividerStyle.Int() != DIVIDER_HIDDEN) {
             dividerStyle.setConfigInt(DIVIDER_HIDDEN)

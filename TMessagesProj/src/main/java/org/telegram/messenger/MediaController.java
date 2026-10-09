@@ -5256,7 +5256,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         File dir;
                         String folderName = NekoConfig.customSavePath.String();
                         if (messageObjects.get(0) != null && NaConfig.INSTANCE.getSaveToChatSubfolder().Bool()) {
-                            String chatFolderName = ChatsHelper.getChatFolderName(messageObjects.get(0));
+                            MessageObject origin = messageObjects.get(0);
+                            String chatFolderName = app.amegram.hot.HotFileOrganizationGate.chatSubfolder(
+                                    ChatsHelper.getChatTitle(origin), ChatsHelper.getChatPeerId(origin));
+                            if (TextUtils.isEmpty(chatFolderName)) {
+                                chatFolderName = ChatsHelper.getChatFolderName(messageObjects.get(0));
+                            }
                             folderName = folderName + File.separator + chatFolderName;
                         }
                         if (isMusic) {

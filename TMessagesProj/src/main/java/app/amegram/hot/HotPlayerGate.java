@@ -5,12 +5,7 @@ import android.content.Context;
 import app.amegram.hot.api.HotPlayer;
 import app.amegram.hot.api.HotServices;
 
-/**
- * Гейт плеєра в ядрі.
- * Дозволяє викликати глобальний пошук музики з 6 сервісів
- * та управляти кастомним дизайном плеєра, візуалізатором і текстами.
- * При відсутності модуля працює стоковий плеєр Telegram.
- */
+/** Connects MD3's optional music search action to the music-provider module. */
 public final class HotPlayerGate {
 
     private HotPlayerGate() {
@@ -22,21 +17,6 @@ public final class HotPlayerGate {
         } catch (Throwable ignore) {
             return null;
         }
-    }
-
-    public static boolean isModernLayoutEnabled() {
-        HotPlayer p = service();
-        return p != null && p.isModernLayoutEnabled();
-    }
-
-    public static boolean isVisualizerEnabled() {
-        HotPlayer p = service();
-        return p != null && p.isVisualizerEnabled();
-    }
-
-    public static boolean isLyricsEnabled() {
-        HotPlayer p = service();
-        return p != null && p.isLyricsEnabled();
     }
 
     public static boolean isMusicSearchAvailable() {

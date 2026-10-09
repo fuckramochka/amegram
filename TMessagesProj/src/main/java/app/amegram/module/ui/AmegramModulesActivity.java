@@ -56,7 +56,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private static final int TYPE_MODULE_CARD = 100;
 
     private static final String[] CARD_ORDER = {
-            "ghost", "player", "badges", "antiblock", "ameprofile", "hotfix", "doublebottom"
+            "ghost", "badges", "antiblock", "ameprofile", "hotfix", "doublebottom"
     };
 
     private static class CardRef {
@@ -71,7 +71,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
      */
     private static String hotIdFor(String legacyId) {
         if ("ghost".equals(legacyId)) return "ghost";
-        if ("player".equals(legacyId)) return "player";
         if ("ameprofile".equals(legacyId)) return "ame";
         if ("doublebottom".equals(legacyId)) return "vault";
         return null;
@@ -108,9 +107,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private int vaultRow;
     private int ghostInfoRow;
 
-    private int headerMediaRow;
-    private int playerVisualizerRow;
-
     private int headerPluginsRow;
     private int pluginsRow;
 
@@ -127,10 +123,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
     private boolean ghostOn() {
         return AmegramConfig.getBool("ghost_enabled", false);
-    }
-
-    private boolean playerOn() {
-        return AmegramConfig.getBool("player_enabled", true);
     }
 
     private boolean vaultOn() {
@@ -181,13 +173,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             vaultRow = -1;
         }
 
-        if (playerOn()) {
-            headerMediaRow = addRow();
-            playerVisualizerRow = addRow();
-        } else {
-            headerMediaRow = playerVisualizerRow = -1;
-        }
-
         headerPluginsRow = addRow();
         pluginsRow = addRow();
 
@@ -212,8 +197,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private static String descFor(String id) {
         if ("ghost".equals(id)) {
             return "Невидимка: читай непомітно (read/online/typing)";
-        } else if ("player".equals(id)) {
-            return "Аудіоплеєр з текстами пісень і пресетами";
         } else if ("badges".equals(id)) {
             return "10 піксельних бейджів з хмарною синхронізацією";
         } else if ("antiblock".equals(id)) {
@@ -325,12 +308,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             try {
                 presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
             } catch (Throwable ignore) {
-            }
-        } else if (position == playerVisualizerRow) {
-            boolean v = !AmegramConfig.getBool("player_visualizer", false);
-            AmegramConfig.setBool("player_visualizer", v);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(v);
             }
         } else if (position == pluginsRow) {
             try {
@@ -482,7 +459,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
         @Override
         public int getItemViewType(int position) {
             if (position == headerModulesRow || position == headerGhostRow
-                    || position == headerMediaRow || position == headerPluginsRow
+                    || position == headerPluginsRow
                     || position == headerSystemRow) {
                 return TYPE_HEADER;
             }
@@ -490,7 +467,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 return TYPE_MODULE_CARD;
             }
             if (position == ghostOfflineRow || position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
-                    || position == playerVisualizerRow || position == hotfixCodeRow) {
+                    || position == hotfixCodeRow) {
                 return TYPE_CHECK;
             }
             if (position == ghostInfoRow) {
@@ -650,8 +627,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                         cell.setText("\u041c\u043e\u0434\u0443\u043b\u0456");
                     } else if (position == headerGhostRow) {
                         cell.setText("\u041d\u0435\u0432\u0438\u0434\u0438\u043c\u043a\u0430");
-                    } else if (position == headerMediaRow) {
-                        cell.setText("\u041f\u043b\u0435\u0454\u0440");
                     } else if (position == headerPluginsRow) {
                         cell.setText("\u041f\u043b\u0430\u0433\u0456\u043d\u0438");
                     } else if (position == headerSystemRow) {
@@ -673,9 +648,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                     } else if (position == ghostTypingRow) {
                         cell.setTextAndCheck("\u0421\u043a\u0440\u044b\u0432\u0430\u0442\u044c \u043d\u0430\u0431\u043e\u0440 \u0442\u0435\u043a\u0441\u0442\u0430",
                                 AmegramGhostController.hideTyping(), false);
-                    } else if (position == playerVisualizerRow) {
-                        cell.setTextAndCheck("\u0412\u0438\u0437\u0443\u0430\u043b\u0438\u0437\u0430\u0442\u043e\u0440 \u0431\u0430\u0441\u043e\u0432",
-                                AmegramConfig.getBool("player_visualizer", false), false);
                     } else if (position == hotfixCodeRow) {
                         cell.setTextAndCheck("\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044c code-\u043f\u0430\u0442\u0447\u0438 (.dex)",
                                 AmegramConfig.getBool("hotfix_code_patches", false), false);

@@ -1,0 +1,43 @@
+name: Verify Android compilation
+
+on:
+  pull_request:
+    paths:
+      - 'TMessagesProj/**'
+      - 'build.gradle'
+      - 'build.gradle.kts'
+      - 'settings.gradle'
+      - 'settings.gradle.kts'
+      - 'gradle/**'
+      - 'gradle.properties'
+      - 'gradlew'
+      - '.github/workflows/verify-android.yml'
+  workflow_dispatch:
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: jetbrains
+          java-version: '21'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Configure Chaquopy Python
+        run: echo "CHAQUOPY_BUILD_PYTHON=$(which python3.11 || which python)" >> "$GITHUB_ENV"
+      - uses: gradle/actions/setup-gradle@v3
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-37.0 build-tools;36.0.0 ndk;27.2.12479018'
+      - name: Compile release Java sources
+        env:
+          TELEGRAM_APP_ID: '1'
+          TELEGRAM_APP_HASH: 'dummyhashfordummybuild0000000000000000'
+        run: |
+          echo "sdk.dir=${ANDROID_HOME}" >> local.properties
+          ./gradlew :TMessagesProj:compileReleaseJavaWithJavac --parallel --build-cache --max-workers=4

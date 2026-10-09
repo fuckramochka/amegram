@@ -1423,7 +1423,9 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         if (lyricsButton != null) {
             lyricsButton.setContentDescription(app.miogram.bridge.MiogramLocale.get("Слова пісні", "Слова песни", "Lyrics"));
         }
-        musicSearchButton = menu.addItem(100, R.drawable.search_music_filled);
+        if (app.amegram.hot.HotPlayerGate.isMusicSearchAvailable()) {
+            musicSearchButton = menu.addItem(100, R.drawable.search_music_filled);
+        }
         if (musicSearchButton != null) {
             musicSearchButton.setContentDescription(app.miogram.bridge.MiogramLocale.get("Пошук музики", "Поиск музыки", "Search Music"));
         }
@@ -1600,36 +1602,7 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             itemTouchHelper.attachToRecyclerView(listView);
         }
 
-        // --- Amegram: сучасний плеєр вшитий нативно (не модулем).
-        // Простий вимикач — AmegramConfig "player_enabled" (default true), пошук
-        // музики лишається за хот-модулем player.
-        boolean modernOn = true;
-        try {
-            modernOn = app.amegram.module.AmegramConfig.getBool("player_enabled", true);
-        } catch (Throwable ignore) {
-        }
-        if (modernOn) {
-            lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
-            lyricsView.setVisibility(View.VISIBLE);
-
-            modernPlayerLayout = new app.miogram.bridge.player.MiogramModernPlayerLayout(context, this, resourcesProvider);
-        coverContainer.setCoverRoundRadius(dp(20));
-        modernPlayerLayout.setCoverView(coverContainer);
-        modernPlayerLayout.setLyricsView(lyricsView);
-        modernPlayerLayout.setQueueListView(listView);
-        modernPlayerLayout.setSeekBarViews(seekBarView, timeTextView, durationTextView);
-        modernPlayerLayout.setControlButtons(repeatButton, prevButton, playButton, nextButton);
-        modernPlayerLayout.setProfileButtons(saveToProfileButton, unsaveFromProfileButton);
-        modernPlayerLayout.setSong(MediaController.getInstance().getPlayingMessageObject());
-        modernPlayerLayout.setPlaying(!MediaController.getInstance().isMessagePaused());
-
-        containerView.addView(modernPlayerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
-
-        playerLayout.setVisibility(View.GONE);
-        playerShadow.setVisibility(View.GONE);
-        actionBarShadow.setVisibility(View.GONE);
-        actionBar.setVisibility(View.GONE);
-        }
+        // Music opens MD3 through Md3Router. Keep AudioPlayerAlert's stock layout for voice messages.
 
         blurredView = new FrameLayout(context) {
             @Override

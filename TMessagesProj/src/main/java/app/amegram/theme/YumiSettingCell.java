@@ -49,8 +49,8 @@ public class YumiSettingCell extends FrameLayout {
         super(context);
 
         setBackground(Theme.getSelectorDrawable(false));
-        setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(10), AndroidUtilities.dp(16), AndroidUtilities.dp(10));
-        setMinimumHeight(AndroidUtilities.dp(64));
+        setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(12), AndroidUtilities.dp(18), AndroidUtilities.dp(12));
+        setMinimumHeight(AndroidUtilities.dp(68));
 
         iconFrame = new FrameLayout(context);
         iconView = new ImageView(context);
@@ -171,8 +171,9 @@ public class YumiSettingCell extends FrameLayout {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         if (needDivider) {
-            int left = iconFrame.getVisibility() == VISIBLE ? AndroidUtilities.dp(70) : AndroidUtilities.dp(16);
-            canvas.drawLine(left, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, dividerPaint);
+            int left = iconFrame.getVisibility() == VISIBLE ? AndroidUtilities.dp(72) : AndroidUtilities.dp(18);
+            canvas.drawLine(left, getMeasuredHeight() - 1,
+                    getMeasuredWidth() - AndroidUtilities.dp(16), getMeasuredHeight() - 1, dividerPaint);
         }
     }
 

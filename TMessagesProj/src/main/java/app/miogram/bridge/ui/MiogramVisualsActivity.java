@@ -65,7 +65,6 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
     private int uiInfoRow;
 
     private int headerPlayerRow;
-    private int md3PlayerRow;
     private int md3MiniPlayerRow;
     private int playerInfoRow;
 
@@ -109,7 +108,6 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         uiInfoRow = addRow();
 
         headerPlayerRow = addRow();
-        md3PlayerRow = addRow();
         md3MiniPlayerRow = addRow();
         playerInfoRow = addRow();
     }
@@ -202,12 +200,6 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                     LaunchActivity.instance.rebuildAllFragments(false);
                 }
             });
-        } else if (position == md3PlayerRow) {
-            boolean next = !AppearanceConfig.md3Player();
-            AppearanceConfig.md3Player.setConfigBool(next);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(next);
-            }
         } else if (position == md3MiniPlayerRow) {
             boolean next = !AppearanceConfig.md3MiniPlayer();
             AppearanceConfig.md3MiniPlayer.setConfigBool(next);
@@ -368,7 +360,7 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
             } else if (position == ameVibeRow || position == activeLyricsLineRow
                     || position == glassToggleRow || position == singleCornerRadiusRow
                     || position == senderMiniAvatarsRow || position == squareFabRow
-                    || position == md3PlayerRow || position == md3MiniPlayerRow) {
+                    || position == md3MiniPlayerRow) {
                 return TYPE_CHECK;
             } else if (position == modeInfoRow || position == glassInfoRow || position == avatarsInfoRow || position == uiInfoRow || position == playerInfoRow) {
                 return TYPE_INFO_PRIVACY;
@@ -408,8 +400,6 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(MiogramLocale.get("Міні-аватарки відправників у чатах", "Мини-аватарки отправителей в чатах", "Mini-avatars of message senders"), AppearanceConfig.senderMiniAvatars.Bool(), false);
                     } else if (position == squareFabRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Квадратна («Squircle») плаваюча кнопка", "Квадратная («Squircle») плавающая кнопка", "Squircle Floating Action Button"), AppearanceConfig.squareFab.Bool(), true);
-                    } else if (position == md3PlayerRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("MD3-плеєр (PlayerSheet)", "MD3-плеер (PlayerSheet)", "MD3 Player (PlayerSheet)"), AppearanceConfig.md3Player(), true);
                     } else if (position == md3MiniPlayerRow) {
                         cell.setTextAndCheck(MiogramLocale.get("MD3 міні-плеєр у чатах", "MD3 мини-плеер в чатах", "MD3 Mini Player in chats"), AppearanceConfig.md3MiniPlayer(), false);
                     }
@@ -470,9 +460,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                                 "Управляет динамическим цветовым оформлением Material You и кнопками действия.",
                                 "Controls dynamic Material You coloring and action buttons."));
                     } else if (position == playerInfoRow) {
-                        cell.setText(MiogramLocale.get("Сучасний Material 3 плеєр з хвилястим повзунком WavySeekBar, синхронізованими караоке-текстами та динамічним забарвленням під обкладинку треку.",
-                                "Современный Material 3 плеер с волнистым ползунком WavySeekBar, синхронизированными караоке-текстами и динамической окраской под обложку трека.",
-                                "Modern Material 3 player featuring WavySeekBar, synchronized lyrics, and dynamic coloring based on album art."));
+                        cell.setText(MiogramLocale.get("MD3 — основний плеєр для музики. Тут можна окремо ввімкнути або вимкнути його міні-панель у чатах.",
+                                "MD3 — основной плеер для музыки. Здесь можно отдельно включить или выключить его мини-панель в чатах.",
+                                "MD3 is the default music player. Toggle its mini-player bar in chats here."));
                     }
                     break;
                 }

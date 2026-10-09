@@ -331,45 +331,38 @@ public class ChatsHelper extends BaseController {
     }
 
     public static String getChatFolderName(MessageObject message) {
-        String chatName = "Unknown";
+        return normalizeChatFolderName(getChatTitle(message), getChatPeerId(message));
+    }
 
-        if (message == null) {
-            return chatName;
+    /** Low-level lookup kept in the client; the HMOD owns filename policy. */
+    public static String getChatTitle(MessageObject message) {
+        if (message == null || message.messageOwner == null || message.messageOwner.peer_id == null) {
+            return "Unknown";
         }
-
-        long peerId = MessageObject.getPeerId(message.messageOwner.peer_id);
+        long peerId = getChatPeerId(message);
         int currentAccount = message.currentAccount;
-
         if (DialogObject.isUserDialog(peerId)) {
             TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(peerId);
-            if (user != null) {
-                chatName = UserObject.getUserName(user);
-            }
-        } else {
-            TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-peerId);
-            if (chat != null) {
-                chatName = chat.title;
-            }
+            return user == null ? "Unknown" : UserObject.getUserName(user);
         }
+        TLRPC.Chat chat = MessagesController.getInstance(currentAccount).getChat(-peerId);
+        return chat == null ? "Unknown" : chat.title;
+    }
 
-        // Normalize Unicode to avoid issues with combined characters
-        chatName = Normalizer.normalize(chatName, Normalizer.Form.NFKC);
-
-        // Remove all invisible characters (U+200B - U+206F)
-        chatName = chatName.replaceAll("[\\u200B-\\u206F]", "");
-
-        // Replace invalid file system characters
-        chatName = chatName.replaceAll("[\\p{Cc}\\p{Cf}\\\\/:*?\"<>|]", "_");
-
-        // Trim spaces and remove leading/trailing dots (Windows does not allow filenames ending with '.')
-        chatName = chatName.trim().replaceAll("^\\.+|\\.+$", "");
-
-        // If the cleaned name is empty, use the peer ID instead
-        if (TextUtils.isEmpty(chatName)) {
-            chatName = String.valueOf(peerId);
+    public static long getChatPeerId(MessageObject message) {
+        if (message == null || message.messageOwner == null || message.messageOwner.peer_id == null) {
+            return 0;
         }
+        return MessageObject.getPeerId(message.messageOwner.peer_id);
+    }
 
-        return chatName;
+    public static String normalizeChatFolderName(String title, long peerId) {
+        String chatName = Normalizer.normalize(title == null ? "" : title, Normalizer.Form.NFKC)
+                .replaceAll("[\\u200B-\\u206F]", "")
+                .replaceAll("[\\p{Cc}\\p{Cf}\\\\/:*?\"<>|]", "_")
+                .trim()
+                .replaceAll("^\\.+|\\.+$", "");
+        return TextUtils.isEmpty(chatName) ? String.valueOf(peerId) : chatName;
     }
 
     public boolean isUnreadSortPriority(TLRPC.Dialog dialog) {

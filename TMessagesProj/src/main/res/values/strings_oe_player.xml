@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="OEAppearanceMd3Player">Music player</string>
     <string name="OEAppearanceMd3MiniPlayer">Mini player</string>
     <string name="OEPlayerFromChat">From chat</string>
     <string name="OEPlayerFromProfile">From profile</string>
@@ -12,7 +11,6 @@
     <string name="OEPlayerSpeed">Playback speed</string>
     <string name="OEPlayerSeek">Seek</string>
     <string name="OEPlayerOpen">Open player</string>
-    <string name="OEPlayerClassic">Classic player</string>
     <string name="OEPlayerNoLyricsTitle">No lyrics in the file</string>
     <string name="OEPlayerNoLyricsText">You can search LRCLIB and lrcmux for lyrics. The track name will be sent over the internet.</string>
     <string name="OEPlayerFindLyrics">Search online</string>

@@ -32,7 +32,6 @@ public final class AmegramConfig {
         try {
             copyBool(ctx, "naconfig", "sendReadMessagePackets", "ghost_hide_read", true);
             copyBool(ctx, "naconfig", "sendOnlinePackets", "ghost_hide_online", true);
-            copyBool(ctx, "miogram_player_prefs", "visualizer_enabled", "player_visualizer", false);
             copyBool(ctx, "miogram_ui_prefs", "discord_enabled", "layout_discord", false);
         } catch (Throwable ignore) {
         }

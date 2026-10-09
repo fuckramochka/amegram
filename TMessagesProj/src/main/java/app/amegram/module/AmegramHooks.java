@@ -11,7 +11,6 @@ import android.content.Context;
  * LaunchActivity.onCreate             -> AmegramHooks.onLaunchCreated(this);
  * DialogsActivity.createView          -> AmegramHooks.onDialogsCreate(fragment);
  * ChatMessageCell.onDraw              -> AmegramHooks.onChatCellDraw(...) // gated by flags
- * AudioPlayerAlert.&lt;init&gt;             -> AmegramHooks.onPlayerOpen(alert)
  * SendMessagesHelper.sendReadPacket   -> if (AmegramHooks.shouldBlockReadReceipts()) return;
  * </pre>
  *
@@ -56,19 +55,6 @@ public final class AmegramHooks {
     /** Called from ChatMessageCell — must return in <1ms when badges disabled. */
     public static void onChatCellDraw(Object cell, Object canvas) {
         // Reserved: badge arrow overlay. No static Paint mutation allowed here.
-    }
-
-    public static void onPlayerOpen(Object audioPlayerAlert) {
-        // Reserved: lazy AmegramPlayerFeature.load() on first open.
-        try {
-            if (AmegramFeatureManager.isEnabled("player")) {
-                AmegramFeature f = AmegramFeatureManager.get("player");
-                if (f != null) {
-                    f.load();
-                }
-            }
-        } catch (Throwable ignore) {
-        }
     }
 
     /** Single privacy gate for read receipts. Called from SendMessagesHelper. */

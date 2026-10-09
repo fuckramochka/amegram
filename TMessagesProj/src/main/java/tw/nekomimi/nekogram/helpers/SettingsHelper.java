@@ -117,7 +117,7 @@ public class SettingsHelper {
         if (exteraless) {
             switch (segments.get(1)) {
                 case "settings":
-                    fragment = neko_fragment = new OpenExteraSettingsActivity();
+                    fragment = new app.amegram.settings.AmegramSettingsActivity();
                     break;
                 case "general":
                     fragment = neko_fragment = new OpenExteraGeneralActivity();
@@ -142,7 +142,7 @@ public class SettingsHelper {
                     return;
             }
         } else if (segments.size() == 1) {
-            fragment = new NekoSettingsActivity();
+            fragment = new app.amegram.settings.AmegramSettingsActivity();
         } else if (PasscodeHelper.getSettingsKey().equals(segments.get(1))) {
             fragment = neko_fragment = new NekoPasscodeSettingsActivity();
         } else {
@@ -172,7 +172,7 @@ public class SettingsHelper {
                     fragment = nekox_fragment = new NekoTranslatorSettingsActivity();
                     break;
                 case "exteraless":
-                    fragment = neko_fragment = new OpenExteraSettingsActivity();
+                    fragment = new app.amegram.settings.AmegramSettingsActivity();
                     break;
                 case "exteraless_general":
                     fragment = neko_fragment = new OpenExteraGeneralActivity();

@@ -6,7 +6,7 @@ package app.amegram.module;
  */
 public interface AmegramFeature {
 
-    /** Stable id, e.g. "ghost", "player", "badges", "guide". */
+    /** Stable feature id, for example "ghost", "badges", or "guide". */
     String id();
 
     /** Human title, shown in Amegram -> Modules hub. */

@@ -10,11 +10,10 @@ import java.util.Map;
 import app.amegram.module.features.badges.AmegramBadgesFeature;
 import app.amegram.module.features.ghost.AmegramGhostController;
 import app.amegram.module.features.guide.AmegramGuideFeature;
-import app.amegram.module.features.player.AmegramPlayerFeature;
 
 /**
  * Registry of downloadable/enableable features.
- * "Хочу только плеер и призрак" — включаешь два тумблера, остальное даже не грузится.
+ * "Хочу только призрак" — включаешь нужные функции, остальное не грузится.
  */
 public final class AmegramFeatureManager {
 
@@ -30,7 +29,6 @@ public final class AmegramFeatureManager {
         }
         initialized = true;
         register(new AmegramGhostController());
-        register(new AmegramPlayerFeature());
         register(new AmegramBadgesFeature());
         register(new AmegramGuideFeature());
         register(new app.amegram.module.features.net.AmegramAntiBlockFeature());
@@ -82,7 +80,7 @@ public final class AmegramFeatureManager {
             }
             String dir = ctx.getApplicationInfo().dataDir + "/shared_prefs/";
             String[] legacy = {
-                    "naconfig.xml", "miogram_player_prefs.xml", "miogram_ui_prefs.xml",
+                    "naconfig.xml", "miogram_ui_prefs.xml",
                     "miogram_double_bottom.xml", "amegram_profile_prefs.xml",
                     "miogram_bypass.xml", "miogram_supabase_prefs.xml"
             };

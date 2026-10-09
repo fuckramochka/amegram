@@ -107,7 +107,6 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int md3ChatHeaderRow;
     private int md3NavBarRow;
     private int md3ListItemsRow;
-    private int md3PlayerRow;
     private int md3MiniPlayerRow;
     private boolean md3Expanded;
     private int iosGroupRow;
@@ -213,11 +212,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             md3ChatHeaderRow = addRow("md3ChatHeader");
             md3NavBarRow = addRow("md3NavBar");
             md3ListItemsRow = addRow("md3ListItems");
-            md3PlayerRow = addRow("md3Player");
             md3MiniPlayerRow = addRow("md3MiniPlayer");
         } else {
             md3LoadingRow = md3SliderRow = md3SwitchRow = md3ChatHeaderRow = md3NavBarRow = md3ListItemsRow = -1;
-            md3PlayerRow = md3MiniPlayerRow = -1;
+            md3MiniPlayerRow = -1;
         }
         iosGroupRow = addRow("iosStyles");
         if (iosExpanded) {
@@ -498,10 +496,6 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             AppearanceConfig.m3ListItems.setConfigBool(!AppearanceConfig.m3ListItems.Bool());
             onM3ListItemsChanged();
             rebuildAllAndSelf(view, AppearanceConfig.m3ListItems.Bool());
-            return;
-        } else if (position == md3PlayerRow) {
-            AppearanceConfig.md3Player.setConfigBool(!AppearanceConfig.md3Player.Bool());
-            rebuildAllAndSelf(view, AppearanceConfig.md3Player.Bool());
             return;
         } else if (position == md3MiniPlayerRow) {
             AppearanceConfig.md3MiniPlayer.setConfigBool(!AppearanceConfig.md3MiniPlayer.Bool());
@@ -928,9 +922,6 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     } else if (position == md3ListItemsRow) {
                         cell.setText(getString(R.string.OEAppearanceM3ListItems), "",
                                 AppearanceConfig.m3ListItems.Bool(), false, true);
-                    } else if (position == md3PlayerRow) {
-                        cell.setText(getString(R.string.OEAppearanceMd3Player), "",
-                                AppearanceConfig.md3Player.Bool(), true, true);
                     } else if (position == md3MiniPlayerRow) {
                         cell.setText(getString(R.string.OEAppearanceMd3MiniPlayer), "",
                                 AppearanceConfig.md3MiniPlayer.Bool(), false, true);
@@ -1124,7 +1115,6 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         if (AppearanceConfig.newChatHeaderStyle.Bool()) n++;
         if (AppearanceConfig.newNavigationBarStyle.Bool()) n++;
         if (AppearanceConfig.m3ListItems.Bool()) n++;
-        if (AppearanceConfig.md3Player.Bool()) n++;
         if (AppearanceConfig.md3MiniPlayer.Bool()) n++;
         return n;
     }
@@ -1163,7 +1153,6 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         AppearanceConfig.newChatHeaderStyle.setConfigBool(enable);
         AppearanceConfig.newNavigationBarStyle.setConfigBool(enable);
         AppearanceConfig.m3ListItems.setConfigBool(enable);
-        AppearanceConfig.md3Player.setConfigBool(enable);
         AppearanceConfig.md3MiniPlayer.setConfigBool(enable);
         if (enable) {
             AppearanceConfig.iosNavigationBarStyle.setConfigBool(false);

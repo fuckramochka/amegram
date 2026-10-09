@@ -46006,6 +46006,9 @@ public class ChatActivity extends BaseFragment implements
         if (currentChat == null || urlFinal == null || chatMode != 0) {
             return false;
         }
+        if (app.amegram.hot.HotTikTokGate.tryOpen(urlFinal)) {
+            return true;
+        }
         Runnable setupProgressLoading = cell != null && (span != null || fromMessageProgressType != PROGRESS_LINK) ? () -> {
             progressDialogAtMessageId = fromMessageId;
             progressDialogAtMessageType = fromMessageProgressType;

@@ -1592,7 +1592,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 });
                 o.addGap();
             }
-            o.add(R.drawable.msg_settings, app.miogram.bridge.MiogramLocale.get("Налаштування Miogram", "Настройки Miogram", "Miogram Settings"), () -> presentFragment(new app.miogram.bridge.settings.MiogramSettingsActivity()));
+            o.add(R.drawable.msg_settings, app.miogram.bridge.MiogramLocale.get("Налаштування Yumigram", "Настройки Yumigram", "Yumigram Settings"), () -> presentFragment(new app.amegram.settings.AmegramSettingsActivity()));
             o.add(R.drawable.web_browser, getString(R.string.InappBrowser), () -> presentFragment(new WebBrowserSettings(null)), () -> BrowserUtils.openBrowserHome(currentAccount, null, true));
             o.addGap();
             o.add(R.drawable.msg_retry_solar, getString(R.string.RestartApp), () ->

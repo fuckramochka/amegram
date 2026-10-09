@@ -10,7 +10,6 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AudioPlayerAlert;
 
-import app.exteraless.appearance.AppearanceConfig;
 
 public final class Md3Player {
 
@@ -18,7 +17,7 @@ public final class Md3Player {
     }
 
     public static boolean enabled() {
-        return AppearanceConfig.md3Player();
+        return true;
     }
 
     public static boolean miniEnabled() {
@@ -26,7 +25,7 @@ public final class Md3Player {
     }
 
     private static boolean handles(MessageObject messageObject) {
-        return enabled() && messageObject != null && messageObject.isMusic();
+        return messageObject != null && messageObject.isMusic();
     }
 
     public static BottomSheet create(Context context, Theme.ResourcesProvider resourcesProvider) {

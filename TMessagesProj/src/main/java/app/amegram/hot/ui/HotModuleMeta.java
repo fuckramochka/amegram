@@ -25,6 +25,7 @@ public final class HotModuleMeta {
         if ("automation".equals(id)) return 0xFF546E7A;
         if ("demo".equals(id)) return 0xFF78909C;
         if ("md3player".equals(id)) return 0xFF7E57C2;
+        if ("fileorganization".equals(id)) return 0xFF00897B;
         return 0xFF2A87FF;
     }
 
@@ -39,6 +40,7 @@ public final class HotModuleMeta {
         if ("experimental".equals(id)) return R.drawable.msg_fave;
         if ("automation".equals(id)) return R.drawable.msg_download_solar;
         if ("md3player".equals(id)) return R.drawable.baseline_music_note_24;
+        if ("fileorganization".equals(id)) return R.drawable.msg_download_solar;
         return R.drawable.msg_plugins;
     }
 
@@ -47,6 +49,7 @@ public final class HotModuleMeta {
         if ("ghost".equals(id) || "vault".equals(id)) return "privacy";
         if ("player".equals(id) || "tiktok".equals(id) || "stt".equals(id)) return "media";
         if ("ai".equals(id) || "automation".equals(id) || "experimental".equals(id)) return "power";
+        if ("fileorganization".equals(id)) return "power";
         if ("md3player".equals(id)) return "media";
         if ("ame".equals(id)) return "custom";
         return "other";

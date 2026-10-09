@@ -12,11 +12,7 @@ import org.telegram.ui.Components.AudioPlayerAlert;
 
 import app.amegram.hot.api.HotMd3;
 
-/**
- * Роутер MD3-плеєра: модуль md3player → вбудований фолбек → сток.
- * Модуль (коли встановлено й увімкнено) головний; без нього працюють
- * класи app.exteraless.player з APK; прапорці вимкнено — стоковий алерт.
- */
+/** Routes music playback to MD3; Telegram's alert remains for voice messages. */
 public final class Md3Router {
 
     public static final String MODULE_ID = "md3player";
@@ -37,30 +33,10 @@ public final class Md3Router {
     }
 
     public static boolean sheetEnabled() {
-        HotMd3 s = service();
-        if (s != null) {
-            try {
-                return s.sheetForMusic();
-            } catch (Throwable ignore) {
-                return false;
-            }
-        }
-        try {
-            return app.exteraless.appearance.AppearanceConfig.md3Player();
-        } catch (Throwable ignore) {
-            return false;
-        }
+        return true;
     }
 
     public static boolean miniEnabled() {
-        HotMd3 s = service();
-        if (s != null) {
-            try {
-                return s.miniForMusic();
-            } catch (Throwable ignore) {
-                return false;
-            }
-        }
         try {
             return app.exteraless.appearance.AppearanceConfig.md3MiniPlayer();
         } catch (Throwable ignore) {
@@ -72,27 +48,26 @@ public final class Md3Router {
         return messageObject != null && messageObject.isMusic();
     }
 
-    /** Шит плеєра: модуль → вбудований PlayerSheet → стоковий алерт. */
+    /** Music always opens MD3; non-music audio keeps Telegram's voice-message controls. */
     public static BottomSheet create(Context context, Theme.ResourcesProvider resourcesProvider) {
         MessageObject now = null;
         try {
             now = MediaController.getInstance().getPlayingMessageObject();
         } catch (Throwable ignore) {
         }
-        HotMd3 s = service();
-        if (s != null) {
-            try {
-                if (s.sheetForMusic()) {
-                    Object sheet = s.createSheet(context, resourcesProvider);
-                    if (sheet instanceof BottomSheet) {
-                        return (BottomSheet) sheet;
+        if (handles(now)) {
+            HotMd3 s = service();
+            if (s != null) {
+                try {
+                    if (s.sheetForMusic()) {
+                        Object sheet = s.createSheet(context, resourcesProvider);
+                        if (sheet instanceof BottomSheet) {
+                            return (BottomSheet) sheet;
+                        }
                     }
+                } catch (Throwable ignore) {
                 }
-            } catch (Throwable ignore) {
             }
-            return new AudioPlayerAlert(context, resourcesProvider);
-        }
-        if (sheetEnabled() && handles(now)) {
             try {
                 if (app.exteraless.player.PlayerSheet.instance != null) {
                     app.exteraless.player.PlayerSheet.instance.dismissImmediately();
@@ -144,11 +119,8 @@ public final class Md3Router {
                 }
             } catch (Throwable ignore) {
             }
-            return null;
         }
-        if (!miniEnabled()) {
-            return null;
-        }
+        if (!miniEnabled()) return null;
         try {
             return new app.exteraless.player.PlayerBarView(context, resourcesProvider, onClick, onClose);
         } catch (Throwable e) {
@@ -177,11 +149,9 @@ public final class Md3Router {
             } catch (Throwable ignore) {
             }
         }
-        if (miniEnabled()) {
-            try {
-                MediaController.getInstance().clearMusicPlaylistState();
-            } catch (Throwable ignore) {
-            }
+        try {
+            MediaController.getInstance().clearMusicPlaylistState();
+        } catch (Throwable ignore) {
         }
     }
 }

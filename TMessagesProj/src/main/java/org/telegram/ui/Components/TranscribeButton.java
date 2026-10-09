@@ -237,6 +237,10 @@ public class TranscribeButton {
         }
         pressed = false;
         if (processClick) {
+            if (toOpen && parent.getMessageObject() != null
+                    && app.amegram.hot.HotTranscribeGate.tryTranscribe(parent.getMessageObject())) {
+                return;
+            }
             if (!premium && toOpen) {
                 if (canTranscribeTrial(parent.getMessageObject()) || parent.getMessageObject() != null && parent.getMessageObject().messageOwner != null && !TextUtils.isEmpty(parent.getMessageObject().messageOwner.voiceTranscription)) {
                     transcribePressed(parent.getMessageObject(), toOpen, parent.getDelegate());

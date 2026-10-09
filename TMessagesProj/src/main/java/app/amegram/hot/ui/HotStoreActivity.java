@@ -51,10 +51,20 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
     private HotCatalog lastCatalog;
     private String lastSrc = "";
     private String query = "";
+    private final String initialQuery;
     private String activeCat = "";
     private boolean loading = true;
     /** Модулі, що зараз качаються: кнопка лишається заблокованою і після refresh. */
     private final Set<String> downloading = new HashSet<>();
+
+    public HotStoreActivity() {
+        this("");
+    }
+
+    public HotStoreActivity(String initialQuery) {
+        this.initialQuery = initialQuery != null ? initialQuery : "";
+        this.query = this.initialQuery.toLowerCase();
+    }
 
     @Override
     public View createView(Context context) {
@@ -85,6 +95,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
                 refresh();
             }
         });
+        if (!initialQuery.isEmpty()) searchView.setText(initialQuery);
         LinearLayout searchWrap = new LinearLayout(context);
         searchWrap.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(10),
                 AndroidUtilities.dp(14), AndroidUtilities.dp(2));

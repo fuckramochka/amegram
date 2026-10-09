@@ -49,12 +49,12 @@ import org.telegram.messenger.audioinfo.AudioInfo;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.AudioPlayerAlert;
 import org.telegram.ui.Components.Bulletin;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.LaunchActivity;
 
 import java.text.DecimalFormat;
@@ -62,6 +62,13 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
 import app.exteraless.appearance.AppearanceConfig;
+import app.amegram.hot.HotModulesManager;
+import app.amegram.hot.HotPlayerGate;
+import app.amegram.hot.api.HotServices;
+import app.amegram.hot.api.HotTranscribe;
+import app.miogram.bridge.ai.MiogramAiService;
+import app.miogram.bridge.lyrics.MiogramLyricsEngine;
+import app.miogram.bridge.lyrics.MiogramLrcModel;
 
 public class PlayerSheet extends BottomSheet implements NotificationCenter.NotificationCenterDelegate {
 
@@ -96,6 +103,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
     private final TextView smallArtist;
     private final LyricsView lyricsView;
     private final TextView sourceView;
+    private final TextView aiLyricsButton;
     private final WavySeekBar seekBar;
     private final TextView bubble;
     private final GradientDrawable bubbleBg = new GradientDrawable();
@@ -307,7 +315,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         titleView = new TextView(context);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 26);
         titleView.setTypeface(AndroidUtilities.bold());
-        titleView.setSingleLine(true);
+        titleView.setMaxLines(2);
         titleView.setEllipsize(TextUtils.TruncateAt.END);
         titles.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         artistView = new TextView(context);
@@ -369,6 +377,15 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         sourceView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         sourceView.setSingleLine(true);
         lyricsPanel.addView(sourceView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 16, 0, 8, 0, 0));
+        aiLyricsButton = new TextView(context);
+        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("✨ Розшифрувати за допомогою ШІ", "✨ Расшифровать с помощью ИИ", "✨ Transcribe with AI"));
+        aiLyricsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        aiLyricsButton.setGravity(Gravity.CENTER);
+        aiLyricsButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+        aiLyricsButton.setBackground(Theme.createRoundRectDrawable(dp(12), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+        aiLyricsButton.setPadding(dp(12), dp(10), dp(12), dp(10));
+        aiLyricsButton.setOnClickListener(v -> transcribeLyricsWithAi());
+        lyricsPanel.addView(aiLyricsButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 4));
         layout.addView(lyricsPanel);
 
         seekBar = new WavySeekBar(context);
@@ -1365,15 +1382,124 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         }
     }
 
-    private void openQueue() {
-        new PlayerQueueSheet(getContext(), colors, resourcesProvider).show();
+    private void transcribeLyricsWithAi() {
+        MessageObject mo = current;
+        if (mo == null) return;
+        if (!MiogramAiService.hasApiKey()) {
+            boolean sttEnabled;
+            try {
+                sttEnabled = HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
+            } catch (Throwable ignored) {
+                sttEnabled = false;
+            }
+            if (!sttEnabled) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+                builder.setTitle("Потрібен модуль ШІ")
+                        .setMessage("Для розшифровки потрібен модуль «Розшифровка (STT)». Встанови й увімкни його в хот-модулях або додай ключ Gemini у налаштуваннях ШІ.")
+                        .setPositiveButton("Відкрити модулі", (dialog, which) -> {
+                            if (activity != null) {
+                                if (HotModulesManager.isModuleInstalled("stt")) {
+                                    activity.presentFragment(new app.amegram.hot.ui.HotModulesActivity());
+                                } else {
+                                    activity.presentFragment(new app.amegram.hot.ui.HotStoreActivity("stt"));
+                                }
+                            }
+                        })
+                        .setNegativeButton("Не зараз", null).show();
+                return;
+            }
+            transcribeWithModule(mo);
+            return;
+        }
+        aiLyricsButton.setEnabled(false);
+        aiLyricsButton.setText("ШІ розшифровує…");
+        String key = currentKey;
+        MiogramLyricsEngine.getInstance().transcribeAudioWithAi(mo, new MiogramLyricsEngine.LyricsCallback() {
+            @Override
+            public void onLyricsLoaded(MiogramLrcModel.LrcSong song) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!TextUtils.equals(key, currentKey)) return;
+                    resetAiLyricsButton();
+                    StringBuilder text = new StringBuilder();
+                    if (song != null && !song.lines.isEmpty()) {
+                        for (MiogramLrcModel.LrcLine line : song.lines) {
+                            long ms = Math.max(0, line.timeMs);
+                            text.append(String.format(Locale.US, "[%02d:%02d.%02d]", ms / 60000, ms / 1000 % 60, ms % 1000 / 10))
+                                    .append(line.text).append('\n');
+                        }
+                    } else if (song != null) {
+                        text.append(song.plainLyrics != null ? song.plainLyrics : "");
+                    }
+                    Lyrics result = Lyrics.parse(text.toString(), Lyrics.SOURCE_ONLINE, "✨ Gemini AI");
+                    if (result != null) showLyrics(result);
+                    else lyricsView.showState(LyricsView.STATE_NOT_FOUND);
+                });
+            }
+
+            @Override
+            public void onError(String message) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!TextUtils.equals(key, currentKey)) return;
+                    resetAiLyricsButton();
+                    lyricsView.showState(LyricsView.STATE_ERROR);
+                    sourceView.setText(message);
+                });
+            }
+        });
     }
 
-    private void openClassic() {
-        dismissImmediately();
-        if (activity != null) {
-            new AudioPlayerAlert(activity, resourcesProvider).show();
+    private void transcribeWithModule(MessageObject mo) {
+        HotTranscribe service;
+        try {
+            service = HotModulesManager.getService(HotServices.TRANSCRIBE);
+        } catch (Throwable ignored) {
+            service = null;
         }
+        if (service == null) return;
+        java.io.File audio;
+        try {
+            audio = FileLoader.getInstance(mo.currentAccount).getPathToMessage(mo.messageOwner);
+        } catch (Throwable ignored) {
+            audio = null;
+        }
+        if (audio == null || !audio.exists()) {
+            lyricsView.showState(LyricsView.STATE_ERROR);
+                    sourceView.setText(app.miogram.bridge.MiogramLocale.get("Спочатку завантаж аудіофайл, потім спробуй ще раз", "Сначала загрузи аудиофайл, затем попробуй ещё раз", "Download the audio first, then try again"));
+            return;
+        }
+        aiLyricsButton.setEnabled(false);
+        aiLyricsButton.setText("ШІ розшифровує…");
+        String key = currentKey;
+        HotTranscribe activeService = service;
+        String audioPath = audio.getAbsolutePath();
+        new Thread(() -> activeService.transcribe(audioPath, false, new HotTranscribe.Callback() {
+            @Override public void onResult(String text) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!TextUtils.equals(key, currentKey)) return;
+                    resetAiLyricsButton();
+                    Lyrics result = Lyrics.parse(text, Lyrics.SOURCE_ONLINE, "Модуль STT · без таймінгів");
+                    if (result != null) showLyrics(result);
+                    else lyricsView.showState(LyricsView.STATE_NOT_FOUND);
+                });
+            }
+            @Override public void onError(String error) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    if (!TextUtils.equals(key, currentKey)) return;
+                    resetAiLyricsButton();
+                    lyricsView.showState(LyricsView.STATE_ERROR);
+                    sourceView.setText(error);
+                });
+            }
+        }), "md3-stt").start();
+    }
+
+    private void resetAiLyricsButton() {
+        aiLyricsButton.setEnabled(true);
+        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("✨ Розшифрувати за допомогою ШІ", "✨ Расшифровать с помощью ИИ", "✨ Transcribe with AI"));
+    }
+
+    private void openQueue() {
+        new PlayerQueueSheet(getContext(), colors, resourcesProvider).show();
     }
 
     private void showMenu(View anchor) {
@@ -1384,6 +1510,14 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         boolean noForwards = PlayerActions.noForwards(mo);
         Theme.ResourcesProvider rp = colors.provider(resourcesProvider);
         ItemOptions o = ItemOptions.makeOptions(container, rp, anchor, true);
+        if (HotPlayerGate.isMusicSearchAvailable()) {
+            o.add(R.drawable.msg_search, app.miogram.bridge.MiogramLocale.get("Знайти музику", "Найти музыку", "Find music"), () -> {
+                o.dismiss();
+                dismissImmediately();
+                HotPlayerGate.openMusicSearch(activity);
+            });
+            o.addGap();
+        }
         if (!noForwards) {
             ItemOptions sub = o.makeSwipeback();
             sub.add(R.drawable.ic_ab_back, getString(R.string.Back), o::closeSwipeback);
@@ -1425,11 +1559,6 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             o.dismiss();
             dismissImmediately();
             PlayerActions.showInChat(activity, mo);
-        });
-        o.addGap();
-        o.add(R.drawable.msg_filled_data_music, getString(R.string.OEPlayerClassic), () -> {
-            o.dismiss();
-            openClassic();
         });
         o.setGravity(LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
         o.show();
@@ -1598,6 +1727,13 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
 
         private int coverSize;
         private int stageHeight;
+        private int sideInset;
+        private int topCoverGap;
+        private int coverTitleGap;
+        private int stageBottomGap;
+        private int seekHeight;
+        private int timeBottomGap;
+        private int groupBottomGap;
 
         PlayerLayout(Context context) {
             super(context);
@@ -1611,21 +1747,30 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             int height = MeasureSpec.getSize(heightMeasureSpec);
             int top = getStatusBarHeight();
             int bottom = getBottomInset();
-            int side = dp(24);
-            int contentW = Math.max(0, width - side * 2);
+            boolean compact = height - top - bottom < dp(660);
+            sideInset = dp(compact ? 20 : 24);
+            topCoverGap = dp(compact ? 8 : 16);
+            coverTitleGap = dp(compact ? 14 : 26);
+            stageBottomGap = dp(compact ? 2 : 6);
+            seekHeight = dp(compact ? 36 : 40);
+            timeBottomGap = dp(compact ? 8 : 12);
+            groupBottomGap = dp(compact ? 16 : 28);
+            int contentW = Math.max(0, width - sideInset * 2);
             int exactW = MeasureSpec.makeMeasureSpec(contentW, MeasureSpec.EXACTLY);
             header.measure(MeasureSpec.makeMeasureSpec(contentW + dp(24), MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(dp(56), MeasureSpec.EXACTLY));
-            seekBar.measure(exactW, MeasureSpec.makeMeasureSpec(dp(40), MeasureSpec.EXACTLY));
+            seekBar.measure(exactW, MeasureSpec.makeMeasureSpec(seekHeight, MeasureSpec.EXACTLY));
             timeRow.measure(exactW, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
             controls.measure(exactW, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
             group.measure(exactW, MeasureSpec.makeMeasureSpec(dp(52), MeasureSpec.EXACTLY));
             titleRow.measure(exactW, MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
             bubble.measure(MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED), MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED));
-            int fixed = dp(56) + dp(6) + dp(40) + timeRow.getMeasuredHeight() + dp(12) + controls.getMeasuredHeight() + dp(52) + dp(28) + dp(16);
+            int fixed = dp(56) + stageBottomGap + seekHeight + timeRow.getMeasuredHeight() + timeBottomGap + controls.getMeasuredHeight() + dp(52) + groupBottomGap;
             int available = height - top - bottom - fixed;
             int titleH = titleRow.getMeasuredHeight();
-            coverSize = Math.max(dp(96), Math.min(contentW, available - dp(16) - dp(26) - titleH));
-            stageHeight = dp(16) + coverSize + dp(26) + titleH;
+            int minCover = dp(compact ? 56 : 88);
+            int maxCover = Math.max(minCover, available - topCoverGap - coverTitleGap - titleH);
+            coverSize = Math.min(contentW, Math.max(minCover, maxCover));
+            stageHeight = topCoverGap + coverSize + coverTitleGap + titleH;
             int coverSpec = MeasureSpec.makeMeasureSpec(coverSize, MeasureSpec.EXACTLY);
             cover.measure(coverSpec, coverSpec);
             lyricsPanel.measure(exactW, MeasureSpec.makeMeasureSpec(stageHeight, MeasureSpec.EXACTLY));
@@ -1638,26 +1783,26 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             int height = b - t;
             int top = getStatusBarHeight();
             int bottom = getBottomInset();
-            int side = dp(24);
+            int side = sideInset;
             int contentW = Math.max(0, width - side * 2);
             int y = top;
             header.layout(side - dp(12), y, side - dp(12) + header.getMeasuredWidth(), y + dp(56));
             y += dp(56);
             int stageTop = y;
             int coverLeft = (width - coverSize) / 2;
-            cover.layout(coverLeft, y + dp(16), coverLeft + coverSize, y + dp(16) + coverSize);
-            int titleTop = y + dp(16) + coverSize + dp(26);
+            cover.layout(coverLeft, y + topCoverGap, coverLeft + coverSize, y + topCoverGap + coverSize);
+            int titleTop = y + topCoverGap + coverSize + coverTitleGap;
             titleRow.layout(side, titleTop, side + contentW, titleTop + titleRow.getMeasuredHeight());
             lyricsPanel.layout(side, stageTop, side + contentW, stageTop + stageHeight);
-            y = stageTop + stageHeight + dp(6);
-            seekBar.layout(side, y, side + contentW, y + dp(40));
+            y = stageTop + stageHeight + stageBottomGap;
+            seekBar.layout(side, y, side + contentW, y + seekHeight);
             int bubbleTop = y - dp(36);
             bubble.layout(side, bubbleTop, side + bubble.getMeasuredWidth(), bubbleTop + bubble.getMeasuredHeight());
-            y += dp(40);
+            y += seekHeight;
             timeRow.layout(side, y, side + contentW, y + timeRow.getMeasuredHeight());
-            y += timeRow.getMeasuredHeight() + dp(12);
+            y += timeRow.getMeasuredHeight() + timeBottomGap;
             controls.layout(side, y, side + contentW, y + controls.getMeasuredHeight());
-            int groupTop = height - bottom - dp(28) - dp(52);
+            int groupTop = height - bottom - groupBottomGap - dp(52);
             group.layout(side, groupTop, side + contentW, groupTop + dp(52));
             if (seeking) {
                 layoutBubble();

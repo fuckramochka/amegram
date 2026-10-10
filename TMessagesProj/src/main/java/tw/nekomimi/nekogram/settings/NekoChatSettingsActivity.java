@@ -62,7 +62,6 @@ import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheck2;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextCheckIcon;
 import tw.nekomimi.nekogram.config.cell.ConfigCellTextInput;
 import tw.nekomimi.nekogram.helpers.ChatsHelper;
-import tw.nekomimi.nekogram.helpers.TranscribeHelper;
 import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
 import tw.nekomimi.nekogram.ui.PopupBuilder;
 import tw.nekomimi.nekogram.ui.cells.EmojiSetCell;
@@ -184,19 +183,11 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell maxRecentStickerCountRow = cellGroup.appendCell(new ConfigCellCustom("maxRecentStickerCount", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
     private final AbstractConfigCell dividerSticker = cellGroup.appendCell(new ConfigCellDivider());
 
-    // Transcribe
-    private final AbstractConfigCell headerTranscribe = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.PremiumPreviewVoiceToText)));
-    private final AbstractConfigCell transcribeProviderRow = cellGroup.appendCell(new ConfigCellSelectBox("TranscribeProviderShort", NaConfig.INSTANCE.getTranscribeProvider(), new String[]{
-            getString(R.string.TranscribeProviderAuto),
-            getString(R.string.TelegramPremium),
-            getString(R.string.TranscribeProviderWorkersAI),
-            getString(R.string.TranscribeProviderGemini),
-            getString(R.string.TranscribeProviderOpenAI),
-            app.miogram.bridge.MiogramLocale.get("Amegram Local (Офлайн нейромережа ⚡)", "Amegram Local (Офлайн нейросеть ⚡)", "Amegram Local (On-Device Neural STT ⚡)"),
-    }, null));
-    private final AbstractConfigCell transcribeProviderCfCredentialsRow = cellGroup.appendCell(new ConfigCellCustom("CloudflareCredentials", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
-    private final AbstractConfigCell transcribeProviderGeminiApiKeyRow = cellGroup.appendCell(new ConfigCellCustom("LlmProviderGeminiKey", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
-    private final AbstractConfigCell transcribeProviderOpenAiRow = cellGroup.appendCell(new ConfigCellCustom("TranscribeProviderOpenAI", CellGroup.ITEM_TYPE_TEXT_SETTINGS_CELL, true));
+    // Transcribe moved to STT hot-module (AI → Recognition). Only chats remain here.
+    private final AbstractConfigCell transcribeMovedNoticeRow = cellGroup.appendCell(new ConfigCellNotice(app.miogram.bridge.MiogramLocale.get(
+            "Розпізнавання голосу переїхало: ШІ → Розпізнавання (модуль stt). Тут лишилися тільки чати.",
+            "Распознавание голоса переехало: ИИ → Распознавание (модуль stt). Здесь остались только чаты.",
+            "Voice recognition moved: AI → Recognition (stt module). Only chats remain here.")));
     private final AbstractConfigCell dividerTranscribe = cellGroup.appendCell(new ConfigCellDivider());
 
     // MenuAndButtons
@@ -236,7 +227,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 add(new ConfigCellTextCheckIcon(NaConfig.INSTANCE.getShowRepeatAsCopy(), R.drawable.msg_repeat));
                 add(new ConfigCellTextCheckIcon(NekoConfig.showDeleteDownloadedFile, getString(R.string.DeleteDownloadedFile), R.drawable.msg_clear));
                 add(new ConfigCellTextCheckIcon(NekoConfig.showViewHistory, getString(R.string.ViewHistory), R.drawable.menu_recent));
-                add(new ConfigCellTextCheckIcon(NekoConfig.showTranslate, getString(R.string.Translate), R.drawable.msg_translate));
                 add(new ConfigCellTextCheckIcon(NaConfig.INSTANCE.getShowTranslateMessageLLM(), R.drawable.magic_stick_solar));
                 add(new ConfigCellTextCheckIcon(NekoConfig.showShareMessages, getString(R.string.ShareMessages), R.drawable.msg_shareout));
                 add(new ConfigCellTextCheckIcon(NekoConfig.showMessageHide, getString(R.string.Hide), R.drawable.msg_disable));
@@ -295,6 +285,7 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     private final AbstractConfigCell showQuickReplyInBotCommandsRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getShowQuickReplyInBotCommands()));
     private final AbstractConfigCell hideBotButtonInInputFieldRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideBotButtonInInputField()));
     private final AbstractConfigCell hideReactionsRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getHideReactions()));
+    private final AbstractConfigCell silentMessageByDefaultRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSilentMessageByDefault()));
     private final AbstractConfigCell dividerInteractions = cellGroup.appendCell(new ConfigCellDivider());
 
     // Channels
@@ -336,9 +327,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
     public NekoChatSettingsActivity() {
         if (NaConfig.INSTANCE.getUseEditedIcon().Bool()) {
             cellGroup.rows.remove(customEditedMessageRow);
-        }
-        if (NaConfig.INSTANCE.getTranscribeProvider().Int() != TranscribeHelper.TRANSCRIBE_OPENAI) {
-            cellGroup.rows.remove(transcribeProviderOpenAiRow);
         }
         if (!BuildVars.LOGS_ENABLED) {
             cellGroup.rows.remove(markdownParserRow);
@@ -406,20 +394,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                 stickerSizeCell.invalidate();
             } else if (key.equals(NaConfig.INSTANCE.getPremiumItemCustomColorInReplies().getKey())) {
                 stickerSizeCell.invalidate();
-            } else if (key.equals(NaConfig.INSTANCE.getTranscribeProvider().getKey())) {
-                if ((int) newValue == TranscribeHelper.TRANSCRIBE_OPENAI) {
-                    if (!cellGroup.rows.contains(transcribeProviderOpenAiRow)) {
-                        final int index = cellGroup.rows.indexOf(transcribeProviderGeminiApiKeyRow) + 1;
-                        cellGroup.rows.add(index, transcribeProviderOpenAiRow);
-                        listAdapter.notifyItemInserted(index);
-                    }
-                } else {
-                    if (cellGroup.rows.contains(transcribeProviderOpenAiRow)) {
-                        final int index = cellGroup.rows.indexOf(transcribeProviderOpenAiRow);
-                        cellGroup.rows.remove(transcribeProviderOpenAiRow);
-                        listAdapter.notifyItemRemoved(index);
-                    }
-                }
             } else if (key.equals("PremiumElements") || key.equals("DisableSwipeToNext")) {
                 addRowsToMap(cellGroup);
             }
@@ -492,12 +466,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
             builder.show();
         } else if (position == cellGroup.rows.indexOf(emojiSetsRow)) {
             presentFragment(new NekoEmojiSettingsActivity());
-        } else if (position == cellGroup.rows.indexOf(transcribeProviderCfCredentialsRow)) {
-            TranscribeHelper.showCfCredentialsDialog(this);
-        } else if (position == cellGroup.rows.indexOf(transcribeProviderGeminiApiKeyRow)) {
-            TranscribeHelper.showGeminiApiKeyDialog(this);
-        } else if (position == cellGroup.rows.indexOf(transcribeProviderOpenAiRow)) {
-            TranscribeHelper.showOpenAiCredentialsDialog(this);
         }
     }
 
@@ -633,12 +601,6 @@ public class NekoChatSettingsActivity extends BaseNekoXSettingsActivity implemen
                     textCell.setTextAndValue(getString(R.string.DoubleTapIncoming), DoubleTap.doubleTapActionMap.get(NaConfig.INSTANCE.getDoubleTapAction().Int()), true);
                 } else if (position == cellGroup.rows.indexOf(doubleTapActionOutRow)) {
                     textCell.setTextAndValue(getString(R.string.DoubleTapOutgoing), DoubleTap.doubleTapActionMap.get(NaConfig.INSTANCE.getDoubleTapActionOut().Int()), true);
-                } else if (position == cellGroup.rows.indexOf(transcribeProviderCfCredentialsRow)) {
-                    textCell.setTextAndValue(getString(R.string.CloudflareCredentials), "", true);
-                } else if (position == cellGroup.rows.indexOf(transcribeProviderGeminiApiKeyRow)) {
-                    textCell.setTextAndValue(getString(R.string.LlmProviderGeminiKey), "", true);
-                } else if (position == cellGroup.rows.indexOf(transcribeProviderOpenAiRow)) {
-                    textCell.setTextAndValue(getString(R.string.TranscribeProviderOpenAI), "", true);
                 }
             } else if (holder.itemView instanceof EmojiSetCell v1) {
                 v1.setData(EmojiHelper.getInstance().getCurrentEmojiPackInfo(), false, true);

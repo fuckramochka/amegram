@@ -100,7 +100,6 @@ import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
 import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
-import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.settings.NekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
 import tw.nekomimi.nekogram.utils.BrowserUtils;
@@ -1583,7 +1582,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 final String msg = NekoConfig.isGhostModeActive()
                     ? getString(R.string.DisableGhostMode)
                     : getString(R.string.EnableGhostMode);
-                o.add(R.drawable.ayu_ghost, msg, () -> presentFragment(new GhostModeActivity()), () -> {
+                o.add(R.drawable.ayu_ghost, msg, () -> presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost")), () -> {
                     final String toggleMsg = NekoConfig.isGhostModeActive()
                         ? getString(R.string.GhostModeDisabled)
                         : getString(R.string.GhostModeEnabled);

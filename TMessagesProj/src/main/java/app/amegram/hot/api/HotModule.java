@@ -21,7 +21,7 @@ public interface HotModule {
 
     void onDetach();
 
-    // ---- Вкладка настроек в разделе Амэграм (опционально) ----
+    // ---- Вкладка настроек в разделе Yumigram (опционально) ----
 
     default boolean hasSettings() {
         return false;
@@ -52,7 +52,7 @@ public interface HotModule {
         return null;
     }
 
-    // ---- Свои строки прямо в хабе Амэграм (опционально) ----
+    // ---- Свои строки прямо в хабе Yumigram (опционально) ----
 
     default void fillHubRows(List<HotRow> rows) {
     }

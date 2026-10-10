@@ -65,7 +65,6 @@ import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.filters.RegexFiltersSettingActivity;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
-import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import xyz.nextalone.nagram.NaConfig;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import tw.nekomimi.nekogram.utils.AlertUtil;
@@ -299,7 +298,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         } else if (position == ayuMomentsScreenRow) {
             presentFragment(new OpenExteraAyuMomentsActivity());
         } else if (position == ayuGhostRow) {
-            presentFragment(new GhostModeActivity());
+            presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost"));
         } else if (position == ayuRegexRow) {
             // Как в эталоне: тап по тексту ведёт в список фильтров, тап по переключателю — включает.
             boolean onSwitch = LocaleController.isRTL

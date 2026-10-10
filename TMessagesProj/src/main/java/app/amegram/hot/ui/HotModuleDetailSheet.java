@@ -470,9 +470,9 @@ public class HotModuleDetailSheet extends BottomSheet {
         if (selected != null && !HotModulesManager.isCompatible(selected)) {
             warnBox.setVisibility(View.VISIBLE);
             warnBox.setText("⚠ " + MiogramLocale.get(
-                    "Потрібен новіший AmeGram (min " + selected.minApp + "). Оновіть клієнт.",
-                    "Нужен новее AmeGram (min " + selected.minApp + "). Обновите клиент.",
-                    "Requires newer AmeGram (min " + selected.minApp + "). Update the client."));
+                    "Потрібен новіший Yumigram (min " + selected.minApp + "). Оновіть клієнт.",
+                    "Нужен новее Yumigram (min " + selected.minApp + "). Обновите клиент.",
+                    "Requires newer Yumigram (min " + selected.minApp + "). Update the client."));
         } else {
             warnBox.setVisibility(View.GONE);
         }

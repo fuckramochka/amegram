@@ -48,9 +48,9 @@ public final class AmegramTranscriptionPrefs {
             case PROVIDER_PREMIUM:
                 return "Telegram Premium (TGP) ⭐️";
             case PROVIDER_GEMINI:
-                return "Amegram AI (Gemini 2.5 Flash ໒꒱)";
+                return "Yumi AI (Gemini 3.5 Flash-Lite ໒꒱)";
             case PROVIDER_LOCAL:
-                return "Amegram Local (Офлайн нейромережа ⚡)";
+                return "Yumi Local (Офлайн нейромережа ⚡)";
             case PROVIDER_OPENAI:
                 return "OpenAI / Whisper API";
             case PROVIDER_WORKERSAI:
@@ -63,10 +63,10 @@ public final class AmegramTranscriptionPrefs {
 
     public static String[] getProviderLabels() {
         return new String[] {
-                MiogramLocale.get("Автоматично (TG Premium або Amegram)", "Автоматически (TG Premium или Amegram)", "Auto (TG Premium or Amegram)"),
+                MiogramLocale.get("Автоматично (TG Premium або Yumi)", "Автоматически (TG Premium или Yumi)", "Auto (TG Premium or Yumi)"),
                 "Telegram Premium (TGP) ⭐️",
-                "Amegram AI (Gemini 2.5 Flash ໒꒱)",
-                "Amegram Local (Швидка офлайн-нейромережа ⚡)",
+                "Yumi AI (Gemini 3.5 Flash-Lite ໒꒱)",
+                "Yumi Local (Швидка офлайн-нейромережа ⚡)",
                 "OpenAI / Whisper API",
                 "Cloudflare Workers AI"
         };

@@ -1,0 +1,16 @@
+{
+  "id": "fileorganization",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.fileorganization.FileOrgModule",
+  "name": "Організація файлів",
+  "minApp": 7112,
+  "description": "Підпапки чатів + збереження по папках",
+  "changelog": "Підпапки чатів + збереження по папках винесено в окремий модуль.",
+  "author": "Yumi Team",
+  "category": "power",
+  "featured": false,
+  "permissions": [
+    "storage"
+  ]
+}

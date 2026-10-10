@@ -50,6 +50,9 @@
   <string name="OEChatsRemoveMessageTail">Remove Message Tail</string>
   <string name="OEChatsReplaceEditedWithIcon">Replace \"%1$s\" with an Icon</string>
   <string name="OEChatsShowOnlineStatus">Show Online Indicator</string>
+  <string name="OEChatsCombineMessages">Group Consecutive Messages</string>
+  <string name="OEChatsShowMessageId">Show Message ID</string>
+  <string name="OEChatsIosInputPanel">iOS Input Panel</string>
   <string name="OEChatsHideShareButton">Hide Side \"%1$s\" Button</string>
   <string name="OEChatsShowResultsBeforeVoting">Show Results Before Voting</string>
   <string name="OEChatsShowResultsBeforeVotingInfo">Results of public polls will be visible without casting a vote.</string>

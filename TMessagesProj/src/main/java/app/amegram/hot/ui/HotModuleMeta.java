@@ -26,6 +26,7 @@ public final class HotModuleMeta {
         if ("demo".equals(id)) return 0xFF78909C;
         if ("md3player".equals(id)) return 0xFF7E57C2;
         if ("fileorganization".equals(id)) return 0xFF00897B;
+        if ("ui".equals(id)) return 0xFF6C63FF;
         return 0xFF2A87FF;
     }
 
@@ -41,6 +42,7 @@ public final class HotModuleMeta {
         if ("automation".equals(id)) return R.drawable.msg_download_solar;
         if ("md3player".equals(id)) return R.drawable.baseline_music_note_24;
         if ("fileorganization".equals(id)) return R.drawable.msg_download_solar;
+        if ("ui".equals(id)) return R.drawable.msg_theme;
         return R.drawable.msg_plugins;
     }
 
@@ -49,6 +51,7 @@ public final class HotModuleMeta {
         if ("ghost".equals(id) || "vault".equals(id)) return "privacy";
         if ("player".equals(id) || "tiktok".equals(id) || "stt".equals(id)) return "media";
         if ("ai".equals(id) || "automation".equals(id) || "experimental".equals(id)) return "power";
+        if ("ui".equals(id)) return "custom";
         if ("fileorganization".equals(id)) return "power";
         if ("md3player".equals(id)) return "media";
         if ("ame".equals(id)) return "custom";
@@ -65,7 +68,7 @@ public final class HotModuleMeta {
 
     public static String author(String id, String fromCatalog) {
         if (fromCatalog != null && !fromCatalog.isEmpty()) return fromCatalog;
-        return "AmeGram Team";
+        return "Yumi Team";
     }
 
     /** Людський опис дозволу для екрана згоди перед установкою. */
@@ -117,6 +120,10 @@ public final class HotModuleMeta {
             res.add("storage");
         } else if ("md3player".equals(id)) {
             res.add("hook_ui");
+        } else if ("fileorganization".equals(id)) {
+            res.add("storage");
+        } else if ("ui".equals(id)) {
+            res.add("hook_ui");
         }
         return res;
     }
@@ -143,9 +150,9 @@ public final class HotModuleMeta {
         List<Pack> res = new ArrayList<>();
         res.add(new Pack("privacy", "🥷",
                 MiogramLocale.get("Приватність", "Приватность", "Privacy"),
-                MiogramLocale.get("Невидимка + сейф + анти-відкликання",
-                        "Невидимка + сейф + анти-отзыв", "Ghost + vault + anti-recall"),
-                new String[]{"ghost", "vault", "experimental"}));
+                MiogramLocale.get("Невидимка + сейф",
+                        "Невидимка + сейф", "Ghost + vault"),
+                new String[]{"ghost", "vault"}));
         res.add(new Pack("media", "🎧",
                 MiogramLocale.get("Медіа", "Медиа", "Media"),
                 MiogramLocale.get("Плеєр + TikTok + розшифровка голосу",
@@ -153,30 +160,35 @@ public final class HotModuleMeta {
                 new String[]{"player", "tiktok", "stt"}));
         res.add(new Pack("power", "⚡",
                 MiogramLocale.get("Потужність", "Мощь", "Power"),
-                MiogramLocale.get("ШІ-супутник + автоматизація + кастом",
-                        "ИИ-спутник + автоматизация + кастом", "AI buddy + automation + custom"),
-                new String[]{"ai", "automation", "ame"}));
+                MiogramLocale.get("ШІ-супутник + автоматизація + кастом + папки + інтерфейс",
+                        "ИИ-спутник + автоматизация + кастом + папки + интерфейс", "AI buddy + automation + custom + folders + interface"),
+                new String[]{"ai", "automation", "ame", "fileorganization", "ui"}));
+        res.add(new Pack("start", "🟢",
+                MiogramLocale.get("Старт", "Старт", "Start"),
+                MiogramLocale.get("Привид + плеєр + ШІ для швидкого старту",
+                        "Призрак + плеер + ИИ для быстрого старта", "Ghost + player + AI for quick start"),
+                new String[]{"ghost", "player", "ai"}));
         return res;
     }
 
     public static String fallbackDescription(String id) {
         if ("ghost".equals(id)) {
             return MiogramLocale.get(
-                    "Приховування прочитання, історій, онлайну та набору тексту",
-                    "Скрытие прочитанного, историй, онлайна и набора текста",
-                    "Hide read receipts, stories views, online & typing");
+                    "Приховування прочитання, історій, онлайну, набору + анти-видалення",
+                    "Скрытие прочитанного, историй, онлайна, набора + анти-удаление",
+                    "Hide read receipts, stories views, online, typing + anti-delete");
         }
         if ("player".equals(id)) {
             return MiogramLocale.get(
-                    "Пошук музики з 6 сервісів, кастомний плеєр, візуалізатор, тексти LRC",
-                    "Поиск музыки из 6 сервисов, кастомный плеер, визуализатор, тексты LRC",
-                    "Search 6 music sources, custom player, visualizer, LRC lyrics");
+                    "Пошук музики з 6 сервісів, кастомний плеєр, візуалізатор, тексти LRC + пошук текстів тут",
+                    "Поиск музыки из 6 сервисов, кастомный плеер, визуализатор, тексты LRC + поиск текстов тут",
+                    "Search 6 music sources, custom player, visualizer, LRC lyrics + find lyrics here");
         }
         if ("ame".equals(id)) {
             return MiogramLocale.get(
-                    "Аме-студія: картки профіля, градієнти, скляне розмиття",
-                    "Аме-студия: карточки профиля, градиенты, glass blur",
-                    "Ame Studio: profile cards, gradients, glass blur");
+                    "Yumi-студія: картки профіля, градієнти, скляне розмиття",
+                    "Yumi-студия: карточки профиля, градиенты, glass blur",
+                    "Yumi Studio: profile cards, gradients, glass blur");
         }
         if ("vault".equals(id)) {
             return MiogramLocale.get(
@@ -204,9 +216,9 @@ public final class HotModuleMeta {
         }
         if ("experimental".equals(id)) {
             return MiogramLocale.get(
-                    "Безліміт закріпів, upload boost, збереження видалених",
-                    "Безлимит закрепов, upload boost, сохранение удаленных",
-                    "Unlimited pins, upload boost, save deleted");
+                    "Безліміт закріпів, upload boost, жести",
+                    "Безлимит закрепов, upload boost, жесты",
+                    "Unlimited pins, upload boost, gestures");
         }
         if ("automation".equals(id)) {
             return MiogramLocale.get(
@@ -220,9 +232,21 @@ public final class HotModuleMeta {
                     "MD3-шит и мини-бар плеера с лирикой и morph-переходом",
                     "MD3 player sheet & mini bar with lyrics and morph transition");
         }
+        if ("fileorganization".equals(id)) {
+            return MiogramLocale.get(
+                    "Підпапки чатів + збереження по папках",
+                    "Подпапки чатов + сохранение по папкам",
+                    "Chat subfolders + save by folders");
+        }
+        if ("ui".equals(id)) {
+            return MiogramLocale.get(
+                    "Yougram Expressive ↔ Classic на льоту: скло, M3-сегменти, радіуси",
+                    "Yougram Expressive ↔ Classic на лету: стекло, M3-сегменты, радиусы",
+                    "Yougram Expressive ↔ Classic live: glass, M3 segments, radii");
+        }
         return MiogramLocale.get(
-                "Нативне розширення клієнта Amegram",
-                "Нативное расширение клиента Amegram",
-                "Native Amegram extension");
+                "Нативне розширення клієнта Yumigram",
+                "Нативное расширение клиента Yumigram",
+                "Native Yumigram extension");
     }
 }

@@ -49,7 +49,6 @@ import org.telegram.ui.bots.BotWebViewSheet;
 import org.telegram.ui.web.SearchEngine;
 
 import tw.nekomimi.nekogram.NekoConfig;
-import tw.nekomimi.nekogram.settings.GhostModeActivity;
 
 /**
  * Резолвер пунктов главного меню: id из {@link MainMenuLayout} → иконка, подпись и действие.
@@ -279,7 +278,7 @@ public final class MainMenuHelper {
             case GHOST_MODE:
                 return new MenuItemInfo(R.drawable.ayu_ghost, ghostModeTitle(),
                         () -> toggleGhostMode(fragment, currentAccount),
-                        () -> fragment.presentFragment(new GhostModeActivity()));
+                        () -> fragment.presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost")));
             default:
                 return null;
         }

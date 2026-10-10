@@ -531,11 +531,16 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             toggleHideAi(view, AppearanceConfig.hideIvSummary);
             return;
         } else if (position == uiStyleModeRow) {
+            // Стиль живе в модулі ui (HotUiGate): тут лишається швидкий селектор-фолбек.
             showSelector(position, "Режим інтерфейсу (UI Style)", new CharSequence[]{
-                    "1. Класичний (Classic Amegram)",
+                    "1. Класичний (Classic Yumi)",
                     "2. Експериментальний Yougram Expressive (Рідке скло + M3 сегменти)"
             }, AppearanceConfig.uiStyleMode, () -> {
                 AppearanceConfig.markUiStyleModeTouched();
+                try {
+                    app.amegram.hot.HotModulesManager.putInt("ui", "style", AppearanceConfig.uiStyleMode.Int());
+                } catch (Throwable ignore) {
+                }
                 rebuildAll();
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
             });
@@ -1099,8 +1104,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         rebuildRowsAndNotify();
     }
 
-    /** Сколько стилей MD3 включено. Счётчик «N/5» рядом с шевроном. */
-    private static final int MD3_STYLE_COUNT = 5;
+    /** Сколько стилей MD3 включено. Счётчик «N/7» рядом с шевроном. */
+    private static final int MD3_STYLE_COUNT = 7;
     /** Значение селектора NagramX, соответствующее Material Design 3. */
     private static final int STYLE_MD3 = 2;
 
@@ -1163,7 +1168,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         if (avatarCornersPreviewCell != null) {
             avatarCornersPreviewCell.invalidate();
         }
-        // Перезапуск не нужен: все пять стилей читаются при отрисовке или при создании вьюх.
+        // Перезапуск не нужен: все семь стилей читаются при отрисовке или при создании вьюх.
         rebuildAll();
         rebuildRowsAndNotify();
     }

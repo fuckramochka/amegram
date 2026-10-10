@@ -311,9 +311,9 @@ public class HotModuleVersionsSheet extends BottomSheet {
             if (!compat) {
                 try {
                     android.widget.Toast.makeText(context,
-                            MiogramLocale.get("Потрібен новіший AmeGram (min " + b.minApp + ")",
-                                    "Нужен новее AmeGram (min " + b.minApp + ")",
-                                    "Requires newer AmeGram (min " + b.minApp + ")"),
+                            MiogramLocale.get("Потрібен новіший Yumigram (min " + b.minApp + ")",
+                                    "Нужен новее Yumigram (min " + b.minApp + ")",
+                                    "Requires newer Yumigram (min " + b.minApp + ")"),
                             android.widget.Toast.LENGTH_SHORT).show();
                 } catch (Throwable ignore) {
                 }

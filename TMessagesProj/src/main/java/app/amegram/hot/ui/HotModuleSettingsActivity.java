@@ -67,6 +67,12 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if ("automation".equals(moduleId)) {
             return MiogramLocale.get("Автоматизація", "Автоматизация", "Automation");
         }
+        if ("ui".equals(moduleId)) {
+            return MiogramLocale.get("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi Interface");
+        }
+        if ("fileorganization".equals(moduleId)) {
+            return MiogramLocale.get("Організація файлів", "Организация файлов", "File Organization");
+        }
         return moduleId;
     }
 
@@ -111,6 +117,19 @@ public class HotModuleSettingsActivity extends BaseFragment {
         try {
             mod.fillSettings(rows);
         } catch (Throwable ignore) {
+        }
+        // Блок 5: точка входу в тексти пісень прямо з налаштувань player.
+        // AI_WORD шлях існує (MiogramLyricsEngine.SOURCE_AI_WORD + MiogramLyricsView.transcribeWithAiWordTimed) — не чіпаємо, тільки вхід.
+        if ("player".equals(moduleId)) {
+            try {
+                rows.add(HotRow.button("player_lyrics_open",
+                        "🔍 Тексти пісень (LRC + ШІ)",
+                        "LRCLib • NetEase • ШІ-розшифровка через MiogramLyricsView"));
+                rows.add(HotRow.button("player_lyrics_ai",
+                        "🤖 Розшифрувати через ШІ (upgradeLyricsToAi)",
+                        "Gemini AI → слова з таймінгами (AI_WORD)"));
+            } catch (Throwable ignore) {
+            }
         }
         if (rows.isEmpty()) {
             items.add(UItem.asShadow(MiogramLocale.get(
@@ -164,6 +183,17 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if (mod == null) return;
         HotHost host = HotModulesManager.hostFor(moduleId);
         try {
+            // Блок 5: спец-кейси player — вхід у лірику, повз модульний onSettingsAction.
+            if ("player".equals(moduleId) && r.type == HotRow.BUTTON) {
+                if ("player_lyrics_open".equals(r.id)) {
+                    openPlayerLyrics();
+                    return;
+                }
+                if ("player_lyrics_ai".equals(r.id)) {
+                    upgradePlayerLyricsToAi();
+                    return;
+                }
+            }
             if (r.type == HotRow.SWITCH) {
                 boolean cur = host.getBool(r.id, r.checked);
                 host.putBool(r.id, !cur);
@@ -171,11 +201,24 @@ public class HotModuleSettingsActivity extends BaseFragment {
                     mod.onSettingsToggle(r.id, !cur);
                 } catch (Throwable ignore) {
                 }
+                // Модуль ui застосовується на льоту: перебудова фрагментів одразу.
+                if ("ui".equals(moduleId)) {
+                    try {
+                        app.amegram.hot.HotUiGate.applyLive();
+                    } catch (Throwable ignore) {
+                    }
+                }
                 listView.adapter.update(true);
             } else if (r.type == HotRow.BUTTON) {
                 try {
                     mod.onSettingsAction(r.id);
                 } catch (Throwable ignore) {
+                }
+                if ("ui".equals(moduleId)) {
+                    try {
+                        app.amegram.hot.HotUiGate.applyLive();
+                    } catch (Throwable ignore) {
+                    }
                 }
                 listView.adapter.update(true);
             } else if (r.type == HotRow.INPUT) {
@@ -188,6 +231,72 @@ public class HotModuleSettingsActivity extends BaseFragment {
     @Override
     public boolean isLightStatusBar() {
         return !Theme.isCurrentThemeDark();
+    }
+
+    /** Блок 5: відкрити плеєр з текстами (MiogramModernPlayerLayout lyrics / MiogramLyricsView) через Md3Router. */
+    private void openPlayerLyrics() {
+        try {
+            android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
+            if (ctx == null) return;
+            org.telegram.messenger.MessageObject playing = null;
+            try {
+                playing = org.telegram.messenger.MediaController.getInstance().getPlayingMessageObject();
+            } catch (Throwable ignore) {
+            }
+            if (playing == null) {
+                try {
+                    android.widget.Toast.makeText(ctx, "Увімкніть трек", android.widget.Toast.LENGTH_SHORT).show();
+                } catch (Throwable ignore) {
+                }
+            }
+            // Md3Router.create повертає PlayerSheet (exteraLess, з лірикою) для музики
+            // або AudioPlayerAlert з MiogramModernPlayerLayout (MiogramLyricsView всередині).
+            org.telegram.ui.ActionBar.BottomSheet sheet =
+                    app.amegram.hot.Md3Router.create(ctx, getResourceProvider());
+            if (sheet != null) {
+                showDialog(sheet);
+            }
+        } catch (Throwable ignore) {
+        }
+        try {
+            if (listView != null && listView.adapter != null) listView.adapter.update(true);
+        } catch (Throwable ignore) {
+        }
+    }
+
+    /** Блок 5: апгрейд поточних текстів до ШІ (MiogramLyricsView.upgradeLyricsToAi(), AI_WORD шлях). */
+    private void upgradePlayerLyricsToAi() {
+        try {
+            android.content.Context ctx = getParentActivity() != null ? getParentActivity() : getContext();
+            if (ctx == null) return;
+            org.telegram.messenger.MessageObject playing = null;
+            try {
+                playing = org.telegram.messenger.MediaController.getInstance().getPlayingMessageObject();
+            } catch (Throwable ignore) {
+            }
+            if (playing == null) {
+                try {
+                    android.widget.Toast.makeText(ctx, "Увімкніть трек", android.widget.Toast.LENGTH_SHORT).show();
+                } catch (Throwable ignore) {
+                }
+                return;
+            }
+            // Прямого хендла MiogramLyricsView тут нема (він живе в MiogramModernPlayerLayout lyrics
+            // та викликає upgradeLyricsToAi() → transcribeAudioWithAiWordTimed → SOURCE_AI_WORD).
+            // Тому відкриваємо шит плеєра, де кнопка ✨ / Розшифровка викликає той самий шлях.
+            org.telegram.ui.ActionBar.BottomSheet sheet =
+                    app.amegram.hot.Md3Router.create(ctx, getResourceProvider());
+            if (sheet != null) {
+                showDialog(sheet);
+                try {
+                    android.widget.Toast.makeText(ctx,
+                            "Відкрито плеєр — натисніть ✨ / Розшифровка в текстах (upgradeLyricsToAi)",
+                            android.widget.Toast.LENGTH_LONG).show();
+                } catch (Throwable ignore) {
+                }
+            }
+        } catch (Throwable ignore) {
+        }
     }
 
     private void showInputDialog(HotHost host, HotModule mod, HotRow r) {

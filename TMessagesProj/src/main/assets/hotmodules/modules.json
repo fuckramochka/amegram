@@ -37,14 +37,14 @@
           "sizeBytes": 19523
         }
       ],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "media",
       "featured": true
     },
     {
       "id": "ghost",
       "name": "Режим привида",
-      "description": "Повна невидимість у мережі: приховування прочитання повідомлень, історій, статусу онлайн та набору тексту.",
+      "description": "Повна невидимість у мережі: приховування прочитання повідомлень, історій, статусу онлайн та набору тексту + збереження видалених.",
       "entry": "com.amegram.mods.ghost.GhostModule",
       "branches": {
         "stable": {
@@ -73,14 +73,14 @@
           "sizeBytes": 2003
         }
       ],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "privacy",
       "featured": true
     },
     {
       "id": "ame",
       "name": "Кастомізація профіля та інтерфейсу",
-      "description": "Аме-студія з XML-редактором, картки профіля, градієнти, картки діалогів, скляне розмиття, кольори та світіння повідомлень.",
+      "description": "Yumi-студія з XML-редактором, картки профіля, градієнти, картки діалогів, скляне розмиття, кольори та світіння повідомлень.",
       "entry": "com.amegram.mods.ame.AmeModule",
       "branches": {
         "stable": {
@@ -97,7 +97,7 @@
         }
       },
       "history": [],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "custom",
       "featured": false
     },
@@ -121,7 +121,7 @@
         }
       },
       "history": [],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "privacy",
       "featured": false
     },
@@ -145,7 +145,7 @@
         }
       },
       "history": [],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "media",
       "featured": false
     },
@@ -168,7 +168,7 @@
         }
       },
       "history": [],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "media",
       "featured": false
     },
@@ -204,14 +204,14 @@
           "sizeBytes": 5751
         }
       ],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "power",
       "featured": true
     },
     {
       "id": "experimental",
       "name": "Експерименти",
-      "description": "Безліміт закріплених чатів та стікерів, прискорення завантаження, шумозаглушення, підвищений бітрейт відео та збереження видалених повідомлень.",
+      "description": "Безліміт закріплених чатів та стікерів, прискорення завантаження, шумозаглушення, підвищений бітрейт відео.",
       "entry": "com.amegram.mods.experimental.ExperimentalModule",
       "branches": {
         "stable": {
@@ -240,7 +240,7 @@
           "sizeBytes": 3006
         }
       ],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "power",
       "featured": false
     },
@@ -264,30 +264,55 @@
         }
       },
       "history": [],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "power",
       "featured": false
     },
     {
-      "id": "demo",
-      "name": "Демо модуль",
-      "description": "Зразок нативного модуля для розробників розширень Амэграм.",
-      "entry": "com.amegram.mods.demo.DemoModule",
+      "id": "fileorganization",
+      "name": "Організація файлів",
+      "description": "Підпапки чатів + збереження по папках",
+      "entry": "com.amegram.mods.fileorganization.FileOrgModule",
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
-          "sha256": "004940bc6582cdc137d33977af0f9b8f26e4f86ff0f4792a1148f43739bb2b1d",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/fileorganization-1.0.0.hmod",
+          "sha256": "3e42fcde51c871e6ab2a7e6f685c2e398a2993c573cf4459bb610356470041e5",
           "minApp": 7112,
-          "changelog": "",
-          "permissions": [],
-          "sizeBytes": 2209
+          "changelog": "Підпапки чатів + збереження по папках винесено в окремий модуль.",
+          "permissions": [
+            "storage"
+          ],
+          "sizeBytes": 3000
         }
       },
       "history": [],
-      "author": "AmeGram Team",
-      "category": "other",
+      "author": "Yumi Team",
+      "category": "power",
       "featured": false
+    },
+    {
+      "id": "ui",
+      "name": "Інтерфейс Yumi",
+      "description": "Стиль інтерфейсу на льоту: Yougram Expressive ↔ Classic без перевстановлення APK.",
+      "entry": "com.amegram.mods.ui.UiModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.0.hmod",
+          "sha256": "86704a347f719c073f10bf76a44cc3c172cf92cd7caef53f340fddd77003489e",
+          "minApp": 7112,
+          "changelog": "Перемикання Yougram Expressive ↔ Classic на льоту.",
+          "permissions": [
+            "hook_ui"
+          ],
+          "sizeBytes": 2670
+        }
+      },
+      "history": [],
+      "author": "Yumi Team",
+      "category": "custom",
+      "featured": true
     }
   ]
 }

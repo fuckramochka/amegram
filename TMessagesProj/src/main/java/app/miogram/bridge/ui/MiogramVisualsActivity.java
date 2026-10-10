@@ -136,6 +136,14 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
     @Override
     public void onItemClick(View view, int position, float x, float y) {
         if (position == uiStyleModeRow) {
+            // Модуль ui — єдина точка перемикання стилю на льоту. Є модуль → його екран, нема → локальний діалог.
+            try {
+                if (app.amegram.hot.HotModulesManager.isModuleInstalled("ui")) {
+                    presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ui"));
+                    return;
+                }
+            } catch (Throwable ignore) {
+            }
             showUiStyleModeDialog();
         } else if (position == discordUiRow) {
             showLayoutModeDialog();
@@ -214,9 +222,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         if (ctx == null) return;
 
         CharSequence[] options = new CharSequence[] {
-            MiogramLocale.get("1. Класичний інтерфейс Amegram\n(Стандартні картки та класичні розділювачі)",
-                    "1. Классический интерфейс Amegram\n(Стандартные карточки и классические разделители)",
-                    "1. Classic Amegram Interface\n(Standard cards & classic dividers)"),
+            MiogramLocale.get("1. Класичний інтерфейс Yumi\n(Стандартні картки та класичні розділювачі)",
+                    "1. Классический интерфейс Yumi\n(Стандартные карточки и классические разделители)",
+                    "1. Classic Yumi Interface\n(Standard cards & classic dividers)"),
             MiogramLocale.get("2. Експериментальний Yougram Expressive (Кастомізований)\n(Рідке скло, сегментовані підложки M3 24dp/6dp, плаваючий блюр, розширений Monet)",
                     "2. Экспериментальный Yougram Expressive (Кастомизированный)\n(Жидкое стекло, сегментированные подложки M3 24dp/6dp, плавающий блюр, расширенный Monet)",
                     "2. Experimental Yougram Expressive (Enhanced)\n(Liquid Glass, segmented M3 24dp/6dp plates, floating blur, enhanced Monet)")
@@ -414,7 +422,14 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         String val = mode == AppearanceConfig.UI_STYLE_YOUGRAM_EXPRESSIVE
                                 ? MiogramLocale.get("Yougram Expressive (Експериментальний)", "Yougram Expressive (Экспериментальный)", "Yougram Expressive (Experimental)")
                                 : MiogramLocale.get("Класичний", "Классический", "Classic");
-                        cell.setTextAndValue(MiogramLocale.get("Стиль інтерфейсу", "Стиль интерфейса", "Interface Style"), val, true);
+                        String suffix = "";
+                        try {
+                            if (app.amegram.hot.HotModulesManager.isModuleInstalled("ui")) {
+                                suffix = app.amegram.hot.HotUiGate.isExpressive() == (mode == 1) ? " • ui ✓" : " • ui";
+                            }
+                        } catch (Throwable ignore) {
+                        }
+                        cell.setTextAndValue(MiogramLocale.get("Стиль інтерфейсу", "Стиль интерфейса", "Interface Style"), val + suffix, true);
                     } else if (position == discordUiRow) {
                         app.miogram.bridge.divine.MiogramDivineEngine.Preset current = app.miogram.bridge.divine.MiogramDivineEngine.getCurrentPreset(getSafeContext());
                         cell.setTextAndValue(MiogramLocale.get("Пресет оформлення", "Пресет оформления", "Layout Preset"), app.miogram.bridge.divine.MiogramDivineEngine.getPresetTitle(current), true);
@@ -445,9 +460,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     if (position == modeInfoRow) {
-                        cell.setText(MiogramLocale.get("Вибір між класичним інтерфейсом Amegram та експериментальним Yougram Expressive із сегментованими підложками M3 24dp/6dp, рідким склом та розширеним Monet.",
-                                "Выбор между классическим интерфейсом Amegram и экспериментальным Yougram Expressive с сегментированными подложками M3 24dp/6dp, жидким стеклом и расширенным Monet.",
-                                "Switch between Classic Amegram interface and Experimental Yougram Expressive with segmented M3 24dp/6dp plates, liquid glass, and enhanced Monet."));
+                        cell.setText(MiogramLocale.get("Вибір між класичним інтерфейсом Yumi та експериментальним Yougram Expressive із сегментованими підложками M3 24dp/6dp, рідким склом та розширеним Monet. Модуль «Інтерфейс Yumi» перемикає це на льоту, без перевстановлення APK.",
+                                "Выбор между классическим интерфейсом Yumi и экспериментальным Yougram Expressive с сегментированными подложками M3 24dp/6dp, жидким стеклом и расширенным Monet. Модуль «Интерфейс Yumi» переключает это на лету, без переустановки APK.",
+                                "Switch between Classic Yumi interface and Experimental Yougram Expressive with segmented M3 24dp/6dp plates, liquid glass, and enhanced Monet. The “Yumi Interface” module switches it live, no APK reinstall."));
                     } else if (position == glassInfoRow) {
                         cell.setText(MiogramLocale.get("Рідке скло накладає матовий світловий блік та люмінесцентну грань на панель заголовка.",
                                 "Жидкое стекло накладывает матовый световой блик и люминесцентную грань на панель заголовка.",

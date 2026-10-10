@@ -1152,7 +1152,7 @@ public final class HotModulesManager {
         }
     }
 
-    /** Включённые модули с вкладкой настроек — для хаба Амэграм. */
+    /** Включённые модули с вкладкой настроек — для хаба Yumigram. */
     public static List<Handle> settingsHandles() {
         List<Handle> res = new ArrayList<>();
         Set<String> ids = new HashSet<>();

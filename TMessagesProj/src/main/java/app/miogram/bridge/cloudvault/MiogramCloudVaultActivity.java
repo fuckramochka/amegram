@@ -69,7 +69,10 @@ import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Modern Cloud Drive UI for the Miogram Encrypted Cloud Vault:
@@ -126,6 +129,11 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
     private final ArrayList<MiogramCloudVaultFile> displayedFiles = new ArrayList<>();
     private final ArrayList<TLRPC.TL_forumTopic> cachedTopics = new ArrayList<>();
+
+    /** Блок 13: фоновий пул прев'ю (завантаження/розшифровка поза UI), UI-шар; протокол чанків не чіпаємо. */
+    private final ExecutorService vaultPreviewExecutor = Executors.newCachedThreadPool();
+    /** fileId → рядковий статус "Розшифровка N/M чанків… %" для рядка файла. */
+    private final HashMap<String, String> vaultPreviewStatus = new HashMap<>();
 
     @Override
     public View createView(Context context) {
@@ -247,6 +255,27 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         // Zero-Knowledge: wipe all in-memory manifests and temp chunks when exiting vault
         MiogramCloudVaultEngine.clearMemoryFiles();
         MiogramCloudVaultEngine.cleanupTempFiles(ApplicationLoader.applicationContext);
+        try {
+            vaultPreviewExecutor.shutdownNow();
+        } catch (Throwable ignore) {
+        }
+        // Прев'ю розшифровок лежать тільки в cache/vault_preview/ — тремо при виході (Zero-Knowledge).
+        try {
+            android.content.Context ctx = ApplicationLoader.applicationContext;
+            if (ctx != null && ctx.getCacheDir() != null) {
+                File dir = new File(ctx.getCacheDir(), "vault_preview");
+                File[] kids = dir.listFiles();
+                if (kids != null) {
+                    for (File k : kids) {
+                        try {
+                            if (k != null && k.isFile()) k.delete();
+                        } catch (Throwable ignore) {
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignore) {
+        }
     }
 
     private void updateSubtitle() {
@@ -873,7 +902,91 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         });
     }
 
-    // --- File Download & Decryption Flow ---
+    // --- File Download & Decryption Flow (Блок 13: UI-шар прев'ю; протокол чанків/шифрування не чіпаємо) ---
+
+    private void setPreviewStatus(MiogramCloudVaultFile f, String status) {
+        try {
+            if (f == null || f.fileId == null) return;
+            if (status == null) vaultPreviewStatus.remove(f.fileId);
+            else vaultPreviewStatus.put(f.fileId, status);
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private String previewStatusFor(MiogramCloudVaultFile f) {
+        try {
+            if (f != null && f.fileId != null) return vaultPreviewStatus.get(f.fileId);
+        } catch (Throwable ignore) {
+        }
+        return null;
+    }
+
+    /** Копія зібраного файла в cache/vault_preview/ для безпечного прев'ю через FileProvider. */
+    private File copyToPreviewCache(Context context, File assembled, MiogramCloudVaultFile file) {
+        try {
+            File dir = new File(context.getCacheDir(), "vault_preview");
+            if (!dir.exists()) dir.mkdirs();
+            String safe = file != null && file.name != null && !file.name.isEmpty()
+                    ? file.name.replaceAll("[\\\\/:*?\"<>|]", "_") : assembled.getName();
+            File dst = new File(dir, safe);
+            int counter = 1;
+            while (dst.exists() && dst.length() != assembled.length()) {
+                int dot = safe.lastIndexOf('.');
+                if (dot > 0) dst = new File(dir, safe.substring(0, dot) + " (" + counter + ")" + safe.substring(dot));
+                else dst = new File(dir, safe + " (" + counter + ")");
+                counter++;
+            }
+            if (!dst.exists() || dst.length() != assembled.length()) {
+                java.io.FileInputStream in = new java.io.FileInputStream(assembled);
+                java.io.FileOutputStream out = new java.io.FileOutputStream(dst);
+                byte[] buf = new byte[256 * 1024];
+                int r;
+                while ((r = in.read(buf)) > 0) out.write(buf, 0, r);
+                out.flush();
+                out.close();
+                in.close();
+            }
+            try {
+                dst.setReadable(true, false);
+            } catch (Throwable ignore) {
+            }
+            return dst;
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return assembled;
+        }
+    }
+
+    /** Діалог повтору при помилці чанка: кнопка "🔄 Повторити" + тост з причиною. */
+    private void showPreviewRetryDialog(MiogramCloudVaultFile file, Runnable onReady, String reason) {
+        try {
+            Context context = getParentActivity() != null ? getParentActivity() : getContext();
+            if (context == null) return;
+            String msg = MiogramLocale.get("Не вдалося зібрати превʼю", "Не удалось собрать превью", "Could not build preview")
+                    + (reason != null && !reason.isEmpty() ? ": " + reason : "");
+            try {
+                Toast.makeText(context, msg, Toast.LENGTH_LONG).show();
+            } catch (Throwable ignore) {
+            }
+            if (getParentActivity() == null) return;
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(file != null && file.name != null ? file.name : MiogramLocale.get("Помилка чанка", "Ошибка чанка", "Chunk error"));
+            builder.setMessage(msg);
+            builder.setPositiveButton("🔄 " + MiogramLocale.get("Повторити", "Повторить", "Retry"), (d, w) -> {
+                try {
+                    if (file != null) {
+                        file.isDownloading = false;
+                        setPreviewStatus(file, null);
+                    }
+                } catch (Throwable ignore) {
+                }
+                ensureFileDownloaded(file, onReady);
+            });
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            showDialog(builder.create());
+        } catch (Throwable ignore) {
+        }
+    }
 
     private void ensureFileDownloaded(MiogramCloudVaultFile file, Runnable onReady) {
         if (!TextUtils.isEmpty(file.localPath) && new File(file.localPath).exists()) {
@@ -908,67 +1021,133 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         progressDialog.show();
 
         file.isDownloading = true;
+        setPreviewStatus(file, MiogramLocale.get("Завантаження чанків…", "Загрузка чанков…", "Downloading chunks…"));
         if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
 
-        Utilities.globalQueue.postRunnable(() -> {
-            try {
-                ArrayList<File> downloadedChunks = new ArrayList<>();
-                for (int i = 0; i < file.chunkDocuments.size(); i++) {
-                    TLRPC.Document doc = file.chunkDocuments.get(i);
-                    File attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
-                    if (attachFile == null || !attachFile.exists()) {
-                        FileLoader.getInstance(currentAccount).loadFile(doc, null, 0, 0);
-                        // Bounded wait: 60s per chunk. The shared globalQueue must
-                        // never be parked for minutes by one slow download.
-                        int waitedMs = 0;
-                        while ((attachFile == null || !attachFile.exists()) && waitedMs < 60000) {
-                            Thread.sleep(500);
-                            waitedMs += 500;
-                            attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
-                        }
+        // Фоновий Executor для завантаження/розшифровки (UI не блокуємо; протокол той самий).
+        try {
+            vaultPreviewExecutor.execute(() -> downloadAndDecryptInBackground(file, onReady, context, progressDialog));
+        } catch (Throwable e) {
+            FileLog.e(e);
+            Utilities.globalQueue.postRunnable(() -> downloadAndDecryptInBackground(file, onReady, context, progressDialog));
+        }
+    }
+
+    private void downloadAndDecryptInBackground(MiogramCloudVaultFile file, Runnable onReady, Context context, AlertDialog progressDialog) {
+        try {
+            ArrayList<File> downloadedChunks = new ArrayList<>();
+            int total = Math.max(1, file.chunkDocuments.size());
+            for (int i = 0; i < file.chunkDocuments.size(); i++) {
+                TLRPC.Document doc = file.chunkDocuments.get(i);
+                final int idx = i;
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.setMessage(MiogramLocale.get("Завантаження чанків з Telegram...", "Загрузка чанков из Telegram...", "Downloading chunks from Telegram...")
+                                + " " + (idx + 1) + "/" + total);
+                    } catch (Throwable ignore) {
                     }
-                    if (attachFile != null && attachFile.exists()) {
-                        downloadedChunks.add(attachFile);
+                    setPreviewStatus(file, MiogramLocale.get("Завантаження", "Загрузка", "Downloading")
+                            + " " + (idx + 1) + "/" + total);
+                    if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
+                });
+                File attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
+                if (attachFile == null || !attachFile.exists()) {
+                    FileLoader.getInstance(currentAccount).loadFile(doc, null, 0, 0);
+                    // Bounded wait: 60s per chunk, щоб не паркувати пул надовго.
+                    int waitedMs = 0;
+                    while ((attachFile == null || !attachFile.exists()) && waitedMs < 60000) {
+                        Thread.sleep(500);
+                        waitedMs += 500;
+                        attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
                     }
                 }
-
-                if (downloadedChunks.size() < file.chunksCount) {
-                    throw new IllegalStateException("Not all chunks could be downloaded (" + downloadedChunks.size() + "/" + file.chunksCount + ")");
+                if (attachFile != null && attachFile.exists()) {
+                    downloadedChunks.add(attachFile);
+                } else {
+                    throw new IllegalStateException(MiogramLocale.get("чанк ", "чанк ", "chunk ")
+                            + (idx + 1) + "/" + total
+                            + MiogramLocale.get(" не завантажився за 60с", " не загрузился за 60с", " failed to download in 60s"));
                 }
-
-                AndroidUtilities.runOnUIThread(() -> progressDialog.setMessage(MiogramLocale.get("Розшифрування та збирання файлу...", "Дешифрование и сборка файла...", "Decrypting and reassembling file...")));
-
-                File assembled = MiogramCloudVaultEngine.decryptAndReassembleFile(
-                        context, file, downloadedChunks,
-                        (progress, status) -> AndroidUtilities.runOnUIThread(() -> progressDialog.setMessage(status))
-                );
-
-                AndroidUtilities.runOnUIThread(() -> {
-                    file.isDownloading = false;
-                    file.localPath = assembled.getAbsolutePath();
-                    progressDialog.dismiss();
-                    if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
-                    if (onReady != null) onReady.run();
-                });
-
-            } catch (Exception e) {
-                FileLog.e(e);
-                AndroidUtilities.runOnUIThread(() -> {
-                    file.isDownloading = false;
-                    progressDialog.dismiss();
-                    if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
-                    Toast.makeText(context, MiogramLocale.get("Не вдалося завантажити", "Не удалось скачать", "Download failed") + (e.getMessage() != null ? ": " + e.getMessage() : ""), Toast.LENGTH_LONG).show();
-                });
             }
-        });
+
+            if (downloadedChunks.size() < file.chunksCount) {
+                throw new IllegalStateException("Not all chunks could be downloaded (" + downloadedChunks.size() + "/" + file.chunksCount + ")");
+            }
+
+            AndroidUtilities.runOnUIThread(() -> {
+                try {
+                    progressDialog.setMessage(MiogramLocale.get("Розшифрування та збирання файлу...", "Дешифрование и сборка файла...", "Decrypting and reassembling file..."));
+                } catch (Throwable ignore) {
+                }
+            });
+
+            File assembled = MiogramCloudVaultEngine.decryptAndReassembleFile(
+                    context, file, downloadedChunks,
+                    (progress, status) -> AndroidUtilities.runOnUIThread(() -> {
+                        try {
+                            int pct = Math.max(0, Math.min(100, (int) (progress * 100)));
+                            // Рядковий статус файла: "Розшифровка N/M чанків… %"
+                            String rowStatus = "Розшифровка " + downloadedChunks.size() + "/" + total
+                                    + " чанків… " + pct + "%";
+                            setPreviewStatus(file, rowStatus);
+                            progressDialog.setMessage((status != null ? status : "") + " • " + pct + "%");
+                            if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
+                        } catch (Throwable ignore) {
+                        }
+                    })
+            );
+
+            File preview = copyToPreviewCache(context, assembled, file);
+
+            AndroidUtilities.runOnUIThread(() -> {
+                file.isDownloading = false;
+                file.localPath = preview.getAbsolutePath();
+                setPreviewStatus(file, null);
+                progressDialog.dismiss();
+                if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
+                if (onReady != null) onReady.run();
+            });
+
+        } catch (Exception e) {
+            FileLog.e(e);
+            String reason = e.getMessage() != null ? e.getMessage() : e.toString();
+            AndroidUtilities.runOnUIThread(() -> {
+                file.isDownloading = false;
+                setPreviewStatus(file, null);
+                try {
+                    progressDialog.dismiss();
+                } catch (Throwable ignore) {
+                }
+                if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
+                showPreviewRetryDialog(file, onReady, reason);
+            });
+        }
     }
 
     private void downloadOrOpenFile(MiogramCloudVaultFile file) {
         ensureFileDownloaded(file, () -> {
             Context context = getParentActivity() != null ? getParentActivity() : getContext();
             if (context != null && !TextUtils.isEmpty(file.localPath)) {
-                Toast.makeText(context, MiogramLocale.get("Збережено в Downloads/Miogram Vault/", "Сохранено в Downloads/Miogram Vault/", "Saved to Downloads/Miogram Vault/"), Toast.LENGTH_LONG).show();
-                AndroidUtilities.openForView(new File(file.localPath), file.name, file.mimeType, getParentActivity(), null, false);
+                try {
+                    File src = new File(file.localPath);
+                    // Прев'ю завжди з cache/vault_preview/ через FileProvider VIEW.
+                    File preview = src;
+                    try {
+                        File cacheDir = new File(context.getCacheDir(), "vault_preview");
+                        boolean inPreview = src.getAbsolutePath().contains("vault_preview");
+                        if (!inPreview && src.exists()) {
+                            preview = copyToPreviewCache(context, src, file);
+                            file.localPath = preview.getAbsolutePath();
+                        }
+                    } catch (Throwable ignore) {
+                    }
+                    // Фото/відео/аудіо — прямий VIEW з MIME, невідоме — chooser (усередині гейта).
+                    app.amegram.hot.HotVaultGate.openPreview(context, preview);
+                } catch (Throwable e) {
+                    FileLog.e(e);
+                    Toast.makeText(context, MiogramLocale.get("Не вдалося відкрити превʼю", "Не удалось открыть превью", "Could not open preview")
+                            + (e.getMessage() != null ? ": " + e.getMessage() : ""), Toast.LENGTH_LONG).show();
+                }
             }
         });
     }
@@ -1554,6 +1733,14 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             this.currentFile = file;
             nameView.setText(file.name);
             sizeView.setText(file.getFormattedSize());
+            // Блок 13: статус розшифровки прямо в сітці.
+            try {
+                String st = previewStatusFor(file);
+                if (file.isDownloading && st != null && !st.isEmpty()) {
+                    sizeView.setText(file.getFormattedSize() + " • " + st);
+                }
+            } catch (Throwable ignore) {
+            }
 
             boolean hasLocal = !TextUtils.isEmpty(file.localPath) && new File(file.localPath).exists();
             boolean isMedia = file.isMedia();
@@ -1711,6 +1898,14 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 cloudState = " • " + MiogramLocale.get("очікує синхронізації", "ожидает синхронизации", "pending sync");
             }
             infoView.setText(file.getFormattedSize() + chunksInfo + topicInfo + cloudState + " • " + file.getFormattedDate());
+            // Блок 13: живий статус прев'ю в рядку ("Розшифровка N/M чанків… %").
+            try {
+                String st = previewStatusFor(file);
+                if (file.isDownloading && st != null && !st.isEmpty()) {
+                    infoView.setText(infoView.getText() + " • " + st);
+                }
+            } catch (Throwable ignore) {
+            }
 
             iconView.setImageResource(file.getIconRes());
 

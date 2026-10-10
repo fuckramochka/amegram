@@ -39,7 +39,7 @@ object AppearanceConfig {
     /** Прежний набор Monet, пришедший вместе с базой форка (токены вида `a1_100`). */
     const val MONET_STYLE_CLASSIC = 1
 
-    /** Режими інтерфейсу: 0 — Класичний (Classic Amegram), 1 — Експериментальний Yougram Expressive (Рідке скло + M3 сегменти). */
+    /** Режими інтерфейсу: 0 — Класичний (Classic Yumi), 1 — Експериментальний Yougram Expressive (Рідке скло + M3 сегменти). */
     const val UI_STYLE_CLASSIC = 0
     const val UI_STYLE_YOUGRAM_EXPRESSIVE = 1
 

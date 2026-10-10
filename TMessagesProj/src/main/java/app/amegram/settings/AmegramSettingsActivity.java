@@ -53,6 +53,8 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private static final int ROW_STT = 8;
     private static final int ROW_AUTOMATION = 9;
     private static final int ROW_DEMO = 10;
+    private static final int ROW_UI = 11;
+    private static final int ROW_FILEORG = 12;
 
     private static final int ROW_NEKO_GENERAL = 40;
     private static final int ROW_NEKO_CHAT = 41;
@@ -88,7 +90,8 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private static final int ROW_CLIENT_SETTINGS = 33;
 
     private static final Set<String> BUILTIN_IDS = new HashSet<>(Arrays.asList(
-            "ghost", "vault", "player", "ame", "tiktok", "ai", "experimental", "stt", "demo", "automation"
+            "ghost", "vault", "player", "ame", "tiktok", "ai", "experimental", "stt", "demo", "automation",
+            "ui", "fileorganization"
     ));
 
     private UniversalRecyclerView listView;
@@ -176,7 +179,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
         // Keep every bundled feature discoverable. Its state is shown in the row;
         // disabled features must never disappear from the settings hub.
-        items.add(UItem.asHeader(MiogramLocale.get("Можливості Amegram", "Возможности Amegram", "Amegram features")));
+        items.add(UItem.asHeader(MiogramLocale.get("Можливості Yumigram", "Возможности Yumigram", "Yumigram features")));
         items.add(YumiSettingCell.Factory.of(ROW_CLIENT_SETTINGS, R.drawable.msg_settings, 0xFF546E7A,
                 MiogramLocale.get("Інші налаштування клієнта", "Другие настройки клиента", "More client settings"),
                 MiogramLocale.get("Чати, приватність, перекладач, оформлення та інше",
@@ -210,8 +213,8 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         boolean aiOn = HotModulesManager.isModuleEnabled("ai");
         items.add(YumiSettingCell.Factory.of(ROW_AI, R.drawable.baseline_stars_24, 0xFF8B5CF6,
                 MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial Intelligence (AI)"),
-                moduleSubtitle("ai", aiOn, MiogramLocale.get("Асистент Ame / KAngel, розпізнавання мовлення",
-                               "Ассистент Ame / KAngel, распознавание речи", "Ame / KAngel companion, speech recognition"))));
+                moduleSubtitle("ai", aiOn, MiogramLocale.get("Асистент Ame / KAngel, чат і генерація тексту",
+                               "Ассистент Ame / KAngel, чат и генерация текста", "Ame / KAngel companion, chat & text generation"))));
 
         boolean tikOn = HotModulesManager.isModuleEnabled("tiktok");
         items.add(YumiSettingCell.Factory.of(ROW_TIKTOK, R.drawable.msg_video, 0xFFEE1D52,
@@ -225,22 +228,30 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 moduleSubtitle("ame", ameOn, MiogramLocale.get("Картки профілю, діалоги, ефекти",
                               "Карточки профиля, диалоги, эффекты", "Profile cards, dialogs, visual effects"))));
 
-        for (String moduleId : new String[]{"stt", "automation", "demo"}) {
+        for (String moduleId : new String[]{"stt", "automation"}) {
             boolean enabled = HotModulesManager.isModuleEnabled(moduleId);
-            int rowId = "stt".equals(moduleId) ? ROW_STT : ("automation".equals(moduleId) ? ROW_AUTOMATION : ROW_DEMO);
+            int rowId = "stt".equals(moduleId) ? ROW_STT : ROW_AUTOMATION;
             String title = "stt".equals(moduleId)
                     ? MiogramLocale.get("Розпізнавання мовлення", "Распознавание речи", "Speech recognition")
-                    : ("automation".equals(moduleId)
-                    ? MiogramLocale.get("Автоматизація", "Автоматизация", "Automation")
-                    : MiogramLocale.get("Демо-модуль", "Демо-модуль", "Demo module"));
+                    : MiogramLocale.get("Автоматизація", "Автоматизация", "Automation");
             String description = "stt".equals(moduleId)
                     ? MiogramLocale.get("Розшифровка голосових і відеоповідомлень", "Расшифровка голосовых и видеосообщений", "Transcribe voice and video messages")
-                    : ("automation".equals(moduleId)
-                    ? MiogramLocale.get("Синхронізація, резервні копії та очищення", "Синхронизация, резервные копии и очистка", "Sync, backups and cleanup")
-                    : MiogramLocale.get("Приклад модуля для розробників", "Пример модуля для разработчиков", "Sample module for developers"));
+                    : MiogramLocale.get("Синхронізація, резервні копії та очищення", "Синхронизация, резервные копии и очистка", "Sync, backups and cleanup");
             items.add(YumiSettingCell.Factory.of(rowId, R.drawable.msg_plugins, 0xFF607D8B,
                     title, moduleSubtitle(moduleId, enabled, description)));
         }
+
+        boolean uiOn = HotModulesManager.isModuleEnabled("ui");
+        items.add(YumiSettingCell.Factory.of(ROW_UI, R.drawable.msg_theme, 0xFF6C63FF,
+                MiogramLocale.get("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi Interface"),
+                moduleSubtitle("ui", uiOn, MiogramLocale.get("Yougram Expressive ↔ Classic на льоту",
+                              "Yougram Expressive ↔ Classic на лету", "Yougram Expressive ↔ Classic live"))));
+
+        boolean fileorgOn = HotModulesManager.isModuleEnabled("fileorganization");
+        items.add(YumiSettingCell.Factory.of(ROW_FILEORG, R.drawable.msg_download_solar, 0xFF00897B,
+                MiogramLocale.get("Організація файлів", "Организация файлов", "File Organization"),
+                moduleSubtitle("fileorganization", fileorgOn, MiogramLocale.get("Підпапки чатів, збереження по папках",
+                              "Подпапки чатов, сохранение по папкам", "Chat subfolders, save by folders"))));
 
         // Сторонні завантажені модулі
         for (HotModulesManager.InstalledInfo info : HotModulesManager.listInstalled()) {
@@ -290,8 +301,8 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
         items.add(YumiSettingCell.Factory.of(ROW_BADGES, R.drawable.msg_premium_normal, 0xFFE5486B,
                 MiogramLocale.get("Бейджики", "Бейджики", "Badges"),
-                MiogramLocale.get("Спільнота Amegram • Каталог стилів",
-                        "Сообщество Amegram • Каталог стилей",
+                MiogramLocale.get("Спільнота Yumigram • Каталог стилів",
+                        "Сообщество Yumigram • Каталог стилей",
                         "Yumigram community • Style catalog")));
 
         items.add(YumiSettingCell.Factory.of(ROW_UPDATES, R.drawable.msg_download_solar, 0xFF2196F3,
@@ -324,7 +335,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Мови, сервіси та поведінка перекладу", "Языки, сервисы и поведение перевода", "Languages, providers and translation behavior")));
         items.add(YumiSettingCell.Factory.of(ROW_NEKO_PASSCODE, R.drawable.msg_permissions, 0xFF5E35B1,
                 MiogramLocale.get("Код-пароль", "Код-пароль", "Passcode"),
-                MiogramLocale.get("Блокування та захист застосунку", "Блокировка и защита приложения", "App lock and protection")));
+                MiogramLocale.get("Блокування, PIN і подвійне дно (реальний + дурний код)", "Блокировка, PIN и двойное дно (реальный + ложный код)", "Lock, PIN & double bottom (real + duress code)")));
         items.add(YumiSettingCell.Factory.of(ROW_NEKO_EXPERIMENTAL, R.drawable.msg_fave, 0xFF43A047,
                 MiogramLocale.get("Експериментальні функції", "Экспериментальные функции", "Experimental features"),
                 MiogramLocale.get("Додаткові можливості клієнта", "Дополнительные возможности клиента", "Additional client features")));
@@ -338,7 +349,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Додаткові налаштування чатів", "Дополнительные настройки чатов", "More chat options"),
                 MiogramLocale.get("Жести, панелі та вигляд списку чатів", "Жесты, панели и вид списка чатов", "Gestures, panels and chat list layout")));
         items.add(YumiSettingCell.Factory.of(ROW_MIO_PRIVACY, R.drawable.msg_secret, 0xFF7E57C2,
-                MiogramLocale.get("Приватність Amegram", "Приватность Amegram", "Amegram privacy"),
+                MiogramLocale.get("Приватність Yumigram", "Приватность Yumigram", "Yumigram privacy"),
                 MiogramLocale.get("Додаткові параметри приватності", "Дополнительные параметры приватности", "Additional privacy controls")));
         items.add(YumiSettingCell.Factory.of(ROW_MIO_COMPANION, R.drawable.baseline_stars_24, 0xFF8B5CF6,
                 MiogramLocale.get("ШІ-компаньйон", "ИИ-компаньон", "AI companion"),
@@ -347,7 +358,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Провайдери та моделі ШІ", "Провайдеры и модели ИИ", "AI providers & models"),
                 MiogramLocale.get("Ключі API, сервіси та моделі", "Ключи API, сервисы и модели", "API keys, providers and models")));
         items.add(YumiSettingCell.Factory.of(ROW_MIO_VAULT, R.drawable.msg_saved, 0xFFE5486B,
-                MiogramLocale.get("Хмарне сховище Amegram", "Облачное хранилище Amegram", "Amegram cloud vault"),
+                MiogramLocale.get("Хмарне сховище Yumigram", "Облачное хранилище Yumigram", "Yumigram cloud vault"),
                 MiogramLocale.get("Стан сховища та керування файлами", "Состояние хранилища и управление файлами", "Vault status and file management")));
         items.add(YumiSettingCell.Factory.of(ROW_MIO_PLAYER, R.drawable.baseline_music_note_24, 0xFF00ACC1,
                 MiogramLocale.get("Налаштування MD3-плеєра", "Настройки MD3-плеера", "MD3 player settings"),
@@ -404,6 +415,10 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             openModule("stt");
         } else if (item.id == ROW_AUTOMATION) {
             openModule("automation");
+        } else if (item.id == ROW_UI) {
+            openModule("ui");
+        } else if (item.id == ROW_FILEORG) {
+            openModule("fileorganization");
         } else if (item.id == ROW_DEMO) {
             openModule("demo");
         } else if (item.id == ROW_NEKO_GENERAL) {

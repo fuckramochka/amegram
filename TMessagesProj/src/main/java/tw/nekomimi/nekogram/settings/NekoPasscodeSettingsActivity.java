@@ -39,7 +39,6 @@ import java.util.Locale;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.ui.cells.AccountCell;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
-import xyz.nextalone.nagram.NaConfig;
 
 
 public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
@@ -58,9 +57,6 @@ public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
 
     private int clearPasscodesRow;
     private int clearPasscodes2Row;
-
-    private int showNotificationContentWhenLockedRow;
-    private int showNotificationContentWhenLocked2Row;
 
     private final ArrayList<Integer> accounts = new ArrayList<>();
 
@@ -168,11 +164,6 @@ public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(!PasscodeHelper.isSettingsHidden());
             }
-        } else if (position == showNotificationContentWhenLockedRow) {
-            boolean value = NaConfig.INSTANCE.getShowNotificationPreviewWhenLocked().toggleConfigBool();
-            if (view instanceof TextCheckCell textCheckCell) {
-                textCheckCell.setChecked(value);
-            }
         }
     }
 
@@ -233,9 +224,6 @@ public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
             clearPasscodesRow = -1;
             clearPasscodes2Row = -1;
         }
-
-        showNotificationContentWhenLockedRow = rowCount++;
-        showNotificationContentWhenLocked2Row = rowCount++;
     }
 
     private class ListAdapter extends BaseListAdapter {
@@ -271,8 +259,6 @@ public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
                     textCell.setEnabled(passcodeSet, null);
                     if (position == showInSettingsRow) {
                         textCell.setTextAndCheck(getString(R.string.PasscodeShowInSettings), !PasscodeHelper.isSettingsHidden(), false);
-                    } else if (position == showNotificationContentWhenLockedRow) {
-                        textCell.setTextAndCheck(getString(R.string.PasscodeShowMessagePreviewWhenLocked), NaConfig.INSTANCE.getShowNotificationPreviewWhenLocked().Bool(), false);
                     }
                     break;
                 }
@@ -306,9 +292,6 @@ public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
                             }
                         }, stringBuilder.length() - link.length(), stringBuilder.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
                         cell.setText(stringBuilder);
-                    } else if (position == showNotificationContentWhenLocked2Row) {
-                        cell.setText(getString(R.string.PasscodeShowMessagePreviewWhenLockedAbout));
-                        cell.setBackground(Theme.getThemedDrawable(mContext, R.drawable.greydivider_bottom, Theme.key_windowBackgroundGrayShadow));
                     }
                     break;
                 }
@@ -333,11 +316,11 @@ public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
                 return TYPE_SHADOW;
             } else if (position == clearPasscodesRow || position == setPanicCodeRow || position == removePanicCodeRow) {
                 return TYPE_SETTINGS;
-            } else if (position == showInSettingsRow || position == showNotificationContentWhenLockedRow) {
+            } else if (position == showInSettingsRow) {
                 return TYPE_CHECK;
             } else if (position == accountsStartRow) {
                 return TYPE_HEADER;
-            } else if (position == showInSettings2Row || position == accountsEndRow || position == panicCode2Row || position == showNotificationContentWhenLocked2Row) {
+            } else if (position == showInSettings2Row || position == accountsEndRow || position == panicCode2Row) {
                 return TYPE_INFO_PRIVACY;
             } else if (position > accountsStartRow && position < accountsEndRow) {
                 return TYPE_ACCOUNT;

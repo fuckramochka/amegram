@@ -117,11 +117,6 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
     private final AbstractConfigCell unlimitedFavedStickersRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.unlimitedFavedStickers, getString(R.string.UnlimitedFavoredStickersAbout)));
     private final AbstractConfigCell dividerGeneral = cellGroup.appendCell(new ConfigCellDivider());
 
-    // Connections
-    private final AbstractConfigCell headerConnection = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.Connection)));
-    private final AbstractConfigCell boostUploadRow = cellGroup.appendCell(new ConfigCellTextCheck(NekoConfig.uploadBoost));
-    private final AbstractConfigCell dividerConnection = cellGroup.appendCell(new ConfigCellDivider());
-
     // Media
     private final AbstractConfigCell headerMedia = cellGroup.appendCell(new ConfigCellHeader(getString(R.string.MediaSettings)));
     private final AbstractConfigCell audioEnhanceRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getNoiseSuppressAndVoiceEnhance()));
@@ -137,7 +132,10 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
 
     // Ayu
     private final AbstractConfigCell headerAyuMoments = cellGroup.appendCell(new ConfigCellHeader("Mio Moments"));
-    private final AbstractConfigCell ghostModeRow = cellGroup.appendCell(new ConfigCellText("GhostMode", () -> presentFragment(new GhostModeActivity())));
+    // Привид — єдине джерело: модуль ghost.
+    private final AbstractConfigCell ghostModeRow = cellGroup.appendCell(new ConfigCellText("GhostMode", () -> {
+        presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost"));
+    }));
     private final AbstractConfigCell regexFiltersEnabledRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getRegexFiltersEnabled(), getString(R.string.RegexFiltersNotice)));
     private final AbstractConfigCell saveLastSeenRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getSaveLocalLastSeen()));
     private final AbstractConfigCell enableSaveDeletedMessagesRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnableSaveDeletedMessages()));
@@ -251,6 +249,11 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
         cellGroup.callBackSettingsChanged = (key, newValue) -> {
             if (key.equals(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey())) {
                 checkSaveDeletedRows();
+                // Анти-видалення — частина ghost-модуля (єдине ціле): синк у модуль.
+                try {
+                    app.amegram.hot.HotModulesManager.putBool("ghost", "save_deleted_messages", (boolean) newValue);
+                } catch (Throwable ignore) {
+                }
             } else if (key.equals(NaConfig.INSTANCE.getDisableStories().getKey())) {
                 checkStoriesRows();
                 tooltip.showWithAction(0, UndoView.ACTION_NEED_RESTART, null, null);

@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit
 /**
  * Minimal OpenAI-compatible chat client pointed at the Google AI Studio
  * gateway (`https://generativelanguage.googleapis.com/v1beta/openai`),
- * i.e. Gemini Flash Lite with a user-supplied (BYOK) API key.
+ * i.e. Gemini 3.5 Flash Lite (`gemini-3.5-flash-lite`) with a user-supplied (BYOK) API key.
  *
  * Deliberately separate from tw.nekomimi.llm: Miogram tasks need their own
  * system prompts, privacy redaction and key sourcing, and must not break when
@@ -95,7 +95,7 @@ class GeminiCloudClient(
 
     companion object {
         const val DEFAULT_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai"
-        const val DEFAULT_MODEL = "gemini-2.0-flash"
+        const val DEFAULT_MODEL = "gemini-3.5-flash-lite"
 
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 

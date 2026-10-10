@@ -26,7 +26,6 @@ import org.telegram.ui.LaunchActivity;
 import app.exteraless.pillstack.PillStackSettingsActivity;
 import app.exteraless.pillstack.PillType;
 import tw.nekomimi.nekogram.NekoConfig;
-import tw.nekomimi.nekogram.settings.GhostModeActivity;
 
 /** Режим призрака: нажатие переключает, долгое — открывает его экран. */
 @SuppressLint("ViewConstructor")
@@ -137,7 +136,7 @@ public class GhostPill extends BasePill implements NotificationCenter.Notificati
         }
         ItemOptions.makeOptions(fragment, this)
                 .add(R.drawable.ayu_ghost, LocaleController.getString(R.string.GhostMode),
-                        () -> fragment.presentFragment(new GhostModeActivity()))
+                        () -> fragment.presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost")))
                 .add(R.drawable.msg_settings, LocaleController.getString(R.string.Settings),
                         () -> fragment.presentFragment(new PillStackSettingsActivity()))
                 .setDrawScrim(false)

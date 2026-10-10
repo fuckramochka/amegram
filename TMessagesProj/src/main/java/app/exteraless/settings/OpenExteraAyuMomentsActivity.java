@@ -46,7 +46,6 @@ import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.filters.RegexFiltersSettingActivity;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
-import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 import xyz.nextalone.nagram.NaConfig;
 
@@ -222,7 +221,7 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
         if (position == ghostRow) {
-            presentFragment(new GhostModeActivity());
+            presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost"));
         } else if (position == askStoryRow) {
             toggleAyuConfig(view, NaConfig.INSTANCE.getAskBeforeOpeningStory(), false);
         } else if (position == regexRow) {

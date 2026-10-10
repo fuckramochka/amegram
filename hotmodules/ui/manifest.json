@@ -1,0 +1,16 @@
+{
+  "id": "ui",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.ui.UiModule",
+  "name": "Інтерфейс Yumi",
+  "minApp": 7112,
+  "description": "Стиль інтерфейсу на льоту: Yougram Expressive ↔ Classic",
+  "changelog": "Перемикання Yougram Expressive ↔ Classic без перевстановлення APK.",
+  "author": "Yumi Team",
+  "category": "custom",
+  "featured": true,
+  "permissions": [
+    "hook_ui"
+  ]
+}

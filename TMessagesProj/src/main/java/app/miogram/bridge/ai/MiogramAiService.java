@@ -741,11 +741,11 @@ public class MiogramAiService {
                     + "Encode answers with the same layout. Unknown op => return -1. Build: tinygo build -o plugin.wasm -target wasm .\n";
         } else if ("python".equals(wantLang)) {
             codeKeyName = "module_py";
-            contract = "You write native Amegram plugins in Python (3.8+ compatible, subclassing BasePlugin):\n"
+            contract = "You write native Yumigram plugins in Python (3.8+ compatible, subclassing BasePlugin):\n"
                     + "__id__ = \"my_plugin\"  # required: 2-32 lowercase ASCII letters, digits, underscores\n"
                     + "__name__ = \"My Plugin\"  # required: human name\n"
                     + "__description__ = \"Plugin description\"  # required\n"
-                    + "__author__ = \"Amegram AI\"  # required\n"
+                    + "__author__ = \"Yumi AI\"  # required\n"
                     + "__version__ = \"1.0.0\"  # required\n\n"
                     + "from base_plugin import BasePlugin, HookStrategy, HookResult\n\n"
                     + "class MyPlugin(BasePlugin):\n"

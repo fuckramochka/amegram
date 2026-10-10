@@ -56,6 +56,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
     private boolean loading = true;
     /** Модулі, що зараз качаються: кнопка лишається заблокованою і після refresh. */
     private final Set<String> downloading = new HashSet<>();
+    /** Прогрес завантаження id->% (неблокуючий, пер-рядок). */
+    private final Map<String, Integer> progress = new HashMap<>();
 
     public HotStoreActivity() {
         this("");
@@ -174,6 +176,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         List<HotCatalog.Entry> featured = new ArrayList<>();
         int installedCount = 0;
         for (HotCatalog.Entry e : lastCatalog.modules) {
+            if ("demo".equals(e.id)) continue;
             if (HotModulesManager.isModuleInstalled(e.id)) {
                 installedCount++;
                 continue;
@@ -305,6 +308,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
                 MiogramLocale.get("Пак →", "Пак →", "Pack →"));
         take.setOnClickListener(v -> {
             take.setEnabled(false);
+            take.setAlpha(0.5f);
             installPackSequentially(pack, 0, this::refresh);
         });
         card.addView(take);
@@ -359,6 +363,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         int total = 0;
         if (lastCatalog != null) {
             for (HotCatalog.Entry e : lastCatalog.modules) {
+                if ("demo".equals(e.id)) continue;
                 if (HotModulesManager.isModuleInstalled(e.id)) continue;
                 String cat = e.category != null && !e.category.isEmpty()
                         ? e.category : HotModuleMeta.category(e.id);
@@ -606,6 +611,16 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         final HotCatalog.Build d = def;
         final boolean compat = d == null || HotModulesManager.isCompatible(d);
         final boolean isDownloading = downloading.contains(entry.id);
+        int pct0 = progress.containsKey(entry.id) ? progress.get(entry.id) : 0;
+        final TextView progressView = new TextView(context);
+        progressView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        progressView.setTextColor(YumiTheme.getPrimary());
+        if (isDownloading) {
+            progressView.setVisibility(View.VISIBLE);
+            progressView.setText(pct0 > 0 ? pct0 + "%" : "…");
+        } else {
+            progressView.setVisibility(View.GONE);
+        }
         TextView action = YumiComponents.pillButton(context,
                 !compat ? "minApp " + d.minApp
                         : isDownloading ? "…"
@@ -617,7 +632,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
                 if (d != null && !compat) {
                     try {
                         android.widget.Toast.makeText(context,
-                                MiogramLocale.get("Потрібен новіший AmeGram", "Нужен новее AmeGram", "Requires newer AmeGram"),
+                                MiogramLocale.get("Потрібен новіший Yumigram", "Нужен новее Yumigram", "Requires newer Yumigram"),
                                 android.widget.Toast.LENGTH_SHORT).show();
                     } catch (Throwable ignore) {
                     }
@@ -632,11 +647,22 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
                     new HotModulesManager.ProgressCallback<Void>() {
                         @Override
                         public void onProgress(long downloaded, long total) {
+                            int pct = total > 0 ? (int) (downloaded * 100 / total) : 0;
+                            progress.put(entry.id, pct);
+                            AndroidUtilities.runOnUIThread(() -> {
+                                try {
+                                    action.setText(pct + "%");
+                                    progressView.setText(pct + "%");
+                                    progressView.setVisibility(View.VISIBLE);
+                                } catch (Throwable ignore) {
+                                }
+                            });
                         }
 
                         @Override
                         public void onDone(boolean ok, String message, Void data) {
                             downloading.remove(entry.id);
+                            progress.remove(entry.id);
                             try {
                                 android.widget.Toast.makeText(context,
                                         ok ? "✓ " + entry.id + " v" + message : message,
@@ -650,6 +676,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         bottom.addView(action);
         card.addView(bottom, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT, 0, 10, 0, 0));
+        card.addView(progressView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
+                LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
 
         final HotCatalog.Build dd = def;
         card.setOnClickListener(v -> {

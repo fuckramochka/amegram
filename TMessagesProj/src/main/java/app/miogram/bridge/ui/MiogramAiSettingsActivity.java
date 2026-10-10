@@ -58,7 +58,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return "Amegram AI";
+        return "Yumi AI";
     }
 
     @Override
@@ -245,7 +245,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
         String[] modelKeys = {"gemini-3.5-flash-lite", "gemini-3.8-flash", "gemini-3.5-flash", "local-litert", "custom"};
 
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        builder.setTitle(MiogramLocale.get("Модель Amegram AI", "Модель Amegram AI", "Amegram AI Model"));
+        builder.setTitle(MiogramLocale.get("Модель Yumi AI", "Модель Yumi AI", "Yumi AI Model"));
         builder.setItems(models, (dialog, which) -> {
             if ("custom".equals(modelKeys[which])) {
                 showCustomModelDialog();
@@ -332,9 +332,17 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndValue(MiogramLocale.get("Активний супутник", "Активный спутник", "Active Companion"), companionName, true);
                     } else if (position == hardwareRow) {
                         MiogramAiService.DeviceHardwareInfo hw = MiogramAiService.getDeviceHardwareInfo();
+                        String nanoSuffix = "";
+                        try {
+                            if (app.amegram.hot.HotAiGate.isGeminiNano()) {
+                                nanoSuffix = " • Nano " + (app.amegram.hot.HotAiGate.isNanoDownloading()
+                                        ? "⏳ " + app.amegram.hot.HotAiGate.getNanoDownloadProgress() + "%" : "✓");
+                            }
+                        } catch (Throwable ignore) {
+                        }
                         cell.setTextAndValue(
                                 MiogramLocale.get("Оптимізація під пристрій", "Оптимизация под устройство", "Device Optimization"),
-                                hw.deviceSummary,
+                                hw.deviceSummary + nanoSuffix,
                                 false
                         );
                     } else if (position == keyRow) {
@@ -362,7 +370,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(MiogramLocale.get("Замінити вкладку «Контакти» на ШІ", "Заменить вкладку «Контакты» на ИИ", "Replace «Contacts» tab with AI"),
                                 app.miogram.bridge.ai.companion.MiogramCompanionPrefs.isContactsReplacedWithAi(), false);
                     } else if (position == transcribePreferForPremiumRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Надавати перевагу Amegram для TG Premium", "Предпочитать Amegram для TG Premium", "Prefer Amegram over TG Premium"),
+                        cell.setTextAndCheck(MiogramLocale.get("Надавати перевагу Yumi для TG Premium", "Предпочитать Yumi для TG Premium", "Prefer Yumi over TG Premium"),
                                 app.miogram.bridge.ai.AmegramTranscriptionPrefs.isPreferAmegramForPremium(), false);
                     } else if (position == piiMaskRow) {
                         cell.setTextAndCheck(MiogramLocale.get("Приховувати персональні дані (PII Shield)", "Скрывать личные данные (PII Shield)", "Protect Personal Data (PII Shield)"), piiMaskEnabled(), false);
@@ -379,11 +387,17 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                         ));
                     } else if (position == hardwareInfoRow) {
                         MiogramAiService.DeviceHardwareInfo hw = MiogramAiService.getDeviceHardwareInfo();
-                        cell.setText(hw.recommendationReason);
+                        String warning = "";
+                        try {
+                            Context wctx = getParentActivity() != null ? getParentActivity() : org.telegram.messenger.ApplicationLoader.applicationContext;
+                            warning = app.amegram.hot.HotAiGate.nanoWarning(wctx);
+                        } catch (Throwable ignore) {
+                        }
+                        cell.setText(hw.recommendationReason + ((warning != null && !warning.isEmpty()) ? "\n" + warning : ""));
                     } else if (position == aiInfoRow) {
-                        cell.setText(MiogramLocale.get("Додайте один або кілька ключів Gemini, по одному в рядку. Amegram обирає ключі по черзі та переходит до наступного, коли ключ неавторизований або вичерпав квоту.",
-                                "Добавьте один или несколько ключей Gemini, по одному в строке. Amegram выбирает ключи по очереди и переходит к следующему, когда ключ не авторизован или исчерпал квоту.",
-                                "Add one or more Gemini keys, one per line. Amegram rotates keys and tries the next one when a key is unauthorized or out of quota."));
+                        cell.setText(MiogramLocale.get("Додайте один або кілька ключів Gemini, по одному в рядку. Yumi обирає ключі по черзі та переходит до наступного, коли ключ неавторизований або вичерпав квоту.",
+                                "Добавьте один или несколько ключей Gemini, по одному в строке. Yumi выбирает ключи по очереди и переходит к следующему, когда ключ не авторизован или исчерпал квоту.",
+                                "Add one or more Gemini keys, one per line. Yumi rotates keys and tries the next one when a key is unauthorized or out of quota."));
                     } else if (position == featuresInfoRow) {
                         cell.setText(MiogramLocale.get("Натисніть кнопку розшифровки на будь-якому голосовому повідомленні або кружечку в чаті для отримання тексту за 0.3 секунди.",
                                 "Нажмите кнопку расшифровки на любом голосовом сообщении или кружочке в чате для получения текста за 0.3 секунды.",

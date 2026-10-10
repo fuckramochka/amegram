@@ -48,6 +48,26 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         return MiogramLocale.get("Конфіденційність та Захист", "Конфиденциальность и Защита", "Privacy & Security");
     }
 
+    private boolean isGhostOn() {
+        try {
+            return app.amegram.hot.HotModulesManager.isModuleEnabled("ghost");
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
+    private void showGhostOffHint() {
+        String text = MiogramLocale.get("Увімкніть Привид в Модулях", "Включите Призрак в Модулях", "Enable Ghost in Modules");
+        try {
+            org.telegram.ui.Components.BulletinFactory.of(this).createSimpleBulletin(R.raw.info, text).show();
+        } catch (Throwable ignored) {
+            try {
+                android.widget.Toast.makeText(getParentActivity(), text, android.widget.Toast.LENGTH_SHORT).show();
+            } catch (Throwable ignored2) {
+            }
+        }
+    }
+
     @Override
     protected void updateRows() {
         super.updateRows();
@@ -56,27 +76,18 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         vaultManageRow = addRow();
         vaultInfoRow = addRow();
 
-        // Привид + анти-видалення — одне ціле (hot-модуль ghost). Вимкнений = зник з налаштувань.
-        boolean ghostOn = false;
-        try {
-            ghostOn = app.amegram.hot.HotModulesManager.isModuleEnabled("ghost");
-        } catch (Throwable ignore) {
-        }
-        if (ghostOn) {
-            headerGhostRow = addRow();
-            ghostReadRow = addRow();
-            ghostOnlineRow = addRow();
-            ghostTypingRow = addRow();
-            ghostInfoRow = addRow();
+        // Привид + анти-видалення — єдине джерело: секції завжди видимі.
+        // Вимкнений модуль = підказка в info-рядах + гейт у onItemClick, а не зникнення секцій.
+        headerGhostRow = addRow();
+        ghostReadRow = addRow();
+        ghostOnlineRow = addRow();
+        ghostTypingRow = addRow();
+        ghostInfoRow = addRow();
 
-            headerHistoryRow = addRow();
-            saveDeletedMessagesRow = addRow();
-            saveDeletedMediaRow = addRow();
-            historyInfoRow = addRow();
-        } else {
-            headerGhostRow = ghostReadRow = ghostOnlineRow = ghostTypingRow = ghostInfoRow = -1;
-            headerHistoryRow = saveDeletedMessagesRow = saveDeletedMediaRow = historyInfoRow = -1;
-        }
+        headerHistoryRow = addRow();
+        saveDeletedMessagesRow = addRow();
+        saveDeletedMediaRow = addRow();
+        historyInfoRow = addRow();
 
         headerGeneralPrivacyRow = addRow();
         hidePhoneRow = addRow();
@@ -89,6 +100,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         if (position == vaultManageRow) {
             presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
         } else if (position == ghostReadRow) {
+            if (!isGhostOn()) {
+                showGhostOffHint();
+                return;
+            }
             boolean v = !NekoConfig.sendReadMessagePackets.Bool();
             NekoConfig.sendReadMessagePackets.setConfigBool(v);
             try {
@@ -98,6 +113,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
         } else if (position == ghostOnlineRow) {
+            if (!isGhostOn()) {
+                showGhostOffHint();
+                return;
+            }
             boolean v = !NekoConfig.sendOnlinePackets.Bool();
             NekoConfig.sendOnlinePackets.setConfigBool(v);
             try {
@@ -107,6 +126,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
         } else if (position == ghostTypingRow) {
+            if (!isGhostOn()) {
+                showGhostOffHint();
+                return;
+            }
             boolean v = !NekoConfig.sendUploadProgress.Bool();
             NekoConfig.sendUploadProgress.setConfigBool(v);
             try {
@@ -116,6 +139,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             }
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
         } else if (position == saveDeletedMessagesRow) {
+            if (!isGhostOn()) {
+                showGhostOffHint();
+                return;
+            }
             boolean v = !NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool();
             NaConfig.INSTANCE.getEnableSaveDeletedMessages().setConfigBool(v);
             try {
@@ -125,6 +152,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
             listAdapter.notifyItemChanged(saveDeletedMediaRow);
         } else if (position == saveDeletedMediaRow) {
+            if (!isGhostOn()) {
+                showGhostOffHint();
+                return;
+            }
             boolean v = !NaConfig.INSTANCE.getMessageSavingSaveMedia().Bool();
             NaConfig.INSTANCE.getMessageSavingSaveMedia().setConfigBool(v);
             try {
@@ -215,13 +246,25 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                                 "Установите разные PIN-коды для каждого аккаунта. Скрытый аккаунт не отображается в интерфейсе и открывается только при вводе его секретного PIN-кода на экране блокировки. Экстренный PIN мгновенно завершает сессии защищённых аккаунтов.",
                                 "Configure separate passcodes for each account. Hidden accounts are completely invisible and unlocked strictly via their secret passcode on the lockscreen. Panic code immediately terminates sessions of protected accounts."));
                     } else if (position == ghostInfoRow) {
-                        cell.setText(MiogramLocale.get("Дозволяє читати повідомлення непомітно для співрозмовника.",
-                                "Позволяет читать сообщения незаметно для собеседника.",
-                                "Enables stealth message viewing without notifying the other party."));
+                        if (!isGhostOn()) {
+                            cell.setText(MiogramLocale.get("Увімкніть модуль Привид щоб керувати",
+                                    "Включите модуль Призрак чтобы управлять",
+                                    "Enable the Ghost module to manage"));
+                        } else {
+                            cell.setText(MiogramLocale.get("Дозволяє читати повідомлення непомітно для співрозмовника.",
+                                    "Позволяет читать сообщения незаметно для собеседника.",
+                                    "Enables stealth message viewing without notifying the other party."));
+                        }
                     } else if (position == historyInfoRow) {
-                        cell.setText(MiogramLocale.get("Зберігає копію оригінального тексту навіть після того, як співрозмовник його видалив або змінив.",
-                                "Сохраняет копию оригинального текста даже после того, как собеседник его удалил или изменил.",
-                                "Preserves original messages and media even if edited or retracted."));
+                        if (!isGhostOn()) {
+                            cell.setText(MiogramLocale.get("Увімкніть модуль Привид щоб керувати",
+                                    "Включите модуль Призрак чтобы управлять",
+                                    "Enable the Ghost module to manage"));
+                        } else {
+                            cell.setText(MiogramLocale.get("Зберігає копію оригінального тексту навіть після того, як співрозмовник його видалив або змінив.",
+                                    "Сохраняет копию оригинального текста даже после того, как собеседник его удалил или изменил.",
+                                    "Preserves original messages and media even if edited or retracted."));
+                        }
                     } else if (position == generalPrivacyInfoRow) {
                         cell.setText(MiogramLocale.get("Додатковий захист персональних даних та екрану.",
                                 "Дополнительная защита персональных данных и экрана.",

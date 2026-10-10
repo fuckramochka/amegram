@@ -300,7 +300,6 @@ import tw.nekomimi.nekogram.helpers.MainTabsHelper;
 import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.helpers.TypefaceHelper;
 import tw.nekomimi.nekogram.helpers.remote.EmojiHelper;
-import tw.nekomimi.nekogram.settings.GhostModeActivity;
 import tw.nekomimi.nekogram.translate.Translator;
 import tw.nekomimi.nekogram.ui.BookmarkManagerActivity;
 import tw.nekomimi.nekogram.utils.AlertUtil;
@@ -14720,7 +14719,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 final String ghostModeText = NekoConfig.isGhostModeActive()
                         ? getString(R.string.DisableGhostMode)
                         : getString(R.string.EnableGhostMode);
-                io.add(R.drawable.ayu_ghost, ghostModeText, () -> presentFragment(new GhostModeActivity()), () -> {
+                io.add(R.drawable.ayu_ghost, ghostModeText, () -> presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost")), () -> {
                     final String toggleMsg = NekoConfig.isGhostModeActive()
                             ? getString(R.string.GhostModeDisabled)
                             : getString(R.string.GhostModeEnabled);

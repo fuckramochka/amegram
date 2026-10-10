@@ -28,6 +28,7 @@ import app.amegram.theme.YumiComponents;
 import app.amegram.theme.YumiTheme;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,8 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
     private final List<HotModulesManager.InstalledInfo> shown = new ArrayList<>();
     private final java.util.Map<String, String> pendingUpdates = new java.util.LinkedHashMap<>();
     private final java.util.Set<String> updating = new java.util.HashSet<>();
+    /** Прогрес оновлення id->% (неблокуючий, пер-рядок). */
+    private final Map<String, Integer> progress = new HashMap<>();
 
     @Override
     public View createView(Context context) {
@@ -198,9 +201,13 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             }
             HotModulesManager.downloadBuild(moduleId, latest, true,
                     new HotModulesManager.ProgressCallback<Void>() {
-                        @Override public void onProgress(long d, long t) { }
+                        @Override public void onProgress(long d, long t) {
+                            int pct = t > 0 ? (int) (d * 100 / t) : 0;
+                            progress.put(moduleId, pct);
+                        }
                         @Override public void onDone(boolean doneOk, String message, Void data) {
                             updating.remove(moduleId);
+                            progress.remove(moduleId);
                             reloadPendingUpdates();
                             refresh();
                         }
@@ -230,10 +237,17 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             updateNext(ids, idx + 1, catalog);
             return;
         }
+        updating.add(id);
         HotModulesManager.downloadBuild(id, latest, true,
                 new HotModulesManager.ProgressCallback<Void>() {
-                    @Override public void onProgress(long d, long t) { }
+                    @Override public void onProgress(long d, long t) {
+                        int pct = t > 0 ? (int) (d * 100 / t) : 0;
+                        progress.put(id, pct);
+                    }
                     @Override public void onDone(boolean ok, String message, Void data) {
+                        updating.remove(id);
+                        progress.remove(id);
+                        reloadPendingUpdates();
                         updateNext(ids, idx + 1, catalog);
                     }
                 });
@@ -414,6 +428,8 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 AndroidUtilities.dp(16), AndroidUtilities.dp(9));
         all.setOnClickListener(v -> {
             all.setEnabled(false);
+            all.setAlpha(0.5f);
+            all.setText(MiogramLocale.get("Оновлення…", "Обновление…", "Updating…"));
             updateAll();
         });
         banner.addView(all);
@@ -552,6 +568,20 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         descView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         descView.setMaxLines(2);
         infoCol.addView(descView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+
+        // Тонкий неблокуючий прогрес оновлення (пер-рядок).
+        int pct0 = progress.containsKey(info.manifest.id) ? progress.get(info.manifest.id) : 0;
+        boolean isUpdating = updating.contains(info.manifest.id);
+        TextView progressView = new TextView(context);
+        progressView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        progressView.setTextColor(YumiTheme.getPrimary());
+        if (isUpdating) {
+            progressView.setVisibility(View.VISIBLE);
+            progressView.setText(pct0 > 0 ? pct0 + "%" : "…");
+        } else {
+            progressView.setVisibility(View.GONE);
+        }
+        infoCol.addView(progressView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
         // Бейджі: доступне оновлення • карантин
         String upd = pendingUpdates.get(info.manifest.id);

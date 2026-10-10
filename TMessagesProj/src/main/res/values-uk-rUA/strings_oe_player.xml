@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OEAppearanceMd3MiniPlayer">Мініплеєр</string>
+    <string name="OEPlayerFromChat">З чату</string>
+    <string name="OEPlayerFromProfile">З профілю</string>
+    <string name="OEPlayerFromSearch">З пошуку</string>
+    <string name="OEPlayerMusic">Музика</string>
+    <string name="OEPlayerLyrics">Текст пісні</string>
+    <string name="OEPlayerQueue">Черга відтворення</string>
+    <string name="OEPlayerShuffle">Випадковий порядок</string>
+    <string name="OEPlayerSpeed">Швидкість відтворення</string>
+    <string name="OEPlayerSeek">Перемотування</string>
+    <string name="OEPlayerOpen">Відкрити плеєр</string>
+    <string name="OEPlayerNoLyricsTitle">У файлі немає тексту пісні</string>
+    <string name="OEPlayerNoLyricsText">Ви можете знайти текст пісні через LRCLIB або lrcmux. Назву треку буде надіслано через інтернет.</string>
+    <string name="OEPlayerFindLyrics">Знайти онлайн</string>
+    <string name="OEPlayerLyricsSearching">Пошук тексту пісні…</string>
+    <string name="OEPlayerLyricsNotFound">Текст не знайдено</string>
+    <string name="OEPlayerLyricsNotFoundText">Жоден із провайдерів не повернув текст для цього треку.</string>
+    <string name="OEPlayerLyricsError">Не вдалося завантажити текст</string>
+    <string name="OEPlayerLyricsErrorText">Перевірте підключення та спробуйте знову.</string>
+    <string name="OEPlayerRetry">Спробувати знову</string>
+    <string name="OEPlayerInstrumental">Інструментальна</string>
+    <string name="OEPlayerInstrumentalText">Цей трек не містить слів.</string>
+    <string name="OEPlayerSourceSynced">Синхронізований текст · %1$s</string>
+    <string name="OEPlayerSourcePlain">Текст · %1$s</string>
+    <string name="OEPlayerSourceSyncedFile">Синхронізований текст із файлу</string>
+    <string name="OEPlayerSourcePlainFile">Текст із файлу</string>
+    <string name="OEPlayerTracks_one">%1$d трек</string>
+    <string name="OEPlayerTracks_two">%1$d треки</string>
+    <string name="OEPlayerTracks_few">%1$d треки</string>
+    <string name="OEPlayerTracks_many">%1$d треків</string>
+    <string name="OEPlayerTracks_other">%1$d треків</string>
+</resources>

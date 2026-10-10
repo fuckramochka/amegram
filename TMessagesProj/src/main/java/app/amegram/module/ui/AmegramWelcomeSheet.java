@@ -18,7 +18,7 @@ import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.LayoutHelper;
 
-import app.amegram.hot.ui.YumiTheme;
+import app.amegram.theme.YumiTheme;
 import app.amegram.module.AmegramConfig;
 import app.miogram.bridge.MiogramLocale;
 
@@ -39,7 +39,7 @@ public class AmegramWelcomeSheet extends BottomSheet {
         if (textPrimary == 0) textPrimary = 0xFFFFFFFF;
         int textSecondary = getThemedColor(Theme.key_dialogTextGray2);
         if (textSecondary == 0) textSecondary = 0xAAFFFFFF;
-        int accent = YumiTheme.getAccentColor();
+        int accent = YumiTheme.getPrimary();
         if (accent == 0) accent = 0xFF7C4DFF;
 
         LinearLayout root = new LinearLayout(context);

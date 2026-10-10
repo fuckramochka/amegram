@@ -15,6 +15,8 @@ import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 import org.telegram.ui.ActionBar.AlertDialog;
 
+import app.miogram.bridge.MiogramLocale;
+
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -35,7 +37,7 @@ public final class YumiBackupHelper {
             try {
                 progressDialog = new AlertDialog(context, AlertDialog.ALERT_TYPE_SPINNER);
                 progressDialog.setCanCancel(false);
-                progressDialog.setMessage("Підготовка резервної копії...");
+                progressDialog.setMessage(MiogramLocale.get("Підготовка резервної копії...", "Подготовка резервной копии...", "Preparing backup..."));
                 progressDialog.show();
             } catch (Throwable ignore) {
             }
@@ -49,7 +51,7 @@ public final class YumiBackupHelper {
             try {
                 File dbFile = ApplicationLoader.applicationContext.getDatabasePath(AyuConstants.AYU_DATABASE);
                 if (dbFile == null || !dbFile.exists()) {
-                    throw new IOException("База даних видалених повідомлень ще порожня");
+                    throw new IOException(MiogramLocale.get("База даних видалених повідомлень ще порожня", "База данных удалённых сообщений ещё пуста", "Deleted messages database is empty"));
                 }
 
                 // Скидаємо транзакції з WAL-журналу на диск перед копіюванням
@@ -63,7 +65,7 @@ public final class YumiBackupHelper {
                 exportFile = new File(AndroidUtilities.getCacheDir(), "yumigram_messages_" + dateStr + ".db");
                 if (!AndroidUtilities.copyFile(dbFile, exportFile)) {
                     if (!exportFile.delete()) exportFile.deleteOnExit();
-                    throw new IOException("Не вдалося скопіювати базу даних");
+                    throw new IOException(MiogramLocale.get("Не вдалося скопіювати базу даних", "Не удалось скопировать базу данных", "Failed to copy database"));
                 }
 
                 success = true;
@@ -88,10 +90,11 @@ public final class YumiBackupHelper {
                     try {
                         long targetUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                         String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
-                        String caption = "📦 Yumigram — Резервна копія бази повідомлень\n"
-                                + "📅 Створено: " + timeStr + "\n"
-                                + "📊 Розмір: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\n"
-                                + "🛡 Містить збережені видалені та відредаговані повідомлення";
+                        String caption = MiogramLocale.get(
+                                "📦 Yumigram — Резервна копія бази повідомлень\n📅 Створено: " + timeStr + "\n📊 Розмір: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\n🛡 Містить збережені видалені та відредаговані повідомлення",
+                                "📦 Yumigram — Резервная копия базы сообщений\n📅 Создано: " + timeStr + "\n📊 Размер: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\n🛡 Содержит сохранённые удалённые и отредактированные сообщения",
+                                "📦 Yumigram — Message database backup\n📅 Created: " + timeStr + "\n📊 Size: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\n🛡 Contains saved deleted and edited messages"
+                        );
 
                         SendMessagesHelper.prepareSendingDocument(
                                 AccountInstance.getInstance(currentAccount),
@@ -106,16 +109,16 @@ public final class YumiBackupHelper {
                         );
 
                         Toast.makeText(ApplicationLoader.applicationContext,
-                                "Резервну копію успішно надіслано в Збережене (Saved Messages)!",
+                                MiogramLocale.get("Резервну копію успішно надіслано в Збережене (Saved Messages)!", "Резервная копия успешно отправлена в Избранное (Saved Messages)!", "Backup successfully sent to Saved Messages!"),
                                 Toast.LENGTH_LONG).show();
                     } catch (Throwable e) {
                         FileLog.e("Failed to send export document: ", e);
                         Toast.makeText(ApplicationLoader.applicationContext,
-                                "Помилка відправки документа в Збережене",
+                                MiogramLocale.get("Помилка відправки документа в Збережене", "Ошибка отправки документа в Избранное", "Failed to send document to Saved Messages"),
                                 Toast.LENGTH_SHORT).show();
                     }
                 } else {
-                    String msg = finalErr != null ? finalErr : "Помилка при експорті бази";
+                    String msg = finalErr != null ? finalErr : MiogramLocale.get("Помилка при експорті бази", "Ошибка при экспорте базы", "Error exporting database");
                     Toast.makeText(ApplicationLoader.applicationContext,
                             msg,
                             Toast.LENGTH_LONG).show();

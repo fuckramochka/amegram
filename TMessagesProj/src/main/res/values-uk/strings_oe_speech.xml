@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OESpeechRecognitionEngine">Рушій розпізнавання мовлення</string>
+    <string name="OESpeechRecognitionEngineVosk">Vosk (Офлайн)</string>
+    <string name="OESpeechRecognitionEngineGoogle">Google (Онлайн)</string>
+</resources>

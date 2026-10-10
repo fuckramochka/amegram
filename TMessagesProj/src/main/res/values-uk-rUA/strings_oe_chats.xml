@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OEChatsHideTimeOnStickers">Приховувати час на наліпках</string>
+
+    <string name="OEChatsReplies">Відповіді</string>
+    <string name="OEChatsReplyColors">Кольоровий фон</string>
+    <string name="OEChatsReplyEmoji">Емодзі</string>
+    <string name="OEChatsReplyBackground">Підкладка</string>
+
+    <string name="OEChatsStickerShape">Форма наліпок</string>
+    <string name="OEChatsStickerShapeRounded">Скруглена</string>
+    <string name="OEChatsStickerShapeMessage">Як повідомлення</string>
+
+    <string name="OEChatsDoubleTapInfo">Деякі дії вимагають прав адміністратора в чаті або каналі.</string>
+
+    <string name="OEChatsBottomButton">Нижня кнопка</string>
+    <string name="OEChatsBottomButtonDiscuss">Обговорити</string>
+
+    <string name="OEChatsGlassMessageMenuInfo">Групування переносить основні дії вниз меню повідомлення.</string>
+
+    <string name="OEChatsCameraType">Тип камери</string>
+    <string name="OEChatsCameraTypeCamera2">Camera2</string>
+    <string name="OEChatsCameraStabilization">Стабілізація</string>
+    <string name="OEChatsCameraTypeCameraX">CameraX</string>
+    <string name="OEChatsCameraMirrorMode">Дзеркальний режим</string>
+    <string name="OEChatsStartWithWideAngle">Починати з ширококутної</string>
+    <string name="OEChatsExtendedFps">Розширений діапазон FPS</string>
+    <string name="OEChatsZoomSlider">Плашка зуму</string>
+    <string name="OEChatsZoomSliderInfo">Показувати керування зумом під камерою відеоповідомлень.</string>
+    <string name="OEChatsStaticZoom">Статичний зум</string>
+    <string name="OEChatsStaticZoomInfo">Під час запису відеоповідомлень рівень зуму не скидається, коли ви прибираєте пальці.</string>
+
+    <string name="OEChatsPhoto">Фото</string>
+    <string name="OEChatsAlwaysSendInHD">Завжди надсилати в HD</string>
+    <string name="OEChatsHideCameraTile">Приховати плитку камери</string>
+    <string name="OEChatsHideCameraTileInfo">Плитка камери в меню вкладень буде прихована.</string>
+
+    <string name="OEChatsDoubleTapSeekDuration">Перемотування подвійним тапом</string>
+    <string name="OEChatsPauseOnMinimize">Автопауза</string>
+    <string name="OEChatsPauseOnMinimizeInfo">Ставить відтворення на паузу під час блокування екрана або згортання додатку.</string>
+    <string name="OEChatsSwipeToPip">Свайп у «картинку в картинці»</string>
+    <string name="OEChatsUnmuteWithVolumeButtons">Вмикати звук відео кнопками гучності</string>
+    <string name="OEChatsStickersAndEmoji">Наліпки та емодзі</string>
+    <string name="OEChatsDoubleTap">Подвійний тап</string>
+    <string name="OEChatsMessages">Повідомлення</string>
+    <string name="OEChatsVideos">Відео</string>
+    <string name="OEChatsUnlimited">Нескінченні</string>
+    <string name="OEChatsUnlimitedStickers">Наліпки</string>
+    <string name="OEChatsUnlimitedGifs">GIF</string>
+    <string name="OEChatsAdminShortcuts">Швидкі дії адміністратора</string>
+    <string name="OEChatsDisableGreetingSticker">Вимкнути вітальну наліпку</string>
+    <string name="OEChatsHideSendAsPeer">Приховати кнопку «Надіслати як…»</string>
+    <string name="OEChatsHideSendAsPeerInfo">Меню «Надіслати як…» залишається доступним за довгим натисканням на кнопку емодзі/наліпок/GIF.</string>
+    <string name="OEChatsDisableGlobalSearch">Вимкнути глобальний пошук</string>
+    <string name="OEChatsTapToSwitchRecord">Натискання перемикає голос і відео</string>
+    <string name="OEChatsKeepAttachButton">Зберігати кнопку вкладення під час набору</string>
+    <string name="OEChatsRemoveMessageTail">Прибрати «хвостик» бульбашки</string>
+    <string name="OEChatsReplaceEditedWithIcon">Замінювати «змінено» іконкою</string>
+    <string name="OEChatsShowOnlineStatus">Показувати індикатор онлайн</string>
+    <string name="OEChatsHideShareButton">Приховати бічну кнопку «Поділитися»</string>
+    <string name="OEChatsShowResultsBeforeVoting">Показувати результати до голосування</string>
+    <string name="OEChatsHideReactions">Приховувати реакції</string>
+    <string name="OEChatsHideReactionsChannels">Канали</string>
+    <string name="OEChatsHideReactionsGroups">Групи</string>
+    <string name="OEChatsHideReactionsPrivate">Особисті чати</string>
+    <string name="OEChatsHideReactionsInfo">Реакції будуть приховані з інтерфейсу в обраних типах чатів.</string>
+    <string name="OEChatsQuickTransitions">Швидкий свайп-перехід</string>
+    <string name="OEChatsQuickTransitionChannels">Канали</string>
+    <string name="OEChatsQuickTransitionTopics">Теми</string>
+    <string name="OEChatsMenuCopyPhoto">Копіювати фото</string>
+    <string name="OEChatsMenuSave">Зберегти</string>
+    <string name="OEChatsMenuRepeat">Повторити</string>
+    <string name="OEChatsMenuClear">Очистити з кешу</string>
+    <string name="OEChatsMenuHistory">Історія повідомлення</string>
+    <string name="OEChatsMenuReport">Поскаржитися</string>
+    <string name="OEChatsMenuDetails">Подробиці</string>
+    <string name="OEChatsSeamlessSwitching">Безшовне перемикання</string>
+    <string name="OEChatsExtendedSettings">Розширені налаштування</string>
+    <string name="OEChatsRememberLastUsedCamera">Запам'ятовувати останню камеру</string>
+    <string name="OEChatsPreferOriginalQuality">Віддавати перевагу оригінальній якості</string>
+    <string name="OEChatsPauseVideo">Відео</string>
+    <string name="OEChatsPauseVoice">Голос</string>
+    <string name="OEChatsPauseRound">Кружечки</string>
+    <string name="OEChatsAiChat">ШІ-чат</string>
+    <string name="OEChatsAiChatInfo">Налаштування сервісів, ролей та історії</string>
+    <string name="OEChatsChatSettings">Налаштування чатів</string>
+    <string name="OEChatsChatSettingsInfo">Налаштування медіа, значок додатку та інше</string>
+    <string name="OEStickerSizeSmall">Маленький</string>
+    <string name="OEStickerSizeLarge">Великий</string>
+    <string name="OEChatsChannelPosts">Дописи в каналах</string>
+    <string name="OEChatsWideChannelPosts">Широкі дописи</string>
+    <string name="OEChatsWideFeedPosts">Широкі дописи у стрічці</string>
+    <string name="OEChatsWideChannelPostsPreviewText">Новини, фото та відео</string>
+    <string name="OEChatsWideChannelPostsPreviewReply">Пересланий допис каналу</string>
+    <string name="OEChatsWideChannelPostsFooter">Дописи та пересилання в каналах займуть доступну ширину.</string>
+    <string name="OEChatsUnmuteWithVolumeButtonsInfo">Кнопки гучності вмикатимуть звук у беззвучного відео замість зміни гучності.</string>
+    <string name="OEChatsShowResultsBeforeVotingInfo">Результати публічних опитувань видно без потреби голосувати.</string>
+    <string name="OEChatsRememberLastUsedCameraInfo">Наступне відеоповідомлення почнеться з тієї камери, якою ви знімали минулого разу.</string>
+    <string name="OEDetailsBitrate">Бітрейт</string>
+    <string name="OEDetailsBitrateValue">%1$d Кбіт/с</string>
+    <string name="OEDetailsDatacenter">Дата-центр</string>
+    <string name="OEDetailsDate">Дата</string>
+    <string name="OEDetailsDuration">Тривалість</string>
+    <string name="OEDetailsEditedDate">Дата зміни</string>
+    <string name="OEDetailsFileName">Ім'я файлу</string>
+    <string name="OEDetailsFilePath">Шлях до файлу</string>
+    <string name="OEDetailsFileSize">Розмір файлу</string>
+    <string name="OEDetailsForwardedDate">Дата пересилання</string>
+    <string name="OEDetailsMimeType">Тип MIME</string>
+    <string name="OEDetailsPlatform">Платформа</string>
+    <string name="OEDetailsResolution">Роздільна здатність</string>
+    <string name="ReplyToDeletedAsQuote">Відповідь на видалене цитатою</string>
+    <string name="ReplyToDeletedAsQuoteInfo">Якщо повідомлення вже видалено, його текст піде у ваше повідомлення цитатою — звичайну відповідь сервер втратить.</string>
+    <string name="SaveDeletedInPrivateChats">Зберігати видалені в особистих чатах</string>
+    <string name="SaveDeletedInGroups">Зберігати видалені в групах</string>
+    <string name="SaveDeletedInChannels">Зберігати видалені в каналах</string>
+    <string name="ForwardProtectedAsCopy">Пересилання із захищених чатів</string>
+    <string name="ForwardProtectedAsCopyInfo">Надсилає копію замість пересилання. Медіа має бути вже завантажене, автор у копії не вказується.</string>
+    <string name="OEChatsLeftButtonActionHint">Цю саму дію можна змінити, затиснувши саму кнопку в чаті.</string>
+</resources>

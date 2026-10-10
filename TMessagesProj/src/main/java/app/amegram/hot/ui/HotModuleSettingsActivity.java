@@ -123,11 +123,11 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if ("player".equals(moduleId)) {
             try {
                 rows.add(HotRow.button("player_lyrics_open",
-                        "🔍 Тексти пісень (LRC + ШІ)",
-                        "LRCLib • NetEase • ШІ-розшифровка через MiogramLyricsView"));
+                        MiogramLocale.get("🔍 Тексти пісень (LRC + ШІ)", "🔍 Тексты песен (LRC + ИИ)", "🔍 Lyrics (LRC + AI)"),
+                        MiogramLocale.get("LRCLib • NetEase • ШІ-розшифровка через MiogramLyricsView", "LRCLib • NetEase • ИИ-расшифровка через MiogramLyricsView", "LRCLib • NetEase • AI transcription via MiogramLyricsView")));
                 rows.add(HotRow.button("player_lyrics_ai",
-                        "🤖 Розшифрувати через ШІ (upgradeLyricsToAi)",
-                        "Gemini AI → слова з таймінгами (AI_WORD)"));
+                        MiogramLocale.get("🤖 Розшифрувати через ШІ", "🤖 Расшифровать через ИИ", "🤖 Transcribe with AI"),
+                        MiogramLocale.get("Gemini AI → слова з таймінгами (AI_WORD)", "Gemini AI → слова с таймингами (AI_WORD)", "Gemini AI → lyrics with timestamps (AI_WORD)")));
             } catch (Throwable ignore) {
             }
         }
@@ -245,7 +245,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
             }
             if (playing == null) {
                 try {
-                    android.widget.Toast.makeText(ctx, "Увімкніть трек", android.widget.Toast.LENGTH_SHORT).show();
+                    android.widget.Toast.makeText(ctx, MiogramLocale.get("Увімкніть трек", "Включите трек", "Play a track first"), android.widget.Toast.LENGTH_SHORT).show();
                 } catch (Throwable ignore) {
                 }
             }
@@ -276,7 +276,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
             }
             if (playing == null) {
                 try {
-                    android.widget.Toast.makeText(ctx, "Увімкніть трек", android.widget.Toast.LENGTH_SHORT).show();
+                    android.widget.Toast.makeText(ctx, MiogramLocale.get("Увімкніть трек", "Включите трек", "Play a track first"), android.widget.Toast.LENGTH_SHORT).show();
                 } catch (Throwable ignore) {
                 }
                 return;
@@ -290,7 +290,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
                 showDialog(sheet);
                 try {
                     android.widget.Toast.makeText(ctx,
-                            "Відкрито плеєр — натисніть ✨ / Розшифровка в текстах (upgradeLyricsToAi)",
+                            MiogramLocale.get("Відкрито плеєр — натисніть ✨ / Розшифровка в текстах", "Открыт плеер — нажмите ✨ / Расшифровка в текстах", "Player opened — tap ✨ / Transcribe in lyrics"),
                             android.widget.Toast.LENGTH_LONG).show();
                 } catch (Throwable ignore) {
                 }
@@ -317,7 +317,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
                     new org.telegram.ui.ActionBar.AlertDialog.Builder(ctx);
             builder.setTitle(r.title);
             builder.setView(input);
-            builder.setPositiveButton("OK", (d, w) -> {
+            builder.setPositiveButton(MiogramLocale.get("ОК", "ОК", "OK"), (d, w) -> {
                 String v = input.getText().toString().trim();
                 try {
                     host.putString(r.id, v);
@@ -326,7 +326,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
                 }
                 listView.adapter.update(true);
             });
-            builder.setNegativeButton("Скасувати", null);
+            builder.setNegativeButton(MiogramLocale.get("Скасувати", "Отмена", "Cancel"), null);
             builder.show();
         } catch (Throwable ignore) {
         }

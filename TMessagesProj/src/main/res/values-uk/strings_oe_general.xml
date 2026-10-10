@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="OEGeneralTitle">Основні</string>
+    <string name="OEGeneralOtherTitle">Проче</string>
+
+    <!-- Translate Messages -->
+    <string name="OEGeneralTranslateHeader">Переклад повідомлень</string>
+    <string name="OEGeneralTranslateButton">Кнопка перекладу</string>
+    <string name="OEGeneralTranslateWholeChat">Переклад усього чату</string>
+    <string name="OEGeneralTranslationProvider">Сервіс перекладу</string>
+    <string name="OEGeneralTranslationTarget">Мова перекладу</string>
+    <string name="OEGeneralTranslationTargetDefault">Мова додатку</string>
+    <string name="OEGeneralDoNotTranslate">Не перекладати</string>
+    <string name="OEGeneralTranslateInfo">Кнопка «Перекласти» з'явиться в контекстному меню повідомлення.</string>
+
+    <!-- General -->
+    <string name="OEGeneralSectionHeader">Основні</string>
+    <string name="OEGeneralDisableNumberRounding">Не округлювати числа</string>
+    <string name="OEGeneralDisableNumberRoundingValue">1,23 тис. → 1 234</string>
+    <string name="OEGeneralFormatTimeWithSeconds">Показувати секунди</string>
+    <string name="OEGeneralFormatTimeWithSecondsValue">12:34 → 12:34:56</string>
+    <string name="OEGeneralRelativeLastSeen">Відносний час у мережі</string>
+    <string name="OEGeneralInAppVibration">Вібрація в додатку</string>
+    <string name="OEGeneralFilterZalgo">Фільтрувати «Zalgo»</string>
+    <string name="OEGeneralFilterZalgoInfo">Прибирає комбіновані символи, що ламають верстку тексту: Z̷͍͌ā̸̜l̸̞̂g̷͍̝o̶̩̓ перетворюється на Zalgo.</string>
+
+    <!-- Download Speed Boost -->
+    <string name="OEGeneralSpeedHeader">Прискорення завантаження</string>
+    <string name="OEGeneralSpeedOff">Вимк.</string>
+    <string name="OEGeneralSpeedFast">Швидко</string>
+    <string name="OEGeneralSpeedUltra">Ультра</string>
+    <string name="OEGeneralUploadBoost">Прискорення вивантаження</string>
+    <string name="OEGeneralSpeedBoostInfo">Режим «Ультра» може викликати проблеми з мережею або акумулятором. Прискорення вивантаження надсилає файли більшими частинами та збільшує витрату трафіку.</string>
+
+    <!-- Storage -->
+    <string name="OEGeneralStorageHeader">Сховище</string>
+    <string name="OEGeneralSavePath">Папка збереження</string>
+    <string name="OEGeneralSavePathDefault">За замовчуванням</string>
+    <string name="OEGeneralSavePathHint">Назва папки</string>
+    <string name="OEGeneralSavePathInfo">Назва папки всередині Downloads, куди зберігаються файли. Дозволені букви, цифри, пробіл, крапка, дефіс та підкреслення.</string>
+
+    <!-- Profile -->
+    <string name="OEGeneralProfileHeader">Профіль</string>
+    <string name="OEGeneralHidePhone">Приховати номер телефону</string>
+    <string name="OEGeneralShowIdAndDc">Показувати ID та DC</string>
+    <string name="OEGeneralShowIdAndDcInfo">Показує ID користувача або чату та номер дата-центру в профілі.</string>
+
+    <!-- Archive -->
+    <string name="OEGeneralArchiveHeader">Архів</string>
+    <string name="OEGeneralHideArchive">Приховати папку «Архів»</string>
+    <string name="OEGeneralArchiveOnPull">Відкривати архів потягуванням</string>
+    <string name="OEGeneralDisableUnarchiveSwipe">Вимкнути свайп «З архіву»</string>
+    <string name="OEGeneralDisableUnarchiveSwipeInfo">Свайп вліво не прибиратиме чат з архіву.</string>
+
+    <!-- Settings Management -->
+    <string name="OEGeneralExportEtgSettings">Експорт</string>
+    <string name="OEGeneralImportEtgSettings">Імпорт</string>
+    <string name="OEGeneralEtgSettingsInfo">Юміграм обмінюється налаштуваннями через файли .ame. Переноситься лише те, що є в обох додатках, решта залишається як було.</string>
+    <string name="OEGeneralImportEtgConfirm">Налаштувань у файлі: %1$d. Поточні значення буде замінено.</string>
+    <string name="OEGeneralImportEtgEmpty">У файлі немає налаштувань Юміграм.</string>
+    <string name="OEGeneralImportEtgDone">Імпортовано налаштувань: %1$d</string>
+    <string name="OEGeneralResetSettings">Скидання налаштувань</string>
+    <string name="OEGeneralResetSettingsInfo">Усі налаштування Юміграм повернуться до значень за замовчуванням.</string>
+    <string name="OEGeneralResetSettingsDone">Налаштування Юміграм скинуто.</string>
+    <string name="OEGeneralDeleteAccount">Видалити акаунт</string>
+    <string name="DeepLFormalityDefault">Тон: як є</string>
+    <string name="DeepLFormalityInformal">Тон: неформальний</string>
+    <string name="DeepLFormalityFormal">Тон: формальний</string>
+    <string name="OEGeneralSavePathInfoFolder">Файли зберігаються в Downloads/%1$s. Лише букви, цифри, пробіл, крапка, дефіс та підкреслення.</string>
+    <string name="OEGeneralNagramHeader">Юміграм</string>
+    <string name="OEGeneralNagramSettings">Налаштування Ame</string>
+    <string name="OEGeneralNagramSettingsInfo">Додає до загального списку налаштувань рядок із розширеними налаштуваннями Ame. Дивитися там варто лише те, для чого в Юміграм немає власного екрана.</string>
+    <string name="OEGeneralAyuMoments">Швидкий доступ до Ame Moments</string>
+    <string name="OEGeneralAyuMomentsHideTitle">Приховати Ame Moments?</string>
+    <string name="OEGeneralAyuMomentsHideMessage">Налаштування зникнуть із цього екрана. Самі функції продовжать працювати, доки ви їх не вимкнете.</string>
+    <string name="OEGeneralAyuMomentsDisableAll">Вимкнути всі функції Ame Moments</string>
+    <string name="OEGeneralAyuMomentsWipe">Видалити базу збережених повідомлень</string>
+    <string name="OEBottomNavigationModeFloating">Плаваюча</string>
+    <string name="OEGeneralLastFm">Last.fm</string>
+    <string name="OEGeneralLastFmHint">ім'я користувача</string>
+    <string name="OEGeneralLastFmNotSet">Не задано</string>
+    <string name="OEGeneralLastFmApplied">Музику профілю оновлено</string>
+    <string name="OEGeneralLastFmNoMusic">Спочатку оберіть музику профілю</string>
+    <string name="OEGeneralLastFmFailed">Не вдалося оновити музику профілю</string>
+    <string name="OEGeneralLastFmNoFile">Не вдалося завантажити трек</string>
+    <string name="OEGeneralLastFmNoUpload">Не дочекалися завантаження</string>
+    <string name="OEGeneralLastFmAbout">Ця функція працює на основі треків у профілі, додаючи до останнього треку приховані байти із вашим ніком на Last.fm. Після додавання юзернейму останній трек у профілі буде перезалито з цією зміною.
+
+Після вимкнення функції трек буде повернено до початкового стану.</string>
+    <string name="OEGeneralNotificationsHeader">Сповіщення</string>
+    <string name="OEGeneralPushStatus">Стан пушів</string>
+    <string name="OEGeneralPushStatusBlocked">заблоковані системою</string>
+    <string name="OEGeneralPushStatusNoToken">немає токена</string>
+    <string name="OEGeneralPushStatusNotRegistered">не зареєстрований</string>
+    <string name="OEGeneralPushStatusNothing">нічого не приходило</string>
+    <string name="OEGeneralBatteryOptimization">Оптимізація батареї</string>
+    <string name="OEGeneralBatteryOptimizationOn">Увімкнена — пуші можуть запізнюватися</string>
+    <string name="OEGeneralBatteryOptimizationOff">Вимкнена</string>
+    <string name="OEGeneralBatteryOptimizationUnavailable">Налаштування батареї недоступні на цьому пристрої</string>
+    <string name="OEGeneralNotificationsInfo">Натисніть на стан пушів, щоб скопіювати діагностику в буфер — додавайте її до повідомлення про проблему зі сповіщеннями. Якщо оптимізація батареї увімкнена, Android може затримувати або губити пуші, поки додаток у фоні.</string>
+    <string name="OEGeneralGoogleHeader">Google</string>
+    <string name="OEGeneralCrashReports">Звіти про збої</string>
+    <string name="OEGeneralCrashReportsInfo">Надсилає стек падінь у Firebase Crashlytics, щоб їх виправляли без ручних баг-репортів. За замовчуванням вимкнено, і доки вимкнено, з пристрою нічого не надсилається.</string>
+    <string name="OEGeneralMapsHeader">Карти</string>
+    <string name="OEGeneralUseOsmMapInfo">Вибір місця та трансляції геопозиції малюються тайлами OpenStreetMap замість Google Maps. Прев'ю локацій у повідомленнях, як і раніше, надходять із серверів Telegram.</string>
+    <string name="OEGeneralMapProvider">Провайдер карт</string>
+    <string name="OEGeneralMapPreview">Прев'ю локацій</string>
+    <string name="OEGeneralMapDriftingFix">Виправляти зміщення карти</string>
+    <string name="OECrashTitle">Юміграм аварійно завершився</string>
+</resources>

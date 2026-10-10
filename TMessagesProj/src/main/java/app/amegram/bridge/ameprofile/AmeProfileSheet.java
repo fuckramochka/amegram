@@ -250,14 +250,14 @@ public class AmeProfileSheet extends BottomSheet {
         cardTextCol.setOrientation(LinearLayout.VERTICAL);
 
         previewCardTitle = new TextView(context);
-        previewCardTitle.setText("Інтерактивна картка");
+        previewCardTitle.setText(MiogramLocale.get("Інтерактивна картка", "Интерактивная карточка", "Interactive Card"));
         previewCardTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
         previewCardTitle.setTypeface(AndroidUtilities.bold());
         previewCardTitle.setTextColor(0xFFFFFFFF);
         cardTextCol.addView(previewCardTitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         previewCardSubtitle = new TextView(context);
-        previewCardSubtitle.setText("Швидкий перехід / інформація");
+        previewCardSubtitle.setText(MiogramLocale.get("Швидкий перехід / інформація", "Быстрый переход / информация", "Quick link / info"));
         previewCardSubtitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
         previewCardSubtitle.setTextColor(0xAAFFFFFF);
         cardTextCol.addView(previewCardSubtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -333,9 +333,9 @@ public class AmeProfileSheet extends BottomSheet {
         alignLabel.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         alignRow.addView(alignLabel, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
 
-        alignRow.addView(createSmallChip(context, "Зліва", () -> updateXmlAttr("layout", "avatar-align", "left")));
-        alignRow.addView(createSmallChip(context, "Центр", () -> updateXmlAttr("layout", "avatar-align", "center")));
-        alignRow.addView(createSmallChip(context, "Справа", () -> updateXmlAttr("layout", "avatar-align", "right")));
+        alignRow.addView(createSmallChip(context, MiogramLocale.get("Зліва", "Слева", "Left"), () -> updateXmlAttr("layout", "avatar-align", "left")));
+        alignRow.addView(createSmallChip(context, MiogramLocale.get("Центр", "Центр", "Center"), () -> updateXmlAttr("layout", "avatar-align", "center")));
+        alignRow.addView(createSmallChip(context, MiogramLocale.get("Справа", "Справа", "Right"), () -> updateXmlAttr("layout", "avatar-align", "right")));
 
         controlsCard.addView(alignRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
@@ -353,7 +353,7 @@ public class AmeProfileSheet extends BottomSheet {
         tiltRow.addView(createSmallChip(context, "0°", () -> updateXmlAttr("avatar", "rotation", "0")));
         tiltRow.addView(createSmallChip(context, "10°", () -> updateXmlAttr("avatar", "rotation", "10")));
         tiltRow.addView(createSmallChip(context, "-10°", () -> updateXmlAttr("avatar", "rotation", "-10")));
-        tiltRow.addView(createSmallChip(context, "✨ Сяйво", () -> {
+        tiltRow.addView(createSmallChip(context, MiogramLocale.get("✨ Сяйво", "✨ Сияние", "✨ Glow"), () -> {
             boolean cur = extractBoolAttr(xmlEditor.getText().toString(), "name", "glow-enabled", true);
             updateXmlAttr("name", "glow-enabled", cur ? "false" : "true");
         }));
@@ -371,7 +371,7 @@ public class AmeProfileSheet extends BottomSheet {
         mediaLabel.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         mediaRow.addView(mediaLabel, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
 
-        mediaRow.addView(createSmallChip(context, "🖼 Додати фото з галереї", () -> promptAddLocalMedia(context)));
+        mediaRow.addView(createSmallChip(context, MiogramLocale.get("🖼 Додати фото з галереї", "🖼 Добавить фото из галереи", "🖼 Add photo from gallery"), () -> promptAddLocalMedia(context)));
         controlsCard.addView(mediaRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         visualContainer.addView(controlsCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
@@ -385,10 +385,10 @@ public class AmeProfileSheet extends BottomSheet {
         LinearLayout codeToolbar = new LinearLayout(context);
         codeToolbar.setOrientation(LinearLayout.HORIZONTAL);
 
-        codeToolbar.addView(createSmallChip(context, "+ Картка", () -> insertSnippet("\n        <card id=\"new_card\"\n            title=\"Нова інтерактивна картка\"\n            subtitle=\"Опис або посилання\"\n            icon=\"star\"\n            url=\"https://t.me/dkamegram\"\n            gradient-start=\"#1E2235\"\n            gradient-end=\"#333A56\"\n            gradient-angle=\"45\"\n            text-color=\"#FFFFFF\"\n            badge=\"HOT\"\n            badge-bg=\"#FF5722\"\n            radius=\"14\" />\n")));
-        codeToolbar.addView(createSmallChip(context, "+ Банер", () -> insertSnippet("\n    <banner visible=\"true\" type=\"color\" color=\"#1F1633\" gradient-start=\"#1F1633\" gradient-end=\"#3F2B96\" gradient-angle=\"45\" />\n")));
-        codeToolbar.addView(createSmallChip(context, "+ Думка", () -> insertSnippet("\n    <thought visible=\"true\" text=\"✦ Твоя цитата тут ໒꒱\" text-color=\"#00F0FF\" bg-color=\"#18192A\" />\n")));
-        codeToolbar.addView(createSmallChip(context, "✦ Форматувати", this::formatXmlInEditor));
+        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("+ Картка", "+ Карточка", "+ Card"), () -> insertSnippet("\n        <card id=\"new_card\"\n            title=\"Нова інтерактивна картка\"\n            subtitle=\"Опис або посилання\"\n            icon=\"star\"\n            url=\"https://t.me/dkamegram\"\n            gradient-start=\"#1E2235\"\n            gradient-end=\"#333A56\"\n            gradient-angle=\"45\"\n            text-color=\"#FFFFFF\"\n            badge=\"HOT\"\n            badge-bg=\"#FF5722\"\n            radius=\"14\" />\n")));
+        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("+ Банер", "+ Баннер", "+ Banner"), () -> insertSnippet("\n    <banner visible=\"true\" type=\"color\" color=\"#1F1633\" gradient-start=\"#1F1633\" gradient-end=\"#3F2B96\" gradient-angle=\"45\" />\n")));
+        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("+ Думка", "+ Мысль", "+ Thought"), () -> insertSnippet("\n    <thought visible=\"true\" text=\"✦ Твоя цитата тут ໒꒱\" text-color=\"#00F0FF\" bg-color=\"#18192A\" />\n")));
+        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("✦ Форматувати", "✦ Форматировать", "✦ Format"), this::formatXmlInEditor));
 
         codeToolScroll.addView(codeToolbar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         codeContainer.addView(codeToolScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
@@ -632,16 +632,18 @@ public class AmeProfileSheet extends BottomSheet {
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(act);
-        builder.setTitle("📸 Локальне медіа: local:" + missingKey);
-        builder.setMessage("У вашому коді вказано «local:" + missingKey + "», але файл ще не обрано з галереї. Бажаєте обрати фото зараз?");
+        builder.setTitle(MiogramLocale.get("📸 Локальне медіа: local:" + missingKey, "📸 Локальное медиа: local:" + missingKey, "📸 Local media: local:" + missingKey));
+        builder.setMessage(MiogramLocale.get("У вашому коді вказано «local:" + missingKey + "», але файл ще не обрано з галереї. Бажаєте обрати фото зараз?",
+                "В вашем коде указано «local:" + missingKey + "», но файл ещё не выбран из галереи. Хотите выбрать фото сейчас?",
+                "Your code references \"local:" + missingKey + "\", but no photo was selected yet. Would you like to pick a photo now?"));
         final Activity finalAct = act;
-        builder.setPositiveButton("Вибрати з галереї", (dialog, which) -> {
+        builder.setPositiveButton(MiogramLocale.get("Вибрати з галереї", "Выбрать из галереи", "Choose from gallery"), (dialog, which) -> {
             AmeMediaEngine.pickMedia(finalAct, missingKey, () -> {
                 updateLivePreviewFromXml(xmlEditor.getText().toString());
                 applyAndDismiss(context, code);
             });
         });
-        builder.setNegativeButton("Продовжити так", (dialog, which) -> {
+        builder.setNegativeButton(MiogramLocale.get("Продовжити так", "Продолжить так", "Continue anyway"), (dialog, which) -> {
             applyAndDismiss(context, code);
         });
         builder.show();
@@ -655,8 +657,8 @@ public class AmeProfileSheet extends BottomSheet {
         if (act == null) return;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(act);
-        builder.setTitle("🖼 Обрати фото для профілю");
-        builder.setMessage("Введіть ключ медіа (наприклад: photo1):");
+        builder.setTitle(MiogramLocale.get("🖼 Обрати фото для профілю", "🖼 Выбрать фото для профиля", "🖼 Choose profile photo"));
+        builder.setMessage(MiogramLocale.get("Введіть ключ медіа (наприклад: photo1):", "Введите ключ медиа (например: photo1):", "Enter media key (e.g. photo1):"));
 
         final EditText input = new EditText(act);
         input.setInputType(InputType.TYPE_CLASS_TEXT);
@@ -665,17 +667,17 @@ public class AmeProfileSheet extends BottomSheet {
         builder.setView(input);
 
         final Activity finalAct = act;
-        builder.setPositiveButton("Обрати з галереї", (dialog, which) -> {
+        builder.setPositiveButton(MiogramLocale.get("Обрати з галереї", "Выбрать из галереи", "Choose from gallery"), (dialog, which) -> {
             String key = input.getText().toString().trim();
             if (TextUtils.isEmpty(key)) key = "photo1";
             final String finalKey = AmeMediaEngine.cleanKey(key);
             AmeMediaEngine.pickMedia(finalAct, finalKey, () -> {
                 updateXmlAttr("banner", "src", "local:" + finalKey);
                 updateLivePreviewFromXml(xmlEditor.getText().toString());
-                Toast.makeText(context, "Фото збережено для local:" + finalKey + "!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, MiogramLocale.get("Фото збережено для local:" + finalKey + "!", "Фото сохранено для local:" + finalKey + "!", "Photo saved for local:" + finalKey + "!"), Toast.LENGTH_SHORT).show();
             });
         });
-        builder.setNegativeButton("Скасувати", null);
+        builder.setNegativeButton(MiogramLocale.get("Скасувати", "Отмена", "Cancel"), null);
         builder.show();
     }
 

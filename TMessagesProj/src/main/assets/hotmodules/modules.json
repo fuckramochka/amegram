@@ -10,7 +10,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.1.hmod",
-          "sha256": "04ea0501ff1e9c41871473ce73b2c463a5f8611aefc46f21f9598d2d1093b357",
+          "sha256": "2b070e4e7bb193ea45f38199d1e12932237104504a46b5b8750d2c7b4dc7c1d5",
           "minApp": 7112,
           "changelog": "Тумблери прив'язані до реальних префів; фон/блур тільки в олівці плеєра.",
           "permissions": [
@@ -18,7 +18,7 @@
             "network",
             "storage"
           ],
-          "sizeBytes": 36431
+          "sizeBytes": 36427
         }
       },
       "history": [],
@@ -35,7 +35,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.1.hmod",
-          "sha256": "ed991c2847e608da694517c0fa7bb0d07f501b076e9f75a85d013e72626fb1e4",
+          "sha256": "26f8af308f8c5ce6f42057617a9f21b6ef5e68128976ecd9b20d4f5fa31fd0de",
           "minApp": 7112,
           "changelog": "Привид+видалені одним модулем; синк префів у ядро; гейт вимкнення.",
           "permissions": [
@@ -58,7 +58,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ame-1.0.0.hmod",
-          "sha256": "e3c25317f87bad608d8a39810f9929d29ec61a14fae8652660a1b14c60d83774",
+          "sha256": "de0bf582d43e326febcb7be2dfe14df4ed91c4aa7505f04b728a34f19218e268",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -82,7 +82,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/vault-1.0.0.hmod",
-          "sha256": "cafb88f935cdece7dfdc1d99aef683e57acad091c50fa763d1502575844c7e5e",
+          "sha256": "d6d7d5bcd3637c1837fd82a64b93bff426e470fb33b3b18502b637c1abc70a19",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -106,7 +106,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/tiktok-1.0.0.hmod",
-          "sha256": "25315ac3c28526c1504395e82b97b6bb06995fe3129b8e8f7ba2e37e73561c96",
+          "sha256": "098cf38c188e5d591b4a15591ea0b62367ab7edafcff4d143fed7ef1979fc5f3",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -130,7 +130,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.1.hmod",
-          "sha256": "f339bcb8ff7203ff95863d5e70fea9b2476ad3bb99504c3a9ed0730da22ec6d9",
+          "sha256": "b26026ba3dfd54495c29836dc27abadf5164720e6f64ebb247f333f3acb5a929",
           "minApp": 7112,
           "changelog": "Detect the real audio/video MIME type before transcription.",
           "permissions": [
@@ -166,7 +166,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.1.hmod",
-          "sha256": "d3491cb67586ba3b9a25ea50bc2c5b5e8b3687c9a14229b11ae9ae3b53e95f66",
+          "sha256": "3fb886e935e87f0acdece5430c024426799dfee0eeda0526eda6356a986fa3dd",
           "minApp": 7112,
           "changelog": "Тільки Nano vs Gemini API (3.5-flash-lite); кнопка Get Key в AI Studio.",
           "permissions": [
@@ -189,7 +189,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.1.hmod",
-          "sha256": "e9a7c99d0e027d61bbdb98ab7f50f3255eac94eb8f627bda10494c4c30b334a6",
+          "sha256": "fdec263886df087fd99db00d67fd7c9a64e372503c7bd1631bea90dd78b1fc4a",
           "minApp": 7112,
           "changelog": "Видалені переїхали в привида; тут безліміти/буст/жести.",
           "permissions": [
@@ -212,7 +212,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/automation-1.0.0.hmod",
-          "sha256": "9c37aa34a997bb587afd5c4ca6ac4c1bf641c930b6a1134116fddc885ec064af",
+          "sha256": "101527873a0305d96fb3e42f44d3b4497d92e37c6241ad01c29dca8a1fc15e92",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -236,7 +236,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
-          "sha256": "004940bc6582cdc137d33977af0f9b8f26e4f86ff0f4792a1148f43739bb2b1d",
+          "sha256": "d576467bb959e87be935e0fcaf1bcf60c9f64423bcebf4834d8bee379f030d74",
           "minApp": 7112,
           "changelog": "",
           "permissions": [],
@@ -257,13 +257,13 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/fileorganization-1.0.0.hmod",
-          "sha256": "3e42fcde51c871e6ab2a7e6f685c2e398a2993c573cf4459bb610356470041e5",
+          "sha256": "e3a9ea5f1281747247f393f7be35691e328a4b416b838ce7249de3918e63675a",
           "minApp": 7112,
           "changelog": "Підпапки чатів + збереження по папках винесено в окремий модуль.",
           "permissions": [
             "storage"
           ],
-          "sizeBytes": 3000
+          "sizeBytes": 2951
         }
       },
       "history": [],
@@ -280,13 +280,13 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.0.hmod",
-          "sha256": "86704a347f719c073f10bf76a44cc3c172cf92cd7caef53f340fddd77003489e",
+          "sha256": "5c3cb271568ae1df15a76d765f399f3ce382605b943480f1c1f76013b0ad90cc",
           "minApp": 7112,
-          "changelog": "Перемикання Yougram Expressive ↔ Classic на льоту.",
+          "changelog": "Перемикання Yougram Expressive ↔ Classic без перевстановлення APK.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 2670
+          "sizeBytes": 3742
         }
       },
       "history": [],

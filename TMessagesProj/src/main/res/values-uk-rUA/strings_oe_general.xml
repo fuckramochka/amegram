@@ -11,7 +11,7 @@
     <string name="OEGeneralTranslationTarget">Мова перекладу</string>
     <string name="OEGeneralTranslationTargetDefault">Мова додатку</string>
     <string name="OEGeneralDoNotTranslate">Не перекладати</string>
-    <string name="OEGeneralTranslateInfo">Кнопка «Перекласти» з'явиться в контекстному меню повідомлення.</string>
+    <string name="OEGeneralTranslateInfo">Кнопка «Перекласти» з\'явиться в контекстному меню повідомлення.</string>
 
     <!-- General -->
     <string name="OEGeneralSectionHeader">Основні</string>
@@ -77,7 +77,7 @@
     <string name="OEGeneralAyuMomentsWipe">Видалити базу збережених повідомлень</string>
     <string name="OEBottomNavigationModeFloating">Плаваюча</string>
     <string name="OEGeneralLastFm">Last.fm</string>
-    <string name="OEGeneralLastFmHint">ім'я користувача</string>
+    <string name="OEGeneralLastFmHint">ім\'я користувача</string>
     <string name="OEGeneralLastFmNotSet">Не задано</string>
     <string name="OEGeneralLastFmApplied">Музику профілю оновлено</string>
     <string name="OEGeneralLastFmNoMusic">Спочатку оберіть музику профілю</string>
@@ -102,9 +102,9 @@
     <string name="OEGeneralCrashReports">Звіти про збої</string>
     <string name="OEGeneralCrashReportsInfo">Надсилає стек падінь у Firebase Crashlytics, щоб їх виправляли без ручних баг-репортів. За замовчуванням вимкнено, і доки вимкнено, з пристрою нічого не надсилається.</string>
     <string name="OEGeneralMapsHeader">Карти</string>
-    <string name="OEGeneralUseOsmMapInfo">Вибір місця та трансляції геопозиції малюються тайлами OpenStreetMap замість Google Maps. Прев'ю локацій у повідомленнях, як і раніше, надходять із серверів Telegram.</string>
+    <string name="OEGeneralUseOsmMapInfo">Вибір місця та трансляції геопозиції малюються тайлами OpenStreetMap замість Google Maps. Прев\'ю локацій у повідомленнях, як і раніше, надходять із серверів Telegram.</string>
     <string name="OEGeneralMapProvider">Провайдер карт</string>
-    <string name="OEGeneralMapPreview">Прев'ю локацій</string>
+    <string name="OEGeneralMapPreview">Прев\'ю локацій</string>
     <string name="OEGeneralMapDriftingFix">Виправляти зміщення карти</string>
     <string name="OECrashTitle">Юміграм аварійно завершився</string>
 </resources>

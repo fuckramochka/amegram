@@ -76,7 +76,7 @@
     <string name="OEChatsMenuDetails">Подробиці</string>
     <string name="OEChatsSeamlessSwitching">Безшовне перемикання</string>
     <string name="OEChatsExtendedSettings">Розширені налаштування</string>
-    <string name="OEChatsRememberLastUsedCamera">Запам'ятовувати останню камеру</string>
+    <string name="OEChatsRememberLastUsedCamera">Запам\'ятовувати останню камеру</string>
     <string name="OEChatsPreferOriginalQuality">Віддавати перевагу оригінальній якості</string>
     <string name="OEChatsPauseVideo">Відео</string>
     <string name="OEChatsPauseVoice">Голос</string>
@@ -102,7 +102,7 @@
     <string name="OEDetailsDate">Дата</string>
     <string name="OEDetailsDuration">Тривалість</string>
     <string name="OEDetailsEditedDate">Дата зміни</string>
-    <string name="OEDetailsFileName">Ім'я файлу</string>
+    <string name="OEDetailsFileName">Ім\'я файлу</string>
     <string name="OEDetailsFilePath">Шлях до файлу</string>
     <string name="OEDetailsFileSize">Розмір файлу</string>
     <string name="OEDetailsForwardedDate">Дата пересилання</string>

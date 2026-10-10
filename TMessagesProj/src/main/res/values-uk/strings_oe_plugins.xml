@@ -97,7 +97,7 @@
     <string name="PluginActivityOther">Інше</string>
     <string name="PluginActivityClear">Очистити журнал</string>
     <string name="PluginActivityCleared">Журнал очищено</string>
-    <string name="PluginActivityInfo">Журнал живе в пам'яті та очищається під час перезапуску додатку.</string>
+    <string name="PluginActivityInfo">Журнал живе в пам\'яті та очищається під час перезапуску додатку.</string>
 
     <string name="PluginLevelHeader">Рівень доступу</string>
     <string name="PluginLevelIsolated">Ізоляція</string>

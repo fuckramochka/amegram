@@ -28,7 +28,7 @@
     <string name="OEAyuSaveInArchived">Зберігати в архівованих чатах</string>
     <string name="OEAyuSaveInArchivedInfo">Видалені та змінені повідомлення з чатів в архіві також зберігаються.</string>
     <string name="OEAyuSaveReadDate">Зберігати час прочитання</string>
-    <string name="OEAyuSaveReadDateInfo">Пам'ятає, коли ваші повідомлення були прочитані та прослухані. Показується в меню повідомлення, коли Telegram не надає час.</string>
+    <string name="OEAyuSaveReadDateInfo">Пам\'ятає, коли ваші повідомлення були прочитані та прослухані. Показується в меню повідомлення, коли Telegram не надає час.</string>
     <string name="OEAyuSavingHeader">Збереження</string>
     <string name="OEGeneralAyuMomentsInfo">Збереження видалених і відредагованих повідомлень, режим привида та regex-фільтри. Функції працюють, доки вони ввімкнені.</string>
     <string name="OEUpdateCheckFailed">Не вдалося перевірити оновлення</string>
@@ -55,7 +55,7 @@
     <string name="OEUpdaterLatest">У вас остання версія</string>
     <string name="OEUpdateSkip">Пропустити цю версію</string>
     <string name="OEUpdateTitle">Доступне оновлення</string>
-    <string name="OEUserLookupStart">Для пошуку користувача за ID потрібен **@usinfobot**. Ми надішлемо йому /start, чат з'явиться у вашому списку.</string>
+    <string name="OEUserLookupStart">Для пошуку користувача за ID потрібен **@usinfobot**. Ми надішлемо йому /start, чат з\'явиться у вашому списку.</string>
     <string name="OEUserLookupStartButton">Почати</string>
     <string name="OEUserLookupTitle">Запуск @usinfobot</string>
     <string name="OEUserLookupNotFound">Користувача %1$d не знайдено</string>

@@ -44,7 +44,7 @@
     <string name="IconPackVersion">Версія</string>
     <string name="IconPackRename">Перейменувати</string>
     <string name="IconPackIconsCount">іконок: %1$d</string>
-    <string name="IconPackAuthorOptional">Автор (необов'язково)</string>
+    <string name="IconPackAuthorOptional">Автор (необов\'язково)</string>
     <string name="IconPackEditInfo">Редагувати інформацію</string>
     <string name="IconPackNameCannotBeEmpty">Назва не може бути порожньою.</string>
     <string name="IconPackNoAuthor">Невідомо</string>

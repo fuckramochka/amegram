@@ -3,7 +3,7 @@
     <string name="Feed">Стрічка</string>
     <string name="FeedAllChannelsExcluded">Усі канали виключено зі стрічки.</string>
     <string name="FeedBottomTab">Показувати в нижніх вкладках</string>
-    <string name="FeedBottomTabInfo">Стрічка з'явиться на нижній панелі замість вкладки «Контакти».</string>
+    <string name="FeedBottomTabInfo">Стрічка з\'явиться на нижній панелі замість вкладки «Контакти».</string>
     <string name="FeedChannelHidden">**%1$s** приховано зі стрічки</string>
     <string name="FeedChannels">Канали</string>
     <string name="FeedChannelsInfo">Зніміть прапорець, щоб приховати дописи каналу зі стрічки. Нові канали показуються автоматично.</string>

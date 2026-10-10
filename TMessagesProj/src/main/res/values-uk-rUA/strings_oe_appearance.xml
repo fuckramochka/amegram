@@ -93,8 +93,8 @@
     <string name="OEAppearanceForceSnowInfo">Сніжинки падатимуть у шапці, бічному меню та на фоні чатів.</string>
     <string name="OEAppearanceTitleText">Текст заголовка</string>
     <string name="OEAppearanceTitleTextApp">@string/AppName</string>
-    <string name="OEAppearanceTitleTextUsername">Ім'я користувача</string>
-    <string name="OEAppearanceTitleTextName">Ім'я</string>
+    <string name="OEAppearanceTitleTextUsername">Ім\'я користувача</string>
+    <string name="OEAppearanceTitleTextName">Ім\'я</string>
     <string name="OEAppearanceGlassMessageMenuInfo">Меню повідомлення та панель реакцій стають матовим склом.</string>
     <string name="OEAppearanceGlassMessageMenuBlurOff">Скляним меню потрібне розмиття, а воно зараз вимкнене.</string>
     <string name="OEBottomNavigationBarMode">Нижня панель навігації</string>

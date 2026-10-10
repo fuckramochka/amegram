@@ -12,7 +12,7 @@
     <string name="OEAiReasoningInfo">Дати моделі подумати перед відповіддю</string>
     <string name="OEAiServiceInfo">Підійде будь-яка OpenAI-сумісна адреса. Ключ зберігається лише на цьому пристрої й надсилається лише на вказану вами адресу.</string>
     <string name="OEAiGetKey">Отримати ключ</string>
-    <string name="OEAiTest">Перевірити з'єднання</string>
+    <string name="OEAiTest">Перевірити з\'єднання</string>
     <string name="OEAiTestOk">працює</string>
     <string name="OEAiTemperatureExact">Точніше</string>
     <string name="OEAiTemperatureVaried">Різноманітніше</string>

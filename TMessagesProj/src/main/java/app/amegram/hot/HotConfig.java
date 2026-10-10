@@ -23,8 +23,8 @@ public final class HotConfig {
     /** Папка установленных модулей внутри filesDir. */
     public static final String DIR_NAME = "hotmodules";
 
-    /** Кэш каталога: не чаще раза в N. */
-    public static final long CATALOG_TTL_MS = 6L * 60 * 60 * 1000L;
+    /** Кэш каталога: 1 хвилина для уникнення розсинхронізації SHA-256. */
+    public static final long CATALOG_TTL_MS = 60L * 1000L;
 
     /** Сколько старых версий держать на диске (текущая + предыдущая для отката). */
     public static final int KEEP_VERSIONS = 2;

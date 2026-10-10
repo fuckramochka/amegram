@@ -1380,12 +1380,13 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
     }
 
     private boolean isAiLyricsAvailable() {
-        if (MiogramAiService.hasApiKey()) return true;
-        try {
-            return HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
-        } catch (Throwable ignored) {
+        boolean hasModule = HotModulesManager.isModuleActive("ai")
+                || HotModulesManager.isModuleActive("stt")
+                || HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
+        if (!hasModule) {
             return false;
         }
+        return MiogramAiService.hasApiKey() || HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
     }
 
     private void showLyrics(Lyrics lyrics) {

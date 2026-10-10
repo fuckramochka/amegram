@@ -57,15 +57,11 @@ public final class AmegramFeatureManager {
             if (app.amegram.module.AmegramConfig.getBool("fresh_start_decided", false)) {
                 return;
             }
-            boolean upgrade = hasLegacyTraces(appContext);
-            if (!upgrade) {
-                for (AmegramFeature f : FEATURES.values()) {
-                    try {
-                        if (!"guide".equals(f.id())) {
-                            f.setEnabled(false);
-                        }
-                    } catch (Throwable ignore) {
-                    }
+            // Нативні функції (бейджики, антиблок, подвійне дно) активні за замовчуванням
+            for (AmegramFeature f : FEATURES.values()) {
+                try {
+                    f.setEnabled(true);
+                } catch (Throwable ignore) {
                 }
             }
             app.amegram.module.AmegramConfig.setBool("fresh_start_decided", true);

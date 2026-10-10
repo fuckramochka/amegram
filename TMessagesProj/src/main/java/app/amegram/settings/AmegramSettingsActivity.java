@@ -78,7 +78,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private static final int ROW_EXTERA_APPEARANCE = 71;
     private static final int ROW_EXTERA_CHATS = 72;
     private static final int ROW_EXTERA_OTHER = 73;
-    private static final int ROW_NATIVE_MODULES = 74;
+    private static final int ROW_ANTIBLOCK = 75;
 
     private static final int ROW_HOTMODULES = 20;
     private static final int ROW_PLUGINS = 21;
@@ -341,9 +341,6 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
     private void fillClientSettings(ArrayList<UItem> items) {
         items.add(UItem.asHeader(MiogramLocale.get("Основні налаштування", "Основные настройки", "General settings")));
-        items.add(YumiSettingCell.Factory.of(ROW_NATIVE_MODULES, R.drawable.msg_plugins, 0xFF607D8B,
-                MiogramLocale.get("Вбудовані функції", "Встроенные функции", "Built-in features"),
-                MiogramLocale.get("Перемикачі функцій, що входять до Yumigram", "Переключатели функций, встроенных в Yumigram", "Manage features shipped inside Yumigram")));
         items.add(YumiSettingCell.Factory.of(ROW_NEKO_GENERAL, R.drawable.msg_settings, 0xFF546E7A,
                 MiogramLocale.get("Загальні", "Общие", "General"),
                 MiogramLocale.get("Мова, поведінка та параметри застосунку", "Язык, поведение и параметры приложения", "Language, behavior and app options")));
@@ -356,6 +353,9 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         items.add(YumiSettingCell.Factory.of(ROW_NEKO_PASSCODE, R.drawable.msg_permissions, 0xFF5E35B1,
                 MiogramLocale.get("Код-пароль", "Код-пароль", "Passcode"),
                 MiogramLocale.get("Блокування, PIN і подвійне дно (реальний + дурний код)", "Блокировка, PIN и двойное дно (реальный + ложный код)", "Lock, PIN & double bottom (real + duress code)")));
+        items.add(YumiSettingCell.Factory.of(ROW_ANTIBLOCK, R.drawable.msg_language, 0xFF2A87FF,
+                MiogramLocale.get("Обхід блокувань (Антиблок)", "Обход блокировок (Антиблок)", "Anti-block bypass"),
+                MiogramLocale.get("Автоматичний вибір проксі та захист з'єднання", "Автоматический выбор прокси и защита соединения", "Automatic proxy selection and connection protection")));
         items.add(YumiSettingCell.Factory.of(ROW_NEKO_EXPERIMENTAL, R.drawable.msg_fave, 0xFF43A047,
                 MiogramLocale.get("Експериментальні функції", "Экспериментальные функции", "Experimental features"),
                 MiogramLocale.get("Додаткові можливості клієнта", "Дополнительные возможности клиента", "Additional client features")));
@@ -451,8 +451,8 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             presentFragment(new NekoPasscodeSettingsActivity());
         } else if (item.id == ROW_NEKO_EXPERIMENTAL) {
             presentFragment(new NekoExperimentalSettingsActivity());
-        } else if (item.id == ROW_NATIVE_MODULES) {
-            presentFragment(new app.amegram.module.ui.AmegramModulesActivity());
+        } else if (item.id == ROW_ANTIBLOCK) {
+            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
         } else if (item.id == ROW_MIO_VISUALS) {
             presentFragment(new MiogramVisualsActivity());
         } else if (item.id == ROW_MIO_CHATS) {

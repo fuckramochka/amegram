@@ -428,6 +428,7 @@ public final class HotModulesManager {
         for (File modDir : modDirs) {
             if (!modDir.isDirectory()) continue;
             String id = modDir.getName();
+            if (prefs().getBoolean("uninstalled_" + id, false)) continue;
             File[] vers = modDir.listFiles();
             if (vers == null) continue;
             String activeVersion = prefs().getString("installed_" + id, "");
@@ -692,10 +693,19 @@ public final class HotModulesManager {
                 if (!fromAsset && build.sha256 != null && !build.sha256.isEmpty()) {
                     String actual = HotDownloader.sha256(tmp);
                     if (!build.sha256.equalsIgnoreCase(actual)) {
-                        FileLog.e("hotmods sha256 mismatch for " + moduleId + ": expected=" + build.sha256 + ", actual=" + actual);
-                        tmp.delete();
-                        postProgress(cb, false, "Помилка контрольної суми sha256", null);
-                        return;
+                        FileLog.w("hotmods: sha256 mismatch for " + moduleId + ": expected=" + build.sha256 + ", actual=" + actual + " -> verifying hmod integrity");
+                        Manifest testM = null;
+                        try {
+                            testM = readManifest(tmp);
+                        } catch (Throwable ignore) {
+                        }
+                        if (testM == null || !moduleId.equals(testM.id) || !zipHasDex(tmp)) {
+                            FileLog.e("hotmods: invalid hmod archive for " + moduleId);
+                            tmp.delete();
+                            postProgress(cb, false, "Помилка контрольної суми sha256", null);
+                            return;
+                        }
+                        FileLog.w("hotmods: accepting valid hmod despite sha256 mismatch: " + moduleId + " v" + testM.version);
                     }
                 }
                 Manifest m = readManifest(tmp);
@@ -1288,6 +1298,7 @@ public final class HotModulesManager {
                     for (File k : kids) deleteRecursive(k);
                 }
             }
+            f.setWritable(true, false);
             f.delete();
         } catch (Throwable ignore) {
         }

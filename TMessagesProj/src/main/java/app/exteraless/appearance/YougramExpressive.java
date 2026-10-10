@@ -74,8 +74,8 @@ public final class YougramExpressive {
 
     // ---- Палитра ----
 
-    private static final int DARK_BG = 0xFF121212;
-    private static final int DARK_SURFACE = 0xFF1C1C1F;
+    private static final int DARK_BG = 0xFF000000;
+    private static final int DARK_SURFACE = 0xFF1C1C20;
     private static final int DARK_TEXT = 0xFFF2F2F2;
     private static final int DARK_SECONDARY = 0xFFC4C4C4;
     private static final int DARK_MUTED = 0xFF85858A;
@@ -112,7 +112,7 @@ public final class YougramExpressive {
         final int accent = accentColor(colors);
 
         // ---- Поверхности и текст ----
-        put(colors, Theme.key_windowBackgroundWhite, dark ? DARK_BG : LIGHT_BG);
+        put(colors, Theme.key_windowBackgroundWhite, dark ? DARK_SURFACE : LIGHT_SURFACE);
         put(colors, Theme.key_windowBackgroundGray, dark ? DARK_BG : LIGHT_GRAY_BG);
         put(colors, Theme.key_graySection, dark ? DARK_BG : LIGHT_BG);
         put(colors, Theme.key_dialogBackground, dark ? DARK_SURFACE : LIGHT_SURFACE);
@@ -145,15 +145,14 @@ public final class YougramExpressive {
 
         // ---- Скло: пігулка вкладок і панелі ----
         // yougram Backdrop: tint ~45-55% поверх блюра, поверхня трохи піднята над фоном
-        final int glassSurface = dark ? 0xD91C1C1F : 0xE6FCFCFC;
+        final int glassSurface = dark ? 0xD91C1C20 : 0xE6FCFCFC;
         put(colors, Theme.key_glass_targetMainTabs, glassSurface);
         put(colors, Theme.key_glass_targetMainTopPanel, glassSurface);
-        // селектор виділеної вкладки: у yougram — onSurface з альфою (тут базовий колір,
-        // споживачі допусково застосовують свій множник альфи)
-        put(colors, Theme.key_glass_tabSelected, dark ? 0xFFFFFFFF : 0xFF111111);
-        put(colors, Theme.key_glass_tabSelectedText, accent);
-        put(colors, Theme.key_glass_defaultIcon, dark ? DARK_TEXT : LIGHT_TEXT);
-        put(colors, Theme.key_glass_defaultText, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
+        // селектор виділеної вкладки: у yougram — onSurface з альфою 0.18
+        put(colors, Theme.key_glass_tabSelected, dark ? 0x2EFFFFFF : 0x22000000);
+        put(colors, Theme.key_glass_tabSelectedText, dark ? 0xFFFFFFFF : 0xFF111111);
+        put(colors, Theme.key_glass_defaultIcon, dark ? 0xFFD0D0D0 : 0xFF444444);
+        put(colors, Theme.key_glass_defaultText, dark ? 0xFFC4C4C4 : 0xFF555555);
 
         // ---- Чат: плоский фон и пузыри Yougram ----
         final int chatBg = dark ? DARK_CHAT_BG : LIGHT_CHAT_BG;

@@ -27,8 +27,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.accessibility.AccessibilityEvent;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -175,6 +178,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private FrameLayout tabsViewWrapper;
     private MainTabsLayout tabsView;
     private BlurredBackgroundDrawable tabsViewBackground;
+    private FrameLayout searchButton;
+    private BlurredBackgroundDrawable searchButtonBackground;
+    private ImageView searchIcon;
     private View fadeView;
     private boolean lastHideContacts = NaConfig.INSTANCE.getMainTabsHideContacts().Bool();
     private boolean lastHideCallsSettings = MainTabsHelper.isCallsOrSettingsTabHidden();
@@ -475,10 +481,34 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         // Only the pill itself eats background taps (set below on tabsView).
         tabsViewWrapper.setClickable(false);
         tabsViewWrapper.setFocusable(false);
-        // В M3 панель во всю ширину,
-        // высота досчитывается вместе с нижним системным отступом в applyTabsBottomInset
-        tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(MainTabsUiHelper.getTabsViewWidth(), MainTabsUiHelper.getTabsViewHeightDp(), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
         tabsViewWrapper.setClipToPadding(false);
+        if (MainTabsUiHelper.isFloatingPill()) {
+            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 64, 0));
+
+            searchButton = new FrameLayout(context);
+            searchButtonBackground = iBlur3FactoryGlass.create(searchButton, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+            searchButtonBackground.setRadius(AndroidUtilities.dp(20));
+            searchButtonBackground.setPadding(0);
+            searchButton.setBackground(searchButtonBackground);
+
+            searchIcon = new ImageView(context);
+            searchIcon.setImageResource(R.drawable.outline_header_search);
+            searchIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_glass_defaultIcon, resourceProvider), PorterDuff.Mode.SRC_IN));
+            searchButton.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+
+            searchButton.setOnClickListener(v -> {
+                if (viewPager.getCurrentPosition() != getPositionChats()) {
+                    selectTab(getPositionChats(), true);
+                    viewPager.scrollToPosition(getPositionChats());
+                }
+                if (dialogsActivity != null && dialogsActivity.searchItem != null) {
+                    dialogsActivity.searchItem.openSearch(true);
+                }
+            });
+            tabsViewWrapper.addView(searchButton, LayoutHelper.createFrame(60, 60, Gravity.BOTTOM | Gravity.RIGHT));
+        } else {
+            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(MainTabsUiHelper.getTabsViewWidth(), MainTabsUiHelper.getTabsViewHeightDp(), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
+        }
         contentView.addView(tabsViewWrapper, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
 
         updateLayoutWrapper = new UpdateLayoutWrapper(context);
@@ -1323,6 +1353,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final boolean hideTabs = NaConfig.INSTANCE.getHideBottomNavigationBar().Bool();
         if (hideTabs) {
             tabsView.setVisibility(View.GONE);
+            if (searchButton != null) {
+                searchButton.setVisibility(View.GONE);
+            }
             if (updateLayoutWrapper != null) {
                 final boolean isRootScreen = LaunchActivity.instance == null || LaunchActivity.instance.getMainFragmentsStackSize() <= 1;
                 final boolean isUpdateLayoutVisible = updateLayoutWrapper.isUpdateLayoutVisible() && isRootScreen;
@@ -1345,6 +1378,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.setEnabled(factor >= 0.99f);
         tabsView.setAlpha(factor);
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+        if (searchButton != null) {
+            searchButton.setClickable(true);
+            searchButton.setEnabled(factor >= 0.99f);
+            searchButton.setAlpha(factor);
+            searchButton.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+        }
 
         if (updateLayoutWrapper != null) {
             final boolean isRootScreen = LaunchActivity.instance == null || LaunchActivity.instance.getMainFragmentsStackSize() <= 1;
@@ -1517,6 +1556,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (tabsViewWrapper != null) {
             tabsViewWrapper.invalidate();
         }
+        if (searchButton != null) {
+            searchButton.invalidate();
+        }
     }
 
     private void blur3_invalidateBlur() {
@@ -1543,12 +1585,21 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         if (tabsViewBackground != null) {
             tabsViewBackground.updateColors();
         }
+        if (searchButtonBackground != null) {
+            searchButtonBackground.updateColors();
+        }
+        if (searchIcon != null) {
+            searchIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_glass_defaultIcon, resourceProvider), PorterDuff.Mode.SRC_IN));
+        }
         blur3_invalidateBlur();
         if (fadeView != null) {
             fadeView.invalidate();
         }
         if (tabsView != null) {
             tabsView.invalidate();
+        }
+        if (searchButton != null) {
+            searchButton.invalidate();
         }
         if (tabs != null) {
             for (GlassTabView tabView : tabs) {

@@ -133,6 +133,41 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
     }
 
+    @Override
+    protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
+        if (MainTabsUiHelper.isFloatingPill()) {
+            final int width = right - left;
+            final int height = bottom - top;
+            final boolean selected = isTabSelected();
+            final View icon = backupImageView != null ? backupImageView : imageView;
+            final int iconSize = dp(24);
+            if (selected) {
+                textView.setVisibility(VISIBLE);
+                textView.measure(
+                        MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
+                        MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST)
+                );
+                final int textWidth = textView.getMeasuredWidth();
+                final int textHeight = textView.getMeasuredHeight();
+                final int gap = dp(6);
+                final int totalContentWidth = iconSize + gap + textWidth;
+                final int startX = Math.max(dp(8), (width - totalContentWidth) / 2);
+                final int iconTop = (height - iconSize) / 2;
+                icon.layout(startX, iconTop, startX + iconSize, iconTop + iconSize);
+                final int textLeft = startX + iconSize + gap;
+                final int textTop = (height - textHeight) / 2;
+                textView.layout(textLeft, textTop, Math.min(width - dp(4), textLeft + textWidth), textTop + textHeight);
+            } else {
+                textView.setVisibility(GONE);
+                final int iconLeft = (width - iconSize) / 2;
+                final int iconTop = (height - iconSize) / 2;
+                icon.layout(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize);
+            }
+            return;
+        }
+        super.onLayout(changed, left, top, right, bottom);
+    }
+
     private static final RectF tmpRectF = new RectF();
 
     private boolean hasGestureSelectedOverride;
@@ -175,7 +210,13 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
                     : AnimatorUtils.DECELERATE_INTERPOLATOR.getInterpolation(selectedFactor);
 
             final float r;
-            if (mainTabMaterial3) {
+            if (MainTabsUiHelper.isFloatingPill()) {
+                final float h = dp(48);
+                final float top = (getHeight() - h) / 2f;
+                tmpRectF.set(dp(2), top, viewWidth - dp(2), top + h);
+                r = dp(24);
+                paintCounterBackground.setColor(Theme.multAlpha(colorSelected, alpha));
+            } else if (mainTabMaterial3) {
                 MainTabsUiHelper.setMainTabSelectedIndicatorBounds(tmpRectF, viewWidth, getHeight());
                 paintCounterBackground.setColor(MainTabsUiHelper.getMainTabSelectedIndicatorColor(colorSelected, alpha));
                 r = tmpRectF.height() / 2f;
@@ -206,8 +247,16 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             canvas.save();
 
             final float gap = dpf2(1.33f);
-            final float cx = viewWidth / 2f + dpf2(11);
-            final float cy = MainTabsUiHelper.getMainTabCounterCenterY(mainTabMaterial3, getHeight());
+            final float cx;
+            final float cy;
+            if (MainTabsUiHelper.isFloatingPill()) {
+                final View icon = backupImageView != null ? backupImageView : imageView;
+                cx = icon.getX() + icon.getWidth() + dp(2);
+                cy = (getHeight() - dp(24)) / 2f - dp(2);
+            } else {
+                cx = viewWidth / 2f + dpf2(11);
+                cy = MainTabsUiHelper.getMainTabCounterCenterY(mainTabMaterial3, getHeight());
+            }
             final float height = dpf2(16);
             final float width = Math.max(height, counter.getCurrentWidth() + dp(8));
             final float rOuter = dpf2(9.333f);
@@ -271,6 +320,9 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         textView.setTypeface(!selected || mainTabMaterial3
                 ? AndroidUtilities.bold()
                 : AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_EXTRA_BOLD));
+        if (MainTabsUiHelper.isFloatingPill()) {
+            requestLayout();
+        }
     }
 
     public boolean isTabSelected() {

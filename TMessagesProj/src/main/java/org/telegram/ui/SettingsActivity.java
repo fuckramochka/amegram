@@ -1314,6 +1314,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 Theme.ResourcesProvider resourcesProvider
         ) {
             final boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                iconBackground.setMonetColor(dark ? 0xFFFFFFFF : 0xFF2A2A2E);
+                iconView.setColorFilter(dark ? 0xFF121212 : 0xFFFFFFFF, PorterDuff.Mode.SRC_IN);
+                iconBackground.setDrawBorder(false);
+                return;
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && Theme.getActiveTheme().isMonet()) {
                 iconBackground.setMonetColor(MonetHelper.getColor(dark ? "a1_200" : "a1_600"));
                 iconView.setColorFilter(MonetHelper.getColor(dark ? "a1_800" : "a1_100"), PorterDuff.Mode.SRC_IN);

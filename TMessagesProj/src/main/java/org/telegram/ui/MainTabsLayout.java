@@ -87,16 +87,16 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         if (isBottomNavigationHidden() || app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             return false;
         }
+        if (app.exteraless.appearance.AppearanceConfig.isYougramExpressive()) {
+            return true;
+        }
         if (bottomNavigationFloating == null) {
             final SharedPreferences preferences = getBottomNavigationPreferences();
             if (preferences == null) {
-                return app.exteraless.appearance.AppearanceConfig.isYougramExpressive();
+                return false;
             }
-            // Yougram Expressive: контент під пігулкою edge-to-edge — floating дефолт.
-            // Кешуємо лише свідомий вибір користувача, щоб перемикання режиму
-            // працювало без перезапуску.
             if (!preferences.contains(KEY_BOTTOM_NAVIGATION_FLOATING)) {
-                return app.exteraless.appearance.AppearanceConfig.isYougramExpressive();
+                return false;
             }
             bottomNavigationFloating = preferences.getBoolean(KEY_BOTTOM_NAVIGATION_FLOATING, false);
         }
@@ -144,6 +144,64 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         final int minTotalWidthForTabs = fillWidth
                 ? maxTotalWidthForTabs
                 : Math.min(dp(320), maxTotalWidthForTabs);
+
+        if (MainTabsUiHelper.isFloatingPill()) {
+            final int childCount = getChildCount();
+            if (tabsWidth == null || tabsWidth.length < childCount) {
+                tabsWidth = new int[childCount];
+                tabsLeftPos = new int[childCount];
+            }
+            int visibleCount = 0;
+            int selectedIndex = -1;
+            for (int a = 0; a < childCount; a++) {
+                final View child = getChildAt(a);
+                if (isViewVisible(child)) {
+                    visibleCount++;
+                    if (child instanceof GlassTabView && ((GlassTabView) child).isTabSelected()) {
+                        selectedIndex = a;
+                    }
+                }
+            }
+            visibleChildCount = visibleCount;
+            float selectedTabWidth = 0;
+            if (selectedIndex >= 0 && getChildAt(selectedIndex) instanceof GlassTabView) {
+                GlassTabView selectedTab = (GlassTabView) getChildAt(selectedIndex);
+                selectedTabWidth = dp(24 + 6 + 28) + selectedTab.measureTextWidth();
+            }
+            int unselectedCount = Math.max(1, visibleCount - (selectedIndex >= 0 ? 1 : 0));
+            float remainingWidth = maxTotalWidthForTabs - selectedTabWidth;
+            float unselectedTabWidth = Math.max(dp(40), remainingWidth / unselectedCount);
+            if (selectedTabWidth + unselectedTabWidth * unselectedCount > maxTotalWidthForTabs) {
+                float scale = maxTotalWidthForTabs / (selectedTabWidth + unselectedTabWidth * unselectedCount);
+                selectedTabWidth *= scale;
+                unselectedTabWidth *= scale;
+            } else {
+                unselectedTabWidth = (maxTotalWidthForTabs - selectedTabWidth) / unselectedCount;
+            }
+
+            int l = 0;
+            for (int a = 0; a < childCount; a++) {
+                final View child = getChildAt(a);
+                if (!isViewVisible(child)) {
+                    continue;
+                }
+                int w = Math.round(a == selectedIndex ? selectedTabWidth : unselectedTabWidth);
+                tabsWidth[a] = w;
+                tabsLeftPos[a] = l;
+                l += w;
+            }
+            setMeasuredDimension(l + getPaddingLeft() + getPaddingRight(), height);
+            for (int a = 0; a < childCount; a++) {
+                final View child = getChildAt(a);
+                if (isViewVisible(child)) {
+                    child.measure(
+                        MeasureSpec.makeMeasureSpec(tabsWidth[a], MeasureSpec.EXACTLY),
+                        MeasureSpec.makeMeasureSpec(tabHeight, MeasureSpec.EXACTLY));
+                }
+            }
+            calculateTotalSizesAfterMeasure();
+            return;
+        }
 
         int chosenPass = PASS_TEXT_SIZES_DP.length - 1;
         float lastMeasuredTextSize = -1;

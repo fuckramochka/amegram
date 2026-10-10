@@ -710,6 +710,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         this.resourcesProvider = resourcesProvider;
         parentFragment = fragment;
         Theme.createDialogsResources(context);
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            avatarStart = 24;
+            messagePaddingStart = 86;
+        }
         drawMonoforumAvatar = false;
         drawCommunityAvatar = false;
         avatarImage.setRoundRadius(dp(26));
@@ -3930,6 +3934,44 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private GradientDrawable archiveFadeGradientDrawable;
     private int archiveFadeGradientDrawableColor;
 
+    private static Paint yougramPlatePaint;
+    private Path yougramPath;
+    private RectF yougramRectF;
+
+    private void drawYougramSegment(Canvas canvas) {
+        if (yougramPlatePaint == null) {
+            yougramPlatePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        if (yougramPath == null) {
+            yougramPath = new Path();
+            yougramRectF = new RectF();
+        }
+        boolean isTop = true;
+        boolean isBottom = true;
+        if (getParent() instanceof androidx.recyclerview.widget.RecyclerView) {
+            androidx.recyclerview.widget.RecyclerView rv = (androidx.recyclerview.widget.RecyclerView) getParent();
+            int pos = rv.getChildAdapterPosition(this);
+            if (rv.getAdapter() != null) {
+                int count = rv.getAdapter().getItemCount();
+                if (pos > 0 && rv.getAdapter().getItemViewType(pos - 1) == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG) {
+                    isTop = false;
+                }
+                if (pos >= 0 && pos < count - 1 && rv.getAdapter().getItemViewType(pos + 1) == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG) {
+                    isBottom = false;
+                }
+            }
+        }
+        final float rTop = isTop ? dp(24) : dp(6);
+        final float rBottom = isBottom ? dp(24) : dp(6);
+        yougramRectF.set(dp(12), dp(1), getMeasuredWidth() - dp(12), getMeasuredHeight() - dp(1));
+        yougramPath.rewind();
+        float[] radii = new float[] { rTop, rTop, rTop, rTop, rBottom, rBottom, rBottom, rBottom };
+        yougramPath.addRoundRect(yougramRectF, radii, Path.Direction.CW);
+        final int color = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
+        yougramPlatePaint.setColor(color);
+        canvas.drawPath(yougramPath, yougramPlatePaint);
+    }
+
     @SuppressLint("DrawAllocation")
     @Override
     protected void onDraw(Canvas canvas) {
@@ -3938,6 +3980,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         if (!visibleOnScreen) {
             return;
+        }
+
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            drawYougramSegment(canvas);
         }
 
         boolean needInvalidate = false;
@@ -4952,7 +4998,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             canvas.restore();
         }
 
-        if (useSeparator && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
+        if (useSeparator && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled() && !app.exteraless.appearance.YougramExpressive.enabled()) {
             int left;
             if (fullSeparator || currentDialogFolderId != 0 && archiveHidden && !fullSeparator2 || fullSeparator2 && !archiveHidden) {
                 left = 0;

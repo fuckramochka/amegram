@@ -177,8 +177,8 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             return;
         }
 
-        // Keep every bundled feature discoverable. Its state is shown in the row;
-        // disabled features must never disappear from the settings hub.
+        // Лише встановлені модулі відображаються у списку налаштувань.
+        // Видалений модуль повністю зникає з меню налаштувань.
         items.add(UItem.asHeader(MiogramLocale.get("Можливості Yumigram", "Возможности Yumigram", "Yumigram features")));
         items.add(YumiSettingCell.Factory.of(ROW_CLIENT_SETTINGS, R.drawable.msg_settings, 0xFF546E7A,
                 MiogramLocale.get("Інші налаштування клієнта", "Другие настройки клиента", "More client settings"),
@@ -186,72 +186,92 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                         "Чаты, приватность, переводчик, оформление и другое",
                         "Chats, privacy, translation, appearance and more")));
 
-        boolean ghostOn = HotModulesManager.isModuleEnabled("ghost");
-        items.add(YumiSettingCell.Factory.of(ROW_GHOST, R.drawable.msg_secret, 0xFF9C27B0,
-                MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode"),
-                moduleSubtitle("ghost", ghostOn, MiogramLocale.get("Скритність онлайну та прочитання",
-                                "Скрытность онлайна и прочтения", "Hide online, read receipts & typing"))));
-
-        boolean expOn = HotModulesManager.isModuleEnabled("experimental");
-        items.add(YumiSettingCell.Factory.of(ROW_EXPERIMENTAL, R.drawable.msg_fave, 0xFF43A047,
-                MiogramLocale.get("Експерименти та видалені", "Эксперименты и удалённые", "Experiments & Deleted"),
-                moduleSubtitle("experimental", expOn, MiogramLocale.get("Збереження повідомлень, безліміти",
-                                "Сохранение сообщений, безлимиты", "Save deleted messages, unlimited pins"))));
-
-        boolean vaultOn = HotModulesManager.isModuleEnabled("vault");
-        items.add(YumiSettingCell.Factory.of(ROW_VAULT, R.drawable.msg_saved, 0xFFE5486B,
-                MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud vault"),
-                moduleSubtitle("vault", vaultOn, MiogramLocale.get("AES-256 диск, шифрування",
-                                "AES-256 диск, шифрование", "AES-256 virtual disk, encryption"))));
-
-        boolean playerOn = HotModulesManager.isModuleEnabled("player");
-        items.add(YumiSettingCell.Factory.of(ROW_PLAYER, R.drawable.baseline_music_note_24, 0xFF00ACC1,
-                MiogramLocale.get("Пошук музики та тексти (.hmod)", "Поиск музыки и тексты (.hmod)", "Music search & lyrics (.hmod)"),
-                moduleSubtitle("player", playerOn, MiogramLocale.get("Пошук у музичних сервісах, відтворення, LRC",
-                                 "Поиск в музыкальных сервисах, воспроизведение, LRC", "Music service search, playback and LRC lyrics"))));
-
-        boolean aiOn = HotModulesManager.isModuleEnabled("ai");
-        items.add(YumiSettingCell.Factory.of(ROW_AI, R.drawable.baseline_stars_24, 0xFF8B5CF6,
-                MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial Intelligence (AI)"),
-                moduleSubtitle("ai", aiOn, MiogramLocale.get("Асистент Ame / KAngel, чат і генерація тексту",
-                               "Ассистент Ame / KAngel, чат и генерация текста", "Ame / KAngel companion, chat & text generation"))));
-
-        boolean tikOn = HotModulesManager.isModuleEnabled("tiktok");
-        items.add(YumiSettingCell.Factory.of(ROW_TIKTOK, R.drawable.msg_video, 0xFFEE1D52,
-                "TikTok MI",
-                moduleSubtitle("tiktok", tikOn, MiogramLocale.get("Відео без водяних знаків, прямі посилання",
-                              "Видео без водяных знаков, прямые ссылки", "Watermark-free videos, direct links"))));
-
-        boolean ameOn = HotModulesManager.isModuleEnabled("ame");
-        items.add(YumiSettingCell.Factory.of(ROW_AME, R.drawable.msg_customize, 0xFFE91E63,
-                MiogramLocale.get("Кастомізація UI", "Кастомизация UI", "Customization"),
-                moduleSubtitle("ame", ameOn, MiogramLocale.get("Картки профілю, діалоги, ефекти",
-                              "Карточки профиля, диалоги, эффекты", "Profile cards, dialogs, visual effects"))));
-
-        for (String moduleId : new String[]{"stt", "automation"}) {
-            boolean enabled = HotModulesManager.isModuleEnabled(moduleId);
-            int rowId = "stt".equals(moduleId) ? ROW_STT : ROW_AUTOMATION;
-            String title = "stt".equals(moduleId)
-                    ? MiogramLocale.get("Розпізнавання мовлення", "Распознавание речи", "Speech recognition")
-                    : MiogramLocale.get("Автоматизація", "Автоматизация", "Automation");
-            String description = "stt".equals(moduleId)
-                    ? MiogramLocale.get("Розшифровка голосових і відеоповідомлень", "Расшифровка голосовых и видеосообщений", "Transcribe voice and video messages")
-                    : MiogramLocale.get("Синхронізація, резервні копії та очищення", "Синхронизация, резервные копии и очистка", "Sync, backups and cleanup");
-            items.add(YumiSettingCell.Factory.of(rowId, R.drawable.msg_plugins, 0xFF607D8B,
-                    title, moduleSubtitle(moduleId, enabled, description)));
+        if (HotModulesManager.isModuleInstalled("ghost")) {
+            boolean ghostOn = HotModulesManager.isModuleEnabled("ghost");
+            items.add(YumiSettingCell.Factory.of(ROW_GHOST, R.drawable.msg_secret, 0xFF9C27B0,
+                    MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode"),
+                    moduleSubtitle("ghost", ghostOn, MiogramLocale.get("Скритність онлайну та прочитання",
+                                    "Скрытность онлайна и прочтения", "Hide online, read receipts & typing"))));
         }
 
-        boolean uiOn = HotModulesManager.isModuleEnabled("ui");
-        items.add(YumiSettingCell.Factory.of(ROW_UI, R.drawable.msg_theme, 0xFF6C63FF,
-                MiogramLocale.get("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi Interface"),
-                moduleSubtitle("ui", uiOn, MiogramLocale.get("Yougram Expressive ↔ Classic на льоту",
-                              "Yougram Expressive ↔ Classic на лету", "Yougram Expressive ↔ Classic live"))));
+        if (HotModulesManager.isModuleInstalled("experimental")) {
+            boolean expOn = HotModulesManager.isModuleEnabled("experimental");
+            items.add(YumiSettingCell.Factory.of(ROW_EXPERIMENTAL, R.drawable.msg_fave, 0xFF43A047,
+                    MiogramLocale.get("Експерименти та видалені", "Эксперименты и удалённые", "Experiments & Deleted"),
+                    moduleSubtitle("experimental", expOn, MiogramLocale.get("Збереження повідомлень, безліміти",
+                                    "Сохранение сообщений, безлимиты", "Save deleted messages, unlimited pins"))));
+        }
 
-        boolean fileorgOn = HotModulesManager.isModuleEnabled("fileorganization");
-        items.add(YumiSettingCell.Factory.of(ROW_FILEORG, R.drawable.msg_download_solar, 0xFF00897B,
-                MiogramLocale.get("Організація файлів", "Организация файлов", "File Organization"),
-                moduleSubtitle("fileorganization", fileorgOn, MiogramLocale.get("Підпапки чатів, збереження по папках",
-                              "Подпапки чатов, сохранение по папкам", "Chat subfolders, save by folders"))));
+        if (HotModulesManager.isModuleInstalled("vault")) {
+            boolean vaultOn = HotModulesManager.isModuleEnabled("vault");
+            items.add(YumiSettingCell.Factory.of(ROW_VAULT, R.drawable.msg_saved, 0xFFE5486B,
+                    MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud vault"),
+                    moduleSubtitle("vault", vaultOn, MiogramLocale.get("AES-256 диск, шифрування",
+                                    "AES-256 диск, шифрование", "AES-256 virtual disk, encryption"))));
+        }
+
+        if (HotModulesManager.isModuleInstalled("player")) {
+            boolean playerOn = HotModulesManager.isModuleEnabled("player");
+            items.add(YumiSettingCell.Factory.of(ROW_PLAYER, R.drawable.baseline_music_note_24, 0xFF00ACC1,
+                    MiogramLocale.get("Пошук музики та тексти (.hmod)", "Поиск музыки и тексты (.hmod)", "Music search & lyrics (.hmod)"),
+                    moduleSubtitle("player", playerOn, MiogramLocale.get("Пошук у музичних сервісах, відтворення, LRC",
+                                     "Поиск в музыкальных сервисах, воспроизведение, LRC", "Music service search, playback and LRC lyrics"))));
+        }
+
+        if (HotModulesManager.isModuleInstalled("ai")) {
+            boolean aiOn = HotModulesManager.isModuleEnabled("ai");
+            items.add(YumiSettingCell.Factory.of(ROW_AI, R.drawable.baseline_stars_24, 0xFF8B5CF6,
+                    MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial Intelligence (AI)"),
+                    moduleSubtitle("ai", aiOn, MiogramLocale.get("Асистент Ame / KAngel, чат і генерація тексту",
+                                   "Ассистент Ame / KAngel, чат и генерация текста", "Ame / KAngel companion, chat & text generation"))));
+        }
+
+        if (HotModulesManager.isModuleInstalled("tiktok")) {
+            boolean tikOn = HotModulesManager.isModuleEnabled("tiktok");
+            items.add(YumiSettingCell.Factory.of(ROW_TIKTOK, R.drawable.msg_video, 0xFFEE1D52,
+                    "TikTok MI",
+                    moduleSubtitle("tiktok", tikOn, MiogramLocale.get("Відео без водяних знаків, прямі посилання",
+                                  "Видео без водяных знаков, прямые ссылки", "Watermark-free videos, direct links"))));
+        }
+
+        if (HotModulesManager.isModuleInstalled("ame")) {
+            boolean ameOn = HotModulesManager.isModuleEnabled("ame");
+            items.add(YumiSettingCell.Factory.of(ROW_AME, R.drawable.msg_customize, 0xFFE91E63,
+                    MiogramLocale.get("Кастомізація UI", "Кастомизация UI", "Customization"),
+                    moduleSubtitle("ame", ameOn, MiogramLocale.get("Картки профілю, діалоги, ефекти",
+                                  "Карточки профиля, диалоги, эффекты", "Profile cards, dialogs, visual effects"))));
+        }
+
+        for (String moduleId : new String[]{"stt", "automation"}) {
+            if (HotModulesManager.isModuleInstalled(moduleId)) {
+                boolean enabled = HotModulesManager.isModuleEnabled(moduleId);
+                int rowId = "stt".equals(moduleId) ? ROW_STT : ROW_AUTOMATION;
+                String title = "stt".equals(moduleId)
+                        ? MiogramLocale.get("Розпізнавання мовлення", "Распознавание речи", "Speech recognition")
+                        : MiogramLocale.get("Автоматизація", "Автоматизация", "Automation");
+                String description = "stt".equals(moduleId)
+                        ? MiogramLocale.get("Розшифровка голосових і відеоповідомлень", "Расшифровка голосовых и видеосообщений", "Transcribe voice and video messages")
+                        : MiogramLocale.get("Синхронізація, резервні копії та очищення", "Синхронизация, резервные копии и очистка", "Sync, backups and cleanup");
+                items.add(YumiSettingCell.Factory.of(rowId, R.drawable.msg_plugins, 0xFF607D8B,
+                        title, moduleSubtitle(moduleId, enabled, description)));
+            }
+        }
+
+        if (HotModulesManager.isModuleInstalled("ui")) {
+            boolean uiOn = HotModulesManager.isModuleEnabled("ui");
+            items.add(YumiSettingCell.Factory.of(ROW_UI, R.drawable.msg_theme, 0xFF6C63FF,
+                    MiogramLocale.get("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi Interface"),
+                    moduleSubtitle("ui", uiOn, MiogramLocale.get("Yougram Expressive ↔ Classic на льоту",
+                                  "Yougram Expressive ↔ Classic на лету", "Yougram Expressive ↔ Classic live"))));
+        }
+
+        if (HotModulesManager.isModuleInstalled("fileorganization")) {
+            boolean fileorgOn = HotModulesManager.isModuleEnabled("fileorganization");
+            items.add(YumiSettingCell.Factory.of(ROW_FILEORG, R.drawable.msg_download_solar, 0xFF00897B,
+                    MiogramLocale.get("Організація файлів", "Организация файлов", "File Organization"),
+                    moduleSubtitle("fileorganization", fileorgOn, MiogramLocale.get("Збереження завантажень у папки чатів",
+                                  "Сохранение загрузок в папки чатов", "Save downloads into chat folders"))));
+        }
 
         // Сторонні завантажені модулі
         for (HotModulesManager.InstalledInfo info : HotModulesManager.listInstalled()) {

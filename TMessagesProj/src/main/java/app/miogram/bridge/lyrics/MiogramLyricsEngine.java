@@ -384,14 +384,14 @@ public class MiogramLyricsEngine {
         });
     }
 
-    /** Standard AI transcription = precise word-timed transcription. */
+    /** Standard AI transcription = standard synchronized LRC lyrics. */
     public void transcribeAudioWithAi(final MessageObject messageObject, final LyricsCallback callback) {
-        transcribeInternal(messageObject, callback, "_ai", "✨ Gemini AI", true, false);
+        transcribeInternal(messageObject, callback, "_ai", "✨ Gemini AI", false, false);
     }
 
     /** Regenerate: same as standard but bypasses the memory cache. */
     public void transcribeAudioWithAiForce(final MessageObject messageObject, final LyricsCallback callback) {
-        transcribeInternal(messageObject, callback, "_ai", "✨ Gemini AI", true, true);
+        transcribeInternal(messageObject, callback, "_ai", "✨ Gemini AI", false, true);
     }
 
     /**
@@ -460,9 +460,16 @@ public class MiogramLyricsEngine {
     private void onTranscribeResult(String lrc, String error, String title, String artist,
                                     String sourceLabel, String cacheKey, LyricsCallback callback, boolean wordTimed) {
         if (!TextUtils.isEmpty(lrc)) {
-            MiogramLrcModel.LrcSong aiSong = wordTimed
-                    ? MiogramLrcModel.parseWordTimed(stripCodeFence(lrc), title, artist, sourceLabel)
-                    : MiogramLrcModel.parseLrc(stripCodeFence(lrc), title, artist, sourceLabel);
+            String stripped = stripCodeFence(lrc);
+            MiogramLrcModel.LrcSong aiSong = null;
+            if (wordTimed) {
+                try {
+                    aiSong = MiogramLrcModel.parseWordTimed(stripped, title, artist, sourceLabel);
+                } catch (Throwable ignored) {}
+            }
+            if (aiSong == null || aiSong.isEmpty()) {
+                aiSong = MiogramLrcModel.parseLrc(stripped, title, artist, sourceLabel);
+            }
             if (aiSong != null && !aiSong.isEmpty()) {
                 completeAndSave(cacheKey, aiSong, callback);
                 return;

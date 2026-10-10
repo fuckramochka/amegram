@@ -52,6 +52,12 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
     private int channelBottomButtonRow;
     private int stickersInfoRow;
 
+    private int headerSubfoldersRow;
+    private int subfoldersEnabledRow;
+    private int subfoldersSmartFiltersRow;
+    private int subfoldersShowCountersRow;
+    private int subfoldersInfoRow;
+
     @Override
     protected String getActionBarTitle() {
         return MiogramLocale.get("Чати та Медіа", "Чаты и Медиа", "Chats & Media");
@@ -60,6 +66,17 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
     @Override
     protected void updateRows() {
         super.updateRows();
+
+        headerSubfoldersRow = addRow();
+        subfoldersEnabledRow = addRow();
+        if (app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled()) {
+            subfoldersSmartFiltersRow = addRow();
+            subfoldersShowCountersRow = addRow();
+        } else {
+            subfoldersSmartFiltersRow = -1;
+            subfoldersShowCountersRow = -1;
+        }
+        subfoldersInfoRow = addRow();
 
         headerCameraRow = addRow();
         cameraTypeRow = addRow();
@@ -96,7 +113,24 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     public void onItemClick(View view, int position, float x, float y) {
-        if (position == cameraTypeRow) {
+        if (position == subfoldersEnabledRow) {
+            boolean v = !app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled();
+            app.miogram.bridge.folders.MiogramSubfolderEngine.setSubfoldersEnabled(v);
+            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
+            updateRows();
+            listAdapter.notifyDataSetChanged();
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        } else if (position == subfoldersSmartFiltersRow) {
+            boolean v = !app.miogram.bridge.folders.MiogramSubfolderEngine.isSmartFiltersEnabled();
+            app.miogram.bridge.folders.MiogramSubfolderEngine.setSmartFiltersEnabled(v);
+            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        } else if (position == subfoldersShowCountersRow) {
+            boolean v = !app.miogram.bridge.folders.MiogramSubfolderEngine.isShowCountersEnabled();
+            app.miogram.bridge.folders.MiogramSubfolderEngine.setShowCountersEnabled(v);
+            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        } else if (position == cameraTypeRow) {
             showCameraTypeDialog();
         } else if (position == cameraMirrorRow) {
             boolean v = !ChatsConfig.cameraMirrorMode.Bool();
@@ -281,15 +315,17 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == headerCameraRow || position == headerChatActionsRow || position == headerStickersRow) {
+            if (position == headerCameraRow || position == headerChatActionsRow || position == headerStickersRow || position == headerSubfoldersRow) {
                 return TYPE_HEADER;
             } else if (position == cameraMirrorRow || position == cameraWideAngleRow
                     || position == cameraStabilizationRow || position == cameraFpsRow
                     || position == cameraZoomRow || position == iosInputPanelRow
                     || position == noQuoteForwardRow || position == combineMessagesRow
-                    || position == showMessageIdRow || position == showOnlineStatusRow) {
+                    || position == showMessageIdRow || position == showOnlineStatusRow
+                    || position == subfoldersEnabledRow || position == subfoldersSmartFiltersRow
+                    || position == subfoldersShowCountersRow) {
                 return TYPE_CHECK;
-            } else if (position == cameraInfoRow || position == chatActionsInfoRow || position == stickersInfoRow) {
+            } else if (position == cameraInfoRow || position == chatActionsInfoRow || position == stickersInfoRow || position == subfoldersInfoRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_SETTINGS;
@@ -300,7 +336,9 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
             switch (holder.getItemViewType()) {
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
-                    if (position == headerCameraRow) {
+                    if (position == headerSubfoldersRow) {
+                        cell.setText(MiogramLocale.get("Підпапки та фільтри чатів", "Подпапки и фильтры чатов", "Chat Subfolders & Filters"));
+                    } else if (position == headerCameraRow) {
                         cell.setText(MiogramLocale.get("Камера та відеоповідомлення (Кружечки)", "Камера и видеосообщения (Кружочки)", "Camera & Video Notes"));
                     } else if (position == headerChatActionsRow) {
                         cell.setText(MiogramLocale.get("Дії з повідомленнями та чатом", "Действия с сообщениями и чатом", "Message Actions & Gestures"));
@@ -311,7 +349,27 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_CHECK: {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == iosInputPanelRow) {
+                    if (position == subfoldersEnabledRow) {
+                        cell.setTextAndValueAndCheck(
+                                MiogramLocale.get("Підпапки чатів під папками", "Подпапки чатов под папками", "Chat subfolders under folder tabs"),
+                                MiogramLocale.get("Швидкі фільтри ЛС, груп, каналів, ботів у списку діалогів", "Быстрые фильтры ЛС, групп, каналов, ботов в списке диалогов", "Quick filter pills for PM, groups, channels, bots under folders"),
+                                app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled(),
+                                true,
+                                true
+                        );
+                    } else if (position == subfoldersSmartFiltersRow) {
+                        cell.setTextAndCheck(
+                                MiogramLocale.get("Фільтри типів (Особисті, Групи, Канали, Боти)", "Фильтры типов (Личные, Группы, Каналы, Боты)", "Type filters (Personal, Groups, Channels, Bots)"),
+                                app.miogram.bridge.folders.MiogramSubfolderEngine.isSmartFiltersEnabled(),
+                                true
+                        );
+                    } else if (position == subfoldersShowCountersRow) {
+                        cell.setTextAndCheck(
+                                MiogramLocale.get("Показувати лічильники непрочитаних", "Показывать счетчики непрочитанных", "Show unread badges on subfolder pills"),
+                                app.miogram.bridge.folders.MiogramSubfolderEngine.isShowCountersEnabled(),
+                                false
+                        );
+                    } else if (position == iosInputPanelRow) {
                         cell.setTextAndValueAndCheck(
                                 MiogramLocale.get("iOS панель вводу (Cupertino)", "iOS панель ввода (Cupertino)", "iOS Input Panel (Cupertino)"),
                                 MiogramLocale.get("Стильна заокруглена капсула та кругла кнопка відправки", "Стильная скругленная капсула и круглая кнопка отправки", "Sleek rounded capsule & circular send button"),
@@ -366,7 +424,11 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
-                    if (position == cameraInfoRow) {
+                    if (position == subfoldersInfoRow) {
+                        cell.setText(MiogramLocale.get("Відображає інтерактивні підпапки та фільтри прямо під основними вкладками папок чатів.",
+                                "Отображает интерактивные подпапки и фильтры прямо под основными вкладками папок чатов.",
+                                "Displays interactive subfolder pills and filters directly beneath the main folder tabs."));
+                    } else if (position == cameraInfoRow) {
                         cell.setText(MiogramLocale.get("Двигун CameraX значно покращує якість кружечків, додає стабілізацію та підтримку 60 FPS.",
                                 "Движок CameraX значительно улучшает качество кружочков, добавляет стабилизацию и поддержку 60 FPS.",
                                 "CameraX engine vastly improves video note clarity, adds hardware stabilization and 60 FPS capture."));

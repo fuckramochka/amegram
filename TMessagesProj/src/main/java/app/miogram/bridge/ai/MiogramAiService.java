@@ -471,11 +471,11 @@ public class MiogramAiService {
     public static void transcribeAudio(File audioFile, String mimeType, String title, String artist,
                                        int durationSeconds, Utilities.Callback2<String, String> callback) {
         String prompt = "Transcribe the lyrics in this audio track. Return only standard LRC lines "
-                + "in the exact format [mm:ss.xx] lyric text, one line per timestamp. "
-                + "Do not use Markdown, headings, translations, descriptions, or invented words. "
-                + "If there are no confidently intelligible lyrics, return exactly [00:00.00] [Instrumental]. "
-                + "Track metadata: title=" + (title == null ? "" : title)
-                + ", artist=" + (artist == null ? "" : artist)
+                + "in format [mm:ss.xx] lyric text, one line per timestamp. "
+                + "Keep original language, lyrics and spelling. Do not use Markdown code fences, descriptions, or notes. "
+                + "If there are no intelligible lyrics or the track is instrumental, return [00:00.00] [Instrumental]. "
+                + "Track info: " + (title == null ? "" : "title=" + title)
+                + (artist == null ? "" : ", artist=" + artist)
                 + ", duration=" + Math.max(0, durationSeconds) + " seconds.";
         transcribeAudioWithPrompt(audioFile, mimeType, prompt, callback);
     }
@@ -551,14 +551,32 @@ public class MiogramAiService {
                 int start = Math.floorMod(apiKeyCursor.getAndIncrement(), apiKeys.size());
                 for (int offsetKey = 0; offsetKey < apiKeys.size(); offsetKey++) {
                     String apiKey = apiKeys.get((start + offsetKey) % apiKeys.size());
+                    String modelToUse = getModel();
                     Request request = new Request.Builder()
-                            .url("https://generativelanguage.googleapis.com/v1beta/models/" + getModel() + ":generateContent")
+                            .url("https://generativelanguage.googleapis.com/v1beta/models/" + modelToUse + ":generateContent")
                             .header("x-goog-api-key", apiKey)
                             .post(body)
                             .build();
                     try (Response response = client.newCall(request).execute()) {
                         String responseBody = response.body() != null ? response.body().string() : "";
                         if (!response.isSuccessful()) {
+                            if (response.code() == 404 && !FALLBACK_MODEL.equals(modelToUse)) {
+                                Request fallbackReq = new Request.Builder()
+                                        .url("https://generativelanguage.googleapis.com/v1beta/models/" + FALLBACK_MODEL + ":generateContent")
+                                        .header("x-goog-api-key", apiKey)
+                                        .post(body)
+                                        .build();
+                                try (Response fbResp = client.newCall(fallbackReq).execute()) {
+                                    if (fbResp.isSuccessful() && fbResp.body() != null) {
+                                        String fbBody = fbResp.body().string();
+                                        String fbLrc = extractGeneratedText(fbBody);
+                                        if (!TextUtils.isEmpty(fbLrc)) {
+                                            callback.run(fbLrc.trim(), null);
+                                            return;
+                                        }
+                                    }
+                                } catch (Throwable ignored) {}
+                            }
                             lastError = "Error " + response.code() + ": " + truncateError(responseBody);
                             if (response.code() == 401 || response.code() == 403 || response.code() == 429) continue;
                             callback.run(null, lastError);

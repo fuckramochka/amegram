@@ -1320,6 +1320,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         OnlineLyrics.Query q = query(mo);
         if (!q.valid()) {
             lyricsView.showState(LyricsView.STATE_NOT_FOUND);
+            aiLyricsButton.setVisibility(View.GONE);
             sourceView.setText(null);
             return;
         }
@@ -1329,6 +1330,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             return;
         }
         lyricsView.showState(LyricsView.STATE_LOADING);
+        aiLyricsButton.setVisibility(View.GONE);
         sourceView.setText(null);
         OnlineLyrics.loadCached(q, (lyrics, status) -> {
             if (!TextUtils.equals(key, currentKey)) {
@@ -1353,14 +1355,16 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         OnlineLyrics.Query q = query(mo);
         if (!q.valid()) {
             lyricsView.showState(LyricsView.STATE_NOT_FOUND);
+            aiLyricsButton.setVisibility(View.GONE);
             return;
         }
         if (OnlineLyrics.knownMissing(q)) {
             lyricsView.showState(LyricsView.STATE_NOT_FOUND);
-            aiLyricsButton.setVisibility(View.VISIBLE);
+            aiLyricsButton.setVisibility(isAiLyricsAvailable() ? View.VISIBLE : View.GONE);
             return;
         }
         lyricsView.showState(LyricsView.STATE_LOADING);
+        aiLyricsButton.setVisibility(View.GONE);
         sourceView.setText(null);
         OnlineLyrics.fetch(q, (lyrics, status) -> {
             if (!TextUtils.equals(key, currentKey)) {
@@ -1370,12 +1374,22 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
                 showLyrics(lyrics);
             } else {
                 lyricsView.showState(status == OnlineLyrics.ERROR ? LyricsView.STATE_ERROR : LyricsView.STATE_NOT_FOUND);
-                aiLyricsButton.setVisibility(View.VISIBLE);
+                aiLyricsButton.setVisibility(isAiLyricsAvailable() ? View.VISIBLE : View.GONE);
             }
         });
     }
 
+    private boolean isAiLyricsAvailable() {
+        if (MiogramAiService.hasApiKey()) return true;
+        try {
+            return HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
     private void showLyrics(Lyrics lyrics) {
+        aiLyricsButton.setVisibility(View.GONE);
         if (lyrics.instrumental) {
             lyricsView.showState(LyricsView.STATE_INSTRUMENTAL);
             sourceView.setText(lyrics.provider);
@@ -1392,6 +1406,10 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
     private void transcribeLyricsWithAi() {
         MessageObject mo = current;
         if (mo == null) return;
+        if (!isAiLyricsAvailable()) {
+            aiLyricsButton.setVisibility(View.GONE);
+            return;
+        }
         if (!MiogramAiService.hasApiKey()) {
             boolean sttEnabled;
             try {
@@ -1400,19 +1418,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
                 sttEnabled = false;
             }
             if (!sttEnabled) {
-                AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-                builder.setTitle("Потрібен модуль ШІ")
-                        .setMessage("Для розшифровки потрібен модуль «Розшифровка (STT)». Встанови й увімкни його в хот-модулях або додай ключ Gemini у налаштуваннях ШІ.")
-                        .setPositiveButton("Відкрити модулі", (dialog, which) -> {
-                            if (activity != null) {
-                                if (HotModulesManager.isModuleInstalled("stt")) {
-                                    activity.presentFragment(new app.amegram.hot.ui.HotModulesActivity());
-                                } else {
-                                    activity.presentFragment(new app.amegram.hot.ui.HotStoreActivity("stt"));
-                                }
-                            }
-                        })
-                        .setNegativeButton("Не зараз", null).show();
+                aiLyricsButton.setVisibility(View.GONE);
                 return;
             }
             transcribeWithModule(mo);

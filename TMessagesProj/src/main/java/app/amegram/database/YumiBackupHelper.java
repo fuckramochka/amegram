@@ -91,9 +91,9 @@ public final class YumiBackupHelper {
                         long targetUserId = UserConfig.getInstance(currentAccount).getClientUserId();
                         String timeStr = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(new Date());
                         String caption = MiogramLocale.get(
-                                "📦 Yumigram — Резервна копія бази повідомлень\n📅 Створено: " + timeStr + "\n📊 Розмір: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\n🛡 Містить збережені видалені та відредаговані повідомлення",
-                                "📦 Yumigram — Резервная копия базы сообщений\n📅 Создано: " + timeStr + "\n📊 Размер: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\n🛡 Содержит сохранённые удалённые и отредактированные сообщения",
-                                "📦 Yumigram — Message database backup\n📅 Created: " + timeStr + "\n📊 Size: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\n🛡 Contains saved deleted and edited messages"
+                                "Yumigram — Резервна копія бази повідомлень\nСтворено: " + timeStr + "\nРозмір: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\nМістить збережені видалені та відредаговані повідомлення",
+                                "Yumigram — Резервная копия базы сообщений\nСоздано: " + timeStr + "\nРазмер: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\nСодержит сохранённые удалённые и отредактированные сообщения",
+                                "Yumigram — Message database backup\nCreated: " + timeStr + "\nSize: " + AndroidUtilities.formatFileSize(finalFile.length()) + "\nContains saved deleted and edited messages"
                         );
 
                         SendMessagesHelper.prepareSendingDocument(

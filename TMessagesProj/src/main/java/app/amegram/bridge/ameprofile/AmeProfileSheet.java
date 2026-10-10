@@ -199,7 +199,7 @@ public class AmeProfileSheet extends BottomSheet {
         nameCol.setOrientation(LinearLayout.VERTICAL);
 
         previewThought = new TextView(context);
-        previewThought.setText("💭 Ame Studio Active");
+        previewThought.setText("Ame Studio Active");
         previewThought.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10f);
         previewThought.setTextColor(0xFF00F0FF);
         previewThought.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(1), AndroidUtilities.dp(5), AndroidUtilities.dp(1));
@@ -353,7 +353,7 @@ public class AmeProfileSheet extends BottomSheet {
         tiltRow.addView(createSmallChip(context, "0°", () -> updateXmlAttr("avatar", "rotation", "0")));
         tiltRow.addView(createSmallChip(context, "10°", () -> updateXmlAttr("avatar", "rotation", "10")));
         tiltRow.addView(createSmallChip(context, "-10°", () -> updateXmlAttr("avatar", "rotation", "-10")));
-        tiltRow.addView(createSmallChip(context, MiogramLocale.get("✨ Сяйво", "✨ Сияние", "✨ Glow"), () -> {
+        tiltRow.addView(createSmallChip(context, MiogramLocale.get("Сяйво", "Сияние", "Glow"), () -> {
             boolean cur = extractBoolAttr(xmlEditor.getText().toString(), "name", "glow-enabled", true);
             updateXmlAttr("name", "glow-enabled", cur ? "false" : "true");
         }));
@@ -371,7 +371,7 @@ public class AmeProfileSheet extends BottomSheet {
         mediaLabel.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         mediaRow.addView(mediaLabel, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
 
-        mediaRow.addView(createSmallChip(context, MiogramLocale.get("🖼 Додати фото з галереї", "🖼 Добавить фото из галереи", "🖼 Add photo from gallery"), () -> promptAddLocalMedia(context)));
+        mediaRow.addView(createSmallChip(context, MiogramLocale.get("Додати фото з галереї", "Добавить фото из галереи", "Add photo from gallery"), () -> promptAddLocalMedia(context)));
         controlsCard.addView(mediaRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         visualContainer.addView(controlsCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
@@ -387,8 +387,8 @@ public class AmeProfileSheet extends BottomSheet {
 
         codeToolbar.addView(createSmallChip(context, MiogramLocale.get("+ Картка", "+ Карточка", "+ Card"), () -> insertSnippet("\n        <card id=\"new_card\"\n            title=\"Нова інтерактивна картка\"\n            subtitle=\"Опис або посилання\"\n            icon=\"star\"\n            url=\"https://t.me/dkamegram\"\n            gradient-start=\"#1E2235\"\n            gradient-end=\"#333A56\"\n            gradient-angle=\"45\"\n            text-color=\"#FFFFFF\"\n            badge=\"HOT\"\n            badge-bg=\"#FF5722\"\n            radius=\"14\" />\n")));
         codeToolbar.addView(createSmallChip(context, MiogramLocale.get("+ Банер", "+ Баннер", "+ Banner"), () -> insertSnippet("\n    <banner visible=\"true\" type=\"color\" color=\"#1F1633\" gradient-start=\"#1F1633\" gradient-end=\"#3F2B96\" gradient-angle=\"45\" />\n")));
-        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("+ Думка", "+ Мысль", "+ Thought"), () -> insertSnippet("\n    <thought visible=\"true\" text=\"✦ Твоя цитата тут ໒꒱\" text-color=\"#00F0FF\" bg-color=\"#18192A\" />\n")));
-        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("✦ Форматувати", "✦ Форматировать", "✦ Format"), this::formatXmlInEditor));
+        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("+ Думка", "+ Мысль", "+ Thought"), () -> insertSnippet("\n    <thought visible=\"true\" text=\"Твоя цитата тут\" text-color=\"#00F0FF\" bg-color=\"#18192A\" />\n")));
+        codeToolbar.addView(createSmallChip(context, MiogramLocale.get("Форматувати", "Форматировать", "Format"), this::formatXmlInEditor));
 
         codeToolScroll.addView(codeToolbar, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
         codeContainer.addView(codeToolScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
@@ -513,7 +513,7 @@ public class AmeProfileSheet extends BottomSheet {
         secondaryBar.addView(spacer, new LinearLayout.LayoutParams(0, 0, 1.0f));
 
         TextView shareLink = new TextView(context);
-        shareLink.setText("✦ @dkamegram");
+        shareLink.setText("@dkamegram");
         shareLink.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f);
         shareLink.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText));
         shareLink.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(4), AndroidUtilities.dp(6), AndroidUtilities.dp(4));
@@ -632,7 +632,7 @@ public class AmeProfileSheet extends BottomSheet {
         }
 
         AlertDialog.Builder builder = new AlertDialog.Builder(act);
-        builder.setTitle(MiogramLocale.get("📸 Локальне медіа: local:" + missingKey, "📸 Локальное медиа: local:" + missingKey, "📸 Local media: local:" + missingKey));
+        builder.setTitle(MiogramLocale.get("Локальне медіа: local:" + missingKey, "Локальное медиа: local:" + missingKey, "Local media: local:" + missingKey));
         builder.setMessage(MiogramLocale.get("У вашому коді вказано «local:" + missingKey + "», але файл ще не обрано з галереї. Бажаєте обрати фото зараз?",
                 "В вашем коде указано «local:" + missingKey + "», но файл ещё не выбран из галереи. Хотите выбрать фото сейчас?",
                 "Your code references \"local:" + missingKey + "\", but no photo was selected yet. Would you like to pick a photo now?"));
@@ -657,7 +657,7 @@ public class AmeProfileSheet extends BottomSheet {
         if (act == null) return;
 
         AlertDialog.Builder builder = new AlertDialog.Builder(act);
-        builder.setTitle(MiogramLocale.get("🖼 Обрати фото для профілю", "🖼 Выбрать фото для профиля", "🖼 Choose profile photo"));
+        builder.setTitle(MiogramLocale.get("Обрати фото для профілю", "Выбрать фото для профиля", "Choose profile photo"));
         builder.setMessage(MiogramLocale.get("Введіть ключ медіа (наприклад: photo1):", "Введите ключ медиа (например: photo1):", "Enter media key (e.g. photo1):"));
 
         final EditText input = new EditText(act);

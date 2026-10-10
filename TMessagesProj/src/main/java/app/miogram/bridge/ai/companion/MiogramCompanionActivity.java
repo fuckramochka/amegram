@@ -706,7 +706,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         chipsRow.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(6));
         chipsScroll.addView(chipsRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        addChip(context, chipsRow, MiogramLocale.get("💬 Як справи?", "💬 Как дела?", "💬 How are you?"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Як справи?", "Как дела?", "How are you?"), () -> {
             inputField.setText(MiogramLocale.get("Амэ, як справи? Розкажи чим займаєшся (´｡• ω •｡`)", "Амэ, как дела? Расскажи чем занимаешься (´｡• ω •｡`)", "Ame, how are you? What are you up to? (´｡• ω •｡`)"));
             onSendMessage();
         });
@@ -1196,7 +1196,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         card.addView(btnRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         TextView approveBtn = new TextView(ctx);
-        approveBtn.setText("✓ " + MiogramLocale.get("ДОЗВОЛИТИ", "РАЗРЕШИТЬ", "ALLOW"));
+        approveBtn.setText(MiogramLocale.get("ДОЗВОЛИТИ", "РАЗРЕШИТЬ", "ALLOW"));
         approveBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         approveBtn.setTypeface(AndroidUtilities.bold());
         approveBtn.setTextColor(0xFFFFFFFF);
@@ -1206,7 +1206,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         btnRow.addView(approveBtn, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 4, 0));
 
         TextView denyBtn = new TextView(ctx);
-        denyBtn.setText("✕ " + MiogramLocale.get("ВІДХИЛИТИ", "ОТКЛОНИТЬ", "DENY"));
+        denyBtn.setText(MiogramLocale.get("ВІДХИЛИТИ", "ОТКЛОНИТЬ", "DENY"));
         denyBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         denyBtn.setTypeface(AndroidUtilities.bold());
         denyBtn.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));

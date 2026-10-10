@@ -119,7 +119,7 @@ public class MiogramSpotifySheet extends BottomSheet {
         hintCard.setBackground(hintBg);
 
         TextView hintTitle = new TextView(context);
-        hintTitle.setText("💡 " + MiogramLocale.get("Важливо для синхронізації (Free та Premium):", "Важно для синхронизации (Free и Premium):", "Important for sync (Free & Premium):"));
+        hintTitle.setText(MiogramLocale.get("Важливо для синхронізації (Free та Premium):", "Важно для синхронизации (Free и Premium):", "Important for sync (Free & Premium):"));
         hintTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
         hintTitle.setTypeface(AndroidUtilities.bold());
         hintTitle.setTextColor(0xFF1DB954);
@@ -168,9 +168,9 @@ public class MiogramSpotifySheet extends BottomSheet {
         // Feature 2: AI Companion
         addFeatureRow(root, context, "🤖",
                 MiogramLocale.get("ШІ-Компаньйон (Ame / K-Angel)", "ИИ-Компаньон (Ame / K-Angel)", "AI Companion (Ame / K-Angel)"),
-                MiogramLocale.get("Кнопка «🎵 Зараз грає» у меню ШІ або пряме запитання «що грає в Spotify» дозволяє ШІ побачити трек, оцінити його або поділитися лінком.",
-                        "Кнопка «🎵 Сейчас играет» в меню ИИ или прямой вопрос «что играет в Spotify» позволяет ИИ увидеть трек, оценить его или поделиться ссылкой.",
-                        "Tap the '🎵 Now playing' chip or ask AI 'what's playing on Spotify' to inspect or share the active song."));
+                MiogramLocale.get("Кнопка «Зараз грає» у меню ШІ або пряме запитання «що грає в Spotify» дозволяє ШІ побачити трек, оцінити його або поділитися лінком.",
+                        "Кнопка «Сейчас играет» в меню ИИ или прямой вопрос «что играет в Spotify» позволяет ИИ увидеть трек, оценить его или поделиться ссылкой.",
+                        "Tap the 'Now playing' chip or ask AI 'what's playing on Spotify' to inspect or share the active song."));
 
         // Feature 3: Player menu
         addFeatureRow(root, context, "🎧",
@@ -231,17 +231,17 @@ public class MiogramSpotifySheet extends BottomSheet {
         TextView instructions = new TextView(context);
         instructions.setText(MiogramLocale.get(
                 "1. Відкрийте офіційний додаток Spotify на телефоні.\n" +
-                "2. Натисніть «Налаштування» ⚙️ (профіль або шестерня вгорі).\n" +
+                "2. Натисніть «Налаштування» (профіль або шестерня вгорі).\n" +
                 "3. Прокрутіть до розділу «Пристрої» або «Конфіденційність».\n" +
                 "4. Увімкніть тумблер «Статус трансляції пристрою» (Device Broadcast Status).\n" +
                 "5. Запустіть будь-яку пісню — Miogram одразу її підхопить!",
                 "1. Откройте официальное приложение Spotify на телефоне.\n" +
-                "2. Нажмите «Настройки» ⚙️ (профиль или шестеренка вверху).\n" +
+                "2. Нажмите «Настройки» (профиль или шестеренка вверху).\n" +
                 "3. Прокрутите к разделу «Устройства» или «Конфиденциальность».\n" +
                 "4. Включите тумблер «Статус трансляции устройства» (Device Broadcast Status).\n" +
                 "5. Запустите любую песню — Miogram сразу ее подхватит!",
                 "1. Open the Spotify app on your device.\n" +
-                "2. Go to Settings ⚙️.\n" +
+                "2. Go to Settings.\n" +
                 "3. Scroll to Devices or Privacy.\n" +
                 "4. Enable 'Device Broadcast Status' (Allow other apps to see playback).\n" +
                 "5. Play any song — Miogram will instantly pick it up!"

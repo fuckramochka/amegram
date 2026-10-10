@@ -68,8 +68,20 @@ public class MiogramSubfolderEngine {
         return ApplicationLoader.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    public static boolean isModuleAvailable() {
+        try {
+            return app.amegram.hot.HotModulesManager.isModuleInstalled("fileorganization")
+                    && app.amegram.hot.HotModulesManager.isModuleEnabled("fileorganization");
+        } catch (Throwable ignore) {
+            return false;
+        }
+    }
+
     public static boolean isSubfoldersEnabled() {
-        return getPrefs().getBoolean(KEY_ENABLED, true);
+        if (!isModuleAvailable()) {
+            return false;
+        }
+        return getPrefs().getBoolean(KEY_ENABLED, false);
     }
 
     public static void setSubfoldersEnabled(boolean enabled) {
@@ -77,7 +89,8 @@ public class MiogramSubfolderEngine {
     }
 
     public static boolean isHierarchicalEnabled() {
-        return getPrefs().getBoolean(KEY_HIERARCHICAL, true);
+        if (!isSubfoldersEnabled()) return false;
+        return getPrefs().getBoolean(KEY_HIERARCHICAL, false);
     }
 
     public static void setHierarchicalEnabled(boolean enabled) {
@@ -85,7 +98,8 @@ public class MiogramSubfolderEngine {
     }
 
     public static boolean isCollapseSubfoldersEnabled() {
-        return getPrefs().getBoolean(KEY_COLLAPSE_MAIN_TABS, true);
+        if (!isSubfoldersEnabled()) return false;
+        return getPrefs().getBoolean(KEY_COLLAPSE_MAIN_TABS, false);
     }
 
     public static void setCollapseSubfoldersEnabled(boolean enabled) {
@@ -93,7 +107,8 @@ public class MiogramSubfolderEngine {
     }
 
     public static boolean isSmartFiltersEnabled() {
-        return getPrefs().getBoolean(KEY_SMART_FILTERS, true);
+        if (!isSubfoldersEnabled()) return false;
+        return getPrefs().getBoolean(KEY_SMART_FILTERS, false);
     }
 
     public static void setSmartFiltersEnabled(boolean enabled) {
@@ -101,7 +116,8 @@ public class MiogramSubfolderEngine {
     }
 
     public static boolean isShowCountersEnabled() {
-        return getPrefs().getBoolean(KEY_SHOW_COUNTERS, true);
+        if (!isSubfoldersEnabled()) return false;
+        return getPrefs().getBoolean(KEY_SHOW_COUNTERS, false);
     }
 
     public static void setShowCountersEnabled(boolean enabled) {
@@ -304,6 +320,7 @@ public class MiogramSubfolderEngine {
     }
 
     public static boolean isChildFilter(ArrayList<MessagesController.DialogFilter> filters, MessagesController.DialogFilter filter) {
+        if (!isSubfoldersEnabled()) return false;
         if (filter == null || filter.name == null) return false;
         String parentName = getParentName(filter.name.trim());
         if (parentName == null || parentName.isEmpty() || parentName.equalsIgnoreCase(filter.name.trim())) {

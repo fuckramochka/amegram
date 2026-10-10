@@ -70,6 +70,13 @@ object AppearanceConfig {
 
     @JvmStatic
     fun isYougramExpressive(): Boolean {
+        try {
+            if (!app.amegram.hot.HotModulesManager.isModuleActive("ui")) {
+                return false
+            }
+        } catch (t: Throwable) {
+            return false
+        }
         ensureLoaded()
         return uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE
     }
@@ -137,9 +144,6 @@ object AppearanceConfig {
 
     @JvmStatic
     fun squareFab(): Boolean {
-        if (isYougramExpressive()) {
-            return true
-        }
         ensureLoaded()
         return squareFab.Bool()
     }
@@ -224,9 +228,6 @@ object AppearanceConfig {
 
     @JvmStatic
     fun glassMessageMenu(): Boolean {
-        if (isYougramExpressive()) {
-            return true
-        }
         ensureLoaded()
         return glassMessageMenu.Bool()
     }
@@ -271,27 +272,18 @@ object AppearanceConfig {
 
     @JvmStatic
     fun m3ListItems(): Boolean {
-        if (isYougramExpressive()) {
-            return true
-        }
         ensureLoaded()
         return m3ListItems.Bool()
     }
 
     @JvmStatic
     fun md3MiniPlayer(): Boolean {
-        if (isYougramExpressive()) {
-            return true
-        }
         ensureLoaded()
         return md3MiniPlayer.Bool()
     }
 
     @JvmStatic
     fun newLoadingStyle(): Boolean {
-        if (isYougramExpressive()) {
-            return true
-        }
         ensureLoaded()
         return newLoadingStyle.Bool()
     }

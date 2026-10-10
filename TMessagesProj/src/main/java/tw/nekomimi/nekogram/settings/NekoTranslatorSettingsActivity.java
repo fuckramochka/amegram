@@ -493,7 +493,7 @@ public class NekoTranslatorSettingsActivity extends BaseNekoXSettingsActivity {
                     textCell.setTextAndValue(getString(R.string.DoNotTranslate), getRestrictedLanguages(), true, true);
                 } else if (position == cellGroup.rows.indexOf(llmSyncNoticeRow)) {
                     textCell.setTextAndValue(
-                            MiogramLocale.get("✦ Miogram AI Sync", "✦ Miogram AI Sync", "✦ Miogram AI Sync"),
+                            MiogramLocale.get("Miogram AI Sync", "Miogram AI Sync", "Miogram AI Sync"),
                             MiogramLocale.get("Спільний ключ, модель та провайдер", "Общий ключ, модель и провайдер", "Shared key, model & provider"),
                             true
                     );

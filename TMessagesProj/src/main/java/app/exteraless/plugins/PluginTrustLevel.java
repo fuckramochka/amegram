@@ -62,6 +62,9 @@ public final class PluginTrustLevel {
         if (p == null || pluginId == null) {
             return DEFAULT;
         }
+        if ("custom_profile".equals(pluginId)) {
+            return TRUSTED;
+        }
         String key = prefsKey(pluginId);
         if (p.contains(key)) {
             return clamp(p.getInt(key, DEFAULT));

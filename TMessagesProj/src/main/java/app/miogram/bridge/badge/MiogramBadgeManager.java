@@ -19,10 +19,6 @@ public class MiogramBadgeManager {
         if (userId <= 0) {
             return false;
         }
-        // --- Amegram Core: badges module OFF = no arrows anywhere (all call sites choke here) ---
-        if (!isModuleEnabled()) {
-            return false;
-        }
         return MiogramSupabaseBridge.hasCloudBadge(userId);
     }
 

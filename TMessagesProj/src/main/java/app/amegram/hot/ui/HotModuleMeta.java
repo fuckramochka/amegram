@@ -148,22 +148,22 @@ public final class HotModuleMeta {
 
     public static List<Pack> packs() {
         List<Pack> res = new ArrayList<>();
-        res.add(new Pack("privacy", "🥷",
+        res.add(new Pack("privacy", "",
                 MiogramLocale.get("Приватність", "Приватность", "Privacy"),
                 MiogramLocale.get("Невидимка + сейф",
                         "Невидимка + сейф", "Ghost + vault"),
                 new String[]{"ghost", "vault"}));
-        res.add(new Pack("media", "🎧",
+        res.add(new Pack("media", "",
                 MiogramLocale.get("Медіа", "Медиа", "Media"),
                 MiogramLocale.get("Плеєр + TikTok + розшифровка голосу",
                         "Плеер + TikTok + расшифровка голоса", "Player + TikTok + voice STT"),
                 new String[]{"player", "tiktok", "stt"}));
-        res.add(new Pack("power", "⚡",
+        res.add(new Pack("power", "",
                 MiogramLocale.get("Потужність", "Мощь", "Power"),
                 MiogramLocale.get("ШІ-супутник + автоматизація + кастом + папки + інтерфейс",
                         "ИИ-спутник + автоматизация + кастом + папки + интерфейс", "AI buddy + automation + custom + folders + interface"),
                 new String[]{"ai", "automation", "ame", "fileorganization", "ui"}));
-        res.add(new Pack("start", "🟢",
+        res.add(new Pack("start", "",
                 MiogramLocale.get("Старт", "Старт", "Start"),
                 MiogramLocale.get("Привид + плеєр + ШІ для швидкого старту",
                         "Призрак + плеер + ИИ для быстрого старта", "Ghost + player + AI for quick start"),

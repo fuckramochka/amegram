@@ -30,6 +30,7 @@ __version__ = "1.9"
 __icon__ = "RoflPlugins/18"
 __app_version__ = ">=12.5.1"
 __sdk_version__ = ">=1.4.0"
+__permissions__ = ["hooks", "network", "files", "settings"]
 
 _LEGACY_KEYS = [
     "enabled", "show_emoji", "banner_mode", "banner_path", "banner_color",

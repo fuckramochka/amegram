@@ -27,8 +27,15 @@ public final class HotUiGate {
         return get() != null;
     }
 
-    /** Поточний стиль: 1 = Expressive, 0 = Classic. Без модуля — читає AppearanceConfig. */
+    /** Поточний стиль: 1 = Expressive, 0 = Classic. Без модуля — завжди Classic (0). */
     public static int styleMode() {
+        try {
+            if (!HotModulesManager.isModuleActive("ui")) {
+                return 0;
+            }
+        } catch (Throwable ignore) {
+            return 0;
+        }
         HotUi ui = get();
         if (ui != null) {
             try {
@@ -39,7 +46,7 @@ public final class HotUiGate {
         try {
             return app.exteraless.appearance.AppearanceConfig.uiStyleMode();
         } catch (Throwable ignore) {
-            return 1;
+            return 0;
         }
     }
 
@@ -65,6 +72,7 @@ public final class HotUiGate {
     public static void applyLive() {
         try {
             app.exteraless.appearance.AppearanceConfig.invalidateDividerStyle();
+            org.telegram.ui.MainTabsLayout.resetFloatingCache();
         } catch (Throwable ignore) {
         }
         try {

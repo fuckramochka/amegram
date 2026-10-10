@@ -123,10 +123,10 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if ("player".equals(moduleId)) {
             try {
                 rows.add(HotRow.button("player_lyrics_open",
-                        MiogramLocale.get("🔍 Тексти пісень (LRC + ШІ)", "🔍 Тексты песен (LRC + ИИ)", "🔍 Lyrics (LRC + AI)"),
+                        MiogramLocale.get("Тексти пісень (LRC + ШІ)", "Тексты песен (LRC + ИИ)", "Lyrics (LRC + AI)"),
                         MiogramLocale.get("LRCLib • NetEase • ШІ-розшифровка через MiogramLyricsView", "LRCLib • NetEase • ИИ-расшифровка через MiogramLyricsView", "LRCLib • NetEase • AI transcription via MiogramLyricsView")));
                 rows.add(HotRow.button("player_lyrics_ai",
-                        MiogramLocale.get("🤖 Розшифрувати через ШІ", "🤖 Расшифровать через ИИ", "🤖 Transcribe with AI"),
+                        MiogramLocale.get("Розшифрувати через ШІ", "Расшифровать через ИИ", "Transcribe with AI"),
                         MiogramLocale.get("Gemini AI → слова з таймінгами (AI_WORD)", "Gemini AI → слова с таймингами (AI_WORD)", "Gemini AI → lyrics with timestamps (AI_WORD)")));
             } catch (Throwable ignore) {
             }
@@ -290,7 +290,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
                 showDialog(sheet);
                 try {
                     android.widget.Toast.makeText(ctx,
-                            MiogramLocale.get("Відкрито плеєр — натисніть ✨ / Розшифровка в текстах", "Открыт плеер — нажмите ✨ / Расшифровка в текстах", "Player opened — tap ✨ / Transcribe in lyrics"),
+                            MiogramLocale.get("Відкрито плеєр — натисніть Розшифровка в текстах", "Открыт плеер — нажмите Расшифровка в текстах", "Player opened — tap Transcribe in lyrics"),
                             android.widget.Toast.LENGTH_LONG).show();
                 } catch (Throwable ignore) {
                 }

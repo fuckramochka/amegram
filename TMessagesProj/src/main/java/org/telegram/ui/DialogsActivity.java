@@ -2117,7 +2117,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             t += (int) (dp(36 + 14) * filterTabsVisibility);
             additionalPadding += (int) (dp(36 + 14) * filterTabsVisibility);
 
-            if (subfolderBar != null && subfolderBar.getVisibility() == View.VISIBLE) {
+            if (subfolderBar != null && subfolderBar.getVisibility() == View.VISIBLE && subfolderBar.hasPills()) {
                 final int sh = (int) (subfolderBar.getMeasuredHeight() * filterTabsVisibility);
                 t += sh;
                 additionalPadding += sh;
@@ -7371,6 +7371,25 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (commentView != null) {
             commentView.onResume();
         }
+        if (fragmentView instanceof ContentView) {
+            ContentView contentView = (ContentView) fragmentView;
+            boolean subOn = app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled();
+            if (subOn) {
+                if (subfolderBar == null && getContext() != null) {
+                    subfolderBar = new app.miogram.bridge.folders.MiogramSubfolderBar(getContext(), resourceProvider, this);
+                    contentView.addView(subfolderBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP, 0, 0, 0, 0));
+                }
+                if (subfolderBar != null) {
+                    subfolderBar.onTabsUpdated();
+                }
+            } else {
+                if (subfolderBar != null) {
+                    subfolderBar.setVisibility(View.GONE);
+                    subfolderBar.refreshPills();
+                }
+            }
+            updateContextViewPosition();
+        }
         if (!onlySelect && folderId == 0 && communityId == 0) {
             getMediaDataController().checkStickers(MediaDataController.TYPE_EMOJI);
         }
@@ -7515,7 +7534,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 return (
                     (actionBar != null ? actionBar.getMeasuredHeight() : 0) +
                     (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE ? filterTabsView.getMeasuredHeight() : 0) +
-                    (subfolderBar != null && subfolderBar.getVisibility() == View.VISIBLE ? subfolderBar.getMeasuredHeight() : 0) +
+                    (subfolderBar != null && subfolderBar.getVisibility() == View.VISIBLE && subfolderBar.hasPills() ? subfolderBar.getMeasuredHeight() : 0) +
                     (topPanelLayout != null ? topPanelLayout.getHeight() : 0) +
                     (dialogStoriesCell != null && dialogStoriesCellVisible ? (int) ((1f - dialogStoriesCell.getCollapsedProgress()) * dp(DialogStoriesCell.HEIGHT_IN_DP)) : 0) +
                     (getIdleSearchFieldHeight())
@@ -15258,7 +15277,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             + getIdleSearchFieldHeight()
             + dp(hasStories ? DialogStoriesCell.HEIGHT_IN_DP : 0)
             + (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE ? filterTabsView.getMeasuredHeight() : 0)
-            + (subfolderBar != null && subfolderBar.getVisibility() == View.VISIBLE ? subfolderBar.getMeasuredHeight() : 0)
+            + (subfolderBar != null && subfolderBar.getVisibility() == View.VISIBLE && subfolderBar.hasPills() ? subfolderBar.getMeasuredHeight() : 0)
             + (topPanelLayout != null && topPanelLayout.getVisibility() == View.VISIBLE ? topPanelLayout.getSumHeightOfAllVisibleChild() : 0)
             + ((int) scrollYOffset);
 

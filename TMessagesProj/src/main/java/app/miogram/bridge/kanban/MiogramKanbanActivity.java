@@ -219,7 +219,7 @@ public class MiogramKanbanActivity extends BaseFragment {
 
         if (item.dialogId != 0) {
             TextView openChat = new TextView(context);
-            openChat.setText("💬 " + MiogramLocale.get("Чат", "Чат", "Chat"));
+            openChat.setText(MiogramLocale.get("Чат", "Чат", "Chat"));
             openChat.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             openChat.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton, getResourceProvider()));
             openChat.setBackground(Theme.getSelectorDrawable(false));
@@ -239,7 +239,7 @@ public class MiogramKanbanActivity extends BaseFragment {
         }
 
         TextView moveBtn = new TextView(context);
-        moveBtn.setText("➡️ " + MiogramLocale.get("Перенести", "Перенести", "Move"));
+        moveBtn.setText(MiogramLocale.get("Перенести", "Перенести", "Move"));
         moveBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         moveBtn.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, getResourceProvider()));
         moveBtn.setBackground(Theme.getSelectorDrawable(false));
@@ -252,7 +252,7 @@ public class MiogramKanbanActivity extends BaseFragment {
         actions.addView(moveBtn);
 
         TextView delBtn = new TextView(context);
-        delBtn.setText("✕");
+        delBtn.setText(MiogramLocale.get("Видалити", "Удалить", "Delete"));
         delBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         delBtn.setTextColor(Color.parseColor("#FF2A93"));
         delBtn.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector, getResourceProvider()), Theme.RIPPLE_MASK_CIRCLE_20DP));

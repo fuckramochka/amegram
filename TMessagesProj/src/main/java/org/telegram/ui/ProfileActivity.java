@@ -6765,7 +6765,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private void fixAvatarImageInCenter() {
         if (listView == null) return;
         final FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) avatarContainer.getLayoutParams();
-        boolean isSelfProfileAme = myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId));
+        boolean isSelfProfileAme = (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId)))
+                && app.amegram.bridge.ameprofile.AmeProfileEngine.isCustomProfileEnabled();
         if (isSelfProfileAme) {
             String align = app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarAlign();
             float rot = app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarRotation();
@@ -6785,6 +6786,13 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 avatarX = listView.getMeasuredWidth() / 2f - (params.width * avatarScale * scaleMul * 0.5f) + dp(app.amegram.bridge.ameprofile.AmeProfileEngine.getAvatarOffsetX());
             }
         } else {
+            if (avatarImage != null) {
+                avatarImage.setRotation(0f);
+            }
+            if (avatarContainer != null) {
+                avatarContainer.setScaleX(avatarScale);
+                avatarContainer.setScaleY(avatarScale);
+            }
             avatarX = listView.getMeasuredWidth() / 2f - (params.width * avatarScale * 0.5f);
         }
         if (openAnimationInProgress) {

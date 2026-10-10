@@ -307,12 +307,12 @@ public class MiogramHerokuActivity extends BaseNekoSettingsActivity {
     private void showModuleDetailsDialog(MiogramHerokuManager.UserbotModuleInfo m) {
         if (getParentActivity() == null) return;
         AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
-        b.setTitle("📦 " + m.name + " (v" + m.version + ")");
+        b.setTitle(m.name + " (v" + m.version + ")");
 
         StringBuilder sb = new StringBuilder();
         sb.append(m.description).append("\n\n");
-        sb.append(MiogramLocale.get("👤 Автор: ", "👤 Автор: ", "👤 Author: ")).append(m.author).append("\n");
-        sb.append(MiogramLocale.get("⚡ Команди:\n", "⚡ Команды:\n", "⚡ Commands:\n"));
+        sb.append(MiogramLocale.get("Автор: ", "Автор: ", "Author: ")).append(m.author).append("\n");
+        sb.append(MiogramLocale.get("Команди:\n", "Команды:\n", "Commands:\n"));
         for (String c : m.commands) {
             sb.append("  • `").append(MiogramHerokuManager.getInstance().getPrefix()).append(c).append("`\n");
         }
@@ -324,7 +324,7 @@ public class MiogramHerokuActivity extends BaseNekoSettingsActivity {
     private void showCommandsDialog() {
         if (getParentActivity() == null) return;
         AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
-        b.setTitle("⚡ " + MiogramLocale.get("Доступні команди", "Доступные команды", "Available Commands"));
+        b.setTitle(MiogramLocale.get("Доступні команди", "Доступные команды", "Available Commands"));
 
         StringBuilder sb = new StringBuilder();
         String p = MiogramHerokuManager.getInstance().getPrefix();
@@ -390,13 +390,13 @@ public class MiogramHerokuActivity extends BaseNekoSettingsActivity {
 
             boolean ok = MiogramHerokuManager.getInstance().loadExternalPythonModule(target);
             if (ok) {
-                Toast.makeText(ctx, MiogramLocale.get("✅ Модуль успішно встановлено: ", "✅ Модуль успешно установлен: ", "✅ Module installed successfully: ") + fileName, Toast.LENGTH_SHORT).show();
+                Toast.makeText(ctx, MiogramLocale.get("Модуль успішно встановлено: ", "Модуль успешно установлен: ", "Module installed successfully: ") + fileName, Toast.LENGTH_SHORT).show();
                 updateRows();
                 if (listAdapter != null) {
                     listAdapter.notifyDataSetChanged();
                 }
             } else {
-                Toast.makeText(ctx, MiogramLocale.get("❌ Помилка завантаження модуля", "❌ Ошибка загрузки модуля", "❌ Failed to load module"), Toast.LENGTH_SHORT).show();
+                Toast.makeText(ctx, MiogramLocale.get("Помилка завантаження модуля", "Ошибка загрузки модуля", "Failed to load module"), Toast.LENGTH_SHORT).show();
             }
         } catch (Throwable t) {
             Toast.makeText(getParentActivity(), MiogramLocale.get("Помилка встановлення: ", "Ошибка установки: ", "Installation error: ") + t.getMessage(), Toast.LENGTH_SHORT).show();

@@ -594,7 +594,7 @@ public class MiogramLyricsView extends FrameLayout {
                 showLoading(false);
                 adapter.setLines(song.lines);
                 updateTranslationButton();
-                showToastPill(MiogramLocale.get("ШІ-розпізнавання завершено! ✓", "ИИ-распознавание завершено! ✓", "AI transcription complete! ✓"));
+                showToastPill(MiogramLocale.get("ШІ-розпізнавання завершено!", "ИИ-распознавание завершено!", "AI transcription complete!"));
             }
 
             @Override
@@ -652,7 +652,7 @@ public class MiogramLyricsView extends FrameLayout {
                 showLoading(false);
                 adapter.setLines(song.lines);
                 updateTranslationButton();
-                showToastPill(MiogramLocale.get("Точна розшифровка готова! ✓", "Точная расшифровка готова! ✓", "Enhanced transcription ready! ✓"));
+                showToastPill(MiogramLocale.get("Точна розшифровка готова!", "Точная расшифровка готова!", "Enhanced transcription ready!"));
             }
 
             @Override

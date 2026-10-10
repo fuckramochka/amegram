@@ -96,7 +96,19 @@ public class MiogramSubfolderBar extends FrameLayout {
     }
 
     public boolean hasPills() {
+        if (!MiogramSubfolderEngine.isSubfoldersEnabled()) {
+            return false;
+        }
         return !pillViews.isEmpty();
+    }
+
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (!hasPills()) {
+            setMeasuredDimension(0, 0);
+            return;
+        }
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
 
     public void onTabsUpdated() {
@@ -140,6 +152,11 @@ public class MiogramSubfolderBar extends FrameLayout {
     public void refreshPills() {
         pillsContainer.removeAllViews();
         pillViews.clear();
+
+        if (!MiogramSubfolderEngine.isSubfoldersEnabled()) {
+            setVisibility(View.GONE);
+            return;
+        }
 
         if (dialogsActivity == null) return;
         int currentAccount = dialogsActivity.getCurrentAccount();

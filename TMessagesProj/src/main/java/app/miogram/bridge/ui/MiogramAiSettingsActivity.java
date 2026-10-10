@@ -336,7 +336,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                         try {
                             if (app.amegram.hot.HotAiGate.isGeminiNano()) {
                                 nanoSuffix = " • Nano " + (app.amegram.hot.HotAiGate.isNanoDownloading()
-                                        ? "⏳ " + app.amegram.hot.HotAiGate.getNanoDownloadProgress() + "%" : "✓");
+                                        ? app.amegram.hot.HotAiGate.getNanoDownloadProgress() + "%" : "Active");
                             }
                         } catch (Throwable ignore) {
                         }

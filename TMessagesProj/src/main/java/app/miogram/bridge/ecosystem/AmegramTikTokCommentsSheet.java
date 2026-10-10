@@ -115,7 +115,7 @@ public class AmegramTikTokCommentsSheet extends BottomSheet {
         header.addView(countView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
         TextView closeBtn = new TextView(context);
-        closeBtn.setText("✕");
+        closeBtn.setText("X");
         closeBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         closeBtn.setTextColor(0x88FFFFFF);
         closeBtn.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
@@ -281,7 +281,7 @@ public class AmegramTikTokCommentsSheet extends BottomSheet {
             }
 
             if (c.diggCount > 0) {
-                holder.likesView.setText("♥ " + AmegramTikTokManager.formatCount(c.diggCount));
+                holder.likesView.setText(AmegramTikTokManager.formatCount(c.diggCount));
                 holder.likesView.setVisibility(View.VISIBLE);
             } else {
                 holder.likesView.setVisibility(View.GONE);

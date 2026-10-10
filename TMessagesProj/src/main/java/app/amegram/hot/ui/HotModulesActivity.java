@@ -155,7 +155,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 try {
                     android.widget.Toast.makeText(context,
                             ok ? (found.isEmpty()
-                                    ? MiogramLocale.get("Оновлень нема ✓", "Обновлений нет ✓", "No updates ✓")
+                                    ? MiogramLocale.get("Оновлень нема", "Обновлений нет", "No updates")
                                     : MiogramLocale.get("Знайдено оновлень: ", "Найдено обновлений: ", "Updates found: ") + found.size())
                                     : String.valueOf(msg),
                             android.widget.Toast.LENGTH_SHORT).show();
@@ -260,8 +260,8 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         AlertDialog.Builder b = new AlertDialog.Builder(context);
         b.setTitle(MiogramLocale.get("Набір модулів", "Набор модулей", "Module set"));
         String[] items = new String[]{
-                MiogramLocale.get("📤 Експорт (копіювати)", "📤 Экспорт (копировать)", "📤 Export (copy)"),
-                MiogramLocale.get("📥 Імпорт (вставити)", "📥 Импорт (вставить)", "📥 Import (paste)")};
+                MiogramLocale.get("Експорт (копіювати)", "Экспорт (копировать)", "Export (copy)"),
+                MiogramLocale.get("Імпорт (вставити)", "Импорт (вставить)", "Import (paste)")};
         b.setItems(items, (d, which) -> {
             if (which == 0) {
                 try {
@@ -272,7 +272,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                         cm.setPrimaryClip(android.content.ClipData.newPlainText("modules", json));
                     }
                     android.widget.Toast.makeText(context,
-                            MiogramLocale.get("✓ Набір скопійовано в буфер", "✓ Набор скопирован в буфер", "✓ Set copied to clipboard"),
+                            MiogramLocale.get("Набір скопійовано в буфер", "Набор скопирован в буфер", "Set copied to clipboard"),
                             android.widget.Toast.LENGTH_SHORT).show();
                 } catch (Throwable ignore) {
                 }
@@ -372,11 +372,11 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 HotModulesManager.InstalledInfo info = filtered.get(i);
                 String group;
                 if (pendingUpdates.containsKey(info.manifest.id)) {
-                    group = MiogramLocale.get("⬆ До оновлення", "⬆ К обновлению", "⬆ To update");
+                    group = MiogramLocale.get("До оновлення", "К обновлению", "To update");
                 } else if (info.enabled) {
-                    group = MiogramLocale.get("🟢 Увімкнені", "🟢 Включены", "🟢 Enabled");
+                    group = MiogramLocale.get("Увімкнені", "Включены", "Enabled");
                 } else {
-                    group = MiogramLocale.get("⚪ Вимкнені", "⚪ Выключены", "⚪ Disabled");
+                    group = MiogramLocale.get("Вимкнені", "Выключены", "Disabled");
                 }
                 if (!group.equals(lastGroup)) {
                     items.add(UItem.asHeader(group));
@@ -486,7 +486,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         title.setGravity(Gravity.CENTER);
         layout.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
         TextView reset = YumiComponents.ghostButton(context,
-                MiogramLocale.get("✕ Скинути пошук", "✕ Сбросить поиск", "✕ Clear search"),
+                MiogramLocale.get("Скинути пошук", "Сбросить поиск", "Clear search"),
                 Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         reset.setOnClickListener(v -> {
             query = "";
@@ -537,7 +537,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         titleRow.setGravity(Gravity.CENTER_VERTICAL);
 
         TextView titleView = new TextView(context);
-        titleView.setText((info.enabled ? "● " : "○ ") + info.manifest.name);
+        titleView.setText(info.manifest.name);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
         titleView.setTypeface(AndroidUtilities.bold());
         titleView.setTextColor(info.enabled
@@ -587,7 +587,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         String upd = pendingUpdates.get(info.manifest.id);
         if (upd != null) {
             TextView upBadge = new TextView(context);
-            upBadge.setText("↑ v" + upd + MiogramLocale.get(" доступно", " доступно", " available"));
+            upBadge.setText("v" + upd + MiogramLocale.get(" доступно", " доступно", " available"));
             upBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             upBadge.setTypeface(AndroidUtilities.bold());
             upBadge.setTextColor(YumiTheme.getPrimary());
@@ -595,10 +595,10 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         }
         if (HotModulesManager.isQuarantined(info.manifest.id)) {
             TextView qBadge = new TextView(context);
-            qBadge.setText("⛔ " + MiogramLocale.get("карантин: падав "
+            qBadge.setText(MiogramLocale.get("Карантин: падав "
                     + HotModulesManager.getLoadFailures(info.manifest.id) + "× — торкніть щоб скинути",
-                    "карантин: падал " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — нажмите чтобы сбросить",
-                    "quarantined: crashed " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — tap to reset"));
+                    "Карантин: падал " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — нажмите чтобы сбросить",
+                    "Quarantined: crashed " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — tap to reset"));
             qBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             qBadge.setTextColor(YumiTheme.getError());
             qBadge.setOnClickListener(v -> {

@@ -82,9 +82,9 @@ public final class HotAiGate {
         if (total <= 0f) return "";
         if (total < 4.5f) {
             return MiogramLocale.get(
-                    "⚠ Слабкий пристрій: Nano може не підтримуватись, буде хмара Flash-Lite",
-                    "⚠ Слабое устройство: Nano может не поддерживаться, будет облако Flash-Lite",
-                    "⚠ Low-end device: Nano may be unsupported, cloud Flash-Lite will be used");
+                    "Слабкий пристрій: Nano може не підтримуватись, буде хмара Flash-Lite",
+                    "Слабое устройство: Nano может не поддерживаться, будет облако Flash-Lite",
+                    "Low-end device: Nano may be unsupported, cloud Flash-Lite will be used");
         }
         if (total < 7.5f) {
             return MiogramLocale.get(

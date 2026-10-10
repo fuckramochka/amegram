@@ -378,7 +378,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         sourceView.setSingleLine(true);
         lyricsPanel.addView(sourceView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 16, 0, 8, 0, 0));
         aiLyricsButton = new TextView(context);
-        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("✨ Розшифрувати за допомогою ШІ", "✨ Расшифровать с помощью ИИ", "✨ Transcribe with AI"));
+        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("Розшифровка ШІ", "Расшифровка ИИ", "Transcribe AI"));
         aiLyricsButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         aiLyricsButton.setGravity(Gravity.CENTER);
         aiLyricsButton.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
@@ -1426,7 +1426,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             return;
         }
         aiLyricsButton.setEnabled(false);
-        aiLyricsButton.setText("ШІ розшифровує…");
+        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("Розшифровка…", "Расшифровка…", "Transcribing…"));
         String key = currentKey;
         MiogramLyricsEngine.getInstance().transcribeAudioWithAi(mo, new MiogramLyricsEngine.LyricsCallback() {
             @Override
@@ -1444,7 +1444,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
                     } else if (song != null) {
                         text.append(song.plainLyrics != null ? song.plainLyrics : "");
                     }
-                    Lyrics result = Lyrics.parse(text.toString(), Lyrics.SOURCE_ONLINE, "✨ Gemini AI");
+                    Lyrics result = Lyrics.parse(text.toString(), Lyrics.SOURCE_ONLINE, "Gemini AI");
                     if (result != null) showLyrics(result);
                     else lyricsView.showState(LyricsView.STATE_NOT_FOUND);
                 });
@@ -1482,7 +1482,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             return;
         }
         aiLyricsButton.setEnabled(false);
-        aiLyricsButton.setText("ШІ розшифровує…");
+        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("Розшифровка…", "Расшифровка…", "Transcribing…"));
         String key = currentKey;
         HotTranscribe activeService = service;
         String audioPath = audio.getAbsolutePath();
@@ -1509,7 +1509,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
 
     private void resetAiLyricsButton() {
         aiLyricsButton.setEnabled(true);
-        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("✨ Розшифрувати за допомогою ШІ", "✨ Расшифровать с помощью ИИ", "✨ Transcribe with AI"));
+        aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("Розшифровка ШІ", "Расшифровка ИИ", "Transcribe AI"));
     }
 
     private void openQueue() {

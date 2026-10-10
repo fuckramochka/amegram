@@ -540,14 +540,14 @@ public final class HotModulesManager {
             }
             long kb = Math.max(1, size / 1024);
             return MiogramLocale.get(
-                    "🟢 Активний у пам'яті • ~" + kb + " KB DEX • 0% CPU",
-                    "🟢 Активен в памяти • ~" + kb + " KB DEX • 0% CPU",
-                    "🟢 Active in RAM • ~" + kb + " KB DEX • 0% CPU");
+                    "Активний у пам'яті • ~" + kb + " KB DEX • 0% CPU",
+                    "Активен в памяти • ~" + kb + " KB DEX • 0% CPU",
+                    "Active in RAM • ~" + kb + " KB DEX • 0% CPU");
         } else {
             return MiogramLocale.get(
-                    "⚪ Вимкнено • 0 KB RAM • Вивантажено",
-                    "⚪ Выключен • 0 KB RAM • Выгружен",
-                    "⚪ Disabled • 0 KB RAM • Unloaded");
+                    "Вимкнено • 0 KB RAM • Вивантажено",
+                    "Выключен • 0 KB RAM • Выгружен",
+                    "Disabled • 0 KB RAM • Unloaded");
         }
     }
 
@@ -844,6 +844,9 @@ public final class HotModulesManager {
                 prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
                 dropLoaded(moduleId);
             }
+            if ("ui".equals(moduleId)) {
+                HotUiGate.applyLive();
+            }
             notifyChanged();
             post(cb, true, "", null);
         }, "hotmods-enable").start();
@@ -873,6 +876,9 @@ public final class HotModulesManager {
                 .remove("installed_" + moduleId)
                 .remove("enabled_" + moduleId)
                 .apply();
+        if ("ui".equals(moduleId)) {
+            HotUiGate.applyLive();
+        }
         notifyChanged();
     }
 
@@ -1249,6 +1255,12 @@ public final class HotModulesManager {
 
     public static void emit(String event, String json) {
         FileLog.d("hotmods event " + event + ": " + json);
+        if ("ui_changed".equals(event)) {
+            try {
+                HotUiGate.applyLive();
+            } catch (Throwable ignore) {
+            }
+        }
     }
 
     /** Показати екран модуля: createScreen -> presentFragment. */

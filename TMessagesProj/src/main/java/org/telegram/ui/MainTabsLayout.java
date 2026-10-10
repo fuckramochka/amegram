@@ -51,6 +51,10 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     private static Boolean bottomNavigationFloating;
 
+    public static void resetFloatingCache() {
+        bottomNavigationFloating = null;
+    }
+
     public static int getBottomNavigationMode() {
         if (isBottomNavigationHidden()) {
             return BOTTOM_NAVIGATION_MODE_HIDE;

@@ -153,7 +153,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         LinearLayout stats = new LinearLayout(context);
         stats.setOrientation(LinearLayout.HORIZONTAL);
         boolean installed = HotModulesManager.isModuleInstalled(moduleId);
-        stats.addView(statCell(context, installed ? "✓" : "○",
+        stats.addView(statCell(context, installed ? "ON" : "OFF",
                 MiogramLocale.get("Статус", "Статус", "Status"),
                 MiogramLocale.get(installed ? "Встановлено" : "Не встановлено",
                         installed ? "Установлен" : "Не установлен",
@@ -411,7 +411,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         if (quarantineBox != null) {
             if (HotModulesManager.isQuarantined(moduleId)) {
                 quarantineBox.setVisibility(View.VISIBLE);
-                quarantineBox.setText("⛔ " + MiogramLocale.get(
+                quarantineBox.setText(MiogramLocale.get(
                         "Карантин: падав 3+ рази — торкніть щоб скинути.",
                         "Карантин: падал 3+ раза — нажмите чтобы сбросить.",
                         "Quarantined: crashed 3+ times — tap to reset."));
@@ -423,9 +423,9 @@ public class HotModuleDetailSheet extends BottomSheet {
             String loadErr = HotModulesManager.getLastLoadError(moduleId);
             if (!loadErr.isEmpty()) {
                 diagBox.setVisibility(View.VISIBLE);
-                diagBox.setText("⚠ " + MiogramLocale.get("Останній провал: ",
+                diagBox.setText(MiogramLocale.get("Останній провал: ",
                         "Последний провал: ", "Last failure: ") + loadErr
-                        + "\n\n⧉ " + MiogramLocale.get("Торкніться щоб скопіювати діагностику",
+                        + "\n\n" + MiogramLocale.get("Торкніться щоб скопіювати діагностику",
                         "Нажмите чтобы скопировать диагностику",
                         "Tap to copy diagnostics"));
             } else {
@@ -446,13 +446,13 @@ public class HotModuleDetailSheet extends BottomSheet {
         }
         String sig = HotModulesManager.signatureStatus(selected);
         if ("SIGNED".equals(sig)) {
-            trustLabel.setText("🔏 " + MiogramLocale.get("Підписано • SHA-256 ✓", "Подписано • SHA-256 ✓", "Signed • SHA-256 ✓"));
+            trustLabel.setText(MiogramLocale.get("Підписано • SHA-256", "Подписано • SHA-256", "Signed • SHA-256"));
             trustLabel.setTextColor(0xFF4CAF50);
         } else if ("SHA256".equals(sig)) {
-            trustLabel.setText("🔒 SHA-256 " + MiogramLocale.get("перевіряється при завантаженні", "проверяется при загрузке", "verified on download"));
+            trustLabel.setText("SHA-256 " + MiogramLocale.get("перевіряється при завантаженні", "проверяется при загрузке", "verified on download"));
             trustLabel.setTextColor(themed(Theme.key_dialogTextGray3, 0xFF8E8E93));
         } else {
-            trustLabel.setText("⚠ " + MiogramLocale.get("Без контрольної суми", "Без контрольной суммы", "No checksum"));
+            trustLabel.setText(MiogramLocale.get("Без контрольної суми", "Без контрольной суммы", "No checksum"));
             trustLabel.setTextColor(themed(Theme.key_text_RedRegular, 0xFFFF5A5A));
         }
         String base = entry != null && !TextUtils.isEmpty(entry.description)
@@ -460,7 +460,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         descView.setText(base);
         if (selected != null && !TextUtils.isEmpty(selected.changelog)) {
             changelogBox.setVisibility(View.VISIBLE);
-            changelogBox.setText("✨ v" + selected.version + " — " + selected.changelog);
+            changelogBox.setText("v" + selected.version + " — " + selected.changelog);
         } else if (selected != null) {
             changelogBox.setVisibility(View.VISIBLE);
             changelogBox.setText(MiogramLocale.get("Версія v", "Версия v", "Version v") + selected.version);
@@ -469,7 +469,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         }
         if (selected != null && !HotModulesManager.isCompatible(selected)) {
             warnBox.setVisibility(View.VISIBLE);
-            warnBox.setText("⚠ " + MiogramLocale.get(
+            warnBox.setText(MiogramLocale.get(
                     "Потрібен новіший Yumigram (min " + selected.minApp + "). Оновіть клієнт.",
                     "Нужен новее Yumigram (min " + selected.minApp + "). Обновите клиент.",
                     "Requires newer Yumigram (min " + selected.minApp + "). Update the client."));
@@ -524,7 +524,7 @@ public class HotModuleDetailSheet extends BottomSheet {
             shown++;
             final HotCatalog.Build bb = b;
             TextView chip = YumiComponents.chip(context,
-                    b.branch + " · " + b.version + (HotModulesManager.isCompatible(b) ? "" : " ⚠"),
+                    b.branch + " · " + b.version + (HotModulesManager.isCompatible(b) ? "" : " (!)"),
                     selected != null && b.version.equals(selected.version) && b.branch.equals(selected.branch));
             chip.setAlpha(HotModulesManager.isCompatible(b) ? 1f : 0.55f);
             chip.setOnClickListener(v -> {
@@ -557,7 +557,7 @@ public class HotModuleDetailSheet extends BottomSheet {
         } else if (selected != null && !selected.version.equals(activeVer)) {
             installBtn.setText(MiogramLocale.get("Оновити до v", "Обновить до v", "Update to v") + selected.version);
         } else {
-            installBtn.setText("✓ " + MiogramLocale.get("Встановлено", "Установлен", "Installed")
+            installBtn.setText(MiogramLocale.get("Встановлено", "Установлен", "Installed")
                     + (activeVer.isEmpty() ? "" : " • v" + activeVer));
         }
     }

@@ -116,7 +116,7 @@ public class MiogramFeedAiDigestSheet extends BottomSheet {
             CharSequence txt = resultTextView.getText();
             if (!TextUtils.isEmpty(txt)) {
                 AndroidUtilities.addToClipboard(txt);
-                Toast.makeText(context, MiogramLocale.get("Скопійовано 📋", "Скопировано 📋", "Copied 📋"), Toast.LENGTH_SHORT).show();
+                Toast.makeText(context, MiogramLocale.get("Скопійовано", "Скопировано", "Copied"), Toast.LENGTH_SHORT).show();
             }
         });
         buttons.addView(copyButton, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 8, 0));
@@ -173,7 +173,7 @@ public class MiogramFeedAiDigestSheet extends BottomSheet {
             AndroidUtilities.runOnUIThread(() -> {
                 progressBar.setVisibility(View.GONE);
                 if (result != null) {
-                    statusTextView.setText(MiogramLocale.get("Готово ✓", "Готово ✓", "Complete ✓"));
+                    statusTextView.setText(MiogramLocale.get("Готово", "Готово", "Complete"));
                     resultTextView.setText(result);
                     resultTextView.setVisibility(View.VISIBLE);
                     copyButton.setVisibility(View.VISIBLE);

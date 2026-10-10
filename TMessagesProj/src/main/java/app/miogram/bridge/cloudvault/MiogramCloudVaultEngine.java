@@ -203,20 +203,39 @@ public class MiogramCloudVaultEngine {
     // --- Manifest Serialization ---
 
     public static String createManifestCaption(MiogramCloudVaultFile file) {
-        byte[] key = getMasterKey();
+        if (file == null) return "";
+        file.encrypted = false;
         String json = file.toJson().toString();
-        String encBase64 = encryptStringToBase64(json, key);
-        return MANIFEST_PREFIX + encBase64;
+        return MANIFEST_PREFIX + json;
     }
 
     public static MiogramCloudVaultFile parseManifestCaption(String text) {
-        if (text == null || !text.startsWith(MANIFEST_PREFIX)) return null;
+        if (text == null) return null;
+        if (!text.startsWith(MANIFEST_PREFIX)) {
+            if (text.startsWith("#VAULT:")) {
+                String payload = text.substring("#VAULT:".length()).trim();
+                try {
+                    return MiogramCloudVaultFile.fromJson(new JSONObject(payload));
+                } catch (Exception ignore) {}
+            }
+            return null;
+        }
         try {
-            String base64 = text.substring(MANIFEST_PREFIX.length()).trim();
+            String payload = text.substring(MANIFEST_PREFIX.length()).trim();
+            if (payload.startsWith("{")) {
+                return MiogramCloudVaultFile.fromJson(new JSONObject(payload));
+            }
+            // Backward-compatibility: decrypt legacy encrypted base64 manifests
             byte[] key = getMasterKey();
-            String jsonStr = decryptBase64ToString(base64, key);
+            String jsonStr = decryptBase64ToString(payload, key);
             if (jsonStr != null) {
-                return MiogramCloudVaultFile.fromJson(new JSONObject(jsonStr));
+                MiogramCloudVaultFile f = MiogramCloudVaultFile.fromJson(new JSONObject(jsonStr));
+                if (f != null) {
+                    if (!jsonStr.contains("\"enc\"")) {
+                        f.encrypted = true;
+                    }
+                    return f;
+                }
             }
         } catch (Exception e) {
             FileLog.e(e);
@@ -343,16 +362,16 @@ public class MiogramCloudVaultEngine {
                 String fileId = UUID.randomUUID().toString();
                 long plainSize = file.length();
                 String targetName = TextUtils.isEmpty(fileName) ? file.getName() : fileName;
-
-                ArrayList<File> chunkFiles = splitAndEncryptFile(context, file, targetName, plainSize, fileId, callback);
+                String finalMimeType = mimeType != null ? mimeType : "application/octet-stream";
 
                 MiogramCloudVaultFile vaultFile = new MiogramCloudVaultFile();
                 vaultFile.fileId = fileId;
                 vaultFile.name = targetName;
                 vaultFile.totalSize = plainSize;
-                vaultFile.mimeType = mimeType != null ? mimeType : "application/octet-stream";
-                vaultFile.chunksCount = chunkFiles.size();
-                vaultFile.chunkSize = DEFAULT_CHUNK_SIZE;
+                vaultFile.mimeType = finalMimeType;
+                vaultFile.chunksCount = 1;
+                vaultFile.chunkSize = plainSize;
+                vaultFile.encrypted = false;
                 vaultFile.date = System.currentTimeMillis() / 1000L;
                 vaultFile.localPath = file.getAbsolutePath();
 
@@ -367,27 +386,19 @@ public class MiogramCloudVaultEngine {
                 }
 
                 long targetDialogId = getVaultDialogId(currentAccount, vaultChatId);
-                for (int i = 0; i < chunkFiles.size(); i++) {
-                    File chunk = chunkFiles.get(i);
-                    String caption;
-                    if (i == 0) {
-                        caption = createManifestCaption(vaultFile);
-                    } else {
-                        caption = createPartCaption(vaultFile.fileId, i + 1, chunkFiles.size());
-                    }
+                String caption = createManifestCaption(vaultFile);
 
-                    org.telegram.messenger.SendMessagesHelper.prepareSendingDocument(
-                            org.telegram.messenger.AccountInstance.getInstance(currentAccount),
-                            chunk.getAbsolutePath(),
-                            chunk.getAbsolutePath(),
-                            null,
-                            caption,
-                            "application/octet-stream",
-                            targetDialogId,
-                            null, null, null, null, null,
-                            true, 0, null, null, false
-                    );
-                }
+                org.telegram.messenger.SendMessagesHelper.prepareSendingDocument(
+                        org.telegram.messenger.AccountInstance.getInstance(currentAccount),
+                        file.getAbsolutePath(),
+                        file.getAbsolutePath(),
+                        null,
+                        caption,
+                        finalMimeType,
+                        targetDialogId,
+                        null, null, null, null, null,
+                        true, 0, null, null, false
+                );
 
                 registerFile(vaultFile);
 
@@ -403,9 +414,103 @@ public class MiogramCloudVaultEngine {
         });
     }
 
+    public static boolean isEncryptedChunk(File file) {
+        if (file == null || !file.exists() || file.length() < 33) {
+            return false;
+        }
+        try (FileInputStream in = new FileInputStream(file)) {
+            byte[] header = new byte[4];
+            int read = in.read(header);
+            if (read == 4) {
+                return header[0] == MAGIC_HEADER[0] &&
+                       header[1] == MAGIC_HEADER[1] &&
+                       header[2] == MAGIC_HEADER[2] &&
+                       header[3] == MAGIC_HEADER[3];
+            }
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    public static File reassemblePlainFile(Context context, MiogramCloudVaultFile vaultFile, ArrayList<File> chunkFiles, ProgressCallback callback) throws Exception {
+        File downloadsDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Miogram Vault");
+        if (!downloadsDir.exists()) {
+            downloadsDir.mkdirs();
+        }
+
+        String safeFileName = vaultFile != null && vaultFile.name != null ? vaultFile.name : ("file_" + (vaultFile != null ? vaultFile.fileId : System.currentTimeMillis()));
+        File destFile = new File(downloadsDir, safeFileName);
+        int counter = 1;
+        while (destFile.exists()) {
+            int dot = safeFileName.lastIndexOf('.');
+            if (dot > 0) {
+                destFile = new File(downloadsDir, safeFileName.substring(0, dot) + " (" + counter + ")" + safeFileName.substring(dot));
+            } else {
+                destFile = new File(downloadsDir, safeFileName + " (" + counter + ")");
+            }
+            counter++;
+        }
+
+        FileOutputStream out = new FileOutputStream(destFile);
+        byte[] buffer = new byte[1024 * 1024]; // 1MB buffer
+        long totalWritten = 0;
+
+        for (int i = 0; i < chunkFiles.size(); i++) {
+            File chunkFile = chunkFiles.get(i);
+            try (FileInputStream chunkIn = new FileInputStream(chunkFile)) {
+                int read;
+                while ((read = chunkIn.read(buffer)) > 0) {
+                    out.write(buffer, 0, read);
+                    totalWritten += read;
+                    if (callback != null && vaultFile != null && vaultFile.totalSize > 0) {
+                        float progress = (float) totalWritten / vaultFile.totalSize;
+                        callback.onProgress(progress, "Збирання частини " + (i + 1) + " з " + chunkFiles.size());
+                    }
+                }
+            }
+        }
+
+        out.flush();
+        out.close();
+
+        MediaScannerConnection.scanFile(context, new String[]{destFile.getAbsolutePath()}, null, null);
+        return destFile;
+    }
+
     // --- Streaming File Decryption & Reassembly ---
 
     public static File decryptAndReassembleFile(Context context, MiogramCloudVaultFile vaultFile, ArrayList<File> chunkFiles, ProgressCallback callback) throws Exception {
+        if (chunkFiles == null || chunkFiles.isEmpty()) {
+            throw new IllegalArgumentException("No chunk files provided");
+        }
+        if (chunkFiles.size() == 1 && !isEncryptedChunk(chunkFiles.get(0))) {
+            File source = chunkFiles.get(0);
+            File downloadsDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Miogram Vault");
+            if (!downloadsDir.exists()) downloadsDir.mkdirs();
+            String safeFileName = (vaultFile != null && !TextUtils.isEmpty(vaultFile.name)) ? vaultFile.name : source.getName();
+            File destFile = new File(downloadsDir, safeFileName);
+            int counter = 1;
+            while (destFile.exists()) {
+                int dot = safeFileName.lastIndexOf('.');
+                if (dot > 0) {
+                    destFile = new File(downloadsDir, safeFileName.substring(0, dot) + " (" + counter + ")" + safeFileName.substring(dot));
+                } else {
+                    destFile = new File(downloadsDir, safeFileName + " (" + counter + ")");
+                }
+                counter++;
+            }
+            try (FileInputStream in = new FileInputStream(source);
+                 FileOutputStream out = new FileOutputStream(destFile)) {
+                byte[] buf = new byte[256 * 1024];
+                int r;
+                while ((r = in.read(buf)) > 0) out.write(buf, 0, r);
+                out.flush();
+            }
+            MediaScannerConnection.scanFile(context, new String[]{destFile.getAbsolutePath()}, null, null);
+            return destFile;
+        } else if (!isEncryptedChunk(chunkFiles.get(0))) {
+            return reassemblePlainFile(context, vaultFile, chunkFiles, callback);
+        }
+
         byte[] masterKey = getMasterKey();
 
         File downloadsDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), "Miogram Vault");
@@ -490,7 +595,7 @@ public class MiogramCloudVaultEngine {
 
         TLRPC.TL_channels_createChannel req = new TLRPC.TL_channels_createChannel();
         req.title = "Miogram Cloud Vault";
-        req.about = "Зашифроване персональне хмарне сховище Miogram.";
+        req.about = "Персональне хмарне сховище Miogram.";
         req.megagroup = true;
         req.forum = true;
 
@@ -739,7 +844,30 @@ public class MiogramCloudVaultEngine {
                 bufferPendingPart(fId, msg);
             }
         }
-        // Pass 3: restore canonical chunk order (manifest + parts by index).
+        // Pass 3: normal documents without manifest (direct uploads into vault supergroup).
+        for (TLRPC.Message msg : messages) {
+            if (msg == null || msg.media == null || msg.media.document == null) continue;
+            if (msg.message != null && (msg.message.startsWith(MANIFEST_PREFIX) || msg.message.startsWith(PART_PREFIX))) continue;
+            String fId = "msg_" + msg.id;
+            MiogramCloudVaultFile existing = memoryFiles.get(fId);
+            if (existing == null) {
+                existing = new MiogramCloudVaultFile();
+                existing.fileId = fId;
+                existing.name = org.telegram.messenger.FileLoader.getDocumentFileName(msg.media.document);
+                existing.totalSize = msg.media.document.size;
+                existing.mimeType = msg.media.document.mime_type;
+                existing.chunksCount = 1;
+                existing.date = msg.date;
+                existing.encrypted = false;
+                if (msg.reply_to != null) {
+                    existing.topicId = msg.reply_to.reply_to_top_id != 0 ? msg.reply_to.reply_to_top_id : msg.reply_to.reply_to_msg_id;
+                }
+                memoryFiles.put(fId, existing);
+            }
+            attachChunkDoc(existing, msg, 0);
+            touched.add(fId);
+        }
+        // Pass 4: restore canonical chunk order (manifest + parts by index).
         for (String fId : touched) {
             MiogramCloudVaultFile f = memoryFiles.get(fId);
             if (f != null) reorderChunks(f);

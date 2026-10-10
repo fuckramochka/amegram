@@ -6,14 +6,14 @@
     <string name="OEPlayerFromSearch">From search</string>
     <string name="OEPlayerMusic">Music</string>
     <string name="OEPlayerLyrics">Lyrics</string>
-    <string name="OEPlayerQueue">Up next</string>
+    <string name="OEPlayerQueue">Queue</string>
     <string name="OEPlayerShuffle">Shuffle</string>
-    <string name="OEPlayerSpeed">Playback speed</string>
+    <string name="OEPlayerSpeed">Speed</string>
     <string name="OEPlayerSeek">Seek</string>
     <string name="OEPlayerOpen">Open player</string>
     <string name="OEPlayerNoLyricsTitle">No lyrics in the file</string>
     <string name="OEPlayerNoLyricsText">You can search LRCLIB and lrcmux for lyrics. The track name will be sent over the internet.</string>
-    <string name="OEPlayerFindLyrics">Search online</string>
+    <string name="OEPlayerFindLyrics">Search</string>
     <string name="OEPlayerLyricsSearching">Searching for lyrics…</string>
     <string name="OEPlayerLyricsNotFound">Lyrics not found</string>
     <string name="OEPlayerLyricsNotFoundText">None of the providers returned lyrics for this track.</string>
@@ -24,7 +24,7 @@
     <string name="OEPlayerInstrumentalText">This track has no lyrics.</string>
     <string name="OEPlayerSourceSynced">Synced lyrics · %1$s</string>
     <string name="OEPlayerSourcePlain">Lyrics · %1$s</string>
-    <string name="OEPlayerSourceSyncedFile">Synced lyrics from the file</string>
+    <string name="OEPlayerSourceSyncedFile">File lyrics</string>
     <string name="OEPlayerSourcePlainFile">Lyrics from the file</string>
     <string name="OEPlayerTracks_one">%1$d track</string>
     <string name="OEPlayerTracks_two">%1$d tracks</string>

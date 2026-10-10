@@ -193,10 +193,20 @@ public class MorphButton extends android.view.View {
 
         float contentWidth = 0;
         int iconSize = icon != null ? icon.getIntrinsicWidth() : 0;
+        float spacing = (iconSize > 0 && text != null) ? dp(6) : 0;
         if (text != null) {
-            contentWidth = iconSize + dp(8) + textPaint.measureText(text);
+            float baseSize = dp(13.5f);
+            textPaint.setTextSize(baseSize);
+            float maxTextW = Math.max(dp(20), w - iconSize - spacing - dp(16));
+            float textW = textPaint.measureText(text);
+            if (textW > maxTextW && maxTextW > 0) {
+                float scaled = Math.max(dp(10.5f), baseSize * (maxTextW / textW));
+                textPaint.setTextSize(scaled);
+                textW = textPaint.measureText(text);
+            }
+            contentWidth = iconSize + spacing + textW;
         }
-        float iconCx = text != null ? (w - contentWidth) / 2f + iconSize / 2f : w / 2f;
+        float iconCx = text != null ? Math.max(iconSize / 2f + dp(6), (w - contentWidth) / 2f + iconSize / 2f) : w / 2f;
         float cy = h / 2f;
         if (altIcon == null) {
             drawIcon(canvas, icon, iconCx, cy, fg, 1f, 1f);
@@ -207,7 +217,7 @@ public class MorphButton extends android.view.View {
         }
         if (text != null) {
             textPaint.setColor(fg);
-            float tx = iconCx + iconSize / 2f + dp(8);
+            float tx = iconCx + iconSize / 2f + spacing;
             float ty = cy - (textPaint.descent() + textPaint.ascent()) / 2f;
             canvas.drawText(text, tx, ty, textPaint);
         }

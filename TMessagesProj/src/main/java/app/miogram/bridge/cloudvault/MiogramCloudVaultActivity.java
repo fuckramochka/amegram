@@ -68,6 +68,8 @@ import androidx.core.content.FileProvider;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
@@ -810,28 +812,46 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
     private void uploadFileInternal(Context context, Uri uri, String finalFileName, long finalFileSize, String finalMimeType, String fileId) {
         final AlertDialog progressDialog = new AlertDialog(context, 3);
-        progressDialog.setMessage(MiogramLocale.get("Шифрування файлу (AES-256-GCM)...", "Шифрование файла (AES-256-GCM)...", "Encrypting file (AES-256-GCM)..."));
+        progressDialog.setMessage(MiogramLocale.get("Підготовка файлу...", "Подготовка файла...", "Preparing file..."));
         progressDialog.setCanceledOnTouchOutside(false);
         progressDialog.setCancelable(false);
         progressDialog.show();
 
         Utilities.globalQueue.postRunnable(() -> {
             try {
-                ArrayList<File> chunkFiles = MiogramCloudVaultEngine.splitAndEncryptFile(
-                        context, uri, finalFileName, finalFileSize, fileId,
-                        (progress, status) -> AndroidUtilities.runOnUIThread(() -> progressDialog.setMessage(status))
-                );
+                File tempDir = new File(MiogramCloudVaultEngine.getVaultTempDir(context), fileId.substring(0, Math.min(8, fileId.length())));
+                if (!tempDir.exists()) tempDir.mkdirs();
+                File targetFile = new File(tempDir, finalFileName);
+
+                if (uri != null) {
+                    try (InputStream in = context.getContentResolver().openInputStream(uri);
+                         FileOutputStream out = new FileOutputStream(targetFile)) {
+                        byte[] buf = new byte[128 * 1024];
+                        int r;
+                        while ((r = in.read(buf)) > 0) {
+                            out.write(buf, 0, r);
+                        }
+                        out.flush();
+                    }
+                }
+
+                long actualSize = targetFile.length();
+                if (actualSize == 0 && finalFileSize > 0) {
+                    actualSize = finalFileSize;
+                }
 
                 MiogramCloudVaultFile vaultFile = new MiogramCloudVaultFile();
                 vaultFile.fileId = fileId;
                 vaultFile.name = finalFileName;
-                vaultFile.totalSize = finalFileSize;
+                vaultFile.totalSize = actualSize;
                 vaultFile.mimeType = finalMimeType;
-                vaultFile.chunksCount = chunkFiles.size();
-                vaultFile.chunkSize = MiogramCloudVaultEngine.DEFAULT_CHUNK_SIZE;
+                vaultFile.chunksCount = 1;
+                vaultFile.chunkSize = actualSize;
+                vaultFile.encrypted = false;
                 vaultFile.topicId = currentSelectedTopicId;
                 vaultFile.topicName = currentSelectedTopicName;
                 vaultFile.date = System.currentTimeMillis() / 1000L;
+                vaultFile.localPath = targetFile.getAbsolutePath();
 
                 AndroidUtilities.runOnUIThread(() -> {
                     progressDialog.setMessage(MiogramLocale.get("Відправка в Telegram Cloud...", "Отправка в Telegram Cloud...", "Uploading to Telegram Cloud..."));
@@ -859,36 +879,26 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                         }
                     }
 
-                    for (int i = 0; i < chunkFiles.size(); i++) {
-                        File chunk = chunkFiles.get(i);
-                        String caption;
-                        if (i == 0) {
-                            caption = MiogramCloudVaultEngine.createManifestCaption(vaultFile);
-                        } else {
-                            caption = MiogramCloudVaultEngine.createPartCaption(vaultFile.fileId, i + 1, chunkFiles.size());
-                        }
+                    String caption = MiogramCloudVaultEngine.createManifestCaption(vaultFile);
 
-                        SendMessagesHelper.prepareSendingDocument(
-                                getAccountInstance(),
-                                chunk.getAbsolutePath(),
-                                chunk.getAbsolutePath(),
-                                null,
-                                caption,
-                                "application/octet-stream",
-                                targetDialogId,
-                                replyToTopMsg, replyToTopMsg, null, null, null,
-                                true, 0, null, null, false
-                        );
-                    }
+                    SendMessagesHelper.prepareSendingDocument(
+                            getAccountInstance(),
+                            targetFile.getAbsolutePath(),
+                            targetFile.getAbsolutePath(),
+                            null,
+                            caption,
+                            finalMimeType,
+                            targetDialogId,
+                            replyToTopMsg, replyToTopMsg, null, null, null,
+                            true, 0, null, null, false
+                    );
 
                     MiogramCloudVaultEngine.registerFile(vaultFile);
                     MiogramCloudVaultEngine.saveCache(currentAccount);
 
                     progressDialog.dismiss();
-                    Toast.makeText(context, MiogramLocale.get("Файл зашифровано та завантажено!", "Файл зашифрован и загружен!", "File encrypted & uploaded!"), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(context, MiogramLocale.get("Файл завантажено!", "Файл загружен!", "File uploaded!"), Toast.LENGTH_SHORT).show();
                     filterAndReloadFiles();
-                    // Pick up the freshly sent chunk messages so the file is
-                    // viewable immediately instead of after the next manual sync.
                     AndroidUtilities.runOnUIThread(() -> syncFromCloud(), 2500);
                 });
 
@@ -972,7 +982,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
             builder.setTitle(file != null && file.name != null ? file.name : MiogramLocale.get("Помилка чанка", "Ошибка чанка", "Chunk error"));
             builder.setMessage(msg);
-            builder.setPositiveButton("🔄 " + MiogramLocale.get("Повторити", "Повторить", "Retry"), (d, w) -> {
+            builder.setPositiveButton(MiogramLocale.get("Повторити", "Повторить", "Retry"), (d, w) -> {
                 try {
                     if (file != null) {
                         file.isDownloading = false;
@@ -1021,7 +1031,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         progressDialog.show();
 
         file.isDownloading = true;
-        setPreviewStatus(file, MiogramLocale.get("Завантаження чанків…", "Загрузка чанков…", "Downloading chunks…"));
+        setPreviewStatus(file, MiogramLocale.get("Завантаження…", "Загрузка…", "Downloading…"));
         if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
 
         // Фоновий Executor для завантаження/розшифровки (UI не блокуємо; протокол той самий).
@@ -1042,12 +1052,12 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 final int idx = i;
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
-                        progressDialog.setMessage(MiogramLocale.get("Завантаження чанків з Telegram...", "Загрузка чанков из Telegram...", "Downloading chunks from Telegram...")
-                                + " " + (idx + 1) + "/" + total);
+                        progressDialog.setMessage(MiogramLocale.get("Завантаження з Telegram...", "Загрузка из Telegram...", "Downloading from Telegram...")
+                                + (total > 1 ? (" " + (idx + 1) + "/" + total) : ""));
                     } catch (Throwable ignore) {
                     }
                     setPreviewStatus(file, MiogramLocale.get("Завантаження", "Загрузка", "Downloading")
-                            + " " + (idx + 1) + "/" + total);
+                            + (total > 1 ? (" " + (idx + 1) + "/" + total) : ""));
                     if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
                 });
                 File attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
@@ -1064,38 +1074,58 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 if (attachFile != null && attachFile.exists()) {
                     downloadedChunks.add(attachFile);
                 } else {
-                    throw new IllegalStateException(MiogramLocale.get("чанк ", "чанк ", "chunk ")
-                            + (idx + 1) + "/" + total
+                    throw new IllegalStateException(MiogramLocale.get("Файл", "Файл", "File")
+                            + (total > 1 ? (" (" + (idx + 1) + "/" + total + ")") : "")
                             + MiogramLocale.get(" не завантажився за 60с", " не загрузился за 60с", " failed to download in 60s"));
                 }
             }
 
-            if (downloadedChunks.size() < file.chunksCount) {
-                throw new IllegalStateException("Not all chunks could be downloaded (" + downloadedChunks.size() + "/" + file.chunksCount + ")");
+            int requiredChunks = file.chunksCount > 0 ? file.chunksCount : 1;
+            boolean isEncrypted = file.encrypted || (!downloadedChunks.isEmpty() && MiogramCloudVaultEngine.isEncryptedChunk(downloadedChunks.get(0)));
+
+            if (isEncrypted && downloadedChunks.size() < requiredChunks) {
+                throw new IllegalStateException("Not all chunks could be downloaded (" + downloadedChunks.size() + "/" + requiredChunks + ")");
             }
 
-            AndroidUtilities.runOnUIThread(() -> {
-                try {
-                    progressDialog.setMessage(MiogramLocale.get("Розшифрування та збирання файлу...", "Дешифрование и сборка файла...", "Decrypting and reassembling file..."));
-                } catch (Throwable ignore) {
-                }
-            });
+            File assembled;
+            if (isEncrypted) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    try {
+                        progressDialog.setMessage(MiogramLocale.get("Розшифрування та збирання файлу...", "Дешифрование и сборка файла...", "Decrypting and reassembling file..."));
+                    } catch (Throwable ignore) {
+                    }
+                });
 
-            File assembled = MiogramCloudVaultEngine.decryptAndReassembleFile(
-                    context, file, downloadedChunks,
-                    (progress, status) -> AndroidUtilities.runOnUIThread(() -> {
-                        try {
-                            int pct = Math.max(0, Math.min(100, (int) (progress * 100)));
-                            // Рядковий статус файла: "Розшифровка N/M чанків… %"
-                            String rowStatus = "Розшифровка " + downloadedChunks.size() + "/" + total
-                                    + " чанків… " + pct + "%";
-                            setPreviewStatus(file, rowStatus);
-                            progressDialog.setMessage((status != null ? status : "") + " • " + pct + "%");
-                            if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
-                        } catch (Throwable ignore) {
-                        }
-                    })
-            );
+                assembled = MiogramCloudVaultEngine.decryptAndReassembleFile(
+                        context, file, downloadedChunks,
+                        (progress, status) -> AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                int pct = Math.max(0, Math.min(100, (int) (progress * 100)));
+                                // Рядковий статус файла: "Розшифровка N/M чанків… %"
+                                String rowStatus = "Розшифровка " + downloadedChunks.size() + "/" + total
+                                        + " чанків… " + pct + "%";
+                                setPreviewStatus(file, rowStatus);
+                                progressDialog.setMessage((status != null ? status : "") + " • " + pct + "%");
+                                if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
+                            } catch (Throwable ignore) {
+                            }
+                        })
+                );
+            } else if (downloadedChunks.size() == 1) {
+                assembled = downloadedChunks.get(0);
+            } else {
+                assembled = MiogramCloudVaultEngine.reassemblePlainFile(
+                        context, file, downloadedChunks,
+                        (progress, status) -> AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                int pct = Math.max(0, Math.min(100, (int) (progress * 100)));
+                                progressDialog.setMessage((status != null ? status : "") + " • " + pct + "%");
+                                if (filesAdapter != null) filesAdapter.notifyDataSetChanged();
+                            } catch (Throwable ignore) {
+                            }
+                        })
+                );
+            }
 
             File preview = copyToPreviewCache(context, assembled, file);
 
@@ -1268,9 +1298,9 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
         builder.setTitle(MiogramLocale.get("Підключення Miogram Cloud Vault", "Подключение Miogram Cloud Vault", "Connect Miogram Cloud Vault"));
         builder.setMessage(MiogramLocale.get(
-                "Для завантаження файлів необхідно створити персональне сховище — зашифровану форум-супергрупу з топіками (Загальне, Медіа, Документи, Архіви).",
-                "Для загрузки файлов необходимо создать персональное хранилище — зашифрованную форум-супергруппу с топиками (Общее, Медиа, Документы, Архивы).",
-                "To upload files, a personal vault is required — an encrypted forum supergroup with topics (General, Media, Documents, Archives)."
+                "Для завантаження файлів необхідно створити персональне сховище — форум-супергрупу з топіками (Загальне, Медіа, Документи, Архіви).",
+                "Для загрузки файлов необходимо создать персональное хранилище — форум-супергруппу с топиками (Общее, Медиа, Документы, Архивы).",
+                "To upload files, a personal vault is required — a forum supergroup with topics (General, Media, Documents, Archives)."
         ));
         builder.setPositiveButton(MiogramLocale.get("Створити форум-сховище", "Создать форум-хранилище", "Create Forum Vault"), (d, w) -> createVaultAutomatically());
         builder.setNeutralButton(MiogramLocale.get("Прив'язати ID", "Привязать ID", "Link ID"), (d, w) -> showLinkExistingDialog());

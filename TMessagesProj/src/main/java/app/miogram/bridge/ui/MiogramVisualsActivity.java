@@ -78,10 +78,19 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         super.updateRows();
 
         headerModeRow = addRow();
-        uiStyleModeRow = addRow();
+        if (app.amegram.hot.HotModulesManager.isModuleActive("ui")) {
+            uiStyleModeRow = addRow();
+            customUiRow = addRow();
+        } else {
+            uiStyleModeRow = -1;
+            customUiRow = -1;
+        }
         discordUiRow = addRow();
-        customUiRow = addRow();
-        ameProfileXmlRow = addRow();
+        if (app.amegram.hot.HotModulesManager.isModuleActive("ame")) {
+            ameProfileXmlRow = addRow();
+        } else {
+            ameProfileXmlRow = -1;
+        }
         ameVibeRow = addRow();
         activeLyricsLineRow = addRow();
         modeInfoRow = addRow();

@@ -1,6 +1,8 @@
 package app.amegram.hot.ui;
 
 import android.content.Context;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.GradientDrawable;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -211,7 +213,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         }
         // Паки видно завжди (раніше ховались після першої установки і їх не знайти).
         if (query.isEmpty() && activeCat.isEmpty()) {
-            items.add(UItem.asHeader(MiogramLocale.get("📦 Паки в 1 тап", "📦 Паки в 1 тап", "📦 1-tap packs")));
+            items.add(UItem.asHeader(MiogramLocale.get("Паки в 1 тап", "Паки в 1 тап", "1-tap packs")));
             for (HotModuleMeta.Pack pack : HotModuleMeta.packs()) {
                 items.add(UItem.asCustom(buildPackCard(context, pack)));
             }
@@ -282,11 +284,14 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
 
         FrameLayout iconFrame = new FrameLayout(context);
         iconFrame.setBackground(YumiTheme.squircleIconBackground(0xFF6C63FF));
-        TextView emoji = new TextView(context);
-        emoji.setText(pack.emoji);
-        emoji.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
-        emoji.setGravity(Gravity.CENTER);
-        iconFrame.addView(emoji, LayoutHelper.createFrame(40, 40, Gravity.CENTER));
+        ImageView packIcon = new ImageView(context);
+        int iconRes = "privacy".equals(pack.id) ? R.drawable.msg_permissions
+                : "media".equals(pack.id) ? R.drawable.msg_media
+                : "power".equals(pack.id) ? R.drawable.msg_settings
+                : R.drawable.baseline_stars_24;
+        packIcon.setImageResource(iconRes);
+        packIcon.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+        iconFrame.addView(packIcon, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
         card.addView(iconFrame, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
         LinearLayout meta = new LinearLayout(context);
@@ -403,7 +408,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         col.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(4),
                 AndroidUtilities.dp(0), AndroidUtilities.dp(4));
         TextView h = new TextView(context);
-        h.setText(MiogramLocale.get("⭐ Вибір редакції", "⭐ Выбор редакции", "⭐ Featured"));
+        h.setText(MiogramLocale.get("Вибір редакції", "Выбор редакции", "Featured"));
         h.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         h.setTypeface(AndroidUtilities.bold());
         h.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -471,7 +476,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         col.setGravity(Gravity.CENTER_HORIZONTAL);
         TextView v = new TextView(context);
         v.setText(!filtered
-                ? "✅ " + MiogramLocale.get("Все встановлено", "Всё установлено", "All installed")
+                ? MiogramLocale.get("Все встановлено", "Всё установлено", "All installed")
                 : MiogramLocale.get("Нічого не знайдено", "Ничего не найдено", "Nothing found"));
         v.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         v.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
@@ -480,7 +485,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         col.addView(v, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         if (filtered) {
             TextView reset = YumiComponents.ghostButton(context,
-                    MiogramLocale.get("✕ Скинути фільтр", "✕ Сбросить фильтр", "✕ Clear filter"),
+                    MiogramLocale.get("Скинути фільтр", "Сбросить фильтр", "Clear filter"),
                     Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
             reset.setOnClickListener(vv -> {
                 query = "";
@@ -601,9 +606,9 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
             metaLine.append(" • ").append(MiogramLocale.get("доступів: ", "доступов: ", "perms: ")).append(permCount);
         }
         if (def != null && def.isSigned()) {
-            metaLine.append(" • 🔏");
+            metaLine.append(" • ").append(MiogramLocale.get("Підписано", "Подписано", "Signed"));
         } else if (def != null && def.sha256 != null && !def.sha256.isEmpty()) {
-            metaLine.append(" • 🔒");
+            metaLine.append(" • SHA-256");
         }
         ver.setText(metaLine.toString());
         bottom.addView(ver, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
@@ -624,7 +629,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         TextView action = YumiComponents.pillButton(context,
                 !compat ? "minApp " + d.minApp
                         : isDownloading ? "…"
-                        : MiogramLocale.get("↓ Взяти", "↓ Взять", "↓ Get"));
+                        : MiogramLocale.get("Взяти", "Взять", "Get"));
         action.setAlpha(compat && !isDownloading ? 1f : 0.5f);
         action.setEnabled(compat && !isDownloading);
         action.setOnClickListener(v -> {
@@ -665,7 +670,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
                             progress.remove(entry.id);
                             try {
                                 android.widget.Toast.makeText(context,
-                                        ok ? "✓ " + entry.id + " v" + message : message,
+                                        ok ? entry.id + " v" + message : message,
                                         android.widget.Toast.LENGTH_LONG).show();
                             } catch (Throwable ignore) {
                             }

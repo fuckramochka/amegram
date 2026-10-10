@@ -370,7 +370,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
                             @Override
                             public void onDone(boolean ok2, String msg2, Void d) {
-                                toast(ok2 ? "✓ " + hotId + " v" + msg2 + " увімкнено" : String.valueOf(msg2));
+                                toast(ok2 ? hotId + " v" + msg2 + " увімкнено" : String.valueOf(msg2));
                                 refresh();
                             }
                         });

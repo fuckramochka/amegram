@@ -237,7 +237,11 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         appearanceDividerRow = addRow();
 
         sectionsHeaderRow = addRow("sectionsHeader");
-        uiStyleModeRow = addRow("uiStyleMode");
+        if (app.amegram.hot.HotModulesManager.isModuleActive("ui")) {
+            uiStyleModeRow = addRow("uiStyleMode");
+        } else {
+            uiStyleModeRow = -1;
+        }
         sectionRadiusRow = addRow("sectionRadius");
         separateHeadersRow = addRow("separateHeaders");
         dividerStyleRow = addRow("dividerStyle");

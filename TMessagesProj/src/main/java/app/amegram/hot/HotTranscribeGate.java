@@ -52,7 +52,7 @@ public final class HotTranscribeGate {
 
             @Override
             public void onError(String error) {
-                AndroidUtilities.runOnUIThread(() -> showResult("⚠️ " + error));
+                AndroidUtilities.runOnUIThread(() -> showResult(error));
             }
         }), "hotmods-stt").start();
         return true;

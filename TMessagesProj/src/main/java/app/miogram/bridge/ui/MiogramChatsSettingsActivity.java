@@ -67,16 +67,24 @@ public class MiogramChatsSettingsActivity extends BaseNekoSettingsActivity {
     protected void updateRows() {
         super.updateRows();
 
-        headerSubfoldersRow = addRow();
-        subfoldersEnabledRow = addRow();
-        if (app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled()) {
-            subfoldersSmartFiltersRow = addRow();
-            subfoldersShowCountersRow = addRow();
+        if (app.miogram.bridge.folders.MiogramSubfolderEngine.isModuleAvailable()) {
+            headerSubfoldersRow = addRow();
+            subfoldersEnabledRow = addRow();
+            if (app.miogram.bridge.folders.MiogramSubfolderEngine.isSubfoldersEnabled()) {
+                subfoldersSmartFiltersRow = addRow();
+                subfoldersShowCountersRow = addRow();
+            } else {
+                subfoldersSmartFiltersRow = -1;
+                subfoldersShowCountersRow = -1;
+            }
+            subfoldersInfoRow = addRow();
         } else {
+            headerSubfoldersRow = -1;
+            subfoldersEnabledRow = -1;
             subfoldersSmartFiltersRow = -1;
             subfoldersShowCountersRow = -1;
+            subfoldersInfoRow = -1;
         }
-        subfoldersInfoRow = addRow();
 
         headerCameraRow = addRow();
         cameraTypeRow = addRow();

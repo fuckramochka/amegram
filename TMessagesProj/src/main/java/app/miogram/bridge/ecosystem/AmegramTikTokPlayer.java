@@ -127,7 +127,7 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         header.addView(badge, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
         TextView closeBtn = new TextView(context);
-        closeBtn.setText("✕");
+        closeBtn.setText("X");
         closeBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
         closeBtn.setTextColor(0x88FFFFFF);
         closeBtn.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
@@ -184,7 +184,7 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         statsBar.setGravity(Gravity.CENTER_VERTICAL);
         content.addView(statsBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
 
-        likeBtn = createChipButton(context, "♥ 0", 0x22FE2C55, 0xFFFE2C55);
+        likeBtn = createChipButton(context, "0", 0x22FE2C55, 0xFFFE2C55);
         likeBtn.setOnClickListener(v -> {
             MiogramHaptic.click(v);
             isLiked = !isLiked;
@@ -198,7 +198,7 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
         });
         statsBar.addView(likeBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 30, 0, 0, 8, 0));
 
-        commentBtn = createChipButton(context, "💬 0", 0x1A00F2FE, 0xFF00F2FE);
+        commentBtn = createChipButton(context, "0", 0x1A00F2FE, 0xFF00F2FE);
         commentBtn.setOnClickListener(v -> {
             MiogramHaptic.click(v);
             AmegramTikTokCommentsSheet.show(getContext(), originalUrl);
@@ -436,12 +436,12 @@ public class AmegramTikTokPlayer extends BottomSheet implements SurfaceHolder.Ca
 
     private void updateStats() {
         if (likeBtn != null) {
-            String lText = (isLiked ? "♥ " : "♡ ") + (videoLikes > 0 ? AmegramTikTokManager.formatCount(videoLikes) : "0");
-            likeBtn.setText(lText);
+            String lText = (isLiked ? MiogramLocale.get("Вподобано ", "Лайкнуто ", "Liked ") : "") + (videoLikes > 0 ? AmegramTikTokManager.formatCount(videoLikes) : "0");
+            likeBtn.setText(lText.trim());
             likeBtn.setTextColor(isLiked ? 0xFFFF3B30 : 0xFFFE2C55);
         }
         if (commentBtn != null) {
-            String cText = "💬 " + (videoComments > 0 ? AmegramTikTokManager.formatCount(videoComments) : "0");
+            String cText = (videoComments > 0 ? AmegramTikTokManager.formatCount(videoComments) : "0");
             commentBtn.setText(cText);
         }
     }

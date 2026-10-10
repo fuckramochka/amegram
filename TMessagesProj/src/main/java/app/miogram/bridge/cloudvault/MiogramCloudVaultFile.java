@@ -33,6 +33,7 @@ public class MiogramCloudVaultFile {
     public boolean isUploading;
     public float uploadProgress;
     public String localPath;
+    public boolean encrypted = false;
 
     public MiogramCloudVaultFile() {
     }
@@ -143,6 +144,7 @@ public class MiogramCloudVaultFile {
             obj.put("topicId", topicId);
             obj.put("topicName", topicName != null ? topicName : "");
             obj.put("date", date);
+            obj.put("enc", encrypted);
 
             JSONArray msgArr = new JSONArray();
             for (Integer id : chunkMsgIds) {
@@ -173,6 +175,7 @@ public class MiogramCloudVaultFile {
             f.topicId = obj.optLong("topicId", 0);
             f.topicName = obj.optString("topicName", "");
             f.date = obj.optLong("date", System.currentTimeMillis() / 1000L);
+            f.encrypted = obj.optBoolean("enc", false);
 
             JSONArray msgArr = obj.optJSONArray("chunkMsgIds");
             if (msgArr != null) {

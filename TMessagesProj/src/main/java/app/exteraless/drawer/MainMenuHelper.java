@@ -264,16 +264,16 @@ public final class MainMenuHelper {
                 return new MenuItemInfo(R.drawable.msg_qrcode, LocaleController.getString(R.string.AuthAnotherClient),
                         () -> openQrScanner(fragment), null);
             case SMART_FEED:
-                return new MenuItemInfo(R.drawable.ic_feed, app.miogram.bridge.MiogramLocale.get("Стрічка новин (ШІ) ໒꒱", "Лента новостей (ИИ) ໒꒱", "News Feed (AI) ໒꒱"),
+                return new MenuItemInfo(R.drawable.ic_feed, app.miogram.bridge.MiogramLocale.get("Стрічка новин (ШІ)", "Лента новостей (ИИ)", "News Feed (AI)"),
                         () -> FeedActivity.presentFeed(fragment), null);
             case KANBAN:
-                return new MenuItemInfo(R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Канбан-нотатки 📋", "Канбан-заметки 📋", "Kanban Notes 📋"),
+                return new MenuItemInfo(R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Канбан-нотатки", "Канбан-заметки", "Kanban Notes"),
                         () -> fragment.presentFragment(new app.miogram.bridge.kanban.MiogramKanbanActivity()), null);
             case SPLIT_CHAT:
-                return new MenuItemInfo(R.drawable.msg_fave, "Мультичат 🪟",
+                return new MenuItemInfo(R.drawable.msg_fave, "Мультичат",
                         () -> fragment.presentFragment(new app.miogram.bridge.multichat.MiogramSplitChatActivity(0, 0)), null);
             case BADGE_STUDIO:
-                return new MenuItemInfo(R.drawable.msg_premium_badge, "Відзнаки Miogram ໒꒱",
+                return new MenuItemInfo(R.drawable.msg_premium_badge, "Відзнаки Miogram",
                         () -> app.miogram.bridge.badge.MiogramBadgeBottomSheet.show(fragment.getParentActivity(), UserConfig.getInstance(currentAccount).getClientUserId()), null);
             case GHOST_MODE:
                 return new MenuItemInfo(R.drawable.ayu_ghost, ghostModeTitle(),

@@ -155,8 +155,8 @@ public class UiModule implements HotModule, HotUi {
                 "Yougram Expressive",
                 "Рідке скло + M3 сегменти 28dp. Вимкнено = Classic.",
                 exp));
-        rows.add(HotRow.button("go_expressive", "✨ Увімкнути Expressive", "Скло, сегменти, Monet"));
-        rows.add(HotRow.button("go_classic", "⬜ Увімкнути Classic", "Стандартні картки 20dp"));
+        rows.add(HotRow.button("go_expressive", "Увімкнути Expressive", "Скло, сегменти, Monet"));
+        rows.add(HotRow.button("go_classic", "Увімкнути Classic", "Стандартні картки 20dp"));
         rows.add(HotRow.header("Деталі Expressive"));
         rows.add(HotRow.switchRow(KEY_SQUARE_FAB, "Squircle FAB", "Квадратна кнопка 16dp", readBool(KEY_SQUARE_FAB, true)));
         rows.add(HotRow.switchRow(KEY_GLASS_MENU, "Скляне меню", "GlassMessageMenu", readBool(KEY_GLASS_MENU, true)));
@@ -184,12 +184,12 @@ public class UiModule implements HotModule, HotUi {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
             markTouched();
-            if (host != null) host.toast("✨ Expressive — застосовано на льоту");
+            if (host != null) host.toast("Expressive — застосовано на льоту");
         } else if ("go_classic".equals(rowId)) {
             writeInt(KEY_STYLE, 0);
             writeInt("style", 0);
             markTouched();
-            if (host != null) host.toast("⬜ Classic — застосовано на льоту");
+            if (host != null) host.toast("Classic — застосовано на льоту");
         }
     }
 

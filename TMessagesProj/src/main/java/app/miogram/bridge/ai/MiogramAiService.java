@@ -470,11 +470,15 @@ public class MiogramAiService {
      */
     public static void transcribeAudio(File audioFile, String mimeType, String title, String artist,
                                        int durationSeconds, Utilities.Callback2<String, String> callback) {
-        String prompt = "Transcribe the lyrics in this audio track. Return only standard LRC lines "
-                + "in format [mm:ss.xx] lyric text, one line per timestamp. "
-                + "Keep original language, lyrics and spelling. Do not use Markdown code fences, descriptions, or notes. "
-                + "If there are no intelligible lyrics or the track is instrumental, return [00:00.00] [Instrumental]. "
-                + "Track info: " + (title == null ? "" : "title=" + title)
+        String prompt = "You are an expert verbatim music lyric transcriber.\n"
+                + "Task: Transcribe the EXACT lyrics sung in this audio track verbatim, synchronized in standard LRC format.\n"
+                + "CRITICAL RULES:\n"
+                + "1. VERBATIM ACCURACY: Transcribe strictly what the singer sings. Do NOT hallucinate words. Do NOT guess words during guitar solos, instrumentals, pauses, or silence. Do not replace lyrics with mush, babble, or random sentences.\n"
+                + "2. ZERO CENSORSHIP: NEVER censor, alter, beep, or replace profanity, vulgarity, swearing, or explicit language. Keep every single word verbatim as sung in the original language and spelling.\n"
+                + "3. FORMAT: Output ONLY lines in format [mm:ss.xx] lyric text (one line per sung phrase, where mm is minutes, ss is seconds, xx is hundredths of a second).\n"
+                + "4. If the track is instrumental or has no singing, return exactly [00:00.00] [Instrumental].\n"
+                + "5. Output pure LRC text only. No markdown fences, no notes, no headers, no commentary.\n"
+                + "Track metadata: " + (title == null ? "" : "title=" + title)
                 + (artist == null ? "" : ", artist=" + artist)
                 + ", duration=" + Math.max(0, durationSeconds) + " seconds.";
         transcribeAudioWithPrompt(audioFile, mimeType, prompt, callback);
@@ -486,14 +490,16 @@ public class MiogramAiService {
      */
     public static void transcribeAudioWordTimed(File audioFile, String mimeType, String title, String artist,
                                                 int durationSeconds, Utilities.Callback2<String, String> callback) {
-        String prompt = "Transcribe the lyrics in this audio track with a timestamp for EVERY single word. "
-                + "Return only lines in the exact format [mm:ss.ms] word — one word per line, in order, "
-                + "e.g. [00:12.400] hello. Keep original language and spelling. "
-                + "Do not group words into sentences, do not use Markdown, headings, translations, "
-                + "descriptions, or invented words. Repeat words exactly as sung. "
-                + "If there are no confidently intelligible lyrics, return exactly [00:00.00] [Instrumental]. "
-                + "Track metadata: title=" + (title == null ? "" : title)
-                + ", artist=" + (artist == null ? "" : artist)
+        String prompt = "You are an expert verbatim music lyric transcriber.\n"
+                + "Task: Transcribe the lyrics with word-level timestamps for every sung word.\n"
+                + "CRITICAL RULES:\n"
+                + "1. ZERO CENSORSHIP: Never censor, alter, omit, or replace profanity, vulgarity, or swear words. Write every word exactly as sung in the original language.\n"
+                + "2. Format: Output only [mm:ss.xx] word, exactly one word per line, in chronological order.\n"
+                + "3. Do not invent or hallucinate words during music breaks, solos, or silence.\n"
+                + "4. If instrumental, return exactly [00:00.00] [Instrumental].\n"
+                + "5. Output pure text only, no markdown code blocks, no descriptions, no commentary.\n"
+                + "Track metadata: " + (title == null ? "" : "title=" + title)
+                + (artist == null ? "" : ", artist=" + artist)
                 + ", duration=" + Math.max(0, durationSeconds) + " seconds.";
         transcribeAudioWithPrompt(audioFile, mimeType, prompt, callback);
     }
@@ -545,6 +551,27 @@ public class MiogramAiService {
                 content.add("parts", parts);
                 contents.add(content);
                 root.add("contents", contents);
+
+                JsonObject genConfig = new JsonObject();
+                genConfig.addProperty("temperature", 0.1);
+                genConfig.addProperty("topP", 0.95);
+                root.add("generationConfig", genConfig);
+
+                JsonArray safetySettings = new JsonArray();
+                String[] categories = {
+                    "HARM_CATEGORY_HARASSMENT",
+                    "HARM_CATEGORY_HATE_SPEECH",
+                    "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "HARM_CATEGORY_CIVIC_INTEGRITY"
+                };
+                for (String cat : categories) {
+                    JsonObject s = new JsonObject();
+                    s.addProperty("category", cat);
+                    s.addProperty("threshold", "BLOCK_NONE");
+                    safetySettings.add(s);
+                }
+                root.add("safetySettings", safetySettings);
 
                 RequestBody body = RequestBody.create(gson.toJson(root), JSON);
                 String lastError = "No usable Gemini API key";

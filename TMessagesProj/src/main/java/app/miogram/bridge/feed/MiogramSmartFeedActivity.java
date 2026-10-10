@@ -448,7 +448,7 @@ public class MiogramSmartFeedActivity extends BaseFragment {
                 actLp.topMargin = AndroidUtilities.dp(14);
 
                 toKanbanBtn = new TextView(ctx);
-                toKanbanBtn.setText(MiogramLocale.get("В Канбан 📌", "В Канбан 📌", "To Kanban 📌"));
+                toKanbanBtn.setText(MiogramLocale.get("В Канбан", "В Канбан", "To Kanban"));
                 toKanbanBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
                 toKanbanBtn.setTextColor(0xFFFFFFFF);
                 toKanbanBtn.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));

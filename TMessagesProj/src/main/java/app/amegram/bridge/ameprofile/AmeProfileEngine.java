@@ -185,6 +185,10 @@ public class AmeProfileEngine {
         return true;
     }
 
+    public static boolean isCustomProfileEnabled() {
+        return isModuleEnabled();
+    }
+
     // Getters for Layout & Transforms
     public static String getAvatarAlign() { ensureInitialized(); return avatarAlign; }
     public static int getAvatarSize() { ensureInitialized(); return avatarSize; }

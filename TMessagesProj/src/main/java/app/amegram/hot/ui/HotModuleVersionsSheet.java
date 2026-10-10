@@ -179,7 +179,7 @@ public class HotModuleVersionsSheet extends BottomSheet {
         meta.setOrientation(LinearLayout.VERTICAL);
         TextView ver = new TextView(context);
         ver.setText("v" + info.manifest.version + " • " + info.manifest.branch
-                + (info.active ? " ✓" : ""));
+                + (info.active ? " (" + MiogramLocale.get("активна", "активна", "active") + ")" : ""));
         ver.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
         ver.setTypeface(info.active ? AndroidUtilities.bold() : null);
         ver.setTextColor(info.active ? accent : text);
@@ -211,8 +211,8 @@ public class HotModuleVersionsSheet extends BottomSheet {
         }
 
         TextView del = new TextView(context);
-        del.setText("✕");
-        del.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        del.setText(MiogramLocale.get("Видалити", "Удалить", "Delete"));
+        del.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         del.setTextColor(danger);
         del.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(8),
                 AndroidUtilities.dp(6), AndroidUtilities.dp(8));
@@ -253,7 +253,7 @@ public class HotModuleVersionsSheet extends BottomSheet {
         ver.setTextColor(text);
         titleRow.addView(ver);
         TextView branch = new TextView(context);
-        branch.setText(b.branch + (HotModulesManager.isCompatible(b) ? "" : " ⚠"));
+        branch.setText(b.branch + (HotModulesManager.isCompatible(b) ? "" : " (" + MiogramLocale.get("несумісний", "несовместим", "incompatible") + ")"));
         branch.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         branch.setTextColor(sub);
         GradientDrawable badge = new GradientDrawable();
@@ -273,8 +273,8 @@ public class HotModuleVersionsSheet extends BottomSheet {
         }
         if (already) {
             TextView got = new TextView(context);
-            got.setText("✓");
-            got.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+            got.setText(MiogramLocale.get("встановлено", "установлено", "installed"));
+            got.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             got.setTextColor(accent);
             got.setPadding(AndroidUtilities.dp(6), 0, 0, 0);
             titleRow.addView(got);

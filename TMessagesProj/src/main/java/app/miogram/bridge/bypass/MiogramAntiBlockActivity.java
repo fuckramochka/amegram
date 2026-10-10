@@ -466,17 +466,17 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                             long ping = SharedConfig.currentProxy != null ? SharedConfig.currentProxy.ping : 0;
                             String pingStr = ping > 0 ? (ping + " ms") : "активно";
 
-                            title = "🛡️ " + MiogramLocale.get("Захист активовано (ТСПУ обійдено)", "Защита активна (ТСПУ обойден)", "Protected (TSPU Bypassed)");
+                            title = MiogramLocale.get("Захист активовано (ТСПУ обійдено)", "Защита активна (ТСПУ обойден)", "Protected (TSPU Bypassed)");
                             subtitle = MiogramLocale.get(
                                     "Маскування: " + domain + " • Затримка: " + pingStr,
                                     "Маскировка: " + domain + " • Задержка: " + pingStr,
                                     "SNI Masking: " + domain + " • Latency: " + pingStr
                             );
                         } else if (state == ConnectionsManager.ConnectionStateConnecting) {
-                            title = "⚠️ " + MiogramLocale.get("Виявлено затримку прямого зв'язку…", "Обнаружена задержка прямого соединения…", "Detecting throttling…");
+                            title = MiogramLocale.get("Виявлено затримку прямого зв'язку…", "Обнаружена задержка прямого соединения…", "Detecting throttling…");
                             subtitle = MiogramLocale.get("Пряме з'єднання сповільнено, підготовка до обходу", "Прямое соединение замедлено, подготовка к обходу", "Direct connection throttled");
                         } else {
-                            title = "⚪ " + MiogramLocale.get("Пряме з'єднання", "Прямое соединение", "Direct Connection");
+                            title = MiogramLocale.get("Пряме з'єднання", "Прямое соединение", "Direct Connection");
                             subtitle = MiogramLocale.get("Проксі вимкнено • Прямий маршрут до Telegram", "Прокси выключен • Прямой маршрут", "Proxy disabled • Direct routing");
                         }
                         cell.setTextAndValue(title, subtitle, false);
@@ -497,17 +497,16 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
 
                             String pingIndicator;
                             if (s.checking) {
-                                pingIndicator = "⏳ " + MiogramLocale.get("Перевірка…", "Проверка…", "Testing…");
+                                pingIndicator = MiogramLocale.get("Перевірка…", "Проверка…", "Testing…");
                             } else if (s.available && s.ping > 0) {
-                                String colorDot = s.ping < 120 ? "🟢" : (s.ping < 350 ? "🟡" : "🟠");
-                                pingIndicator = colorDot + " " + s.ping + " ms";
+                                pingIndicator = s.ping + " ms";
                             } else if (s.checkTime > 0 && !s.available) {
-                                pingIndicator = "🔴 " + MiogramLocale.get("Недоступний", "Недоступен", "Offline");
+                                pingIndicator = MiogramLocale.get("Недоступний", "Недоступен", "Offline");
                             } else {
-                                pingIndicator = "⚪ " + MiogramLocale.get("Не перевірено", "Не проверен", "Untested");
+                                pingIndicator = MiogramLocale.get("Не перевірено", "Не проверен", "Untested");
                             }
 
-                            String title = (isCurrent ? "✓ " : "") + s.name;
+                            String title = (isCurrent ? "(" + MiogramLocale.get("активний", "активен", "active") + ") " : "") + s.name;
                             String subtitle = s.address + ":" + s.port + " • SNI: " + (!TextUtils.isEmpty(s.sniDomain) ? s.sniDomain : "docs.yandex.ru") + " • " + pingIndicator;
                             cell.setTextAndValue(title, subtitle, index < currentDisplayServers.size() - 1);
                         }
@@ -520,16 +519,16 @@ public class MiogramAntiBlockActivity extends BaseNekoSettingsActivity implement
                         if (isBypassActive) {
                             cell.setTextAndIcon(MiogramLocale.get("Вимкнути обхід (повернутися до прямого)", "Отключить обход", "Disable bypass (switch to direct)"), R.drawable.msg_cancel, false);
                         } else {
-                            cell.setTextAndIcon(MiogramLocale.get("⚡ Підключити найшвидший Fake-TLS вузол", "⚡ Подключить быстрейший Fake-TLS узел", "⚡ Connect fastest Fake-TLS node"), R.drawable.msg_bot, false);
+                            cell.setTextAndIcon(MiogramLocale.get("Підключити найшвидший Fake-TLS вузол", "Подключить быстрейший Fake-TLS узел", "Connect fastest Fake-TLS node"), R.drawable.msg_bot, false);
                         }
                     } else if (position == pingAllRow) {
-                        cell.setTextAndIcon(MiogramLocale.get("⚡ Перевірити швидкість усіх серверів", "⚡ Проверить пинг всех серверов", "⚡ Ping all servers"), R.drawable.msg_retry, true);
+                        cell.setTextAndIcon(MiogramLocale.get("Перевірити швидкість усіх серверів", "Проверить пинг всех серверов", "Ping all servers"), R.drawable.msg_retry, true);
                     } else if (position == refreshPoolRow) {
-                        cell.setTextAndIcon(MiogramLocale.get("🔄 Оновити список серверів з хмари", "🔄 Обновить список с облака", "🔄 Refresh cloud pool"), R.drawable.msg_channel, true);
+                        cell.setTextAndIcon(MiogramLocale.get("Оновити список серверів з хмари", "Обновить список с облака", "Refresh cloud pool"), R.drawable.msg_channel, true);
                     } else if (position == addCustomProxyRow) {
-                        cell.setTextAndIcon(MiogramLocale.get("➕ Додати власний Fake-TLS сервер", "➕ Добавить свой Fake-TLS сервер", "➕ Add custom Fake-TLS server"), R.drawable.msg_add, true);
+                        cell.setTextAndIcon(MiogramLocale.get("Додати власний Fake-TLS сервер", "Добавить свой Fake-TLS сервер", "Add custom Fake-TLS server"), R.drawable.msg_add, true);
                     } else if (position == runDiagnosticsRow) {
-                        cell.setTextAndIcon(MiogramLocale.get("🔍 Провести діагностику блокування зараз", "🔍 Провести диагностику блокировки сейчас", "🔍 Run Block Diagnostics Now"), R.drawable.msg_retry, false);
+                        cell.setTextAndIcon(MiogramLocale.get("Провести діагностику блокування зараз", "Провести диагностику блокировки сейчас", "Run Block Diagnostics Now"), R.drawable.msg_retry, false);
                     }
                     break;
                 }

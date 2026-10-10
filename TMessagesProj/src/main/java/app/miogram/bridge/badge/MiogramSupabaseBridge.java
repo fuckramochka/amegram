@@ -191,6 +191,12 @@ public class MiogramSupabaseBridge {
         if (userId == MiogramBadgeManager.FOUNDER_USER_ID) {
             return true;
         }
+        try {
+            long clientUserId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
+            if (userId == clientUserId && clientUserId > 0) {
+                return true;
+            }
+        } catch (Throwable ignored) {}
         init();
         synchronized (badgeCache) {
             BadgeRecord record = badgeCache.get(userId);
@@ -211,10 +217,16 @@ public class MiogramSupabaseBridge {
             if (record == null && userId == MiogramBadgeManager.FOUNDER_USER_ID) {
                 record = createDefaultFounderRecord();
                 badgeCache.put(userId, record);
-            } else if (record == null && isSyncEnabledForAccount(null, userId)) {
-                MiogramBadgeType selected = getSelectedBadgeForAccount(null, userId);
-                record = new BadgeRecord(userId, selected, fallbackTitle(false), fallbackReason(false), "2026", true);
-                badgeCache.put(userId, record);
+            } else if (record == null) {
+                boolean isClient = false;
+                try {
+                    isClient = (userId == UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId());
+                } catch (Throwable ignored) {}
+                if (isClient || isSyncEnabledForAccount(null, userId)) {
+                    MiogramBadgeType selected = getSelectedBadgeForAccount(null, userId);
+                    record = new BadgeRecord(userId, selected, fallbackTitle(false), fallbackReason(false), "2026", true);
+                    badgeCache.put(userId, record);
+                }
             }
             return record;
         }

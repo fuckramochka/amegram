@@ -281,9 +281,9 @@ public class MiogramSteamSheet extends BottomSheet {
             } else {
                 statusHintView.setTextColor(0xFFFF6B6B);
                 statusHintView.setText(MiogramLocale.get(
-                        "⚠️ Не вдалося знайти або профіль закрито. Введіть пряме посилання (steamcommunity.com/id/...) або 17-значний SteamID64, та перевірте публічність профілю у Steam.",
-                        "⚠️ Не удалось найти или профиль закрыт. Введите прямую ссылку (steamcommunity.com/id/...) или 17-значный SteamID64, и проверьте публичность профиля в Steam.",
-                        "⚠️ Could not resolve Steam profile. Please enter your direct URL (steamcommunity.com/id/...) or 17-digit SteamID64, and ensure profile is Public."
+                        "Не вдалося знайти або профіль закрито. Введіть пряме посилання (steamcommunity.com/id/...) або 17-значний SteamID64, та перевірте публічність профілю у Steam.",
+                        "Не удалось найти или профиль закрыт. Введите прямую ссылку (steamcommunity.com/id/...) или 17-значный SteamID64, и проверьте публичность профиля в Steam.",
+                        "Could not resolve Steam profile. Please enter your direct URL (steamcommunity.com/id/...) or 17-digit SteamID64, and ensure profile is Public."
                 ));
             }
         });

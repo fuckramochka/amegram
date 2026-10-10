@@ -651,6 +651,7 @@ public final class HotModulesManager {
                 }
                 File tmp = new File(root(), moduleId + ".tmp");
                 boolean downloaded = false;
+                boolean fromAsset = false;
                 if (build.url != null && build.url.startsWith("https://")) {
                     try {
                         HotDownloader.download(build.url, tmp, (d, t) -> postProgressOnly(cb, d, t));
@@ -680,6 +681,7 @@ public final class HotModulesManager {
                             while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
                         }
                         downloaded = true;
+                        fromAsset = true;
                     }
                 }
                 if (!downloaded) {
@@ -687,9 +689,10 @@ public final class HotModulesManager {
                     return;
                 }
 
-                if (build.sha256 != null && !build.sha256.isEmpty()) {
+                if (!fromAsset && build.sha256 != null && !build.sha256.isEmpty()) {
                     String actual = HotDownloader.sha256(tmp);
                     if (!build.sha256.equalsIgnoreCase(actual)) {
+                        FileLog.e("hotmods sha256 mismatch for " + moduleId + ": expected=" + build.sha256 + ", actual=" + actual);
                         tmp.delete();
                         postProgress(cb, false, "Помилка контрольної суми sha256", null);
                         return;

@@ -1,24 +1,34 @@
 package app.amegram.hot;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.security.MessageDigest;
+import java.util.concurrent.TimeUnit;
+
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 /**
- * Скачивание .hmod с прогрессом + проверка sha256.
- * Только https, таймауты короткие, докачка не нужна (модули маленькие).
+ * Скачивание .hmod с прогрессом + проверка sha256 через OkHttp.
+ * Поддерживает редиректы, современные протоколы TLS, таймауты и прогресс.
  */
 public final class HotDownloader {
 
     public interface Progress {
         void onProgress(long downloaded, long total);
     }
+
+    private static final OkHttpClient client = new OkHttpClient.Builder()
+            .connectTimeout(20, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build();
 
     private HotDownloader() {
     }
@@ -27,21 +37,19 @@ public final class HotDownloader {
         if (url == null || !url.startsWith("https://")) {
             throw new IllegalArgumentException("only https allowed");
         }
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(30000);
-            conn.setRequestProperty("User-Agent", "Amegram-HotModules/1.0");
-            conn.connect();
-            int code = conn.getResponseCode();
-            if (code < 200 || code >= 300) {
-                throw new IllegalStateException("http " + code);
+        Request request = new Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Android; Mobile) Amegram-HotModules/1.0")
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            ResponseBody body = response.body();
+            if (!response.isSuccessful() || body == null) {
+                throw new IllegalStateException("HTTP " + response.code());
             }
-            long total = conn.getContentLengthLong();
+            long total = body.contentLength();
             File parent = destTmp.getParentFile();
             if (parent != null) parent.mkdirs();
-            try (InputStream in = new BufferedInputStream(conn.getInputStream());
+            try (InputStream in = body.byteStream();
                  OutputStream out = new FileOutputStream(destTmp)) {
                 byte[] buf = new byte[64 * 1024];
                 long done = 0;
@@ -53,8 +61,6 @@ public final class HotDownloader {
                 }
             }
             return destTmp;
-        } finally {
-            if (conn != null) conn.disconnect();
         }
     }
 
@@ -62,29 +68,16 @@ public final class HotDownloader {
         if (url == null || !url.startsWith("https://")) {
             throw new IllegalArgumentException("only https allowed");
         }
-        HttpURLConnection conn = null;
-        try {
-            conn = (HttpURLConnection) new URL(url).openConnection();
-            conn.setConnectTimeout(15000);
-            conn.setReadTimeout(30000);
-            conn.setRequestProperty("User-Agent", "Amegram-HotModules/1.0");
-            conn.connect();
-            int code = conn.getResponseCode();
-            if (code < 200 || code >= 300) {
-                throw new IllegalStateException("http " + code);
+        Request request = new Request.Builder()
+                .url(url)
+                .header("User-Agent", "Mozilla/5.0 (Android; Mobile) Amegram-HotModules/1.0")
+                .build();
+        try (Response response = client.newCall(request).execute()) {
+            ResponseBody body = response.body();
+            if (!response.isSuccessful() || body == null) {
+                throw new IllegalStateException("HTTP " + response.code());
             }
-            try (InputStream in = new BufferedInputStream(conn.getInputStream())) {
-                StringBuilder sb = new StringBuilder();
-                byte[] buf = new byte[16 * 1024];
-                int n;
-                while ((n = in.read(buf)) != -1) {
-                    sb.append(new String(buf, 0, n, "UTF-8"));
-                    if (sb.length() > 512 * 1024) break;
-                }
-                return sb.toString();
-            }
-        } finally {
-            if (conn != null) conn.disconnect();
+            return body.string();
         }
     }
 

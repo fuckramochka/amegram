@@ -641,7 +641,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
 
         if (upd != null) {
             TextView btnUpdate = new TextView(context);
-            boolean isUpdating = updating.contains(info.manifest.id);
+            isUpdating = updating.contains(info.manifest.id);
             btnUpdate.setText(isUpdating ? "…" : "↑ " + MiogramLocale.get("Оновити до v", "Обновить до v", "Update to v") + upd);
             btnUpdate.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             btnUpdate.setTypeface(AndroidUtilities.bold());

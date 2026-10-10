@@ -553,6 +553,26 @@ public final class HotModulesManager {
         appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).edit().putBoolean(key, value).apply();
     }
 
+    public static int getInt(String moduleId, String key, int def) {
+        if (appContext == null) return def;
+        return appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).getInt(key, def);
+    }
+
+    public static void putInt(String moduleId, String key, int value) {
+        if (appContext == null) return;
+        appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).edit().putInt(key, value).apply();
+    }
+
+    public static String getString(String moduleId, String key, String def) {
+        if (appContext == null) return def;
+        return appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).getString(key, def);
+    }
+
+    public static void putString(String moduleId, String key, String value) {
+        if (appContext == null) return;
+        appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).edit().putString(key, value).apply();
+    }
+
     public static void installBundledModule(String modId, boolean enable, Callback<Void> cb) {
         init(ApplicationLoader.applicationContext);
         if (appContext == null) {

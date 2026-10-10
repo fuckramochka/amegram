@@ -24,6 +24,7 @@ jobs:
         run: |
           fail=0
           for f in TMessagesProj/src/main/assets/hotmodules/*.hmod; do
+            [ -f "$f" ] || continue
             python3 tools/hotmod-sdk/lint_manifest.py "$f" || fail=1
           done
           exit $fail

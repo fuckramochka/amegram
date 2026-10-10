@@ -57,4 +57,25 @@ public interface HotHost {
     default void openSettings() {
         openModuleScreen("settings");
     }
+
+    /**
+     * Динамічне перехоплення будь-якого методу клієнта на рівні ART (Pine / Xposed).
+     * Автоматично відміняється (unhook) при вимкненні або видаленні модуля.
+     */
+    HotHook.Unhook hook(java.lang.reflect.Member method, HotHook.Callback callback);
+
+    /**
+     * Перехопити всі перевантажені методи з такою назвою.
+     */
+    java.util.List<HotHook.Unhook> hookAll(Class<?> clazz, String methodName, HotHook.Callback callback);
+
+    /**
+     * Підписатися на подію NotificationCenter Telegram.
+     * Автоматично відписується при вимкненні модуля.
+     */
+    void subscribeNotification(int notificationId, NotificationObserver observer);
+
+    interface NotificationObserver {
+        void onNotification(int id, int account, Object... args);
+    }
 }

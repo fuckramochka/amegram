@@ -21,30 +21,15 @@
           "sizeBytes": 36431
         }
       },
-      "history": [
-        {
-          "branch": "stable",
-          "version": "1.0.0",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.0.hmod",
-          "sha256": "1cc980103ff76c0a3190767b34fd075d36204cc528401607270768bbe0a48428",
-          "minApp": 7112,
-          "changelog": "Повний пошук музики, відтворення, стрімінг та кешування.",
-          "permissions": [
-            "hook_ui",
-            "network",
-            "storage"
-          ],
-          "sizeBytes": 19523
-        }
-      ],
-      "author": "Yumi Team",
+      "history": [],
+      "author": "AmeGram Team",
       "category": "media",
       "featured": true
     },
     {
       "id": "ghost",
       "name": "Режим привида",
-      "description": "Повна невидимість у мережі: приховування прочитання повідомлень, історій, статусу онлайн та набору тексту + збереження видалених.",
+      "description": "Повна невидимість у мережі: приховування прочитання повідомлень, історій, статусу онлайн та набору тексту.",
       "entry": "com.amegram.mods.ghost.GhostModule",
       "branches": {
         "stable": {
@@ -59,28 +44,15 @@
           "sizeBytes": 3485
         }
       },
-      "history": [
-        {
-          "branch": "stable",
-          "version": "1.0.0",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.0.hmod",
-          "sha256": "9ee109bc98f44f3e5ec2c101805f468564246f98a9b2a85271010fcb08be95c5",
-          "minApp": 7112,
-          "changelog": "Перехоплення на рівні мережі: readHistory, readStories, typing та offline статус.",
-          "permissions": [
-            "hook_net"
-          ],
-          "sizeBytes": 2003
-        }
-      ],
-      "author": "Yumi Team",
+      "history": [],
+      "author": "AmeGram Team",
       "category": "privacy",
       "featured": true
     },
     {
       "id": "ame",
       "name": "Кастомізація профіля та інтерфейсу",
-      "description": "Yumi-студія з XML-редактором, картки профіля, градієнти, картки діалогів, скляне розмиття, кольори та світіння повідомлень.",
+      "description": "Аме-студія з XML-редактором, картки профіля, градієнти, картки діалогів, скляне розмиття, кольори та світіння повідомлень.",
       "entry": "com.amegram.mods.ame.AmeModule",
       "branches": {
         "stable": {
@@ -97,7 +69,7 @@
         }
       },
       "history": [],
-      "author": "Yumi Team",
+      "author": "AmeGram Team",
       "category": "custom",
       "featured": false
     },
@@ -121,7 +93,7 @@
         }
       },
       "history": [],
-      "author": "Yumi Team",
+      "author": "AmeGram Team",
       "category": "privacy",
       "featured": false
     },
@@ -145,7 +117,7 @@
         }
       },
       "history": [],
-      "author": "Yumi Team",
+      "author": "AmeGram Team",
       "category": "media",
       "featured": false
     },
@@ -156,19 +128,32 @@
       "entry": "com.amegram.mods.stt.SttModule",
       "branches": {
         "stable": {
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.1.hmod",
+          "sha256": "f339bcb8ff7203ff95863d5e70fea9b2476ad3bb99504c3a9ed0730da22ec6d9",
+          "minApp": 7112,
+          "changelog": "Detect the real audio/video MIME type before transcription.",
+          "permissions": [
+            "network"
+          ],
+          "sizeBytes": 6129
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.0.hmod",
           "sha256": "46e4853e9becb7879752868ea020be8573f5cf068d909c7172b4cf0c1dc22095",
+          "sizeBytes": 5615,
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "network"
-          ],
-          "sizeBytes": 5615
+          ]
         }
-      },
-      "history": [],
-      "author": "Yumi Team",
+      ],
+      "author": "AmeGram Team",
       "category": "media",
       "featured": false
     },
@@ -190,28 +175,15 @@
           "sizeBytes": 10215
         }
       },
-      "history": [
-        {
-          "branch": "stable",
-          "version": "1.0.0",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.0.hmod",
-          "sha256": "9192bc35b59bfbce42ac74b9b1afd51125c6ed8c4b71eb9bac124b5d9695f532",
-          "minApp": 7112,
-          "changelog": "Чат зі супутником, персони Ame та KAngel.",
-          "permissions": [
-            "network"
-          ],
-          "sizeBytes": 5751
-        }
-      ],
-      "author": "Yumi Team",
+      "history": [],
+      "author": "AmeGram Team",
       "category": "power",
       "featured": true
     },
     {
       "id": "experimental",
       "name": "Експерименти",
-      "description": "Безліміт закріплених чатів та стікерів, прискорення завантаження, шумозаглушення, підвищений бітрейт відео.",
+      "description": "Безліміт закріплених чатів та стікерів, прискорення завантаження, шумозаглушення, підвищений бітрейт відео та збереження видалених повідомлень.",
       "entry": "com.amegram.mods.experimental.ExperimentalModule",
       "branches": {
         "stable": {
@@ -226,21 +198,8 @@
           "sizeBytes": 4402
         }
       },
-      "history": [
-        {
-          "branch": "stable",
-          "version": "1.0.0",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.0.hmod",
-          "sha256": "e933178f8474f3e64d78e9edb597915697e89641ba1f6002968888b5961da3b9",
-          "minApp": 7112,
-          "changelog": "Оптимізації клієнта, безліміти та збереження повідомлень.",
-          "permissions": [
-            "hook_net"
-          ],
-          "sizeBytes": 3006
-        }
-      ],
-      "author": "Yumi Team",
+      "history": [],
+      "author": "AmeGram Team",
       "category": "power",
       "featured": false
     },
@@ -264,8 +223,29 @@
         }
       },
       "history": [],
-      "author": "Yumi Team",
+      "author": "AmeGram Team",
       "category": "power",
+      "featured": false
+    },
+    {
+      "id": "demo",
+      "name": "Демо модуль",
+      "description": "Зразок нативного модуля для розробників розширень Амэграм.",
+      "entry": "com.amegram.mods.demo.DemoModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
+          "sha256": "004940bc6582cdc137d33977af0f9b8f26e4f86ff0f4792a1148f43739bb2b1d",
+          "minApp": 7112,
+          "changelog": "",
+          "permissions": [],
+          "sizeBytes": 2209
+        }
+      },
+      "history": [],
+      "author": "AmeGram Team",
+      "category": "other",
       "featured": false
     },
     {

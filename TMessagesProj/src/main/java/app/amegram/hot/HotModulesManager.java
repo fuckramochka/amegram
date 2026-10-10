@@ -23,12 +23,17 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.lang.reflect.Member;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import app.amegram.hot.api.HotHook;
 import app.amegram.hot.api.HotHost;
 import app.amegram.hot.api.HotModule;
 import app.miogram.bridge.MiogramLocale;
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
+import org.telegram.messenger.NotificationCenter;
 
 /**
  * Хот-модули: нативные доверенные расширения из отдельного репозитория.
@@ -84,11 +89,13 @@ public final class HotModulesManager {
         public final HotModule instance;
         /** Ізольований ClassLoader цього модуля (один на модуль, drop при видаленні). */
         public final ClassLoader loader;
+        public final HostImpl host;
 
-        Handle(InstalledInfo info, HotModule instance, ClassLoader loader) {
+        Handle(InstalledInfo info, HotModule instance, ClassLoader loader, HostImpl host) {
             this.info = info;
             this.instance = instance;
             this.loader = loader;
+            this.host = host;
         }
     }
 
@@ -1065,10 +1072,11 @@ public final class HotModulesManager {
             }
             HotModule mod = (HotModule) obj;
             InstalledInfo info = new InstalledInfo(m, hmod, true, true);
-            Handle handle = new Handle(info, mod, modLoader);
+            HostImpl host = new HostImpl(moduleId);
+            Handle handle = new Handle(info, mod, modLoader, host);
             LOADED.put(moduleId, handle);
             try {
-                mod.onAttach(appContext, new HostImpl(moduleId));
+                mod.onAttach(appContext, host);
             } catch (Throwable e) {
                 // Падіння в onAttach не роняє апку: знімаємо хендл, рахуємо провал.
                 FileLog.e("hotmods: onAttach failed: " + moduleId, e);
@@ -1157,10 +1165,18 @@ public final class HotModulesManager {
 
     private static synchronized void dropLoaded(String moduleId) {
         Handle h = LOADED.remove(moduleId);
-        if (h != null && h.instance != null) {
-            try {
-                h.instance.onDetach();
-            } catch (Throwable ignore) {
+        if (h != null) {
+            if (h.instance != null) {
+                try {
+                    h.instance.onDetach();
+                } catch (Throwable ignore) {
+                }
+            }
+            if (h.host != null) {
+                try {
+                    h.host.cleanup();
+                } catch (Throwable ignore) {
+                }
             }
         }
     }
@@ -1400,6 +1416,156 @@ public final class HotModulesManager {
         @Override
         public void openSettings() {
             openModuleScreen("settings");
+        }
+
+        private final List<HotHook.Unhook> hooks = new ArrayList<>();
+        private final List<Runnable> notifications = new ArrayList<>();
+
+        void cleanup() {
+            synchronized (hooks) {
+                for (HotHook.Unhook u : hooks) {
+                    try {
+                        u.unhook();
+                    } catch (Throwable ignore) {
+                    }
+                }
+                hooks.clear();
+            }
+            synchronized (notifications) {
+                for (Runnable r : notifications) {
+                    try {
+                        r.run();
+                    } catch (Throwable ignore) {
+                    }
+                }
+                notifications.clear();
+            }
+        }
+
+        @Override
+        public HotHook.Unhook hook(Member method, HotHook.Callback callback) {
+            if (method == null || callback == null) return () -> {
+            };
+            try {
+                XC_MethodHook.Unhook unhook = XposedBridge.hookMethod(method, new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        callback.before(new CallImpl(param));
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        callback.after(new CallImpl(param));
+                    }
+                });
+                HotHook.Unhook wrapper = () -> {
+                    try {
+                        unhook.unhook();
+                    } catch (Throwable ignore) {
+                    }
+                };
+                synchronized (hooks) {
+                    hooks.add(wrapper);
+                }
+                return wrapper;
+            } catch (Throwable e) {
+                FileLog.e("hotmod[" + moduleId + "] hook failed on " + method, e);
+                return () -> {
+                };
+            }
+        }
+
+        @Override
+        public List<HotHook.Unhook> hookAll(Class<?> clazz, String methodName, HotHook.Callback callback) {
+            List<HotHook.Unhook> list = new ArrayList<>();
+            if (clazz == null || methodName == null || callback == null) return list;
+            try {
+                Set<XC_MethodHook.Unhook> set = XposedBridge.hookAllMethods(clazz, methodName, new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                        callback.before(new CallImpl(param));
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        callback.after(new CallImpl(param));
+                    }
+                });
+                for (XC_MethodHook.Unhook u : set) {
+                    HotHook.Unhook wrapper = () -> {
+                        try {
+                            u.unhook();
+                        } catch (Throwable ignore) {
+                        }
+                    };
+                    synchronized (hooks) {
+                        hooks.add(wrapper);
+                    }
+                    list.add(wrapper);
+                }
+            } catch (Throwable e) {
+                FileLog.e("hotmod[" + moduleId + "] hookAll failed on " + clazz + "#" + methodName, e);
+            }
+            return list;
+        }
+
+        @Override
+        public void subscribeNotification(int notificationId, NotificationObserver observer) {
+            if (observer == null) return;
+            NotificationCenter.NotificationCenterDelegate delegate = (id, account, args) -> {
+                try {
+                    observer.onNotification(id, account, args);
+                } catch (Throwable e) {
+                    FileLog.e("hotmod[" + moduleId + "] notification error: " + id, e);
+                }
+            };
+            NotificationCenter.getGlobalInstance().addObserver(delegate, notificationId);
+            synchronized (notifications) {
+                notifications.add(() -> NotificationCenter.getGlobalInstance().removeObserver(delegate, notificationId));
+            }
+        }
+
+        private static final class CallImpl implements HotHook.Call {
+            private final XC_MethodHook.MethodHookParam p;
+
+            CallImpl(XC_MethodHook.MethodHookParam p) {
+                this.p = p;
+            }
+
+            @Override
+            public Member getMethod() {
+                return p.method;
+            }
+
+            @Override
+            public Object getThis() {
+                return p.thisObject;
+            }
+
+            @Override
+            public Object[] getArgs() {
+                return p.args;
+            }
+
+            @Override
+            public Object getResult() {
+                return p.getResult();
+            }
+
+            @Override
+            public void setResult(Object result) {
+                p.setResult(result);
+            }
+
+            @Override
+            public Throwable getThrowable() {
+                return p.getThrowable();
+            }
+
+            @Override
+            public void setThrowable(Throwable throwable) {
+                p.setThrowable(throwable);
+            }
         }
     }
 

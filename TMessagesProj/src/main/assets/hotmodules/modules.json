@@ -1,5 +1,5 @@
 {
-  "updated": 1728067200,
+  "updated": 1728634500,
   "modules": [
     {
       "id": "player",
@@ -10,7 +10,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.1.hmod",
-          "sha256": "2b070e4e7bb193ea45f38199d1e12932237104504a46b5b8750d2c7b4dc7c1d5",
+          "sha256": "8278f6d3be36a9899e150dd882b299226673640b8ff6b0f0e7fb5ac27501f3b5",
           "minApp": 7112,
           "changelog": "Тумблери прив'язані до реальних префів; фон/блур тільки в олівці плеєра.",
           "permissions": [
@@ -35,7 +35,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.1.hmod",
-          "sha256": "26f8af308f8c5ce6f42057617a9f21b6ef5e68128976ecd9b20d4f5fa31fd0de",
+          "sha256": "e07725148015b80c032bbb8cb858eca2fdb6041c4521c07e0ed05fa015f530c1",
           "minApp": 7112,
           "changelog": "Привид+видалені одним модулем; синк префів у ядро; гейт вимкнення.",
           "permissions": [
@@ -58,7 +58,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ame-1.0.0.hmod",
-          "sha256": "de0bf582d43e326febcb7be2dfe14df4ed91c4aa7505f04b728a34f19218e268",
+          "sha256": "7d5ed801510e715a10a97cc6d79001208845326ef1b3aabbd70a7e2909a887db",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -82,7 +82,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/vault-1.0.0.hmod",
-          "sha256": "d6d7d5bcd3637c1837fd82a64b93bff426e470fb33b3b18502b637c1abc70a19",
+          "sha256": "3a9d734f87b07118e6c72f40f43d34bb82a273e01ca1711a16bb5cb3600a5074",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -106,7 +106,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/tiktok-1.0.0.hmod",
-          "sha256": "098cf38c188e5d591b4a15591ea0b62367ab7edafcff4d143fed7ef1979fc5f3",
+          "sha256": "6c38038686245891b52c91e6ef72b07353e523d6cc8351850c4acb663ecfbc51",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -130,7 +130,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.1.hmod",
-          "sha256": "b26026ba3dfd54495c29836dc27abadf5164720e6f64ebb247f333f3acb5a929",
+          "sha256": "18043da75bcc4b8df1df973093868bee55d7f22c40e9d6abd2447e8fad8c208f",
           "minApp": 7112,
           "changelog": "Detect the real audio/video MIME type before transcription.",
           "permissions": [
@@ -166,7 +166,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.1.hmod",
-          "sha256": "3fb886e935e87f0acdece5430c024426799dfee0eeda0526eda6356a986fa3dd",
+          "sha256": "3df04585c84781f6b720e36e3d0dbde57f456479494f4ed2b9014b6e538623f9",
           "minApp": 7112,
           "changelog": "Тільки Nano vs Gemini API (3.5-flash-lite); кнопка Get Key в AI Studio.",
           "permissions": [
@@ -189,7 +189,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.1.hmod",
-          "sha256": "fdec263886df087fd99db00d67fd7c9a64e372503c7bd1631bea90dd78b1fc4a",
+          "sha256": "54566a887ff1e7c782197f8a54ffaf50888a0489dae3ba94e1baf4c157b0345f",
           "minApp": 7112,
           "changelog": "Видалені переїхали в привида; тут безліміти/буст/жести.",
           "permissions": [
@@ -212,7 +212,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/automation-1.0.0.hmod",
-          "sha256": "101527873a0305d96fb3e42f44d3b4497d92e37c6241ad01c29dca8a1fc15e92",
+          "sha256": "44097471aa07fc7da77169b9b5b7b6b9aedccf59dfa376d801660efd2259f945",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -236,7 +236,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
-          "sha256": "d576467bb959e87be935e0fcaf1bcf60c9f64423bcebf4834d8bee379f030d74",
+          "sha256": "0e13d911550a6cb0048da9c48716169f2341bdff94d0ebd9e14de945f2642b2b",
           "minApp": 7112,
           "changelog": "",
           "permissions": [],
@@ -257,7 +257,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/fileorganization-1.0.0.hmod",
-          "sha256": "e3a9ea5f1281747247f393f7be35691e328a4b416b838ce7249de3918e63675a",
+          "sha256": "afff4767c286c2dcfbc587b9cd25e01f28177771b92ced57bc7ba6df7afcc4da",
           "minApp": 7112,
           "changelog": "Підпапки чатів + збереження по папках винесено в окремий модуль.",
           "permissions": [
@@ -274,22 +274,59 @@
     {
       "id": "ui",
       "name": "Інтерфейс Yumi",
-      "description": "Стиль інтерфейсу на льоту: Yougram Expressive ↔ Classic без перевстановлення APK.",
+      "description": "Стиль інтерфейсу на льоту: Yougram Expressive ↔ Classic та автоматичні липкі анімації PixelPlayer (Material You).",
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
+          "version": "1.0.3",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.3.hmod",
+          "sha256": "1c286492cc5b08a4f694a618f7df22e71be4f04632f1c85f39ec507585adcf13",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.3: редизайн меню налаштувань у стилі MD3 Expressive (великі тактильні картки та кнопки зі сліпінг-пружинами), тональна адаптація кольорів (збереження та підсилення темно-рожевої та кастомних тем замість сірого кольору).",
+          "permissions": [
+            "hook_ui"
+          ],
+          "sizeBytes": 12169
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
+          "version": "1.0.2",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.2.hmod",
+          "sha256": "9827700e050edb1906ad57b13b13ac35cee4bab2db627371dbad633c41a5fd0a",
+          "sizeBytes": 9890,
+          "minApp": 7112,
+          "changelog": "Версія 1.0.2: преміальні пружинні анімації PixelPlayer на базі StateListAnimator (без лагів у скролі), тактильний вібровідгук кнопок, круглий FAB пошуку 30dp, виправлені межі блюра і лаконічний список налаштувань.",
+          "permissions": [
+            "hook_ui"
+          ]
+        },
+        {
+          "branch": "stable",
+          "version": "1.0.1",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.1.hmod",
+          "sha256": "c3a2a8c682ad993da25a4d63218452ccfdcaa81a63f356971768a052704abced",
+          "sizeBytes": 11169,
+          "minApp": 7112,
+          "changelog": "Версія 1.0.1: липкі анімації у стилі PixelPlayer увімкнені за замовчуванням, чистий інтерфейс без зайвих перемикачів, адаптація під тему Telegram.",
+          "permissions": [
+            "hook_ui"
+          ]
+        },
+        {
+          "branch": "stable",
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.0.hmod",
           "sha256": "5c3cb271568ae1df15a76d765f399f3ce382605b943480f1c1f76013b0ad90cc",
+          "sizeBytes": 3742,
           "minApp": 7112,
           "changelog": "Перемикання Yougram Expressive ↔ Classic без перевстановлення APK.",
           "permissions": [
             "hook_ui"
-          ],
-          "sizeBytes": 3742
+          ]
         }
-      },
-      "history": [],
+      ],
       "author": "Yumi Team",
       "category": "custom",
       "featured": true

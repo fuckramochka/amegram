@@ -1019,21 +1019,29 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 }
             }, 150);
             return;
-        } else if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isConfigured()) {
-            handleLegacyPasscodeError();
+        }
+        if (PasscodeHelper.isPanicCode(password)) {
+            Activity act = getContext() instanceof Activity ? (Activity) getContext() : null;
+            PasscodeHelper.executePanic(act);
+            finishUnlock(false);
+            AndroidUtilities.runOnUIThread(() -> {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+            }, 150);
             return;
         }
         if (PasscodeHelper.checkPasscode((Activity) getContext(), password)) {
             app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
             finishUnlock(false);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
             return;
         }
-        if (!SharedConfig.checkPasscode(password)) {
-            handleLegacyPasscodeError();
+        if (SharedConfig.checkPasscode(password)) {
+            app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
+            finishUnlock(false);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
             return;
         }
-        app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
-        finishUnlock(false);
+        handleLegacyPasscodeError();
     }
 
     private void handleLegacyPasscodeError() {

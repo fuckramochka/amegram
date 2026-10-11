@@ -54,7 +54,10 @@ public class MiogramDoubleBottomManager {
     /** Non-revealing existence checks — raw PINs are never readable (salted-hash storage). */
     public static boolean hasRealPasscode() {
         String stored = getPrefs().getString(KEY_REAL_PIN, "");
-        return stored != null && !stored.isEmpty();
+        if (stored != null && !stored.isEmpty()) {
+            return true;
+        }
+        return SharedConfig.passcodeHash != null && !SharedConfig.passcodeHash.isEmpty();
     }
 
     public static boolean hasDuressPasscode() {

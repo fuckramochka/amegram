@@ -216,10 +216,10 @@ public final class MainTabsUiHelper {
 
     public static void setBlurBounds(RectF rectF, View view, int bottomInset) {
         if (isFloatingPill()) {
-            // пігулка 60dp на 8dp над системним відступом, боки — за інсетом обгортки
+            // пігулка 60dp на 8dp над системним відступом, боки — за інсетом обгортки (12dp)
             final int bottom = view.getMeasuredHeight() - bottomInset - AndroidUtilities.dp(8);
             final int top = bottom - AndroidUtilities.dp(60);
-            rectF.set(AndroidUtilities.dp(8), top, view.getMeasuredWidth() - AndroidUtilities.dp(8), bottom);
+            rectF.set(AndroidUtilities.dp(12), top, view.getMeasuredWidth() - AndroidUtilities.dp(12), bottom);
             return;
         }
         final int bottom;

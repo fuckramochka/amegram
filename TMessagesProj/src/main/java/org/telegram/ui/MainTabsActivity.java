@@ -22,6 +22,7 @@ import android.text.TextPaint;
 import android.text.style.ReplacementSpan;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -80,6 +81,7 @@ import org.telegram.ui.Components.HintsController;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.Premium.LimitReachedBottomSheet;
+import org.telegram.ui.Components.ScaleStateListAnimator;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.BlurredBackgroundWithFadeDrawable;
 import org.telegram.ui.Components.blur3.RenderNodeWithHash;
@@ -420,6 +422,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             final int tabIndex = index;
             tabs[index].setOnLongClickListener(v -> processLongClick(v, tabIndex));
             tabs[index].setOnClickListener(v -> {
+                v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 if (viewPager.isManualScrolling() || viewPager.isTouch()) {
                     return;
                 }
@@ -483,13 +486,16 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsViewWrapper.setFocusable(false);
         tabsViewWrapper.setClipToPadding(false);
         if (MainTabsUiHelper.isFloatingPill()) {
-            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 64, 0));
+            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 72, 0));
 
             searchButton = new FrameLayout(context);
             searchButtonBackground = iBlur3FactoryGlass.create(searchButton, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
-            searchButtonBackground.setRadius(AndroidUtilities.dp(20));
+            searchButtonBackground.setRadius(AndroidUtilities.dp(30));
             searchButtonBackground.setPadding(0);
             searchButton.setBackground(searchButtonBackground);
+
+            ScaleStateListAnimator.apply(searchButton, 0.08f, 1.8f);
+            searchButton.setHapticFeedbackEnabled(true);
 
             searchIcon = new ImageView(context);
             searchIcon.setImageResource(R.drawable.outline_header_search);
@@ -497,6 +503,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             searchButton.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
 
             searchButton.setOnClickListener(v -> {
+                v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 if (viewPager.getCurrentPosition() != getPositionChats()) {
                     selectTab(getPositionChats(), true);
                     viewPager.scrollToPosition(getPositionChats());

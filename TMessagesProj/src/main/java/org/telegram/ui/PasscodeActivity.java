@@ -1023,6 +1023,11 @@ public class PasscodeActivity extends BaseFragment implements NotificationCenter
                 onPasscodeError();
                 return;
             }
+            if (PasscodeHelper.isPanicCode(password)) {
+                PasscodeHelper.executePanic(getParentActivity());
+                finishFragment();
+                return;
+            }
             if (!PasscodeHelper.checkPasscode(getParentActivity(), password) && !SharedConfig.checkPasscode(password)) {
                 SharedConfig.increaseBadPasscodeTries();
                 passwordEditText.setText("");

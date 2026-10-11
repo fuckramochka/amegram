@@ -26,12 +26,14 @@ public final class HotModuleMeta {
         if ("demo".equals(id)) return 0xFF78909C;
         if ("md3player".equals(id)) return 0xFF7E57C2;
         if ("fileorganization".equals(id)) return 0xFF00897B;
+        if ("doublebottom".equals(id)) return 0xFF5E35B1;
         if ("ui".equals(id)) return 0xFF6C63FF;
         return 0xFF2A87FF;
     }
 
     public static int icon(String id) {
         if ("ghost".equals(id)) return R.drawable.msg_secret;
+        if ("doublebottom".equals(id)) return R.drawable.msg_permissions;
         if ("player".equals(id)) return R.drawable.baseline_music_note_24;
         if ("ame".equals(id)) return R.drawable.msg_customize;
         if ("vault".equals(id)) return R.drawable.msg_saved;
@@ -48,7 +50,7 @@ public final class HotModuleMeta {
 
     /** Фолбек-категорія, якщо каталог її не вказав. */
     public static String category(String id) {
-        if ("ghost".equals(id) || "vault".equals(id)) return "privacy";
+        if ("ghost".equals(id) || "vault".equals(id) || "doublebottom".equals(id)) return "privacy";
         if ("player".equals(id) || "tiktok".equals(id) || "stt".equals(id)) return "media";
         if ("ai".equals(id) || "automation".equals(id) || "experimental".equals(id)) return "power";
         if ("ui".equals(id)) return "custom";

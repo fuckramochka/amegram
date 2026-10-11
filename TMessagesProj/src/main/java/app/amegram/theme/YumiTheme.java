@@ -88,6 +88,16 @@ public final class YumiTheme {
     }
 
     public static int getPrimary() {
+        try {
+            int themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+            if (themeAccent == 0 || (themeAccent & 0xFF000000) == 0) {
+                themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
+            }
+            if (themeAccent != 0 && (themeAccent & 0xFF000000) != 0) {
+                return themeAccent;
+            }
+        } catch (Throwable ignore) {
+        }
         return isDark() ? DARK_PRIMARY : LIGHT_PRIMARY;
     }
 
@@ -104,18 +114,46 @@ public final class YumiTheme {
     }
 
     public static int getSurface() {
+        try {
+            int surf = Theme.getColor(Theme.key_windowBackgroundWhite);
+            if (surf != 0 && (surf & 0xFF000000) != 0) {
+                return surf;
+            }
+        } catch (Throwable ignore) {
+        }
         return isDark() ? DARK_SURFACE : LIGHT_SURFACE;
     }
 
     public static int getSurfaceContainer() {
+        try {
+            int surf = Theme.getColor(Theme.key_windowBackgroundWhite);
+            if (surf != 0 && (surf & 0xFF000000) != 0) {
+                return surf;
+            }
+        } catch (Throwable ignore) {
+        }
         return isDark() ? DARK_SURFACE_CONTAINER : LIGHT_SURFACE_CONTAINER;
     }
 
     public static int getSurfaceVariant() {
+        try {
+            int bg = Theme.getColor(Theme.key_windowBackgroundGray);
+            if (bg != 0 && (bg & 0xFF000000) != 0) {
+                return bg;
+            }
+        } catch (Throwable ignore) {
+        }
         return isDark() ? DARK_SURFACE_VARIANT : LIGHT_SURFACE_VARIANT;
     }
 
     public static int getOnSurface() {
+        try {
+            int text = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+            if (text != 0 && (text & 0xFF000000) != 0) {
+                return text;
+            }
+        } catch (Throwable ignore) {
+        }
         return isDark() ? DARK_ON_SURFACE : LIGHT_ON_SURFACE;
     }
 

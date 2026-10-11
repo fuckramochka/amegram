@@ -1,11 +1,23 @@
 package app.amegram.hot.ui;
 
 import android.content.Context;
+import android.graphics.drawable.GradientDrawable;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.Components.ScaleStateListAnimator;
+import org.telegram.ui.Components.Switch;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -17,6 +29,7 @@ import app.amegram.hot.HotModulesManager;
 import app.amegram.hot.api.HotHost;
 import app.amegram.hot.api.HotModule;
 import app.amegram.hot.api.HotRow;
+import app.amegram.theme.YumiTheme;
 import app.miogram.bridge.MiogramLocale;
 
 /**
@@ -97,19 +110,19 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         rows.clear();
+        Context context = getContext();
+        if (context == null) return;
+
         boolean isEnabled = HotModulesManager.isModuleEnabled(moduleId);
-        items.add(UItem.asButtonCheck(10, MiogramLocale.get("Увімкнути функцію", "Включить функцию", "Enable feature"),
-                isEnabled ? MiogramLocale.get("Функція активна", "Функция активна", "Feature active")
-                          : MiogramLocale.get("Вимкнено", "Выключено", "Disabled")).setChecked(isEnabled));
-        items.add(UItem.asShadow(null));
+        items.add(UItem.asCustom(buildHeroCard(context, isEnabled)));
 
         HotModulesManager.Handle h = handle();
         HotModule mod = (h != null && h.instance != null) ? h.instance : HotModulesManager.createBuiltinModule(moduleId);
         if (mod == null) {
-            items.add(UItem.asShadow(MiogramLocale.get(
+            items.add(UItem.asCustom(buildInfoCard(context, MiogramLocale.get(
                     "Модуль не знайдено або він видалений.",
                     "Модуль не найден или удалён.",
-                    "Module not found or deleted.")));
+                    "Module not found or deleted."))));
             return;
         }
 
@@ -132,36 +145,408 @@ public class HotModuleSettingsActivity extends BaseFragment {
             }
         }
         if (rows.isEmpty()) {
-            items.add(UItem.asShadow(MiogramLocale.get(
-                    "Немає додаткових налаштувань.", "Нет дополнительных настроек.", "No additional settings.")));
+            items.add(UItem.asCustom(buildInfoCard(context, MiogramLocale.get(
+                    "Немає додаткових налаштувань.", "Нет дополнительных настроек.", "No additional settings."))));
             return;
         }
         for (int i = 0; i < rows.size(); i++) {
             HotRow r = rows.get(i);
             if (r.type == HotRow.HEADER) {
-                items.add(UItem.asHeader(r.title));
+                items.add(UItem.asCustom(buildSectionHeader(context, r.title)));
             } else if (r.type == HotRow.INFO) {
-                items.add(UItem.asShadow(r.title));
+                items.add(UItem.asCustom(buildInfoCard(context, r.title)));
             } else if (r.type == HotRow.SWITCH) {
-                boolean checked;
-                try {
-                    checked = host.getBool(r.id, r.checked);
-                } catch (Throwable ignore) {
-                    checked = r.checked;
-                }
-                items.add(UItem.asButtonCheck(100 + i, r.title, r.subtitle != null ? r.subtitle : "").setChecked(checked));
+                items.add(UItem.asCustom(buildSwitchCard(context, host, mod, r, i)));
             } else if (r.type == HotRow.BUTTON) {
-                items.add(UItem.asSettingsCell(100 + i, r.title,
-                        r.subtitle != null ? r.subtitle : ""));
+                items.add(UItem.asCustom(buildButtonCard(context, mod, r, i)));
             } else if (r.type == HotRow.INPUT) {
-                String cur = "";
-                try {
-                    cur = host.getString(r.id, r.subtitle != null ? r.subtitle : "");
-                } catch (Throwable ignore) {
-                }
-                items.add(UItem.asSettingsCell(100 + i, r.title, cur));
+                items.add(UItem.asCustom(buildInputCard(context, host, mod, r, i)));
             }
         }
+    }
+
+    private View buildHeroCard(Context context, boolean isEnabled) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(YumiTheme.cardBackground(YumiTheme.RADIUS_LG));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(8), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16), AndroidUtilities.dp(16));
+
+        LinearLayout topRow = new LinearLayout(context);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        topRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        int modColor = HotModuleMeta.color(moduleId);
+        FrameLayout iconFrame = new FrameLayout(context);
+        iconFrame.setBackground(YumiTheme.squircleIconBackground(modColor));
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(HotModuleMeta.icon(moduleId));
+        iconView.setColorFilter(0xFFFFFFFF);
+        iconFrame.addView(iconView, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
+        topRow.addView(iconFrame, LayoutHelper.createLinear(48, 48, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        LinearLayout infoCol = new LinearLayout(context);
+        infoCol.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleView = new TextView(context);
+        titleView.setText(resolveTitle());
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 17);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        infoCol.addView(titleView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
+
+        TextView badgeView = new TextView(context);
+        badgeView.setText(isEnabled
+                ? MiogramLocale.get("● Активно", "● Активно", "● Active")
+                : MiogramLocale.get("○ Вимкнено", "○ Выключено", "○ Disabled"));
+        badgeView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
+        badgeView.setTypeface(AndroidUtilities.bold());
+        badgeView.setTextColor(isEnabled ? 0xFF4CAF50 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        GradientDrawable badgeBg = new GradientDrawable();
+        badgeBg.setCornerRadius(AndroidUtilities.dp(99));
+        badgeBg.setColor(isEnabled ? 0x224CAF50 : 0x18888888);
+        badgeView.setBackground(badgeBg);
+        badgeView.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(3), AndroidUtilities.dp(8), AndroidUtilities.dp(3));
+        infoCol.addView(badgeView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        topRow.addView(infoCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+        Switch sw = new Switch(context);
+        sw.setChecked(isEnabled, false);
+        topRow.addView(sw, LayoutHelper.createLinear(42, 28, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
+
+        card.addView(topRow);
+
+        String desc = HotModuleMeta.fallbackDescription(moduleId);
+        if (desc != null && !desc.isEmpty()) {
+            TextView descView = new TextView(context);
+            descView.setText(desc);
+            descView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            descView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            descView.setLineSpacing(AndroidUtilities.dp(2), 1f);
+            card.addView(descView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 12, 0, 0));
+        }
+
+        View.OnClickListener toggle = v -> {
+            card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            boolean next = !HotModulesManager.isModuleEnabled(moduleId);
+            sw.setChecked(next, true);
+            HotModulesManager.setEnabled(moduleId, next, (ok, msg, data) -> {
+                if (actionBar != null) actionBar.setTitle(resolveTitle());
+                if (listView != null && listView.adapter != null) {
+                    listView.adapter.update(true);
+                }
+            });
+        };
+        card.setOnClickListener(toggle);
+        sw.setOnClickListener(toggle);
+        ScaleStateListAnimator.apply(card, 0.02f, 1.4f);
+
+        return card;
+    }
+
+    private View buildSectionHeader(Context context, String title) {
+        TextView tv = new TextView(context);
+        tv.setText(title != null ? title.toUpperCase() : "");
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+        tv.setTypeface(AndroidUtilities.bold());
+        tv.setTextColor(YumiTheme.getPrimary());
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(18), AndroidUtilities.dp(16), AndroidUtilities.dp(18), AndroidUtilities.dp(6));
+        tv.setLayoutParams(lp);
+        return tv;
+    }
+
+    private View buildSwitchCard(Context context, HotHost host, HotModule mod, HotRow r, int index) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setMinimumHeight(AndroidUtilities.dp(68));
+        card.setBackground(YumiTheme.buttonRipple(YumiTheme.getSurfaceContainer(), 18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(4), AndroidUtilities.dp(14), AndroidUtilities.dp(4));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        GradientDrawable iconBg = new GradientDrawable();
+        iconBg.setCornerRadius(AndroidUtilities.dp(12));
+        iconBg.setColor(Theme.multAlpha(YumiTheme.getPrimary(), 0.12f));
+        iconFrame.setBackground(iconBg);
+
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(resolveRowIcon(r));
+        iconView.setColorFilter(YumiTheme.getPrimary());
+        iconFrame.addView(iconView, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
+        card.addView(iconFrame, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        LinearLayout textCol = new LinearLayout(context);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleView = new TextView(context);
+        titleView.setText(r.title);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textCol.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        if (r.subtitle != null && !r.subtitle.isEmpty()) {
+            TextView subView = new TextView(context);
+            subView.setText(r.subtitle);
+            subView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+            subView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            subView.setLineSpacing(AndroidUtilities.dp(1.5f), 1f);
+            textCol.addView(subView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        }
+
+        card.addView(textCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 10, 0));
+
+        boolean checked;
+        try {
+            checked = host.getBool(r.id, r.checked);
+        } catch (Throwable ignore) {
+            checked = r.checked;
+        }
+        Switch sw = new Switch(context);
+        sw.setChecked(checked, false);
+        card.addView(sw, LayoutHelper.createLinear(40, 26, Gravity.CENTER_VERTICAL));
+
+        View.OnClickListener clickAction = v -> {
+            card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            boolean cur = host.getBool(r.id, r.checked);
+            boolean next = !cur;
+            host.putBool(r.id, next);
+            sw.setChecked(next, true);
+            try {
+                mod.onSettingsToggle(r.id, next);
+            } catch (Throwable ignore) {
+            }
+            if ("ui".equals(moduleId)) {
+                try {
+                    app.amegram.hot.HotUiGate.applyLive();
+                } catch (Throwable ignore) {
+                }
+            }
+            if (listView != null && listView.adapter != null) {
+                listView.adapter.update(true);
+            }
+        };
+        card.setOnClickListener(clickAction);
+        sw.setOnClickListener(clickAction);
+        ScaleStateListAnimator.apply(card, 0.025f, 1.4f);
+
+        return card;
+    }
+
+    private View buildButtonCard(Context context, HotModule mod, HotRow r, int index) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setMinimumHeight(AndroidUtilities.dp(60));
+        card.setBackground(YumiTheme.buttonRipple(YumiTheme.getSurfaceContainer(), 18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(5), AndroidUtilities.dp(14), AndroidUtilities.dp(5));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        GradientDrawable iconBg = new GradientDrawable();
+        iconBg.setCornerRadius(AndroidUtilities.dp(12));
+        iconBg.setColor(YumiTheme.getPrimary());
+        iconFrame.setBackground(iconBg);
+
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(resolveRowIcon(r));
+        iconView.setColorFilter(0xFFFFFFFF);
+        iconFrame.addView(iconView, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
+        card.addView(iconFrame, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        LinearLayout textCol = new LinearLayout(context);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleView = new TextView(context);
+        titleView.setText(r.title);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textCol.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        if (r.subtitle != null && !r.subtitle.isEmpty()) {
+            TextView subView = new TextView(context);
+            subView.setText(r.subtitle);
+            subView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+            subView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            subView.setLineSpacing(AndroidUtilities.dp(1.5f), 1f);
+            textCol.addView(subView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        }
+
+        card.addView(textCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 10, 0));
+
+        ImageView arrowView = new ImageView(context);
+        arrowView.setImageResource(R.drawable.arrow_more);
+        arrowView.setColorFilter(YumiTheme.getPrimary());
+        card.addView(arrowView, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL));
+
+        card.setOnClickListener(v -> {
+            card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if ("player".equals(moduleId)) {
+                if ("player_lyrics_open".equals(r.id)) {
+                    openPlayerLyrics();
+                    return;
+                }
+                if ("player_lyrics_ai".equals(r.id)) {
+                    upgradePlayerLyricsToAi();
+                    return;
+                }
+            }
+            try {
+                mod.onSettingsAction(r.id);
+            } catch (Throwable ignore) {
+            }
+            if ("ui".equals(moduleId)) {
+                try {
+                    app.amegram.hot.HotUiGate.applyLive();
+                } catch (Throwable ignore) {
+                }
+            }
+            if (listView != null && listView.adapter != null) {
+                listView.adapter.update(true);
+            }
+        });
+        ScaleStateListAnimator.apply(card, 0.035f, 1.5f);
+
+        return card;
+    }
+
+    private View buildInputCard(Context context, HotHost host, HotModule mod, HotRow r, int index) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setMinimumHeight(AndroidUtilities.dp(62));
+        card.setBackground(YumiTheme.buttonRipple(YumiTheme.getSurfaceContainer(), 18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(4), AndroidUtilities.dp(14), AndroidUtilities.dp(4));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        GradientDrawable iconBg = new GradientDrawable();
+        iconBg.setCornerRadius(AndroidUtilities.dp(12));
+        iconBg.setColor(Theme.multAlpha(YumiTheme.getPrimary(), 0.12f));
+        iconFrame.setBackground(iconBg);
+
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(R.drawable.baseline_edit_24);
+        iconView.setColorFilter(YumiTheme.getPrimary());
+        iconFrame.addView(iconView, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
+        card.addView(iconFrame, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        LinearLayout textCol = new LinearLayout(context);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleView = new TextView(context);
+        titleView.setText(r.title);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textCol.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        String curVal = "";
+        try {
+            curVal = host.getString(r.id, r.subtitle != null ? r.subtitle : "");
+        } catch (Throwable ignore) {
+        }
+        if (!curVal.isEmpty()) {
+            TextView valView = new TextView(context);
+            valView.setText(curVal);
+            valView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+            valView.setTextColor(YumiTheme.getPrimary());
+            textCol.addView(valView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        }
+
+        card.addView(textCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 10, 0));
+
+        ImageView arrowView = new ImageView(context);
+        arrowView.setImageResource(R.drawable.arrow_more);
+        arrowView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        card.addView(arrowView, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL));
+
+        card.setOnClickListener(v -> {
+            card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            showInputDialog(host, mod, r);
+        });
+        ScaleStateListAnimator.apply(card, 0.025f, 1.4f);
+
+        return card;
+    }
+
+    private View buildInfoCard(Context context, String text) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(AndroidUtilities.dp(16));
+        bg.setColor(Theme.multAlpha(YumiTheme.getPrimary(), 0.08f));
+        card.setBackground(bg);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(6), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
+
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(R.drawable.msg_info);
+        iconView.setColorFilter(YumiTheme.getPrimary());
+        card.addView(iconView, LayoutHelper.createLinear(22, 22, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
+
+        TextView tv = new TextView(context);
+        tv.setText(text);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+        tv.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        tv.setLineSpacing(AndroidUtilities.dp(2), 1f);
+        card.addView(tv, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+        return card;
+    }
+
+    private int resolveRowIcon(HotRow r) {
+        if (r == null || r.id == null) return R.drawable.baseline_settings_24;
+        String id = r.id.toLowerCase();
+        if (id.contains("expressive") || id.contains("theme") || id.contains("color") || id.contains("style")) {
+            return R.drawable.baseline_brush_24;
+        }
+        if (id.contains("sticky") || id.contains("anim") || id.contains("pixel") || id.contains("bouncy")) {
+            return R.drawable.baseline_stars_24;
+        }
+        if (id.contains("player") || id.contains("lyrics") || id.contains("music")) {
+            return R.drawable.baseline_music_note_24;
+        }
+        if (id.contains("glass") || id.contains("blur") || id.contains("menu")) {
+            return R.drawable.msg_customize;
+        }
+        if (id.contains("loading") || id.contains("update") || id.contains("apply")) {
+            return R.drawable.baseline_system_update_24;
+        }
+        if (id.contains("reset")) {
+            return R.drawable.msg_reset;
+        }
+        if (id.contains("ghost") || id.contains("secret")) {
+            return R.drawable.msg_secret;
+        }
+        if (id.contains("vault") || id.contains("saved")) {
+            return R.drawable.msg_saved;
+        }
+        if (id.contains("ai") || id.contains("bot") || id.contains("transcribe")) {
+            return R.drawable.baseline_stars_24;
+        }
+        return R.drawable.baseline_settings_24;
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {

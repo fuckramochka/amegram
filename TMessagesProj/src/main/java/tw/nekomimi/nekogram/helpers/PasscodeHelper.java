@@ -19,26 +19,61 @@ import java.nio.charset.StandardCharsets;
 public class PasscodeHelper {
     private static final SharedPreferences preferences = ApplicationLoader.applicationContext.getSharedPreferences("nekopasscode", Context.MODE_PRIVATE);
 
-    public static boolean checkPasscode(Activity activity, String passcode) {
+    public static boolean isPanicCode(String passcode) {
         if (hasPasscodeForAccount(Integer.MAX_VALUE)) {
             String passcodeHash = preferences.getString("passcodeHash" + Integer.MAX_VALUE, "");
             String passcodeSaltString = preferences.getString("passcodeSalt" + Integer.MAX_VALUE, "");
-            if (checkPasscodeHash(passcode, passcodeHash, passcodeSaltString)) {
-                for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                    if (UserConfig.getInstance(a).isClientActivated() && isAccountAllowPanic(a)) {
-                        MessagesController.getInstance(a).performLogout(1);
-                    }
-                }
-                return false;
+            return checkPasscodeHash(passcode, passcodeHash, passcodeSaltString);
+        }
+        return false;
+    }
+
+    public static void executePanic(Activity activity) {
+        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+            if (UserConfig.getInstance(a).isClientActivated() && isAccountAllowPanic(a)) {
+                MessagesController.getInstance(a).performLogout(1);
             }
+        }
+        try {
+            app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(true);
+        } catch (Throwable ignore) {
+        }
+        int decoyAccount = -1;
+        try {
+            decoyAccount = app.miogram.bridge.vault.MiogramDoubleBottomManager.getDecoyAccount();
+        } catch (Throwable ignore) {
+        }
+        if (decoyAccount >= 0 && decoyAccount < UserConfig.MAX_ACCOUNT_COUNT && UserConfig.getInstance(decoyAccount).isClientActivated()) {
+            MessagesController.getInstance(decoyAccount).loadDialogs(0, -1, 100, true);
+            if (activity instanceof LaunchActivity) {
+                ((LaunchActivity) activity).switchToAccount(decoyAccount, true);
+            }
+        } else {
+            int remaining = -1;
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()) {
+                    remaining = a;
+                    break;
+                }
+            }
+            if (remaining != -1 && activity instanceof LaunchActivity) {
+                ((LaunchActivity) activity).switchToAccount(remaining, true);
+            }
+        }
+    }
+
+    public static boolean checkPasscode(Activity activity, String passcode) {
+        if (isPanicCode(passcode)) {
+            executePanic(activity);
+            return true;
         }
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             if (UserConfig.getInstance(a).isClientActivated() && hasPasscodeForAccount(a)) {
                 String passcodeHash = preferences.getString("passcodeHash" + a, "");
                 String passcodeSaltString = preferences.getString("passcodeSalt" + a, "");
                 if (checkPasscodeHash(passcode, passcodeHash, passcodeSaltString)) {
-                    if (activity instanceof LaunchActivity launchActivity) {
-                        launchActivity.switchToAccount(a, true);
+                    if (activity instanceof LaunchActivity) {
+                        ((LaunchActivity) activity).switchToAccount(a, true);
                         return true;
                     }
                 }

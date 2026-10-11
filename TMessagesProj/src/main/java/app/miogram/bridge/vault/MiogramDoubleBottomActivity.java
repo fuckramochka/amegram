@@ -256,6 +256,7 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
         builder.setMessage(MiogramLocale.get("Це видалить аварійні коди та списки дозволених чатів. Усі акаунти залишаться на пристрої.", "Это удалит аварийные коды и списки разрешенных чатов. Все аккаунты останутся на устройстве.", "This will clear emergency codes and allowed chats lists. All accounts remain on device."));
         builder.setPositiveButton(MiogramLocale.get("Скинути", "Сбросить", "Reset"), (dialog, which) -> {
             MiogramDoubleBottomManager.clearAll();
+            tw.nekomimi.nekogram.helpers.PasscodeHelper.clearAll();
             updateRows();
             listAdapter.notifyDataSetChanged();
         });

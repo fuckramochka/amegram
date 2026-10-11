@@ -66,13 +66,12 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
     /**
      * Мапінг карток хаба на Hot-модулі (.hmod з магазину).
-     * badges/antiblock/hotfix повертають null: це функції ядра без .hmod —
+     * badges/antiblock/hotfix/doublebottom повертають null: це функції ядра без .hmod —
      * вони чесно підписані "ядро", без фейкових версій і видалення.
      */
     private static String hotIdFor(String legacyId) {
         if ("ghost".equals(legacyId)) return "ghost";
         if ("ameprofile".equals(legacyId)) return "ame";
-        if ("doublebottom".equals(legacyId)) return "vault";
         return null;
     }
 
@@ -660,8 +659,13 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon("+ \u0414\u043e\u043a\u0430\u0447\u0430\u0442\u0438 \u043c\u043e\u0434\u0443\u043b\u0456",
                                 R.drawable.msg_download_solar, true);
                     } else if (position == vaultRow) {
-                        cell.setTextAndValue("\u0414\u0432\u043e\u0439\u043d\u043e\u0435 \u0434\u043d\u043e",
-                                "\u041d\u0430\u0441\u0442\u0440\u043e\u0435\u043d\u043e", true);
+                        boolean configured = app.miogram.bridge.vault.MiogramDoubleBottomManager.isConfigured()
+                                || tw.nekomimi.nekogram.helpers.PasscodeHelper.hasPanicCode();
+                        cell.setTextAndValue(
+                                app.miogram.bridge.MiogramLocale.get("Подвійне сховище", "Двойное дно", "Double Bottom"),
+                                configured ? app.miogram.bridge.MiogramLocale.get("Налаштовано", "Настроено", "Configured")
+                                           : app.miogram.bridge.MiogramLocale.get("Не налаштовано", "Не настроено", "Not configured"),
+                                true);
                     } else if (position == pluginsRow) {
                         cell.setTextAndIcon("\u041a\u0430\u0442\u0430\u043b\u043e\u0433 \u043f\u043b\u0430\u0433\u0456\u043d\u0456\u0432",
                                 R.drawable.msg_plugins, true);
@@ -742,8 +746,18 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                 holder.rollbackBtn.setVisibility(View.GONE);
             }
             final String hotTap = !ref.isAmod ? hotIdFor(ref.id) : null;
-            holder.itemView.setOnClickListener(hotTap != null
-                    ? v -> openHotDetail(hotTap) : null);
+            if ("doublebottom".equals(ref.id)) {
+                holder.itemView.setOnClickListener(v -> {
+                    try {
+                        presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
+                    } catch (Throwable ignore) {
+                    }
+                });
+            } else if (hotTap != null) {
+                holder.itemView.setOnClickListener(v -> openHotDetail(hotTap));
+            } else {
+                holder.itemView.setOnClickListener(null);
+            }
         }
     }
 

@@ -48,6 +48,24 @@ public final class YougramExpressive {
         return enabled();
     }
 
+    // ---- Список чатів Yumi ----
+
+    public static int chatListStyle() {
+        return enabled() ? AppearanceConfig.chatListStyle() : AppearanceConfig.CHAT_LIST_STYLE_FLAT;
+    }
+
+    public static boolean chatPinnedAccent() {
+        return enabled() && AppearanceConfig.chatPinnedAccent();
+    }
+
+    public static boolean chatSquircleAvatars() {
+        return enabled() && AppearanceConfig.chatSquircleAvatars();
+    }
+
+    public static boolean chatCardOutline() {
+        return enabled() && AppearanceConfig.chatCardOutline();
+    }
+
     // ---- Фон чата ----
 
     private static volatile int currentChatBg = 0;

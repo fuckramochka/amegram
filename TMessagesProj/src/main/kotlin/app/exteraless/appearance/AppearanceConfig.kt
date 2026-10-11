@@ -109,6 +109,59 @@ object AppearanceConfig {
         addConfig("OEAppearanceHideActionBarStatus", ConfigItem.configTypeBool, false)
 
     /**
+     * Стиль відображення списку чатів Yumi:
+     * 0 — Виразні картки (Floating Expressive Cards: плаваючі M3 плитки з відступами та скругленням 18dp),
+     * 1 — Сегментовані острівці (Segmented Islands: безперервні округлі секції з тонкими мікро-розділювачами),
+     * 2 — Сучасний плаский (Modern Flat: на всю ширину з відступами Yumi).
+     */
+    const val CHAT_LIST_STYLE_CARDS = 0
+    const val CHAT_LIST_STYLE_ISLANDS = 1
+    const val CHAT_LIST_STYLE_FLAT = 2
+
+    @JvmField
+    val chatListStyle =
+        addConfig("OEAppearanceChatListStyle", ConfigItem.configTypeInt, CHAT_LIST_STYLE_CARDS)
+
+    @JvmStatic
+    fun chatListStyle(): Int {
+        ensureLoaded()
+        return chatListStyle.Int()
+    }
+
+    /** Тональне підсвічування закріплених чатів (колірний акорд з акценту теми: рожевий, Monet, AMOLED тощо). */
+    @JvmField
+    val chatPinnedAccent =
+        addConfig("OEAppearanceChatPinnedAccent", ConfigItem.configTypeBool, true)
+
+    @JvmStatic
+    fun chatPinnedAccent(): Boolean {
+        ensureLoaded()
+        return chatPinnedAccent.Bool()
+    }
+
+    /** Виразні squircle-аватарки чатів (Material 3 Expressive у стилі PixelPlayer). */
+    @JvmField
+    val chatSquircleAvatars =
+        addConfig("OEAppearanceChatSquircleAvatars", ConfigItem.configTypeBool, true)
+
+    @JvmStatic
+    fun chatSquircleAvatars(): Boolean {
+        ensureLoaded()
+        return chatSquircleAvatars.Bool()
+    }
+
+    /** Тонкий мікро-контур карток чатів для відчуття глибини Material 3 Elevation. */
+    @JvmField
+    val chatCardOutline =
+        addConfig("OEAppearanceChatCardOutline", ConfigItem.configTypeBool, true)
+
+    @JvmStatic
+    fun chatCardOutline(): Boolean {
+        ensureLoaded()
+        return chatCardOutline.Bool()
+    }
+
+    /**
      * Текст заголовка списка чатов: 0 — имя приложения, 1 — username, 2 — имя,
      * 3 — «Чаты». Только UI.
      */
@@ -416,6 +469,9 @@ object AppearanceConfig {
     @JvmStatic
     fun avatarCorners(): Int {
         ensureLoaded()
+        if (isYougramExpressive() && chatSquircleAvatars() && avatarCorners.Int() >= AVATAR_CORNERS_MAX) {
+            return 16
+        }
         return avatarCorners.Int()
     }
 

@@ -3935,41 +3935,134 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private int archiveFadeGradientDrawableColor;
 
     private static Paint yougramPlatePaint;
+    private static Paint yougramStrokePaint;
+    private static Paint yougramDividerPaint;
     private Path yougramPath;
     private RectF yougramRectF;
+    private float[] yougramRadii;
 
     private void drawYougramSegment(Canvas canvas) {
+        if (!app.exteraless.appearance.YougramExpressive.enabled()) {
+            return;
+        }
+        final int style = app.exteraless.appearance.AppearanceConfig.chatListStyle();
+        final boolean isPinned = getIsPinned() && !drawArchive;
+        final int baseColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
+        int accent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
+        if (accent == 0 || (accent & 0xff000000) == 0) {
+            accent = Theme.getColor(Theme.key_chats_actionBackground, resourcesProvider);
+        }
+        if (accent == 0 || (accent & 0xff000000) == 0) {
+            accent = 0xFFE5486B;
+        }
+        final boolean dark = Theme.isCurrentThemeDark();
+
+        if (style == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT) {
+            if (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent()) {
+                int pinnedFlatColor = ColorUtils.blendARGB(baseColor, accent, dark ? 0.12f : 0.07f);
+                canvas.drawColor(pinnedFlatColor);
+            }
+            return;
+        }
+
         if (yougramPlatePaint == null) {
             yougramPlatePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        if (yougramStrokePaint == null) {
+            yougramStrokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            yougramStrokePaint.setStyle(Paint.Style.STROKE);
+            yougramStrokePaint.setStrokeWidth(dp(1));
         }
         if (yougramPath == null) {
             yougramPath = new Path();
             yougramRectF = new RectF();
+            yougramRadii = new float[8];
         }
-        boolean isTop = true;
-        boolean isBottom = true;
-        if (getParent() instanceof androidx.recyclerview.widget.RecyclerView) {
-            androidx.recyclerview.widget.RecyclerView rv = (androidx.recyclerview.widget.RecyclerView) getParent();
-            int pos = rv.getChildAdapterPosition(this);
-            if (rv.getAdapter() != null) {
-                int count = rv.getAdapter().getItemCount();
-                if (pos > 0 && rv.getAdapter().getItemViewType(pos - 1) == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG) {
-                    isTop = false;
-                }
-                if (pos >= 0 && pos < count - 1 && rv.getAdapter().getItemViewType(pos + 1) == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG) {
-                    isBottom = false;
+
+        final int plateColor;
+        if (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent()) {
+            plateColor = ColorUtils.blendARGB(baseColor, accent, dark ? 0.13f : 0.08f);
+        } else {
+            plateColor = baseColor;
+        }
+        yougramPlatePaint.setColor(plateColor);
+
+        final int w = getMeasuredWidth();
+        final int h = getMeasuredHeight();
+        if (w <= 0 || h <= 0) {
+            return;
+        }
+
+        final boolean drawOutline = app.exteraless.appearance.AppearanceConfig.chatCardOutline();
+
+        if (style == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_CARDS) {
+            final float sideMargin = dp(10);
+            final float vMargin = dp(2.5f);
+            final float r = dp(18);
+
+            yougramRectF.set(sideMargin, vMargin, w - sideMargin, h - vMargin);
+            yougramPath.rewind();
+            for (int i = 0; i < 8; i++) {
+                yougramRadii[i] = r;
+            }
+            yougramPath.addRoundRect(yougramRectF, yougramRadii, Path.Direction.CW);
+            canvas.drawPath(yougramPath, yougramPlatePaint);
+
+            if (drawOutline) {
+                int strokeAlpha = isPinned ? (dark ? 0x30 : 0x22) : (dark ? 0x1E : 0x14);
+                yougramStrokePaint.setColor(ColorUtils.setAlphaComponent(accent, strokeAlpha));
+                canvas.drawPath(yougramPath, yougramStrokePaint);
+            }
+        } else if (style == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_ISLANDS) {
+            boolean isTop = true;
+            boolean isBottom = true;
+            if (getParent() instanceof androidx.recyclerview.widget.RecyclerView) {
+                androidx.recyclerview.widget.RecyclerView rv = (androidx.recyclerview.widget.RecyclerView) getParent();
+                int pos = rv.getChildAdapterPosition(this);
+                if (rv.getAdapter() != null) {
+                    int count = rv.getAdapter().getItemCount();
+                    if (pos > 0 && rv.getAdapter().getItemViewType(pos - 1) == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG) {
+                        isTop = false;
+                    }
+                    if (pos >= 0 && pos < count - 1 && rv.getAdapter().getItemViewType(pos + 1) == org.telegram.ui.Adapters.DialogsAdapter.VIEW_TYPE_DIALOG) {
+                        isBottom = false;
+                    }
                 }
             }
+
+            final float sideMargin = dp(11);
+            final float topMargin = isTop ? dp(4) : 0;
+            final float bottomMargin = isBottom ? dp(4) : 0;
+            final float rTop = isTop ? dp(22) : dp(4);
+            final float rBottom = isBottom ? dp(22) : dp(4);
+
+            yougramRectF.set(sideMargin, topMargin, w - sideMargin, h - bottomMargin);
+            yougramPath.rewind();
+            yougramRadii[0] = yougramRadii[1] = yougramRadii[2] = yougramRadii[3] = rTop;
+            yougramRadii[4] = yougramRadii[5] = yougramRadii[6] = yougramRadii[7] = rBottom;
+            yougramPath.addRoundRect(yougramRectF, yougramRadii, Path.Direction.CW);
+            canvas.drawPath(yougramPath, yougramPlatePaint);
+
+            if (drawOutline) {
+                int strokeAlpha = isPinned ? (dark ? 0x28 : 0x1E) : (dark ? 0x18 : 0x10);
+                yougramStrokePaint.setColor(ColorUtils.setAlphaComponent(accent, strokeAlpha));
+                canvas.drawPath(yougramPath, yougramStrokePaint);
+            }
+
+            if (!isBottom) {
+                if (yougramDividerPaint == null) {
+                    yougramDividerPaint = new Paint();
+                    yougramDividerPaint.setStrokeWidth(dp(0.75f));
+                }
+                int divAlpha = dark ? 0x1C : 0x14;
+                yougramDividerPaint.setColor(ColorUtils.setAlphaComponent(
+                        Theme.getColor(Theme.key_divider, resourcesProvider), divAlpha));
+                float divY = h - 1;
+                float divStart = LocaleController.isRTL ? sideMargin + dp(12) : dp(messagePaddingStart);
+                float divEnd = LocaleController.isRTL ? w - dp(messagePaddingStart) : w - sideMargin - dp(12);
+                canvas.drawLine(divStart, divY, divEnd, divY, yougramDividerPaint);
+            }
         }
-        final float rTop = isTop ? dp(24) : dp(6);
-        final float rBottom = isBottom ? dp(24) : dp(6);
-        yougramRectF.set(dp(12), dp(1), getMeasuredWidth() - dp(12), getMeasuredHeight() - dp(1));
-        yougramPath.rewind();
-        float[] radii = new float[] { rTop, rTop, rTop, rTop, rBottom, rBottom, rBottom, rBottom };
-        yougramPath.addRoundRect(yougramRectF, radii, Path.Direction.CW);
-        final int color = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-        yougramPlatePaint.setColor(color);
-        canvas.drawPath(yougramPath, yougramPlatePaint);
     }
 
     @SuppressLint("DrawAllocation")
@@ -3991,7 +4084,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         // Official iOS Telegram paints pinned chats with a distinct section
         // background (ChatListNode.swift). The upstream drawRect calls for the
         // pinned overlay are commented out in this fork, so fill directly.
-        if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext()) && getIsPinned() && !drawArchive
+        if (!app.exteraless.appearance.YougramExpressive.enabled()
+                && app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext()) && getIsPinned() && !drawArchive
                 && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) {
             canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundGray, resourcesProvider));
         }
@@ -4998,7 +5092,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             canvas.restore();
         }
 
-        if (useSeparator && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled() && !app.exteraless.appearance.YougramExpressive.enabled()) {
+        if (useSeparator && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()
+                && (!app.exteraless.appearance.YougramExpressive.enabled() || app.exteraless.appearance.AppearanceConfig.chatListStyle() == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT)) {
             int left;
             if (fullSeparator || currentDialogFolderId != 0 && archiveHidden && !fullSeparator2 || fullSeparator2 && !archiveHidden) {
                 left = 0;

@@ -274,22 +274,34 @@
     {
       "id": "ui",
       "name": "Інтерфейс Yumi",
-      "description": "Стиль інтерфейсу на льоту: Yougram Expressive ↔ Classic та автоматичні липкі анімації PixelPlayer (Material You).",
+      "description": "Стиль інтерфейсу на льоту: Yougram Expressive ↔ Classic, власне відображення списку чатів та липкі анімації PixelPlayer (Material You).",
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
+          "version": "1.0.4",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.4.hmod",
+          "sha256": "d7311b0cfed9626ae6238123a1395984e6921936cb2f14fe18fbed9e8851f0ae",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.4: власне відображення списку чатів Yumi — плаваючі виразні картки (M3 Expressive), сегментовані острівці або плаский стиль, тональне підсвічування закріплених чатів кольором теми, squircle-аватарки та мікро-контур карток.",
+          "permissions": [
+            "hook_ui"
+          ],
+          "sizeBytes": 13198
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.3",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.3.hmod",
           "sha256": "1c286492cc5b08a4f694a618f7df22e71be4f04632f1c85f39ec507585adcf13",
+          "sizeBytes": 12169,
           "minApp": 7112,
           "changelog": "Версія 1.0.3: редизайн меню налаштувань у стилі MD3 Expressive (великі тактильні картки та кнопки зі сліпінг-пружинами), тональна адаптація кольорів (збереження та підсилення темно-рожевої та кастомних тем замість сірого кольору).",
           "permissions": [
             "hook_ui"
-          ],
-          "sizeBytes": 12169
-        }
-      },
-      "history": [
+          ]
+        },
         {
           "branch": "stable",
           "version": "1.0.2",

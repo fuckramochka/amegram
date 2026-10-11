@@ -52,6 +52,16 @@ public class UiModule implements HotModule, HotUi {
     private static final String KEY_MINI_PLAYER = "OEAppearanceMd3MiniPlayer";
     private static final String KEY_LOADING = "OEAppearanceNewLoadingStyle";
 
+    // Chat list display keys
+    public static final String KEY_CHAT_STYLE = "OEAppearanceChatListStyle";
+    public static final String KEY_CHAT_PINNED_ACCENT = "OEAppearanceChatPinnedAccent";
+    public static final String KEY_CHAT_SQUIRCLE_AVATARS = "OEAppearanceChatSquircleAvatars";
+    public static final String KEY_CHAT_CARD_OUTLINE = "OEAppearanceChatCardOutline";
+
+    public static final int CHAT_STYLE_CARDS = 0;
+    public static final int CHAT_STYLE_ISLANDS = 1;
+    public static final int CHAT_STYLE_FLAT = 2;
+
     // Sticky animations configuration keys
     public static final String KEY_STICKY_ENABLED = "OEAppearanceStickyAnimations";
     public static final String KEY_STICKY_THEME_ADAPTIVE = "OEAppearanceStickyThemeAdaptive";
@@ -199,7 +209,19 @@ public class UiModule implements HotModule, HotUi {
     private void markTouched() {
         writeBool(KEY_TOUCHED, true);
         try {
-            if (host != null) host.emit("ui_changed", "{\"style\":" + styleMode() + ",\"sticky\":" + isStickyEnabled() + "}");
+            if (host != null) {
+                host.emit("ui_changed", "{\"style\":" + styleMode() + ",\"chatStyle\":" + chatListStyle() + ",\"sticky\":" + isStickyEnabled() + "}");
+            }
+        } catch (Throwable ignore) {
+        }
+        try {
+            ClassLoader cl = host != null && host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
+            Class<?> ncClass = Class.forName("org.telegram.messenger.NotificationCenter", true, cl);
+            Method mGetGlobal = ncClass.getMethod("getGlobalInstance");
+            Object nc = mGetGlobal.invoke(null);
+            int updateInterfaces = ncClass.getField("updateInterfaces").getInt(null);
+            Method mPost = ncClass.getMethod("postNotificationName", int.class, Object[].class);
+            mPost.invoke(nc, updateInterfaces, new Object[]{127});
         } catch (Throwable ignore) {
         }
     }
@@ -208,6 +230,22 @@ public class UiModule implements HotModule, HotUi {
     public int styleMode() {
         int v = readInt(KEY_STYLE, readInt("style", 1));
         return v == 0 ? 0 : 1;
+    }
+
+    public int chatListStyle() {
+        return readInt(KEY_CHAT_STYLE, CHAT_STYLE_CARDS);
+    }
+
+    public boolean isChatPinnedAccent() {
+        return readBool(KEY_CHAT_PINNED_ACCENT, true);
+    }
+
+    public boolean isChatSquircleAvatars() {
+        return readBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
+    }
+
+    public boolean isChatCardOutline() {
+        return readBool(KEY_CHAT_CARD_OUTLINE, true);
     }
 
     public boolean isStickyEnabled() {
@@ -588,6 +626,26 @@ public class UiModule implements HotModule, HotUi {
                 "Зберігає та насичує рожеві, темні та будь-які кастомні тони теми замість сірого",
                 readBool("theme_tonal_adaptation", true)));
 
+        rows.add(HotRow.header("Список чатів Yumi"));
+        int cStyle = chatListStyle();
+        String cStyleName = cStyle == CHAT_STYLE_CARDS ? "Виразні плаваючі картки (M3)"
+                : (cStyle == CHAT_STYLE_ISLANDS ? "Сегментовані острівці" : "Сучасний плаский");
+        rows.add(HotRow.button("cycle_chat_style",
+                "Стиль списку: " + cStyleName,
+                "Натисніть для перемикання (Картки → Острівці → Плаский)"));
+        rows.add(HotRow.switchRow(KEY_CHAT_PINNED_ACCENT,
+                "Тональні закріплені чати",
+                "М'яке підсвічування закріплених чатів акцентним відтінком теми",
+                isChatPinnedAccent()));
+        rows.add(HotRow.switchRow(KEY_CHAT_SQUIRCLE_AVATARS,
+                "Squircle-аватарки (PixelPlayer)",
+                "Виразне скруглення аватарок чатів у стилі Material You",
+                isChatSquircleAvatars()));
+        rows.add(HotRow.switchRow(KEY_CHAT_CARD_OUTLINE,
+                "Мікро-контур карток (M3)",
+                "Тонка адаптивна обводка карток для ефекту глибини",
+                isChatCardOutline()));
+
         rows.add(HotRow.header("Пружинна тактильність (PixelPlayer)"));
         rows.add(HotRow.switchRow(KEY_STICKY_ENABLED,
                 "Липкі анімації та вібровідгук",
@@ -634,7 +692,14 @@ public class UiModule implements HotModule, HotUi {
 
     @Override
     public void onSettingsAction(String rowId) {
-        if ("apply_live".equals(rowId) || "go_expressive".equals(rowId)) {
+        if ("cycle_chat_style".equals(rowId)) {
+            int next = (chatListStyle() + 1) % 3;
+            writeInt(KEY_CHAT_STYLE, next);
+            markTouched();
+            String name = next == CHAT_STYLE_CARDS ? "Виразні плаваючі картки"
+                    : (next == CHAT_STYLE_ISLANDS ? "Сегментовані острівці" : "Сучасний плаский");
+            if (host != null) host.toast("Стиль списку: " + name);
+        } else if ("apply_live".equals(rowId) || "go_expressive".equals(rowId)) {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
             markTouched();
@@ -647,6 +712,10 @@ public class UiModule implements HotModule, HotUi {
         } else if ("reset_defaults".equals(rowId)) {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
+            writeInt(KEY_CHAT_STYLE, CHAT_STYLE_CARDS);
+            writeBool(KEY_CHAT_PINNED_ACCENT, true);
+            writeBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
+            writeBool(KEY_CHAT_CARD_OUTLINE, true);
             writeBool(KEY_STICKY_ENABLED, true);
             writeBool(KEY_STICKY_THEME_ADAPTIVE, true);
             writeBool(KEY_MINI_PLAYER, true);

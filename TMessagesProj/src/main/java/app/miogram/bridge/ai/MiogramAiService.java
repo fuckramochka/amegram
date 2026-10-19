@@ -224,19 +224,41 @@ public class MiogramAiService {
         return new ArrayList<>(keys);
     }
 
+    public static boolean isObsoleteModel(String model) {
+        return "gemini-2.5-flash".equals(model)
+                || "gemini-2.0-flash".equals(model)
+                || "gemini-2.5-flash-lite".equals(model)
+                || "gemini-1.5-flash".equals(model)
+                || "gemini-1.5-pro".equals(model)
+                || "gemini-2.5-pro".equals(model);
+    }
+
     public static String getModel() {
         try {
             Context ctx = ApplicationLoader.applicationContext;
             if (ctx != null) {
                 String model = ctx.getSharedPreferences("miogram_ai_prefs", Context.MODE_PRIVATE)
                         .getString("gen_model", "");
-                if (!TextUtils.isEmpty(model)) return model;
+                if (!TextUtils.isEmpty(model)) {
+                    if (isObsoleteModel(model)) {
+                        ctx.getSharedPreferences("miogram_ai_prefs", Context.MODE_PRIVATE).edit()
+                                .putString("gen_model", DEFAULT_MODEL)
+                                .apply();
+                        return DEFAULT_MODEL;
+                    }
+                    return model;
+                }
             }
         } catch (Throwable ignored) {}
 
         try {
             String model = LlmConfig.getEffectiveModelName(PresetRegistry.GOOGLE_AI_STUDIO);
-            if (!TextUtils.isEmpty(model)) return model;
+            if (!TextUtils.isEmpty(model)) {
+                if (isObsoleteModel(model)) {
+                    return DEFAULT_MODEL;
+                }
+                return model;
+            }
         } catch (Throwable ignored) {}
         return DEFAULT_MODEL;
     }

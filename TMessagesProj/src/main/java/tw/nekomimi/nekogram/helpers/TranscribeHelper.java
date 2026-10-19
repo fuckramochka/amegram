@@ -64,7 +64,7 @@ public class TranscribeHelper {
     public static final int TRANSCRIBE_LOCAL = 5;
     /** Офлайн Vosk (app.exteraless.speech): модель качається в рантаймі, нікуди не відправляє. */
     public static final int TRANSCRIBE_VOSK = 6;
-    private static final String GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=%s";
+    private static final String GEMINI_API_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=%s";
     private static final String GEMINI_PROMPT = """
     Your task is to transcribe the provided voice/audio message with high accuracy, preserving the speaker's emotional state, intensity, and tone directly in the text formatting:
 
@@ -498,8 +498,8 @@ public class TranscribeHelper {
                 Response response = client.newCall(request).execute();
                 String responseBody = response.body() != null ? response.body().string() : "";
                 if (!response.isSuccessful() && (response.code() == 404 || response.code() == 400 || response.code() == 503)) {
-                    // Fallback hierarchy: gemini-2.5-flash -> gemini-2.0-flash
-                    String fallbackModel = !"gemini-2.5-flash".equals(model) ? "gemini-2.5-flash" : "gemini-2.0-flash";
+                    // Fallback hierarchy: gemini-3.5-flash-lite -> gemini-3.5-flash
+                    String fallbackModel = !"gemini-3.5-flash-lite".equals(model) ? "gemini-3.5-flash-lite" : "gemini-3.5-flash";
                     String fallbackUrl = "https://generativelanguage.googleapis.com/v1beta/models/" + fallbackModel + ":generateContent?key=" + finalApiKey;
                     Request fallbackReq = new Request.Builder().url(fallbackUrl).post(requestBody).build();
                     try (Response fbResp = client.newCall(fallbackReq).execute()) {

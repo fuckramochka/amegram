@@ -373,13 +373,23 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
                 int availableHeight = totalHeight - getPaddingTop();
 
                 LayoutParams layoutParams = (LayoutParams) listView.getLayoutParams();
-                layoutParams.topMargin = ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
+                if (layoutParams != null) {
+                    layoutParams.topMargin = ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
+                }
 
-                layoutParams = (LayoutParams) actionBarShadow.getLayoutParams();
-                layoutParams.topMargin = ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
+                if (actionBarShadow != null) {
+                    layoutParams = (LayoutParams) actionBarShadow.getLayoutParams();
+                    if (layoutParams != null) {
+                        layoutParams.topMargin = ActionBar.getCurrentActionBarHeight() + AndroidUtilities.statusBarHeight;
+                    }
+                }
 
-                FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) blurredView.getLayoutParams();
-                lp.topMargin = -getPaddingTop();
+                if (blurredView != null) {
+                    FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) blurredView.getLayoutParams();
+                    if (lp != null) {
+                        lp.topMargin = -getPaddingTop();
+                    }
+                }
 
                 int contentSize = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
                 if (playlist.size() > 1) {
@@ -1603,6 +1613,23 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
         }
 
         // Music opens MD3 through Md3Router. Keep AudioPlayerAlert's stock layout for voice messages.
+        lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
+        lyricsView.setVisibility(View.GONE);
+        lyricsView.setAlpha(0.0f);
+        containerView.addView(lyricsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+
+        containerView.addView(playerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 179 + (!isMyList() && !noforwards ? 52 : 0), Gravity.LEFT | Gravity.BOTTOM));
+        containerView.addView(playerShadow, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.LEFT | Gravity.BOTTOM));
+        FrameLayout.LayoutParams layoutParams = (FrameLayout.LayoutParams) playerLayout.getLayoutParams();
+        if (layoutParams != null) {
+            layoutParams.height = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
+        }
+        layoutParams = (FrameLayout.LayoutParams) playerShadow.getLayoutParams();
+        if (layoutParams != null) {
+            layoutParams.bottomMargin = dp(179 + (!isMyList() && !noforwards ? 52 : 0));
+        }
+        containerView.addView(actionBarShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3));
+        containerView.addView(actionBar);
 
         blurredView = new FrameLayout(context) {
             @Override

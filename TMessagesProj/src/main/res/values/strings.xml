@@ -11242,9 +11242,9 @@
     <string name="MiogramPingNoKey">Enter the key first</string>
     <string name="MiogramPingRunning">Checking connection…</string>
     <string name="MiogramModelDialogTitle">Text generation model</string>
-    <string name="MiogramModelFlash">Gemini 2.5 Flash (fast &amp; smart · recommended)</string>
-    <string name="MiogramModelFlashLite">Gemini 3.5 Flash Lite (lowest quota usage)</string>
-    <string name="MiogramModelPro">Gemini 2.5 Pro (deep analysis of long texts)</string>
+    <string name="MiogramModelFlash">Gemini 3.5 Flash (fast &amp; smart)</string>
+    <string name="MiogramModelFlashLite">Gemini 3.5 Flash Lite (lowest quota usage · recommended)</string>
+    <string name="MiogramModelPro">Gemini 3.8 Flash (frontier reasoning &amp; code)</string>
     <string name="MiogramModelCustom">Custom OpenAI-compatible endpoint</string>
     <string name="MiogramModelCustomTitle">Custom model identifier</string>
     <string name="MiogramKeyRow">Google AI Studio / Gemini API key</string>

@@ -14,9 +14,9 @@
     <string name="MiogramPingNoKey">Спочатку введіть ключ</string>
     <string name="MiogramPingRunning">Перевіряю зʼєднання…</string>
     <string name="MiogramModelDialogTitle">Модель генерації тексту</string>
-    <string name="MiogramModelFlash">Gemini 2.5 Flash (швидка й розумна · рекомендовано)</string>
-    <string name="MiogramModelFlashLite">Gemini 3.5 Flash Lite (мінімум квоти)</string>
-    <string name="MiogramModelPro">Gemini 2.5 Pro (глибокий аналіз)</string>
+    <string name="MiogramModelFlash">Gemini 3.5 Flash (швидка й розумна)</string>
+    <string name="MiogramModelFlashLite">Gemini 3.5 Flash Lite (мінімум квоти · рекомендовано)</string>
+    <string name="MiogramModelPro">Gemini 3.8 Flash (флагман · міркування та код)</string>
     <string name="MiogramModelCustom">Власний OpenAI-сумісний сервер</string>
     <string name="MiogramModelCustomTitle">Ідентифікатор власної моделі</string>
     <string name="MiogramKeyRow">Ключ Google AI Studio / Gemini</string>

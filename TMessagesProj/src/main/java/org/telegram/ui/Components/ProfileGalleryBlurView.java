@@ -204,9 +204,11 @@ public class ProfileGalleryBlurView extends View {
     public void setView(ProfileGalleryView view) {
         destroy();
         this.view = view;
-        currentPosition = view.getCurrentItem();
-        offset = 0;
-        view.addOnPageChangeListener(listener);
+        if (view != null) {
+            currentPosition = view.getCurrentItem();
+            offset = 0;
+            view.addOnPageChangeListener(listener);
+        }
     }
 
     public void destroy() {
@@ -426,6 +428,9 @@ public class ProfileGalleryBlurView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
+        if (view == null) {
+            return;
+        }
         draw(canvas, null, view.getMeasuredWidth(), view.getMeasuredHeight(), false, 0f, 1f);
     }
 
@@ -623,6 +628,9 @@ public class ProfileGalleryBlurView extends View {
 
     @RequiresApi(api = Build.VERSION_CODES.S)
     public void drawOpeningRenderNode(ProfileActivity.AvatarImageView avatarImageView, Canvas canvas, float width, float height, float fraction, float alpha) {
+        if (view == null || view.getMeasuredWidth() == 0) {
+            return;
+        }
         fraction = 1f - fraction;
         float openingScale = width / view.getMeasuredWidth();
         float croppedSize = size * fraction;

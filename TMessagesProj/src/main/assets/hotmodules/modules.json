@@ -128,18 +128,30 @@
       "entry": "com.amegram.mods.stt.SttModule",
       "branches": {
         "stable": {
+          "version": "1.0.2",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.2.hmod",
+          "sha256": "ba0c870bb32978659fa6a0c0cd831d30336e69113773702c212172c021e36810",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.2: перехід на Gemini 3.5 Flash Lite (в 10 разів вищі ліміти), резервний ланцюг, форматування емоцій та автопідхоплення ключа з клієнта.",
+          "permissions": [
+            "network"
+          ],
+          "sizeBytes": 7919
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.1.hmod",
-          "sha256": "18043da75bcc4b8df1df973093868bee55d7f22c40e9d6abd2447e8fad8c208f",
+          "sha256": "cd7a4c2ed15e7f5b74ccc1a728c9b0b0e15243e19b62e72c6f411e8494fe5677",
+          "sizeBytes": 6129,
           "minApp": 7112,
           "changelog": "Detect the real audio/video MIME type before transcription.",
           "permissions": [
             "network"
-          ],
-          "sizeBytes": 6129
-        }
-      },
-      "history": [
+          ]
+        },
         {
           "branch": "stable",
           "version": "1.0.0",

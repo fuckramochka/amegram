@@ -1,14 +1,14 @@
 <div align="center">
 
-<img src="assets/logo.png" width="128" alt="Amegram Logo">
+<img src="assets/logo.png" width="128" alt="Yumigram Logo">
 
-# Amegram (Амеграм)
+# Yumigram (Юміграм)
 
 ### *More than just a messenger. Telegram, but make it cute, powerful & unstoppable.*
 **Next-Generation Telegram Client with Zero-Trust Security, Modern Audio Player, 2026 Frontier AI, WASM Plugins & TikTok MI Ecosystem**
 
 [![Download Latest APK](https://img.shields.io/badge/Download-Latest%20APK-00F0FF?style=for-the-badge&logo=android&logoColor=black)](https://github.com/fuckramochka/amegram/releases/latest)
-[![Official Website](https://img.shields.io/badge/Website-Amegram%20Portal-FF69B4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://fuckramochka.github.io/amegram/)
+[![Official Website](https://img.shields.io/badge/Website-Yumigram%20Portal-FF69B4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://fuckramochka.github.io/amegram/)
 [![Author](https://img.shields.io/badge/Author-@dkamegram-FF2A93?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/dkamegram)
 [![License](https://img.shields.io/badge/License-GPL%20v3-9D4EDD?style=for-the-badge)](LICENSE)
 [![Android 15](https://img.shields.io/badge/Android%2015-16KB%20ELF%20Ready-3DDC84?style=for-the-badge&logo=android&logoColor=white)](docs/BUILD.md)
@@ -19,18 +19,18 @@
 
 ## Overview / Про проєкт
 
-**Amegram** — незалежний високоефективний клієнт Telegram для Android, створений для тих, хто цінує абсолютну конфіденційність, естетику, передовий штучний інтелект 2026 року, першокласний звук і безшовну екосистему.
+**Yumigram** — незалежний високоефективний клієнт Telegram для Android, створений для тих, хто цінує абсолютну конфіденційність, естетику, передовий штучний інтелект 2026 року, першокласний звук і безшовну екосистему.
 
-Amegram поєднує в собі:
+Yumigram поєднує в собі:
 - 🛡️ **Zero-Trust сховище «Подвійне дно»** з екстреним Duress PIN та апаратною ізоляцією StrongBox.
-- 🚀 **Мікро-патчі на льоту (`AmegramPatchManager`)**: оновлення критичних компонентів напряму з GitHub без перевстановлення APK.
+- 🚀 **Мікро-патчі на льоту (`YumigramPatchManager`)**: оновлення критичних компонентів напряму з GitHub без перевстановлення APK.
 - 🌐 **Anti-Censorship & Anti-Block Engine**: миттєвий обхід блокувань ТСПУ/РКН з локальними зондами (`ya.ru`, `vk.com`, `77.88.8.8`) та динамічним проксі.
 - 🧠 **Frontier AI 2026 & On-Device Models**: інтеграція Gemini 3.5 Flash-Lite (ліміти в 10 разів вищі), Gemini 3.8 Flash, LiteRT-LM / AI Edge SDK (Gemini Nano, Gemma 4 E2B/E4B, Qwen 2.5/3.5) з аналізом заліза пристрою та генератором плагінів.
-- 📱 **Безшовна екосистема з TikTok MI**: вбудований відеоплеєр `AmegramTikTokPlayer`, картка цифрової присутності з неоновим градієнтом, 1-tap надсилання у «Збережене» та ClipVault.
+- 📱 **Безшовна екосистема з TikTok MI**: вбудований відеоплеєр `YumigramTikTokPlayer`, картка цифрової присутності з неоновим градієнтом, 1-tap надсилання у «Збережене» та ClipVault.
 - 🎵 **Сучасний аудіоплеєр** з живою візуалізацією басів, текстами пісень та ергономікою Apple Music / Spotify.
-- 🎨 **Мультимакетний інтерфейс**: миттєве перемикання між стилями Discord, iOS, Minimalist та класичним Telegram.
+- 🎨 **Мультимакетний інтерфейс**: миттєве перемикання між стилями Yougram Expressive, Discord, iOS, Minimalist та класичним Telegram.
 - ⚡ **WebAssembly (WASM) Rust & Python плагін-рушій** з холодним запуском < 1 мс.
-- ʚ♡ɞ **10 канонічних піксельних бейджів** з хмарною синхронізацією через Supabase.
+- ʚ♡ɞ **10 канонічних піксельних бейджів** спільноти Yumigram з хмарною синхронізацією через Supabase.
 
 ---
 
@@ -51,7 +51,7 @@ Amegram поєднує в собі:
 ---
 
 ### 2. 🚀 Мікро-патчі на льоту (Rapid Hotfixes)
-* **`AmegramPatchManager`:** система гарячого застосування мікро-патчів з репозиторію GitHub без потреби завантажувати й перевстановлювати весь APK.
+* **`YumigramPatchManager`:** система гарячого застосування мікро-патчів з репозиторію GitHub без потреби завантажувати й перевстановлювати весь APK.
 * **Керування в Налаштуваннях:** розділ «Оновлення та інформація» містить статус застосованих патчів та кнопку ручної перевірки з детальним звітом.
 
 ---
@@ -70,15 +70,15 @@ Amegram поєднує в собі:
   * `gemini-3.5-flash`: збалансований варіант для загальних задач.
   * `local-litert`: підтримка локального виконання нейромереж на пристрої через Google AI Edge SDK / Android AICore (Gemini Nano, Gemma 4 E2B/E4B, Qwen 2.5/3.5 Mobile).
 * **Аналіз заліза (Hardware Profiling):** застосунок аналізує обсяг оперативної пам'яті, процесорні ядра та архітектуру і надає персоналізовану рекомендацію моделі для найкращого балансу швидкості та якості.
-* **Генератор плагінів Amegram:** створення валідних плагінів для Python (`BasePlugin`), Java та Rust в один клік через AI.
+* **Генератор плагінів Yumigram:** створення валідних плагінів для Python (`BasePlugin`), Java та Rust в один клік через AI.
 
 ---
 
 ### 5. 📱 Екосистема TikTok MI
-* **Вбудований відеоплеєр (`AmegramTikTokPlayer`):** перегляд відео за посиланнями TikTok безпосередньо в Amegram без водяних знаків та реклами.
+* **Вбудований відеоплеєр (`YumigramTikTokPlayer`):** перегляд відео за посиланнями TikTok безпосередньо в Yumigram без водяних знаків та реклами.
 * **Цифрова присутність (Digital Presence):** відображення статусу перегляду TikTok у картці профілю з неоновим градієнтом `#00F2FE` (Cyan) / `#FE2C55` (Pink).
 * **1-Tap експорт:** збереження відео у «Збережені повідомлення», експорт звукових доріжок у плеєр та надсилання у Telegram Stories.
-* **Синхронізація тем та буфера ClipVault:** передача акцентів та скопійованих медіа між Amegram та TikTok MI.
+* **Синхронізація тем та буфера ClipVault:** передача акцентів та скопійованих медіа між Yumigram та TikTok MI.
 
 ---
 
@@ -93,6 +93,7 @@ Amegram поєднує в собі:
 ---
 
 ### 7. 🎨 Мультимакетний інтерфейс (Layout Switcher)
+* **Yougram Expressive:** фірмовий стиль з плаваючим доком, сегментованими картками та Material 3 Expressive анімаціями.
 * **Discord Layout:** бічні сервери та канали, знайома структура для геймерів та спільнот.
 * **iOS Cupertino:** витончена нижня панель та напівпрозорий розмитий заголовок.
 * **Minimalist Rail:** ультракомпактна бічна колонка для фокусування на повідомленнях.
@@ -135,7 +136,7 @@ Amegram поєднує в собі:
 
 ## Архітектура проєкту / Project Structure
 
-Amegram слідує суворій односпрямованій архітектурі:
+Yumigram слідує суворій односпрямованій архітектурі:
 ```
 app.miogram.ui        →    app.miogram.bridge    →    app.miogram.core
 (Activities, Views)        (System Keystore, DB)      (Pure JVM Crypto, Vault, WASM)
@@ -191,12 +192,12 @@ cd amegram
 
 ## Ліцензія / License
 
-Код Amegram поширюється під ліцензією **GNU General Public License v3.0 (GPL-3.0)**.  
+Код Yumigram поширюється під ліцензією **GNU General Public License v3.0 (GPL-3.0)**.  
 Дивіться файл [LICENSE](LICENSE) для отримання повної інформації.
 
 ---
 
 <div align="center">
-Made with ♡ by <b>@fuckramochka</b> and the Amegram Community.<br>
+Made with ♡ by <b>@fuckramochka</b> and the Yumigram Community.<br>
 <i>Stay soft. Stay safe. Stay you. ✧</i>
 </div>

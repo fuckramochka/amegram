@@ -506,7 +506,7 @@ public class AmeProfileEngine {
         if (customCards.isEmpty()) {
             sb.append("        <card\n");
             sb.append("            id=\"community_topic\"\n");
-            sb.append("            title=\"Вітка Аме Профілів ໒꒱\"\n");
+            sb.append("            title=\"Вітка Yumi Профілів ໒꒱\"\n");
             sb.append("            subtitle=\"Переглядайте та завантажуйте конфіги інших користувачів\"\n");
             sb.append("            icon=\"star\"\n");
             sb.append("            url=\"https://t.me/dkamegram/1499\"\n");

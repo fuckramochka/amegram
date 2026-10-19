@@ -29,16 +29,10 @@ import app.amegram.hot.api.HotServices;
 import app.amegram.hot.api.HotUi;
 
 /**
- * Модуль інтерфейсу Yumi: Yougram Expressive ↔ Classic на льоту,
- * оптимізовані липкі пружинні анімації у стилі PixelPlayer (Material 3 Expressive)
- * та динамічна адаптація фізики під активну тему Telegram (Світла / Темна / AMOLED / Monet).
- *
- * Оптимізації:
- * 1. Zero-Jank: списки та чати скроляться на 100% нативній швидкості без деформації та розмиття рядків.
- * 2. Безпечний StateListAnimator для інтерактивних кнопок (FAB, тулбар, чіпи, таби) — без підміни OnTouchListener.
- * 3. Тактильний мікровідгук HapticFeedbackConstants.KEYBOARD_TAP у момент натискання.
- * 4. Затухаючий гармонійний осцилятор з вивіреним овершутом 3.5%-5.0% без комичного вильоту за екран.
- * 5. Динамічна реакція на NotificationCenter Telegram (didSetNewTheme / didApplyNewTheme).
+ * Модуль інтерфейсу Yumi v1.0.5:
+ * Yougram Expressive ↔ Classic на льоту, преміальна пружинна тактильність (Material 3 Expressive),
+ * плавний тактильний відгук на картках чатів (DialogCell 0.985x), шовкове відкриття шторок (BottomSheet)
+ * та реактивні мікро-анімації кнопок (0.965x) без затримок і желе-ефекту.
  */
 public class UiModule implements HotModule, HotUi {
 
@@ -57,6 +51,7 @@ public class UiModule implements HotModule, HotUi {
     public static final String KEY_CHAT_PINNED_ACCENT = "OEAppearanceChatPinnedAccent";
     public static final String KEY_CHAT_SQUIRCLE_AVATARS = "OEAppearanceChatSquircleAvatars";
     public static final String KEY_CHAT_CARD_OUTLINE = "OEAppearanceChatCardOutline";
+    public static final String KEY_CHAT_CARDS_TOUCH = "OEAppearanceChatCardsTouch";
 
     public static final int CHAT_STYLE_CARDS = 0;
     public static final int CHAT_STYLE_ISLANDS = 1;
@@ -81,15 +76,17 @@ public class UiModule implements HotModule, HotUi {
     private volatile boolean isThemeMonet = false;
     private volatile boolean isThemeAmoled = false;
 
-    // Pre-computed physics parameters
-    private volatile float currentDamping = 8.0f;
-    private volatile float currentFreq = 8.0f;
-    private volatile long currentDuration = 310L;
-    private volatile float currentButtonPressScale = 0.93f;
+    // Pre-computed physics parameters (швидкі, зібрані, без желе-ефекту)
+    private volatile float currentDamping = 12.0f;
+    private volatile float currentFreq = 10.5f;
+    private volatile long currentDuration = 190L;
+    private volatile float currentButtonPressScale = 0.965f;
+    private volatile float currentCardPressScale = 0.985f;
 
     // Cached pre-allocated interpolators
     private volatile Interpolator cachedSpringInterpolator;
     private final Interpolator cachedCompressInterpolator = new StickyCompressInterpolator();
+    private final Interpolator cachedSheetInterpolator = new SmoothSettleInterpolator();
 
     public UiModule() {
         rebuildPhysicsParameters();
@@ -111,7 +108,7 @@ public class UiModule implements HotModule, HotUi {
         setupThemeListener();
         setupHooks();
         try {
-            host.log("ui attached with theme-adaptive PixelPlayer spring animations");
+            host.log("ui v1.0.5 attached with refined M3 Expressive physics & card haptics");
         } catch (Throwable ignore) {
         }
     }
@@ -248,6 +245,10 @@ public class UiModule implements HotModule, HotUi {
         return readBool(KEY_CHAT_CARD_OUTLINE, true);
     }
 
+    public boolean isChatCardsTouch() {
+        return readBool(KEY_CHAT_CARDS_TOUCH, true);
+    }
+
     public boolean isStickyEnabled() {
         return readBool(KEY_STICKY_ENABLED, true);
     }
@@ -338,50 +339,57 @@ public class UiModule implements HotModule, HotUi {
     private void rebuildPhysicsParameters() {
         if (isThemeAdaptive()) {
             if (isThemeMonet) {
-                // Pixel Material 3 Expressive (чистий стиль PixelPlayer: овершут ~4.7%, 310ms)
-                currentDamping = 8.0f;
-                currentFreq = 8.0f;
-                currentDuration = 310L;
-                currentButtonPressScale = 0.93f;
+                // Pixel Material 3 Expressive (чистий стиль Pixel: овершут ~2.2%, 190ms)
+                currentDamping = 12.0f;
+                currentFreq = 10.5f;
+                currentDuration = 190L;
+                currentButtonPressScale = 0.965f;
+                currentCardPressScale = 0.985f;
             } else if (isThemeAmoled) {
-                // AMOLED Pure Black: ультра-чіткий відгук (270ms, без змазування OLED)
-                currentDamping = 9.5f;
-                currentFreq = 8.5f;
-                currentDuration = 270L;
-                currentButtonPressScale = 0.95f;
+                // AMOLED Pure Black: надчіткий миттєвий відгук (170ms, нуль змазування OLED)
+                currentDamping = 13.5f;
+                currentFreq = 11.0f;
+                currentDuration = 170L;
+                currentButtonPressScale = 0.970f;
+                currentCardPressScale = 0.987f;
             } else if (isThemeDark) {
-                // Темна тема: зібраний, швидкий тактильний відгук (290ms)
-                currentDamping = 8.5f;
-                currentFreq = 8.2f;
-                currentDuration = 290L;
-                currentButtonPressScale = 0.94f;
+                // Темна тема: преміальний швидкий тактильний відгук (180ms)
+                currentDamping = 12.5f;
+                currentFreq = 10.8f;
+                currentDuration = 180L;
+                currentButtonPressScale = 0.965f;
+                currentCardPressScale = 0.985f;
             } else {
-                // Світла тема: плавний, органічний спрінг (330ms, овершут ~5.5%)
-                currentDamping = 7.5f;
-                currentFreq = 8.0f;
-                currentDuration = 330L;
-                currentButtonPressScale = 0.93f;
+                // Світла тема: м'який зібраний спрінг (200ms)
+                currentDamping = 11.5f;
+                currentFreq = 10.0f;
+                currentDuration = 200L;
+                currentButtonPressScale = 0.965f;
+                currentCardPressScale = 0.985f;
             }
         } else {
             switch (stickyStyle()) {
                 case STYLE_SUBTLE:
-                    currentDamping = 10.0f;
-                    currentFreq = 9.0f;
-                    currentDuration = 250L;
-                    currentButtonPressScale = 0.96f;
+                    currentDamping = 14.0f;
+                    currentFreq = 11.5f;
+                    currentDuration = 160L;
+                    currentButtonPressScale = 0.975f;
+                    currentCardPressScale = 0.988f;
                     break;
                 case STYLE_ULTRA_BOUNCY:
-                    currentDamping = 6.5f;
-                    currentFreq = 7.5f;
-                    currentDuration = 380L;
-                    currentButtonPressScale = 0.91f;
+                    currentDamping = 10.5f;
+                    currentFreq = 9.5f;
+                    currentDuration = 230L;
+                    currentButtonPressScale = 0.950f;
+                    currentCardPressScale = 0.980f;
                     break;
                 case STYLE_EXPRESSIVE:
                 default:
-                    currentDamping = 8.0f;
-                    currentFreq = 8.0f;
-                    currentDuration = 310L;
-                    currentButtonPressScale = 0.93f;
+                    currentDamping = 12.0f;
+                    currentFreq = 10.5f;
+                    currentDuration = 190L;
+                    currentButtonPressScale = 0.965f;
+                    currentCardPressScale = 0.985f;
                     break;
             }
         }
@@ -396,17 +404,16 @@ public class UiModule implements HotModule, HotUi {
     }
 
     private String getAdaptiveProfileDescription() {
-        if (isThemeMonet) return "PixelPlayer M3 Expressive (динамічні кольори Monet, 310ms)";
-        if (isThemeAmoled) return "Ультра-чіткий відгук (270ms, без OLED ghosting)";
-        if (isThemeDark) return "Преміальний швидкий відгук (290ms, темна фізика)";
-        return "Органічний текучий спрінг (330ms, тактильний овершут 1.05x)";
+        if (isThemeMonet) return "Pixel M3 Expressive (динамічні кольори Monet, 190ms)";
+        if (isThemeAmoled) return "Ультра-чіткий відгук (170ms, без OLED ghosting)";
+        if (isThemeDark) return "Преміальний швидкий відгук (180ms, темна фізика)";
+        return "Органічний текучий спрінг (200ms, тактильний мікро-овершут)";
     }
 
     // ==================== Optimized Spring Physics ====================
 
     /**
-     * Фізика затухаючого гармонійного осцилятора:
-     * progress(t) = 1 - e^(-damping * t) * (cos(freq * t) + (damping / (2 * freq)) * sin(freq * t))
+     * Фізика затухаючого гармонійного осцилятора (збалансована, без желе-ефекту).
      */
     public static class DampedSpringInterpolator implements Interpolator {
         private final float damping;
@@ -435,38 +442,45 @@ public class UiModule implements HotModule, HotUi {
         }
     }
 
+    /** Плавне доведення для шторок (Quartic Ease-Out — швидкий старт і шовкова зупинка без відскоку). */
+    public static class SmoothSettleInterpolator implements Interpolator {
+        @Override
+        public float getInterpolation(float t) {
+            if (t <= 0f) return 0f;
+            if (t >= 1f) return 1f;
+            float inv = 1f - t;
+            return 1f - inv * inv * inv * inv;
+        }
+    }
+
     /**
      * Перевірка: чи є елемент інтерактивною кнопкою / іконкою / чіпом.
-     * Списки (чати, повідомлення, налаштування) та великі контейнери СУВОРО ігноруються.
+     * Списки (чати, повідомлення, налаштування) та великі контейнери обробляються окремими хуками.
      */
     private static boolean isInteractiveButton(View v) {
         if (v == null) return false;
         try {
-            // Перевірка батьківських контейнерів: ніколи не чіпати елементи списків
             Object parent = v.getParent();
             while (parent instanceof View) {
                 String pName = parent.getClass().getName();
-                if (pName.contains("Recycler") || pName.contains("ListView") || pName.contains("Cell") || pName.contains("Row")) {
+                if (pName.contains("Recycler") || pName.contains("ListView") || pName.contains("Row")) {
                     return false;
                 }
                 parent = ((View) parent).getParent();
             }
 
             String name = v.getClass().getName();
-            // Суворе виключення клітинок, рядків та повнорозмірних контейнерів
             if (name.contains("Cell") || name.contains("Row") || name.contains("Message")
                     || name.contains("Recycler") || name.contains("Activity")
                     || name.contains("Content") || name.contains("Container") || name.contains("Pager")) {
                 return false;
             }
 
-            // Виключення контейнерів на всю ширину екрану
             ViewGroup.LayoutParams lp = v.getLayoutParams();
             if (lp != null && lp.width == ViewGroup.LayoutParams.MATCH_PARENT) {
                 return false;
             }
 
-            // Відомі класи кнопок та інтерактивних елементів
             if (name.contains("Button") || name.contains("Fab") || name.contains("FAB")
                     || name.contains("Chip") || name.contains("MenuItem")
                     || name.contains("PlayPause") || name.contains("GlassTabView")
@@ -474,7 +488,6 @@ public class UiModule implements HotModule, HotUi {
                 return true;
             }
 
-            // Звичайні кнопки та клікабельні іконки
             if (v instanceof android.widget.Button || v instanceof android.widget.ImageButton || v instanceof android.widget.ImageView) {
                 return true;
             }
@@ -484,8 +497,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     /**
-     * Підключення нативного StateListAnimator до кнопки з пружинною фізикою та тактильністю.
-     * Не підміняє OnTouchListener, не збиває скрол і працює на апаратному прискоренні.
+     * Підключення нативного StateListAnimator до кнопки з точною фізикою та вібровідгуком.
      */
     private void applySpringStateListAnimator(final View v) {
         if (v == null || !isStickyEnabled()) return;
@@ -497,12 +509,12 @@ public class UiModule implements HotModule, HotUi {
         try {
             StateListAnimator sla = new StateListAnimator();
 
-            // 1. Стан натискання (state_pressed): швидке стискання 80ms + чіткий тактильний вібровідгук
+            // 1. Стан натискання (state_pressed): швидке стискання 60ms + тактильний клік
             AnimatorSet pressedSet = new AnimatorSet();
             ObjectAnimator scaleXDown = ObjectAnimator.ofFloat(v, View.SCALE_X, currentButtonPressScale);
             ObjectAnimator scaleYDown = ObjectAnimator.ofFloat(v, View.SCALE_Y, currentButtonPressScale);
             pressedSet.playTogether(scaleXDown, scaleYDown);
-            pressedSet.setDuration(80L);
+            pressedSet.setDuration(60L);
             pressedSet.setInterpolator(cachedCompressInterpolator);
             pressedSet.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -514,7 +526,7 @@ public class UiModule implements HotModule, HotUi {
                 }
             });
 
-            // 2. Стан відпускання: пружинне повернення з природним овершутом
+            // 2. Стан відпускання: природне пружинне повернення (190ms)
             AnimatorSet releaseSet = new AnimatorSet();
             ObjectAnimator scaleXUp = ObjectAnimator.ofFloat(v, View.SCALE_X, 1f);
             ObjectAnimator scaleYUp = ObjectAnimator.ofFloat(v, View.SCALE_Y, 1f);
@@ -534,13 +546,100 @@ public class UiModule implements HotModule, HotUi {
         }
     }
 
+    /**
+     * Тактильний відгук для карток чатів (DialogCell): м'яке вдавлювання на 0.985x при тапі.
+     */
+    private void handleCardTouch(final View view, MotionEvent ev) {
+        if (view == null) return;
+        int action = ev.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            view.animate().cancel();
+            view.animate()
+                    .scaleX(currentCardPressScale)
+                    .scaleY(currentCardPressScale)
+                    .setDuration(60L)
+                    .setInterpolator(cachedCompressInterpolator)
+                    .start();
+            try {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            } catch (Throwable ignore) {
+            }
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            view.animate().cancel();
+            view.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(currentDuration)
+                    .setInterpolator(cachedSpringInterpolator != null ? cachedSpringInterpolator : new DampedSpringInterpolator(currentDamping, currentFreq))
+                    .start();
+        }
+    }
+
+    /**
+     * Прямий відгук для іконок тулбара (ActionBarMenuItem): гарантована анімація вже на першому тапі.
+     */
+    private void handleMenuItemTouch(final View view, MotionEvent ev) {
+        if (view == null) return;
+        int action = ev.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            view.animate().cancel();
+            view.animate()
+                    .scaleX(currentButtonPressScale)
+                    .scaleY(currentButtonPressScale)
+                    .setDuration(55L)
+                    .setInterpolator(cachedCompressInterpolator)
+                    .start();
+            try {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            } catch (Throwable ignore) {
+            }
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            view.animate().cancel();
+            view.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(currentDuration)
+                    .setInterpolator(cachedSpringInterpolator != null ? cachedSpringInterpolator : new DampedSpringInterpolator(currentDamping, currentFreq))
+                    .start();
+        }
+    }
+
+    /**
+     * Тактильний відгук для нижніх табів (GlassTabView).
+     */
+    private void handleTabTouch(final View view, MotionEvent ev) {
+        if (view == null) return;
+        int action = ev.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            view.animate().cancel();
+            view.animate()
+                    .scaleX(0.95f)
+                    .scaleY(0.95f)
+                    .setDuration(55L)
+                    .setInterpolator(cachedCompressInterpolator)
+                    .start();
+            try {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            } catch (Throwable ignore) {
+            }
+        } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            view.animate().cancel();
+            view.animate()
+                    .scaleX(1.0f)
+                    .scaleY(1.0f)
+                    .setDuration(currentDuration)
+                    .setInterpolator(cachedSpringInterpolator != null ? cachedSpringInterpolator : new DampedSpringInterpolator(currentDamping, currentFreq))
+                    .start();
+        }
+    }
+
     // ==================== Dynamic ART Hooks ====================
 
     private void setupHooks() {
         if (host == null) return;
         ClassLoader cl = host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
 
-        // 1. View.setOnClickListener: пружинний відгук для кнопок, FAB, чіпів та іконок
+        // 1. View.setOnClickListener: пружинний відгук для кнопок, FAB та іконок
         try {
             Method m = View.class.getDeclaredMethod("setOnClickListener", View.OnClickListener.class);
             HotHook.Unhook u = host.hook(m, new HotHook.Callback() {
@@ -564,7 +663,28 @@ public class UiModule implements HotModule, HotUi {
             host.log("ui: hook View.setOnClickListener failed: " + t.getMessage());
         }
 
-        // 2. BottomSheet: плавний пружинний інтерполятор появи шторок
+        // 2. DialogCell.onTouchEvent: тактильне вдавлювання карток чатів (0.985x)
+        try {
+            Class<?> cellClass = Class.forName("org.telegram.ui.Cells.DialogCell", true, cl);
+            Method mTouch = cellClass.getDeclaredMethod("onTouchEvent", MotionEvent.class);
+            HotHook.Unhook u = host.hook(mTouch, new HotHook.Callback() {
+                @Override
+                public void before(HotHook.Call call) throws Throwable {
+                    if (!isStickyEnabled() || !isChatCardsTouch() || chatListStyle() == CHAT_STYLE_FLAT) return;
+                    Object target = call.getThis();
+                    Object[] args = call.getArgs();
+                    if (target instanceof View && args != null && args.length > 0 && args[0] instanceof MotionEvent) {
+                        handleCardTouch((View) target, (MotionEvent) args[0]);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked DialogCell.onTouchEvent for card press physics");
+        } catch (Throwable t) {
+            host.log("ui: hook DialogCell.onTouchEvent failed: " + t.getMessage());
+        }
+
+        // 3. BottomSheet: шовкове плавне відкриття шторок без батутного дрижання
         try {
             final Class<?> bsClass = Class.forName("org.telegram.ui.ActionBar.BottomSheet", true, cl);
             List<HotHook.Unhook> sheetHooks = host.hookAll(bsClass, "show", new HotHook.Callback() {
@@ -575,21 +695,19 @@ public class UiModule implements HotModule, HotUi {
                     if (sheet != null) {
                         try {
                             Field f = bsClass.getField("openInterpolator");
-                            Interpolator interp = cachedSpringInterpolator;
-                            if (interp == null) interp = new DampedSpringInterpolator(currentDamping, currentFreq);
-                            f.set(sheet, interp);
+                            f.set(sheet, cachedSheetInterpolator);
                         } catch (Throwable ignore) {
                         }
                     }
                 }
             });
             if (sheetHooks != null) activeHooks.addAll(sheetHooks);
-            host.log("ui: hooked BottomSheet.show for spring sheet entrance");
+            host.log("ui: hooked BottomSheet.show for smooth settle entrance");
         } catch (Throwable t) {
             host.log("ui: hook BottomSheet failed: " + t.getMessage());
         }
 
-        // 3. ActionBarMenuItem: пружинний відгук для іконок верхнього тулбара (пошук, назад, три крапки)
+        // 4. ActionBarMenuItem.onTouchEvent: реактивний мікровідгук тулбара з першого тапу
         try {
             Class<?> itemClass = Class.forName("org.telegram.ui.ActionBar.ActionBarMenuItem", true, cl);
             Method m = itemClass.getDeclaredMethod("onTouchEvent", MotionEvent.class);
@@ -598,8 +716,9 @@ public class UiModule implements HotModule, HotUi {
                 public void before(HotHook.Call call) throws Throwable {
                     if (!isStickyEnabled()) return;
                     Object target = call.getThis();
-                    if (target instanceof View) {
-                        applySpringStateListAnimator((View) target);
+                    Object[] args = call.getArgs();
+                    if (target instanceof View && args != null && args.length > 0 && args[0] instanceof MotionEvent) {
+                        handleMenuItemTouch((View) target, (MotionEvent) args[0]);
                     }
                 }
             });
@@ -607,6 +726,27 @@ public class UiModule implements HotModule, HotUi {
             host.log("ui: hooked ActionBarMenuItem.onTouchEvent");
         } catch (Throwable t) {
             host.log("ui: hook ActionBarMenuItem failed: " + t.getMessage());
+        }
+
+        // 5. GlassTabView.onTouchEvent: пружинний відгук для нижніх табів
+        try {
+            Class<?> tabClass = Class.forName("org.telegram.ui.Components.glass.GlassTabView", true, cl);
+            Method m = tabClass.getDeclaredMethod("onTouchEvent", MotionEvent.class);
+            HotHook.Unhook u = host.hook(m, new HotHook.Callback() {
+                @Override
+                public void before(HotHook.Call call) throws Throwable {
+                    if (!isStickyEnabled()) return;
+                    Object target = call.getThis();
+                    Object[] args = call.getArgs();
+                    if (target instanceof View && args != null && args.length > 0 && args[0] instanceof MotionEvent) {
+                        handleTabTouch((View) target, (MotionEvent) args[0]);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked GlassTabView.onTouchEvent");
+        } catch (Throwable t) {
+            host.log("ui: hook GlassTabView failed: " + t.getMessage());
         }
     }
 
@@ -633,6 +773,10 @@ public class UiModule implements HotModule, HotUi {
         rows.add(HotRow.button("cycle_chat_style",
                 "Стиль списку: " + cStyleName,
                 "Натисніть для перемикання (Картки → Острівці → Плаский)"));
+        rows.add(HotRow.switchRow(KEY_CHAT_CARDS_TOUCH,
+                "Тактильність карток чатів",
+                "М'яке пружинне притискання (0.985x) при натисканні на діалог",
+                isChatCardsTouch()));
         rows.add(HotRow.switchRow(KEY_CHAT_PINNED_ACCENT,
                 "Тональні закріплені чати",
                 "М'яке підсвічування закріплених чатів акцентним відтінком теми",
@@ -646,7 +790,7 @@ public class UiModule implements HotModule, HotUi {
                 "Тонка адаптивна обводка карток для ефекту глибини",
                 isChatCardOutline()));
 
-        rows.add(HotRow.header("Пружинна тактильність (PixelPlayer)"));
+        rows.add(HotRow.header("Пружинна тактильність (Pixel M3)"));
         rows.add(HotRow.switchRow(KEY_STICKY_ENABLED,
                 "Липкі анімації та вібровідгук",
                 "Пружинна фізика кнопок, шторок і меню з адаптацією під тему",
@@ -713,6 +857,7 @@ public class UiModule implements HotModule, HotUi {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
             writeInt(KEY_CHAT_STYLE, CHAT_STYLE_CARDS);
+            writeBool(KEY_CHAT_CARDS_TOUCH, true);
             writeBool(KEY_CHAT_PINNED_ACCENT, true);
             writeBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
             writeBool(KEY_CHAT_CARD_OUTLINE, true);

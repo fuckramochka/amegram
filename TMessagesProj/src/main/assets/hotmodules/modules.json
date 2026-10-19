@@ -278,18 +278,30 @@
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
+          "version": "1.0.5",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.5.hmod",
+          "sha256": "7da6100ec634974a7fce5780a33f57044cdeb9e7c85f34c99870935af38e892b",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.5: преміальна пружинна тактильність (Material 3 Expressive), плавний відгук на картках чатів (DialogCell 0.985x), шовкове відкриття шторок BottomSheet без батутного дрижання та реактивні мікро-анімації кнопок і табів (0.965x) без затримок.",
+          "permissions": [
+            "hook_ui"
+          ],
+          "sizeBytes": 14337
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.4",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.4.hmod",
           "sha256": "d7311b0cfed9626ae6238123a1395984e6921936cb2f14fe18fbed9e8851f0ae",
+          "sizeBytes": 13198,
           "minApp": 7112,
           "changelog": "Версія 1.0.4: власне відображення списку чатів Yumi — плаваючі виразні картки (M3 Expressive), сегментовані острівці або плаский стиль, тональне підсвічування закріплених чатів кольором теми, squircle-аватарки та мікро-контур карток.",
           "permissions": [
             "hook_ui"
-          ],
-          "sizeBytes": 13198
-        }
-      },
-      "history": [
+          ]
+        },
         {
           "branch": "stable",
           "version": "1.0.3",

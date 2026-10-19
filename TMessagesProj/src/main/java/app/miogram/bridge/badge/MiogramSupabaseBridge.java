@@ -130,11 +130,11 @@ public class MiogramSupabaseBridge {
      */
     private static final String GRANT_SECRET = "MIO-GRANT-mxxFB90ocCzVW9Fh8-AKiko5mANKNO5T";
 
-    public static final String[] BADGES_TABLES = new String[]{"amegram_badges", "miogram_badges"};
-    public static final String[] USERS_TABLES = new String[]{"amegram_users", "miogram_users"};
-    public static final String[] RPC_GRANT = new String[]{"amegram_grant_badge", "miogram_grant_badge"};
-    public static final String[] RPC_REVOKE = new String[]{"amegram_revoke_badge", "miogram_revoke_badge"};
-    public static final String[] RPC_STATS = new String[]{"amegram_community_stats", "miogram_community_stats"};
+    public static final String[] BADGES_TABLES = new String[]{"yumigram_badges", "amegram_badges", "miogram_badges"};
+    public static final String[] USERS_TABLES = new String[]{"yumigram_users", "amegram_users", "miogram_users"};
+    public static final String[] RPC_GRANT = new String[]{"yumigram_grant_badge", "amegram_grant_badge", "miogram_grant_badge"};
+    public static final String[] RPC_REVOKE = new String[]{"yumigram_revoke_badge", "amegram_revoke_badge", "miogram_revoke_badge"};
+    public static final String[] RPC_STATS = new String[]{"yumigram_community_stats", "amegram_community_stats", "miogram_community_stats"};
 
     private static final LongSparseArray<BadgeRecord> badgeCache = new LongSparseArray<>();
     private static boolean initialized = false;

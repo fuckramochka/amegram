@@ -5,9 +5,9 @@
 ---
 
 ## 1. Project Overview & Identity
-- **Repository**: `fuckramochka/miogram` (branch: `main`, local folder: `exteraless`)
-- **App Name**: Miogram (Міограм)
-- **Base**: Hardened Telegram Android v10.x/v11.x fork with AyuGram features + custom Miogram Secure Agentic Workspace.
+- **Repository**: `fuckramochka/amegram` (branch: `main`)
+- **App Name**: Yumigram (Юміграм) (legacy codebases: Amegram / Miogram)
+- **Base**: Hardened Telegram Android v10.x/v11.x fork with AyuGram features + custom Yumigram Secure Workspace.
 - **Tech Stack**:
   - Java 21 & Kotlin 2.x
   - AGP 9.3.1 + Gradle 9.7.1

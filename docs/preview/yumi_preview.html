@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="uk" data-theme="light" data-power="off">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yumi · Material 3 Expressive — design preview</title>
+<style>
+/* ------------------------------------------------------------------
+   Tokens mirror app.amegram.theme.YumiMd3. The preview never invents
+   colours outside these roles; rgba helpers are tonal overlays.
+   ------------------------------------------------------------------ */
+:root {
+  --yumi-surface: #FBF7FB;
+  --yumi-surface-container-low: #FFFFFF;
+  --yumi-surface-container: #FFFFFF;
+  --yumi-surface-container-high: #F5EDF5;
+  --yumi-surface-container-highest: #EFE5EF;
+  --yumi-surface-dim: #F2ECF2;
+  --yumi-surface-bright: #FFFBFF;
+  --yumi-inverse-surface: #332C37;
+  --yumi-on-inverse-surface: #F9EFF8;
+  --yumi-on-surface: #201923;
+  --yumi-on-surface-variant: #685C6A;
+  --yumi-outline: #E6DAE6;
+  --yumi-outline-strong: #8C7E8D;
+  --yumi-primary: #C42F52;
+  --yumi-on-primary: #FFFFFF;
+  --yumi-primary-container: #FFDDE6;
+  --yumi-on-primary-container: #3D0013;
+  --yumi-secondary: #7C526F;
+  --yumi-on-secondary: #FFFFFF;
+  --yumi-secondary-container: #F3DCEB;
+  --yumi-on-secondary-container: #31102A;
+  --yumi-tertiary: #00677A;
+  --yumi-tertiary-container: #C4F1FA;
+  --yumi-on-tertiary-container: #00323D;
+  --yumi-error: #B3261E;
+  --yumi-error-container: #FFDAD6;
+  --yumi-on-error-container: #410002;
+  --yumi-nav-surface: #F6EEF6;
+  --yumi-nav-border: #E7DBE7;
+  --yumi-nav-indicator: #EED2DE;
+  --yumi-nav-active: #C42F52;
+  --yumi-nav-inactive: #685C6A;
+  --yumi-chat-wallpaper: #F7F1F6;
+  --yumi-chat-in-bubble: #FFFFFF;
+  --yumi-chat-out-bubble: #F2D9E4;
+  --yumi-chat-out-bubble-end: #E2D6F4;
+  --yumi-chat-bubble-text: #201923;
+  --yumi-chat-bubble-meta: #766A76;
+  --yumi-chat-field: #F7F0F6;
+  --yumi-chat-field-border: #E4D6E2;
+  --yumi-composer-surface: #FFFFFF;
+  --yumi-composer-icon: #685C6A;
+  --yumi-online: #15A35A;
+  --yumi-gradient-start: #8B5CF6;
+  --yumi-gradient-end: #E5486B;
+  --yumi-hero-start: #3A1E5C;
+  --yumi-hero-mid: #6B1F4B;
+  --yumi-hero-end: #7D1F3C;
+  --yumi-action-start: #7C3AED;
+  --yumi-action-end: #D92D5C;
+  --yumi-on-action: #FFFFFF;
+  --yumi-violet: #6544C4;
+  --yumi-cyan: #0E7490;
+  --yumi-amber: #A85A00;
+  --yumi-green: #147A45;
+  --yumi-blue: #1A5FBF;
+  --yumi-orange: #A93E0B;
+  --yumi-teal: #0D7267;
+  --yumi-scrim: rgba(32, 25, 35, .42);
+  --yumi-shadow: 0 2px 4px rgba(53, 32, 47, .05), 0 18px 44px rgba(53, 32, 47, .10);
+  --yumi-shadow-strong: 0 6px 18px rgba(53, 32, 47, .14), 0 30px 70px rgba(53, 32, 47, .18);
+  --yumi-content-max: 620px;
+  --yumi-radius-xs: 9px;
+  --yumi-radius-s: 13px;
+  --yumi-radius-m: 18px;
+  --yumi-radius-l: 22px;
+  --yumi-radius-xl: 26px;
+  --yumi-radius-xxl: 28px;
+  --yumi-radius-full: 999px;
+  --yumi-motion: 280ms;
+  --yumi-ease: cubic-bezier(.2, 0, 0, 1);
+  --yumi-spring: cubic-bezier(.17, .84, .35, 1.12);
+  --yumi-aurora-opacity: 1;
+  --yumi-grain-opacity: .16;
+  --yumi-aurora-a: rgba(139, 92, 246, .18);
+  --yumi-aurora-b: rgba(229, 72, 107, .14);
+  --yumi-aurora-c: rgba(14, 116, 144, .10);
+  --yumi-canvas: #F6F0F5;
+  --yumi-font: "Roboto", "Noto Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --yumi-font-rounded: "Roboto", "Noto Sans", "Segoe UI", system-ui, sans-serif;
+}
+html[data-theme="dark"] {
+  --yumi-surface: #0D0B10;
+  --yumi-surface-container-low: #141118;
+  --yumi-surface-container: #18141D;
+  --yumi-surface-container-high: #211B27;
+  --yumi-surface-container-highest: #2A2231;
+  --yumi-surface-dim: #08070B;
+  --yumi-surface-bright: #2E2636;
+  --yumi-inverse-surface: #F5EFF6;
+  --yumi-on-inverse-surface: #201923;
+  --yumi-on-surface: #F5EFF6;
+  --yumi-on-surface-variant: #BBB0C4;
+  --yumi-outline: #3B3345;
+  --yumi-outline-strong: #8E8197;
+  --yumi-primary: #FF9DB2;
+  --yumi-on-primary: #4A0A1B;
+  --yumi-primary-container: #4D1E2C;
+  --yumi-on-primary-container: #FFD9E2;
+  --yumi-secondary: #E0BFD4;
+  --yumi-on-secondary: #3F1D34;
+  --yumi-secondary-container: #3C2538;
+  --yumi-on-secondary-container: #F3DCEB;
+  --yumi-tertiary: #9FDCEE;
+  --yumi-tertiary-container: #12414E;
+  --yumi-on-tertiary-container: #C4F1FA;
+  --yumi-error: #FFB4AB;
+  --yumi-error-container: #5C1A16;
+  --yumi-on-error-container: #FFDAD6;
+  --yumi-nav-surface: #201A26;
+  --yumi-nav-border: #332C3B;
+  --yumi-nav-indicator: #4B293B;
+  --yumi-nav-active: #FF9DB2;
+  --yumi-nav-inactive: #BBB0C4;
+  --yumi-chat-wallpaper: #100D14;
+  --yumi-chat-in-bubble: #211B27;
+  --yumi-chat-out-bubble: #642A3F;
+  --yumi-chat-out-bubble-end: #5C2E66;
+  --yumi-chat-bubble-text: #F5EFF6;
+  --yumi-chat-bubble-meta: #C6B8C8;
+  --yumi-chat-field: #19141E;
+  --yumi-chat-field-border: #3A3241;
+  --yumi-composer-surface: #141118;
+  --yumi-composer-icon: #BBB0C4;
+  --yumi-online: #6FE29B;
+  --yumi-gradient-start: #C8B8FF;
+  --yumi-gradient-end: #FF9DB2;
+  --yumi-hero-start: #1D102F;
+  --yumi-hero-mid: #3B122B;
+  --yumi-hero-end: #4A1024;
+  --yumi-action-start: #7C3AED;
+  --yumi-action-end: #D92D5C;
+  --yumi-on-action: #FFFFFF;
+  --yumi-violet: #C8B8FF;
+  --yumi-cyan: #7FE8F5;
+  --yumi-amber: #FFD66B;
+  --yumi-green: #9BE8B5;
+  --yumi-blue: #9CC7FF;
+  --yumi-orange: #FFBE8C;
+  --yumi-teal: #87E4D5;
+  --yumi-scrim: rgba(0, 0, 0, .62);
+  --yumi-shadow: 0 2px 6px rgba(0, 0, 0, .36), 0 22px 54px rgba(0, 0, 0, .46);
+  --yumi-shadow-strong: 0 8px 26px rgba(0, 0, 0, .48), 0 38px 90px rgba(0, 0, 0, .58);
+  --yumi-aurora-a: rgba(200, 184, 255, .13);
+  --yumi-aurora-b: rgba(255, 157, 178, .11);
+  --yumi-aurora-c: rgba(127, 232, 245, .07);
+  --yumi-canvas: #09070C;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  color: var(--yumi-on-surface);
+  background: var(--yumi-canvas);
+  font-family: var(--yumi-font);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+button, input { font: inherit; }
+button { color: inherit; }
+a { color: inherit; }
+.icon { width: 22px; height: 22px; display: block; flex: 0 0 auto; }
+.icon.sm { width: 18px; height: 18px; }
+.icon.xs { width: 15px; height: 15px; }
+.aurora, .grain { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+.aurora {
+  opacity: var(--yumi-aurora-opacity);
+  background:
+    radial-gradient(46% 34% at 12% 6%, var(--yumi-aurora-a), transparent 72%),
+    radial-gradient(42% 30% at 86% 12%, var(--yumi-aurora-b), transparent 74%),
+    radial-gradient(50% 38% at 64% 94%, var(--yumi-aurora-c), transparent 72%);
+  animation: aurora-drift 22s var(--yumi-ease) infinite alternate;
+}
+.grain {
+  opacity: var(--yumi-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+@keyframes aurora-drift { to { transform: translate3d(0, -18px, 0) scale(1.04); } }
+main, .site-header, .site-footer { position: relative; z-index: 1; }
+.site-header {
+  max-width: 1240px; margin: 0 auto; padding: 26px 28px 10px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 12px; margin-right: auto; }
+.brand-mark {
+  width: 44px; height: 44px; border-radius: 15px;
+  display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 20px;
+  background: linear-gradient(135deg, var(--yumi-action-start), var(--yumi-action-end));
+  box-shadow: 0 8px 22px rgba(217, 45, 92, .28);
+}
+.brand-name { font-size: 18px; font-weight: 750; letter-spacing: -.02em; }
+.brand-sub { font-size: 12px; color: var(--yumi-on-surface-variant); margin-top: 2px; }
+.header-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.pill-button {
+  border: 1px solid var(--yumi-outline);
+  background: color-mix(in srgb, var(--yumi-surface-container-low) 88%, transparent);
+  border-radius: var(--yumi-radius-full);
+  min-height: 44px; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; font-weight: 650; cursor: pointer;
+  transition: background var(--yumi-motion) var(--yumi-ease), border-color var(--yumi-motion) var(--yumi-ease), transform 120ms var(--yumi-ease);
+  backdrop-filter: blur(12px);
+}
+.pill-button:hover { background: var(--yumi-surface-container-high); }
+.pill-button:active { transform: scale(.98); }
+.pill-button[aria-pressed="true"] { background: var(--yumi-primary-container); border-color: color-mix(in srgb, var(--yumi-primary) 34%, transparent); color: var(--yumi-on-primary-container); }
+.pill-button .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--yumi-primary); box-shadow: 0 0 0 4px color-mix(in srgb, var(--yumi-primary) 14%, transparent); }
+.hero-copy { max-width: 1240px; margin: 0 auto; padding: 30px 28px 24px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .14em; font-size: 11px; font-weight: 750; color: var(--yumi-primary); }
+h1 { margin: 10px 0 12px; font-size: clamp(34px, 5vw, 64px); line-height: .98; letter-spacing: -.045em; max-width: 860px; }
+.hero-copy p { max-width: 760px; margin: 0; color: var(--yumi-on-surface-variant); font-size: 16px; line-height: 1.55; }
+.hero-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 18px; }
+.meta-chip { border: 1px solid var(--yumi-outline); border-radius: var(--yumi-radius-full); padding: 7px 12px; font-size: 11.5px; color: var(--yumi-on-surface-variant); background: var(--yumi-surface-container-low); }
+.screen-grid { max-width: 1240px; margin: 0 auto; padding: 8px 28px 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 38px 28px; align-items: start; }
+.screen-card { min-width: 0; }
+.screen-label { display: flex; align-items: baseline; gap: 10px; margin: 0 2px 12px; }
+.screen-index { font-size: 11px; font-weight: 800; letter-spacing: .08em; color: var(--yumi-primary); }
+.screen-title { font-size: 15px; font-weight: 750; letter-spacing: -.01em; }
+.screen-note { font-size: 12px; color: var(--yumi-on-surface-variant); margin-left: auto; text-align: right; }
+.phone {
+  width: 362px; max-width: 100%; margin: 0 auto; padding: 7px; border-radius: 46px;
+  background: linear-gradient(160deg, #3C3440, #161219 42%, #302834);
+  box-shadow: var(--yumi-shadow-strong), inset 0 0 0 1px rgba(255,255,255,.10);
+}
+html[data-theme="dark"] .phone { background: linear-gradient(160deg, #4B4252, #09070B 44%, #3A3042); }
+.phone-screen {
+  position: relative; width: 100%; height: 764px; overflow: hidden;
+  border-radius: 39px; background: var(--yumi-surface); isolation: isolate;
+  display: flex; flex-direction: column;
+}
+.phone-screen::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(58% 35% at 88% 2%, var(--yumi-aurora-b), transparent 76%),
+    radial-gradient(52% 36% at 4% 42%, var(--yumi-aurora-a), transparent 78%),
+    var(--yumi-surface);
+  opacity: var(--yumi-aurora-opacity);
+}
+.phone-screen::after {
+  content: ""; position: absolute; inset: 0; z-index: 20; pointer-events: none;
+  opacity: var(--yumi-grain-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.30'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+.dynamic-island {
+  position: absolute; top: 9px; left: 50%; transform: translateX(-50%);
+  width: 92px; height: 22px; border-radius: 20px; background: #09070B; z-index: 30;
+}
+.statusbar {
+  height: 34px; flex: 0 0 34px; display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 20px 0; font-size: 11px; font-weight: 750; letter-spacing: .02em; color: var(--yumi-on-surface);
+  position: relative; z-index: 25;
+}
+.status-icons { display: flex; align-items: center; gap: 5px; }
+.signal { display: flex; align-items: flex-end; gap: 1.5px; height: 9px; }
+.signal i { width: 2.5px; background: currentColor; border-radius: 1px; }
+.signal i:nth-child(1) { height: 4px; } .signal i:nth-child(2) { height: 6px; } .signal i:nth-child(3) { height: 8px; } .signal i:nth-child(4) { height: 9px; }
+.battery { width: 18px; height: 9px; border: 1.5px solid currentColor; border-radius: 2.5px; position: relative; padding: 1px; }
+.battery::before { content: ""; display: block; width: 72%; height: 100%; background: currentColor; border-radius: 1px; }
+.battery::after { content: ""; position: absolute; right: -3px; top: 2px; width: 2px; height: 4px; background: currentColor; border-radius: 0 1px 1px 0; }
+.content-scroll { flex: 1; min-height: 0; overflow: hidden; position: relative; }
+.appbar {
+  min-height: 60px; flex: 0 0 60px; display: flex; align-items: center; gap: 8px;
+  padding: 0 10px 0 8px; background: color-mix(in srgb, var(--yumi-surface) 92%, transparent);
+  position: relative; z-index: 12;
+}
+.appbar h2 { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: -.025em; }
+.appbar .grow { flex: 1; }
+.icon-button {
+  width: 44px; height: 44px; border: 0; background: transparent; border-radius: 50%;
+  display: grid; place-items: center; cursor: pointer; color: var(--yumi-on-surface);
+  transition: background 140ms var(--yumi-ease), transform 110ms var(--yumi-ease);
+}
+.icon-button:hover { background: var(--yumi-surface-container-high); }
+.icon-button:active { transform: scale(.93); }
+.avatar {
+  border-radius: 50%; display: grid; place-items: center; color: #fff; font-weight: 750;
+  flex: 0 0 auto; overflow: hidden; background: linear-gradient(135deg, var(--yumi-violet), var(--yumi-primary));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.18);
+}
+.avatar.a1 { background: linear-gradient(135deg, #7C3AED, #E5486B); }
+.avatar.a2 { background: linear-gradient(135deg, #0E7490, #15A35A); }
+.avatar.a3 { background: linear-gradient(135deg, #A85A00, #E5486B); }
+.avatar.a4 { background: linear-gradient(135deg, #1A5FBF, #6544C4); }
+.avatar.a5 { background: linear-gradient(135deg, #7D1F3C, #C42F52); }
+.avatar.a6 { background: linear-gradient(135deg, #0D7267, #0E7490); }
+.avatar.sm { width: 38px; height: 38px; font-size: 13px; }
+.avatar.md { width: 48px; height: 48px; font-size: 16px; }
+.avatar.lg { width: 84px; height: 84px; font-size: 27px; }
+.online-dot { position: absolute; right: 1px; bottom: 1px; width: 11px; height: 11px; border-radius: 50%; background: var(--yumi-online); border: 2.5px solid var(--yumi-surface); }
+.avatar-wrap { position: relative; flex: 0 0 auto; }
+.bottom-nav {
+  flex: 0 0 78px; display: flex; align-items: center; justify-content: space-around; gap: 2px;
+  padding: 8px 8px 10px; background: var(--yumi-nav-surface); border-top: 1px solid var(--yumi-nav-border);
+  position: relative; z-index: 15;
+}
+.nav-item {
+  border: 0; background: transparent; min-width: 56px; min-height: 54px; padding: 4px 6px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  border-radius: 18px; color: var(--yumi-nav-inactive); cursor: pointer; position: relative;
+  transition: color var(--yumi-motion) var(--yumi-ease), background var(--yumi-motion) var(--yumi-ease);
+}
+.nav-item .nav-icon-wrap { height: 32px; min-width: 46px; border-radius: 16px; display: grid; place-items: center; transition: background var(--yumi-motion) var(--yumi-spring); }
+.nav-item .nav-label { font-size: 10.5px; font-weight: 650; line-height: 1; opacity: 0; height: 0; transition: opacity var(--yumi-motion) var(--yumi-ease), height var(--yumi-motion) var(--yumi-ease); }
+.nav-item.active { color: var(--yumi-nav-active); background: color-mix(in srgb, var(--yumi-primary) 5%, transparent); }
+.nav-item.active .nav-icon-wrap { background: var(--yumi-nav-indicator); }
+.nav-item.active .nav-label { opacity: 1; height: 12px; }
+.nav-badge { position: absolute; top: 0; right: 8px; min-width: 17px; height: 17px; border-radius: 9px; padding: 0 4px; display: grid; place-items: center; background: var(--yumi-primary); color: var(--yumi-on-primary); font-size: 9px; font-weight: 800; }
+.search-fab {
+  position: absolute; right: 18px; bottom: 88px; z-index: 18; width: 54px; height: 54px;
+  border: 1px solid var(--yumi-nav-border); border-radius: 50%; background: var(--yumi-nav-surface);
+  color: var(--yumi-nav-active); display: grid; place-items: center; box-shadow: var(--yumi-shadow);
+  cursor: pointer; transition: transform 120ms var(--yumi-ease);
+}
+.search-fab:active { transform: scale(.94); }
+.eyebrow-small { font-size: 10px; text-transform: uppercase; letter-spacing: .13em; font-weight: 800; color: var(--yumi-on-surface-variant); }
+.muted { color: var(--yumi-on-surface-variant); }
+.scroll-body { height: 100%; overflow: hidden; padding: 0 16px 18px; }
+.section-title { margin: 20px 4px 9px; font-size: 12px; font-weight: 750; color: var(--yumi-on-surface-variant); letter-spacing: .01em; }
+.group { background: var(--yumi-surface-container-low); border: 1px solid var(--yumi-outline); border-radius: var(--yumi-radius-xl); overflow: hidden; box-shadow: 0 1px 0 rgba(255,255,255,.28) inset; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 8px 14px; position: relative; }
+.row + .row::before { content: ""; position: absolute; left: 52px; right: 14px; top: 0; height: 1px; background: var(--yumi-outline); opacity: .8; }
+.row-icon { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; flex: 0 0 auto; background: var(--yumi-secondary-container); color: var(--yumi-on-secondary-container); }
+.row-icon.primary { background: var(--yumi-primary-container); color: var(--yumi-on-primary-container); }
+.row-icon.tertiary { background: var(--yumi-tertiary-container); color: var(--yumi-on-tertiary-container); }
+.row-copy { flex: 1; min-width: 0; }
+.row-title { font-size: 14px; font-weight: 600; line-height: 1.25; }
+.row-desc { font-size: 11.5px; color: var(--yumi-on-surface-variant); margin-top: 2px; line-height: 1.3; }
+.row-value { font-size: 12.5px; color: var(--yumi-on-surface-variant); white-space: nowrap; }
+.chevron { color: var(--yumi-on-surface-variant); opacity: .75; }
+.switch { width: 46px; height: 28px; border-radius: 99px; background: var(--yumi-surface-container-highest); border: 1px solid var(--yumi-outline-strong); position: relative; flex: 0 0 auto; }
+.switch::after { content: ""; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: var(--yumi-outline-strong); top: 3px; left: 3px; transition: all var(--yumi-motion) var(--yumi-spring); }
+.switch.on { background: var(--yumi-primary); border-color: var(--yumi-primary); }
+.switch.on::after { left: 21px; background: var(--yumi-on-primary); }
+/* Settings ---------------------------------------------------------- */
+.hero-card {
+  margin: 8px 0 4px; min-height: 174px; border-radius: 30px; position: relative; overflow: hidden;
+  padding: 20px; color: #fff; isolation: isolate;
+  background: linear-gradient(135deg, var(--yumi-hero-start), var(--yumi-hero-mid) 56%, var(--yumi-hero-end));
+  box-shadow: 0 16px 34px rgba(61, 20, 58, .24);
+}
+.hero-card::before {
+  content: ""; position: absolute; width: 180px; height: 180px; border-radius: 50%; right: -55px; top: -60px;
+  background: radial-gradient(circle, rgba(255, 157, 178, .56), transparent 68%);
+  filter: blur(6px);
+}
+.hero-card::after {
+  content: ""; position: absolute; inset: 0; opacity: .22; mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  pointer-events: none;
+}
+.hero-kicker { font-size: 10px; text-transform: uppercase; letter-spacing: .16em; font-weight: 800; opacity: .76; }
+.hero-title { font-size: 35px; line-height: .95; font-weight: 800; letter-spacing: -.05em; margin: 9px 0 6px; }
+.hero-card-copy { font-size: 12px; line-height: 1.4; max-width: 220px; opacity: .82; }
+.hero-pills { position: absolute; left: 20px; bottom: 18px; display: flex; gap: 7px; flex-wrap: wrap; }
+.hero-pill { background: rgba(255,255,255,.13); border: 1px solid rgba(255,255,255,.22); border-radius: 99px; padding: 5px 9px; font-size: 10px; font-weight: 650; backdrop-filter: blur(8px); }
+.settings-row .row-title { font-size: 13.5px; }
+.settings-row .row-icon { width: 32px; height: 32px; border-radius: 11px; }
+.settings-hint { margin: 12px 6px 0; font-size: 11px; line-height: 1.45; color: var(--yumi-on-surface-variant); }
+[data-screen="settings"] .hero-card { min-height: 146px; padding: 17px; }
+[data-screen="settings"] .hero-title { font-size: 31px; margin: 7px 0 4px; }
+[data-screen="settings"] .hero-copy { font-size: 11px; max-width: 210px; }
+[data-screen="settings"] .hero-pills { left: 17px; bottom: 15px; }
+[data-screen="settings"] .section-title { margin: 14px 4px 7px; }
+[data-screen="settings"] .row { min-height: 50px; padding: 6px 12px; }
+[data-screen="settings"] .row-icon { width: 31px; height: 31px; border-radius: 11px; }
+[data-screen="settings"] .row-title { font-size: 13px; }
+[data-screen="settings"] .row-desc { font-size: 11px; }
+[data-screen="settings"] .settings-hint { margin-top: 8px; }
+/* Chat list --------------------------------------------------------- */
+.list-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px 8px 18px; }
+.list-head h2 { margin: 0; font-size: 30px; line-height: 1; letter-spacing: -.05em; font-weight: 780; }
+.list-head-actions { display: flex; gap: 0; }
+.search-pill {
+  min-height: 50px; margin: 2px 12px 10px; border-radius: 26px; background: var(--yumi-chat-field);
+  border: 1px solid var(--yumi-chat-field-border); display: flex; align-items: center; gap: 10px;
+  padding: 0 16px; color: var(--yumi-on-surface-variant); font-size: 13px; box-shadow: 0 1px 0 rgba(255,255,255,.34) inset;
+}
+.chips { display: flex; gap: 7px; overflow: hidden; padding: 0 12px 12px; }
+.chip { border: 1px solid var(--yumi-outline); background: transparent; color: var(--yumi-on-surface-variant); border-radius: 99px; padding: 7px 11px; font-size: 11px; font-weight: 650; white-space: nowrap; }
+.chip.active { background: var(--yumi-primary-container); border-color: transparent; color: var(--yumi-on-primary-container); }
+.chat-list { padding: 0 8px; display: flex; flex-direction: column; gap: 4px; }
+.chat-row {
+  display: flex; gap: 11px; align-items: center; min-height: 70px; padding: 10px 10px;
+  border-radius: 20px; background: var(--yumi-surface-container-low); border: 1px solid transparent;
+  position: relative; transition: background 140ms var(--yumi-ease), transform 110ms var(--yumi-ease);
+}
+.chat-row.pinned { background: color-mix(in srgb, var(--yumi-primary-container) 42%, var(--yumi-surface-container-low)); border-color: color-mix(in srgb, var(--yumi-primary) 14%, transparent); }
+.chat-row:active { transform: scale(.992); }
+.chat-main { min-width: 0; flex: 1; }
+.chat-name-line { display: flex; align-items: center; gap: 6px; }
+.chat-name { font-size: 14px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-preview { margin-top: 4px; font-size: 12px; color: var(--yumi-on-surface-variant); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-preview b { color: var(--yumi-on-surface); font-weight: 650; }
+.chat-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex: 0 0 auto; }
+.chat-time { font-size: 10px; color: var(--yumi-on-surface-variant); }
+.chat-badge { min-width: 19px; height: 19px; border-radius: 10px; padding: 0 5px; display: grid; place-items: center; background: var(--yumi-primary); color: var(--yumi-on-primary); font-size: 9.5px; font-weight: 800; }
+.chat-badge.muted { background: var(--yumi-surface-container-highest); color: var(--yumi-on-surface-variant); }
+.chat-check { position: absolute; right: 13px; bottom: 10px; color: var(--yumi-primary); }
+.tiny-pin { color: var(--yumi-primary); }
+.section-caption { padding: 8px 14px 5px; font-size: 10.5px; font-weight: 750; color: var(--yumi-on-surface-variant); letter-spacing: .04em; }
+/* Chat screen ------------------------------------------------------- */
+.chat-screen {
+  flex: 1; min-height: 0; position: relative; overflow: hidden;
+  background:
+    radial-gradient(52% 28% at 100% 20%, var(--yumi-aurora-b), transparent 74%),
+    radial-gradient(48% 32% at 0% 82%, var(--yumi-aurora-a), transparent 76%),
+    var(--yumi-chat-wallpaper);
+}
+.chat-screen::after {
+  content: ""; position: absolute; inset: 0; opacity: calc(var(--yumi-grain-opacity) * .8); pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='110' height='110'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='2'/%3E%3C/filter%3E%3Crect width='110' height='110' filter='url(%23n)' opacity='.26'/%3E%3C/svg%3E");
+  mix-blend-mode: soft-light;
+}
+.chat-topbar { display: flex; align-items: center; gap: 9px; padding: 5px 8px 7px 4px; background: color-mix(in srgb, var(--yumi-surface) 90%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--yumi-outline) 55%, transparent); position: relative; z-index: 8; }
+.chat-person { min-width: 0; flex: 1; }
+.chat-person-name { font-size: 14px; font-weight: 750; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-person-status { font-size: 10.5px; color: var(--yumi-online); margin-top: 2px; }
+.chat-person-status.muted { color: var(--yumi-on-surface-variant); }
+.chat-actions { display: flex; }
+.message-scroll { position: absolute; inset: 56px 0 70px; padding: 12px 14px; overflow: hidden; z-index: 2; display: flex; flex-direction: column; justify-content: flex-end; }
+.message-scroll > * { flex: 0 0 auto; }
+.date-chip { width: max-content; margin: 0 auto 12px; background: color-mix(in srgb, var(--yumi-surface-container-low) 80%, transparent); color: var(--yumi-on-surface-variant); border: 1px solid color-mix(in srgb, var(--yumi-outline) 65%, transparent); border-radius: 99px; padding: 5px 10px; font-size: 9.5px; font-weight: 650; backdrop-filter: blur(8px); }
+.bubble { max-width: 78%; border-radius: 22px; padding: 9px 11px 7px; font-size: 12.5px; line-height: 1.42; position: relative; margin-bottom: 7px; box-shadow: 0 1px 0 rgba(255,255,255,.16) inset; }
+.bubble.in { background: var(--yumi-chat-in-bubble); border: 1px solid color-mix(in srgb, var(--yumi-outline) 48%, transparent); border-bottom-left-radius: 7px; margin-right: auto; }
+.bubble.out { background: linear-gradient(135deg, var(--yumi-chat-out-bubble), var(--yumi-chat-out-bubble-end)); border-bottom-right-radius: 7px; margin-left: auto; border: 1px solid color-mix(in srgb, var(--yumi-primary) 8%, transparent); }
+.bubble-meta { display: flex; justify-content: flex-end; align-items: center; gap: 3px; margin-top: 3px; font-size: 8.5px; color: var(--yumi-chat-bubble-meta); }
+.bubble.out .bubble-meta { color: color-mix(in srgb, var(--yumi-chat-bubble-meta) 86%, var(--yumi-primary)); }
+.reaction { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 3px 7px; border-radius: 99px; background: var(--yumi-surface-container-low); border: 1px solid var(--yumi-outline); font-size: 10px; color: var(--yumi-on-surface-variant); }
+.bubble.out .reaction { background: rgba(255,255,255,.48); border-color: transparent; color: var(--yumi-chat-bubble-text); }
+html[data-theme="dark"] .bubble.out .reaction { background: rgba(0,0,0,.18); }
+.typing-dots { display: inline-flex; gap: 3px; align-items: center; height: 9px; }
+.typing-dots i { width: 4px; height: 4px; background: var(--yumi-on-surface-variant); border-radius: 50%; opacity: .6; }
+.composer { position: absolute; left: 8px; right: 8px; bottom: 8px; height: 54px; z-index: 9; display: flex; align-items: center; gap: 6px; }
+.composer-field { flex: 1; height: 48px; border-radius: 24px; background: var(--yumi-composer-surface); border: 1px solid var(--yumi-chat-field-border); display: flex; align-items: center; gap: 8px; padding: 0 13px; box-shadow: var(--yumi-shadow); color: var(--yumi-composer-icon); font-size: 12.5px; }
+.composer-field .placeholder { flex: 1; color: var(--yumi-composer-icon); }
+.send-button { width: 48px; height: 48px; border-radius: 50%; border: 0; background: linear-gradient(135deg, var(--yumi-action-start), var(--yumi-action-end)); color: var(--yumi-on-action); display: grid; place-items: center; box-shadow: 0 8px 18px rgba(217,45,92,.3); }
+.fab-small { width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--yumi-surface-container-low); color: var(--yumi-composer-icon); display: grid; place-items: center; box-shadow: var(--yumi-shadow); }
+/* Profile ----------------------------------------------------------- */
+.profile-hero { position: relative; padding: 4px 16px 18px; background: linear-gradient(150deg, var(--yumi-hero-start), var(--yumi-hero-mid) 65%, var(--yumi-hero-end)); color: #fff; overflow: hidden; }
+.profile-hero::before { content: ""; position: absolute; width: 230px; height: 230px; right: -90px; top: -100px; border-radius: 50%; background: radial-gradient(circle, rgba(255,157,178,.56), transparent 70%); }
+.profile-hero .appbar { background: transparent; color: #fff; min-height: 52px; flex-basis: 52px; padding: 0 0; }
+.profile-hero .icon-button { color: #fff; background: rgba(255,255,255,.10); }
+.profile-hero .icon-button:hover { background: rgba(255,255,255,.18); }
+.profile-top-actions { display: flex; gap: 6px; margin-left: auto; }
+.profile-identity { position: relative; display: flex; flex-direction: column; align-items: center; text-align: center; padding-top: 6px; }
+.profile-identity .avatar { box-shadow: 0 0 0 3px rgba(255,255,255,.18), 0 12px 30px rgba(0,0,0,.24); }
+.profile-name { margin: 12px 0 2px; font-size: 22px; font-weight: 780; letter-spacing: -.035em; }
+.profile-handle { font-size: 11.5px; opacity: .72; }
+.profile-bio { margin: 8px auto 0; max-width: 250px; font-size: 11.5px; line-height: 1.45; opacity: .82; }
+.profile-stats { display: flex; justify-content: center; gap: 26px; margin-top: 14px; }
+.profile-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.profile-stat b { font-size: 14px; }
+.profile-stat span { font-size: 9.5px; opacity: .65; }
+.profile-body { padding: 14px 14px 8px; }
+.profile-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 13px; }
+.profile-action { border: 0; background: var(--yumi-surface-container-low); border-radius: 18px; padding: 10px 4px 8px; display: flex; flex-direction: column; align-items: center; gap: 5px; color: var(--yumi-on-surface-variant); font-size: 9.5px; font-weight: 650; box-shadow: 0 0 0 1px var(--yumi-outline) inset; }
+.profile-action.primary { background: var(--yumi-primary-container); color: var(--yumi-on-primary-container); box-shadow: none; }
+.profile-action .icon { color: currentColor; }
+.media-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3px; border-radius: 18px; overflow: hidden; }
+.media-tile { aspect-ratio: 1; background: linear-gradient(135deg, color-mix(in srgb, var(--yumi-violet) 30%, var(--yumi-surface-container-high)), color-mix(in srgb, var(--yumi-primary) 18%, var(--yumi-surface-container-high))); display: grid; place-items: center; color: var(--yumi-on-surface-variant); }
+.media-tile:nth-child(2) { background: linear-gradient(135deg, color-mix(in srgb, var(--yumi-cyan) 30%, var(--yumi-surface-container-high)), color-mix(in srgb, var(--yumi-blue) 20%, var(--yumi-surface-container-high))); }
+.media-tile:nth-child(3) { background: linear-gradient(135deg, color-mix(in srgb, var(--yumi-amber) 30%, var(--yumi-surface-container-high)), color-mix(in srgb, var(--yumi-primary) 16%, var(--yumi-surface-container-high))); }
+/* Overlays --------------------------------------------------------- */
+.modal-screen { position: relative; height: 100%; background: var(--yumi-surface); overflow: hidden; }
+.modal-backdrop { position: absolute; inset: 0; background: var(--yumi-scrim); z-index: 40; backdrop-filter: blur(2px); }
+.modal-bg-list { position: absolute; inset: 0; padding: 12px 10px; filter: blur(1px); opacity: .66; }
+.dialog {
+  position: absolute; z-index: 45; left: 24px; right: 24px; top: 190px; border-radius: 28px;
+  background: var(--yumi-surface-container-high); color: var(--yumi-on-surface); padding: 22px 20px 12px;
+  box-shadow: var(--yumi-shadow-strong); border: 1px solid color-mix(in srgb, var(--yumi-outline) 80%, transparent);
+  transform-origin: 50% 70%; animation: dialog-in 420ms var(--yumi-spring) both;
+}
+@keyframes dialog-in { from { opacity: 0; transform: translateY(10px) scale(.92); } to { opacity: 1; transform: none; } }
+.dialog-icon { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; background: var(--yumi-error-container); color: var(--yumi-on-error-container); margin-bottom: 13px; }
+.dialog h3 { margin: 0 0 7px; font-size: 20px; letter-spacing: -.025em; }
+.dialog p { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--yumi-on-surface-variant); }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 18px; }
+.text-button { border: 0; background: transparent; min-height: 44px; border-radius: 22px; padding: 0 14px; font-size: 12.5px; font-weight: 700; color: var(--yumi-primary); cursor: pointer; }
+.text-button:hover { background: color-mix(in srgb, var(--yumi-primary) 8%, transparent); }
+.text-button.danger { color: var(--yumi-error); }
+.sheet {
+  position: absolute; z-index: 45; left: 0; right: 0; bottom: 0; border-radius: 30px 30px 0 0;
+  background: var(--yumi-surface-container-high); color: var(--yumi-on-surface); padding: 8px 14px 18px;
+  box-shadow: 0 -20px 50px rgba(20, 12, 22, .24); animation: sheet-in 440ms var(--yumi-spring) both;
+  border-top: 1px solid color-mix(in srgb, var(--yumi-outline) 80%, transparent);
+}
+@keyframes sheet-in { from { transform: translateY(100%); } to { transform: none; } }
+.drag-handle { width: 34px; height: 4px; border-radius: 2px; background: var(--yumi-outline-strong); opacity: .55; margin: 4px auto 14px; }
+.sheet h3 { margin: 0 4px 8px; font-size: 18px; letter-spacing: -.02em; }
+.sheet-row { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 6px; border-radius: 14px; font-size: 13px; font-weight: 600; }
+.sheet-row:hover { background: var(--yumi-surface-container-highest); }
+.sheet-row .row-icon { width: 34px; height: 34px; border-radius: 12px; }
+.sheet-row.danger { color: var(--yumi-error); }
+.sheet-row.danger .row-icon { background: var(--yumi-error-container); color: var(--yumi-on-error-container); }
+.sheet-divider { height: 1px; background: var(--yumi-outline); margin: 6px 4px; }
+.snackbar { position: absolute; z-index: 50; left: 16px; right: 16px; bottom: 18px; min-height: 50px; border-radius: 16px; background: var(--yumi-inverse-surface); color: var(--yumi-on-inverse-surface); display: flex; align-items: center; gap: 10px; padding: 0 14px; font-size: 12px; box-shadow: var(--yumi-shadow-strong); animation: snack-in 420ms var(--yumi-spring) both; }
+@keyframes snack-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.snackbar .action { margin-left: auto; color: color-mix(in srgb, var(--yumi-primary) 78%, var(--yumi-on-inverse-surface)); font-weight: 750; }
+/* Tablet ----------------------------------------------------------- */
+.tablet-section { max-width: 1240px; margin: 0 auto; padding: 0 28px 64px; }
+.tablet-frame {
+  margin-top: 16px; background: var(--yumi-surface); border: 1px solid var(--yumi-outline); border-radius: 32px;
+  box-shadow: var(--yumi-shadow); overflow: hidden; min-height: 420px;
+  display: flex; position: relative;
+}
+.tablet-frame::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: var(--yumi-grain-opacity); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='.28'/%3E%3C/svg%3E"); mix-blend-mode: soft-light; }
+.rail { width: 72px; flex: 0 0 72px; border-right: 1px solid var(--yumi-outline); background: var(--yumi-surface-container-low); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 14px 0; }
+.rail .rail-item { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; color: var(--yumi-on-surface-variant); }
+.rail .rail-item.active { background: var(--yumi-nav-indicator); color: var(--yumi-nav-active); }
+.tablet-content { flex: 1; min-width: 0; padding: 22px; display: flex; justify-content: center; }
+.tablet-cap { width: 100%; max-width: var(--yumi-content-max); display: grid; grid-template-columns: 210px 1fr; gap: 0; border: 1px solid var(--yumi-outline); border-radius: 24px; overflow: hidden; background: var(--yumi-surface-container-low); }
+.tablet-list { border-right: 1px solid var(--yumi-outline); padding: 14px 9px; background: var(--yumi-surface); }
+.tablet-list h3 { margin: 2px 8px 10px; font-size: 20px; letter-spacing: -.03em; }
+.tablet-chat { padding: 16px; background: var(--yumi-chat-wallpaper); position: relative; }
+.tablet-chat .bubble { max-width: 92%; }
+.tablet-note { margin: 12px 4px 0; font-size: 11px; color: var(--yumi-on-surface-variant); display: flex; gap: 6px; align-items: center; }
+/* Footer / export / responsive ------------------------------------- */
+.site-footer { max-width: 1240px; margin: 0 auto; padding: 0 28px 54px; color: var(--yumi-on-surface-variant); font-size: 12px; line-height: 1.6; }
+.site-footer strong { color: var(--yumi-on-surface); }
+.footer-card { border-top: 1px solid var(--yumi-outline); padding-top: 18px; display: flex; gap: 18px; justify-content: space-between; flex-wrap: wrap; }
+.footer-card p { max-width: 760px; margin: 0; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+html[data-power="on"] { --yumi-motion: 1ms; --yumi-aurora-opacity: 0; --yumi-grain-opacity: 0; }
+html[data-power="on"] .aurora { animation: none; }
+html[data-power="on"] .grain { display: none; }
+html[data-power="on"] h1 { text-shadow: none; }
+@media (max-width: 1120px) { .screen-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) {
+  .site-header, .hero-copy, .screen-grid, .tablet-section, .site-footer { padding-left: 16px; padding-right: 16px; }
+  .screen-grid { grid-template-columns: 1fr; }
+  .screen-note { display: none; }
+  .brand-sub { display: none; }
+  .tablet-cap { grid-template-columns: 1fr; }
+  .tablet-list { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { :root { --yumi-motion: 1ms; } .aurora { animation: none; } }
+body.export { background: var(--yumi-canvas); }
+body.export .site-header, body.export .hero-copy, body.export .site-footer, body.export .tablet-section { display: none !important; }
+body.export .screen-grid { display: block; padding: 12px; margin: 0 auto; max-width: none; }
+body.export .screen-card { display: none; }
+body.export .screen-card.export-target { display: block; }
+body.export .screen-label { display: none; }
+body.export .phone { margin: 0 auto; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.2a7.7 7.7 0 0 1-8 7.5 8.8 8.8 0 0 1-3.2-.6L4 20l1.4-4.2A7.3 7.3 0 0 1 4 11.2a7.7 7.7 0 0 1 8-7.5 7.7 7.7 0 0 1 8 7.5Z"/><path d="M9 11h.01M12 11h.01M15 11h.01"/></symbol>
+  <symbol id="i-contacts" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3.5 19a5.5 5.5 0 0 1 11 0M16 8h5M16 12h5M16 16h3"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.1"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4v-.2a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3 1.7 1.7 0 0 0 1-1.6v-.2h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></symbol>
+  <symbol id="i-calls" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 3.5 9 3l1.6 4.2-2 1.4a14.6 14.6 0 0 0 6.8 6.8l1.4-2L21 15l-.5 2.4a2.2 2.2 0 0 1-2.4 1.8A16.4 16.4 0 0 1 4.8 5.9a2.2 2.2 0 0 1 1.8-2.4Z"/></symbol>
+  <symbol id="i-profile" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10.8" cy="10.8" r="6.4"/><path d="m16 16 4 4"/></symbol>
+  <symbol id="i-more" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m14.5 5-7 7 7 7"/></symbol>
+  <symbol id="i-add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3M9 21h6"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="currentColor"><path d="M3.4 20.3 21.2 12 3.4 3.7l.1 6.4 10.1 1.9-10.1 1.9-.1 6.4Z"/></symbol>
+  <symbol id="i-attach" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m20 11-7.6 7.6a4.2 4.2 0 0 1-6-6L14.6 4.4a2.8 2.8 0 1 1 4 4l-8.2 8.2a1.4 1.4 0 0 1-2-2l7.7-7.7"/></symbol>
+  <symbol id="i-emoji" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 14.5a4.5 4.5 0 0 0 7 0M9 9.5h.01M15 9.5h.01"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 3.5 20.5 9.5l-1.4 1.4-2.1-.4-3.6 3.6.3 1.8-1.4 1.4-2.7-2.7L5 19l-1.4-1.4 3.4-4.6-2.7-2.7 1.4-1.4 1.8.3 3.6-3.6-.4-2.1 1.8-1.4Z"/></symbol>
+  <symbol id="i-mute" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9v6h3l5 4V5L8 9H5Z"/><path d="m16 9 5 6M21 9l-5 6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h6l2 2h9v9a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2v-9Z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10a6 6 0 0 1 12 0c0 7 2 7 2 8H4c0-1 2-1 2-8ZM10 21h4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10" width="15" height="10" rx="3"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-palette" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 0 18c1.7 0 2.3-1.2 1.6-2.4-.7-1.3.2-2.6 1.7-2.6h1.5A4.2 4.2 0 0 0 21 11.8C21 6.9 17 3 12 3Z"/><circle cx="7.5" cy="10" r="1"/><circle cx="10" cy="6.5" r="1"/><circle cx="14.5" cy="6.5" r="1"/><circle cx="17" cy="10" r="1"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24" fill="currentColor"><path d="M13.5 2 5 13h6l-1 9 8.5-11h-6l1-9Z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="12" height="12" rx="3"/><path d="m15 10 6-3v10l-6-3"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.6 3.5 9 3l1.6 4.2-2 1.4a14.6 14.6 0 0 0 6.8 6.8l1.4-2L21 15l-.5 2.4a2.2 2.2 0 0 1-2.4 1.8A16.4 16.4 0 0 1 4.8 5.9a2.2 2.2 0 0 1 1.8-2.4Z"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="5" rx="1.5"/><path d="M5 9v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9M10 13h4"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-tune" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2.2"/><circle cx="10" cy="17" r="2.2"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4V8Z"/><circle cx="12" cy="13" r="3.2"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="m4 17 5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 20 6v5c0 5-3.3 8.5-8 10-4.7-1.5-8-5-8-10V6l8-3Z"/><path d="m8.5 11.8 2.3 2.3 4.7-4.8"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.7-7.9A6 6 0 0 1 18 9.5a4.2 4.2 0 0 1 .3 8.5H7Z"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L20 8l-4-4L4 16v4ZM14 6l4 4"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"/><path d="m11 11 9 9M17 17l2-2M14 14l2-2"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.5 9a2.6 2.6 0 1 1 4.2 2.1c-.9.7-1.7 1.2-1.7 2.4M12 17h.01"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 15.5A8.5 8.5 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-power" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v9"/><path d="M7 6.3a8 8 0 1 0 10 0"/></symbol>
+</svg>
+<div class="aurora" aria-hidden="true"></div>
+<div class="grain" aria-hidden="true"></div>
+
+<header class="site-header">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">Y</div>
+    <div>
+      <div class="brand-name">Yumi · Material 3 Expressive</div>
+      <div class="brand-sub">Yumigram design system · self-contained mock</div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="pill-button" id="themeToggle" type="button" aria-pressed="false">
+      <svg class="icon sm" aria-hidden="true"><use href="#i-moon"/></svg>
+      <span id="themeLabel">Темна тема</span>
+    </button>
+    <button class="pill-button" id="powerToggle" type="button" aria-pressed="false">
+      <svg class="icon sm" aria-hidden="true"><use href="#i-bolt"/></svg>
+      <span>Power Saving</span>
+      <span class="dot" id="powerDot" hidden></span>
+    </button>
+  </div>
+</header>
+
+<main>
+<section class="hero-copy">
+  <div class="eyebrow">Yumigram UI module · design preview</div>
+  <h1>Виразний інтерфейс.<br>Спокійна система.</h1>
+  <p>Шість екранів Yumi у Material 3 Expressive: налаштування, чати, розмова, профіль, діалог і нижня шторка. Кольори, форма, типографіка та рух звірені з токенами <code>YumiMd3</code>; це макет, а не рендер застосунку.</p>
+  <div class="hero-meta">
+    <span class="meta-chip">Light / dark parity</span>
+    <span class="meta-chip">620 dp tablet cap</span>
+    <span class="meta-chip">Aurora + grain · Power Saving aware</span>
+    <span class="meta-chip">No external requests</span>
+  </div>
+</section>
+
+<section class="screen-grid" aria-label="Екрани Yumi">
+  <article class="screen-card" data-screen="settings">
+    <div class="screen-label"><span class="screen-index">01</span><span class="screen-title">Налаштування</span><span class="screen-note">settings hub</span></div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="dynamic-island"></div>
+        <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal"><i></i><i></i><i></i><i></i></span><span class="battery"></span></span></div>
+        <div class="appbar">
+          <button class="icon-button" type="button" aria-label="Назад"><svg class="icon"><use href="#i-back"/></svg></button>
+          <h2>Налаштування</h2>
+          <span class="grow"></span>
+          <button class="icon-button" type="button" aria-label="Більше"><svg class="icon"><use href="#i-more"/></svg></button>
+        </div>
+        <div class="content-scroll">
+          <div class="scroll-body">
+            <section class="hero-card" aria-label="Yumi Expressive">
+              <div class="hero-kicker">Yumi interface</div>
+              <div class="hero-title">Expressive</div>
+              <div class="hero-card-copy">Жива навігація, картки чатів і характер.</div>
+              <div class="hero-pills"><span class="hero-pill">MD3</span><span class="hero-pill">Material You ready</span><span class="hero-pill">#E5486B</span></div>
+            </section>
+            <div class="section-title">Вигляд</div>
+            <div class="group">
+              <div class="row settings-row"><span class="row-icon primary"><svg class="icon sm"><use href="#i-palette"/></svg></span><div class="row-copy"><div class="row-title">Тема</div><div class="row-desc">Світла · системна</div></div><span class="row-value">Світла</span><svg class="icon sm chevron"><use href="#i-chevron"/></svg></div>
+              <div class="row settings-row"><span class="row-icon"><svg class="icon sm"><use href="#i-star"/></svg></span><div class="row-copy"><div class="row-title">Динамічний колір</div><div class="row-desc">Брати палітру з Material You</div></div><span class="switch on" role="switch" aria-checked="true" aria-label="Динамічний колір"></span></div>
+              <div class="row settings-row"><span class="row-icon tertiary"><svg class="icon sm"><use href="#i-bolt"/></svg></span><div class="row-copy"><div class="row-title">Анімації</div><div class="row-desc">Пружинні переходи M3</div></div><span class="switch on" role="switch" aria-checked="true" aria-label="Анімації"></span></div>
+            </div>
+            <div class="section-title">Чати</div>
+            <div class="group">
+              <div class="row settings-row"><span class="row-icon"><svg class="icon sm"><use href="#i-chat"/></svg></span><div class="row-copy"><div class="row-title">Стиль списку</div><div class="row-desc">Плаваючі картки</div></div><span class="row-value">Картки</span><svg class="icon sm chevron"><use href="#i-chevron"/></svg></div>
+              <div class="row settings-row"><span class="row-icon primary"><svg class="icon sm"><use href="#i-camera"/></svg></span><div class="row-copy"><div class="row-title">Медіа в чатах</div><div class="row-desc">Показувати прев’ю</div></div><span class="switch on" role="switch" aria-checked="true" aria-label="Медіа в чатах"></span></div>
+            </div>
+            <div class="section-title">Система</div>
+            <div class="group">
+              <div class="row settings-row"><span class="row-icon tertiary"><svg class="icon sm"><use href="#i-bolt"/></svg></span><div class="row-copy"><div class="row-title">Power Saving</div><div class="row-desc">Android Battery Saver + Telegram LiteMode</div></div><span class="switch" role="switch" aria-checked="false" aria-label="Power Saving"></span></div>
+            </div>
+          </div>
+        </div>
+        <nav class="bottom-nav" aria-label="Головна навігація">
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-chat"/></svg></span><span class="nav-label">Чати</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-contacts"/></svg></span><span class="nav-label">Контакти</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-calls"/></svg></span><span class="nav-label">Дзвінки</span></button>
+          <button class="nav-item active" type="button" aria-current="page"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-settings"/></svg></span><span class="nav-label">Налаштування</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-profile"/></svg></span><span class="nav-label">Профіль</span></button>
+        </nav>
+      </div>
+    </div>
+  </article>
+
+  <article class="screen-card" data-screen="chats">
+    <div class="screen-label"><span class="screen-index">02</span><span class="screen-title">Чати</span><span class="screen-note">chat list + bottom bar</span></div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="dynamic-island"></div>
+        <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal"><i></i><i></i><i></i><i></i></span><span class="battery"></span></span></div>
+        <div class="content-scroll">
+          <div class="list-head"><h2>Чати</h2><div class="list-head-actions"><button class="icon-button" type="button" aria-label="Пошук"><svg class="icon"><use href="#i-search"/></svg></button><button class="icon-button" type="button" aria-label="Більше"><svg class="icon"><use href="#i-more"/></svg></button></div></div>
+          <div class="search-pill"><svg class="icon sm"><use href="#i-search"/></svg><span>Пошук у чатах</span></div>
+          <div class="chips"><button class="chip active" type="button">Усі</button><button class="chip" type="button">Непрочитані <span aria-hidden="true">3</span></button><button class="chip" type="button">Групи</button><button class="chip" type="button">Канали</button></div>
+          <div class="chat-list">
+            <div class="section-caption">Закріплені</div>
+            <div class="chat-row pinned">
+              <div class="avatar-wrap"><div class="avatar md a1">Y</div><span class="online-dot"></span></div>
+              <div class="chat-main"><div class="chat-name-line"><span class="chat-name">Yumi Team</span><svg class="icon xs tiny-pin"><use href="#i-pin"/></svg></div><div class="chat-preview"><b>Марта:</b> Нова збірка вже на пристрої ✨</div></div>
+              <div class="chat-meta"><span class="chat-time">9:38</span><span class="chat-badge">4</span></div>
+            </div>
+            <div class="section-caption">Усі чати</div>
+            <div class="chat-row">
+              <div class="avatar-wrap"><div class="avatar md a2">О</div><span class="online-dot"></span></div>
+              <div class="chat-main"><div class="chat-name-line"><span class="chat-name">Олена</span></div><div class="chat-preview">Ти вже бачив новий профіль? Виглядає дуже жив</div></div>
+              <div class="chat-meta"><span class="chat-time">9:31</span><span class="chat-badge">2</span></div>
+            </div>
+            <div class="chat-row">
+              <div class="avatar-wrap"><div class="avatar md a3">Д</div></div>
+              <div class="chat-main"><div class="chat-name-line"><span class="chat-name">Design UA</span></div><div class="chat-preview"><b>Ігор:</b> Залишив коментарі до макету</div></div>
+              <div class="chat-meta"><span class="chat-time">8:54</span></div>
+            </div>
+            <div class="chat-row">
+              <div class="avatar-wrap"><div class="avatar md a4">М</div></div>
+              <div class="chat-main"><div class="chat-name-line"><span class="chat-name">Марта</span></div><div class="chat-preview"><span class="typing-dots" aria-label="друкує"><i></i><i></i><i></i></span></div></div>
+              <div class="chat-meta"><span class="chat-time">8:40</span></div>
+            </div>
+            <div class="chat-row">
+              <div class="avatar-wrap"><div class="avatar md a5">DM</div></div>
+              <div class="chat-main"><div class="chat-name-line"><span class="chat-name">DM · дизайн</span></div><div class="chat-preview"><svg class="icon xs" style="display:inline-block;vertical-align:-2px"><use href="#i-mic"/></svg> Голосове · 0:12</div></div>
+              <div class="chat-meta"><span class="chat-time">Пн</span><span class="chat-badge muted">1</span></div>
+            </div>
+            <div class="chat-row">
+              <div class="avatar-wrap"><div class="avatar md a6">N</div></div>
+              <div class="chat-main"><div class="chat-name-line"><span class="chat-name">Yumi News</span></div><div class="chat-preview">Material 3 Expressive: що нового у 2026</div></div>
+              <div class="chat-meta"><span class="chat-time">Пн</span></div>
+            </div>
+          </div>
+        </div>
+        <button class="search-fab" type="button" aria-label="Новий чат"><svg class="icon"><use href="#i-add"/></svg></button>
+        <nav class="bottom-nav" aria-label="Головна навігація">
+          <button class="nav-item active" type="button" aria-current="page"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-chat"/></svg></span><span class="nav-label">Чати</span><span class="nav-badge">3</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-contacts"/></svg></span><span class="nav-label">Контакти</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-calls"/></svg></span><span class="nav-label">Дзвінки</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-settings"/></svg></span><span class="nav-label">Налаштування</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-profile"/></svg></span><span class="nav-label">Профіль</span></button>
+        </nav>
+      </div>
+    </div>
+  </article>
+
+  <article class="screen-card" data-screen="chat">
+    <div class="screen-label"><span class="screen-index">03</span><span class="screen-title">Розмова</span><span class="screen-note">chat screen</span></div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="dynamic-island"></div>
+        <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal"><i></i><i></i><i></i><i></i></span><span class="battery"></span></span></div>
+        <div class="chat-topbar">
+          <button class="icon-button" type="button" aria-label="Назад"><svg class="icon"><use href="#i-back"/></svg></button>
+          <div class="avatar-wrap"><div class="avatar sm a2">О</div><span class="online-dot"></span></div>
+          <div class="chat-person"><div class="chat-person-name">Олена</div><div class="chat-person-status">в мережі</div></div>
+          <div class="chat-actions"><button class="icon-button" type="button" aria-label="Відеодзвінок"><svg class="icon"><use href="#i-video"/></svg></button><button class="icon-button" type="button" aria-label="Дзвінок"><svg class="icon"><use href="#i-phone"/></svg></button><button class="icon-button" type="button" aria-label="Більше"><svg class="icon"><use href="#i-more"/></svg></button></div>
+        </div>
+        <div class="chat-screen">
+          <div class="message-scroll">
+            <div class="date-chip">Вчора</div>
+            <div class="bubble in">Збережи, будь ласка, фінальний макет у documentation/preview. Хочу показати команді.<div class="bubble-meta"><span>18:42</span></div></div>
+            <div class="bubble out">Вже там. Додала світлу й темну версії.<div class="bubble-meta"><span>18:44</span><svg class="icon xs"><use href="#i-check"/></svg><svg class="icon xs" style="margin-left:-2px"><use href="#i-check"/></svg></div></div>
+            <div class="date-chip">Сьогодні</div>
+            <div class="bubble in">Привіт! Подивилась новий профіль — це вже фінальна версія?<div class="bubble-meta"><span>9:24</span></div></div>
+            <div class="bubble out">Так, залишилось перевірити темну тему. Картки стали спокійнішими, а навігація — живішою.<div class="bubble-meta"><span>9:26</span><svg class="icon xs"><use href="#i-check"/></svg><svg class="icon xs" style="margin-left:-2px"><use href="#i-check"/></svg></div></div>
+            <div class="bubble in">Подобається, як підсвічується активний таб. І що aurora зникає в Power Saving.<div class="bubble-meta"><span>9:28</span></div><span class="reaction" style="color:var(--yumi-primary)">♥ 2</span></div>
+            <div class="bubble out">Це все токени YumiMd3. Ніяких нових кольорів — тільки ролі.<div class="bubble-meta"><span>9:29</span><svg class="icon xs"><use href="#i-check"/></svg><svg class="icon xs" style="margin-left:-2px"><use href="#i-check"/></svg></div></div>
+            <div class="bubble in">Тоді показуй на пристрої. Хочу перевірити RTL і великий шрифт.<div class="bubble-meta"><span>9:30</span></div></div>
+          </div>
+          <div class="composer"><button class="fab-small" type="button" aria-label="Прикріпити"><svg class="icon sm"><use href="#i-attach"/></svg></button><div class="composer-field"><span class="placeholder">Повідомлення</span><svg class="icon sm"><use href="#i-emoji"/></svg></div><button class="send-button" type="button" aria-label="Надіслати"><svg class="icon sm"><use href="#i-send"/></svg></button></div>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>
+<section class="screen-grid" aria-label="Профіль, діалог і шторка">
+  <article class="screen-card" data-screen="profile">
+    <div class="screen-label"><span class="screen-index">04</span><span class="screen-title">Профіль</span><span class="screen-note">profile</span></div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="dynamic-island"></div>
+        <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal"><i></i><i></i><i></i><i></i></span><span class="battery"></span></span></div>
+        <div class="content-scroll">
+          <section class="profile-hero">
+            <div class="appbar">
+              <button class="icon-button" type="button" aria-label="Назад"><svg class="icon"><use href="#i-back"/></svg></button>
+              <div class="profile-top-actions"><button class="icon-button" type="button" aria-label="Редагувати"><svg class="icon"><use href="#i-edit"/></svg></button><button class="icon-button" type="button" aria-label="Більше"><svg class="icon"><use href="#i-more"/></svg></button></div>
+            </div>
+            <div class="profile-identity">
+              <div class="avatar-wrap"><div class="avatar lg a1">О</div><span class="online-dot" style="width:15px;height:15px;border-width:3px"></span></div>
+              <div class="profile-name">Олена Коваль</div>
+              <div class="profile-handle">@olena_k · Yumi designer</div>
+              <div class="profile-bio">Проєктую спокійні інтерфейси, які хочеться торкатися. Київ → світ.</div>
+              <div class="profile-stats"><div class="profile-stat"><b>248</b><span>контакти</span></div><div class="profile-stat"><b>12</b><span>спільні</span></div><div class="profile-stat"><b>2021</b><span>у Yumi</span></div></div>
+            </div>
+          </section>
+          <div class="profile-body">
+            <div class="profile-actions">
+              <button class="profile-action primary" type="button"><svg class="icon sm"><use href="#i-chat"/></svg>Повідомлення</button>
+              <button class="profile-action" type="button"><svg class="icon sm"><use href="#i-phone"/></svg>Дзвінок</button>
+              <button class="profile-action" type="button"><svg class="icon sm"><use href="#i-video"/></svg>Відео</button>
+              <button class="profile-action" type="button"><svg class="icon sm"><use href="#i-more"/></svg>Ще</button>
+            </div>
+            <div class="group">
+              <div class="row"><span class="row-icon"><svg class="icon sm"><use href="#i-phone"/></svg></span><div class="row-copy"><div class="row-title">+380 67 ··· 24 18</div><div class="row-desc">Мобільний</div></div><svg class="icon sm chevron"><use href="#i-chevron"/></svg></div>
+              <div class="row"><span class="row-icon"><svg class="icon sm"><use href="#i-bell"/></svg></span><div class="row-copy"><div class="row-title">Сповіщення</div><div class="row-desc">Усі повідомлення</div></div><span class="switch on" role="switch" aria-checked="true" aria-label="Сповіщення"></span></div>
+            </div>
+            <div class="section-title" style="margin-top:16px">Спільні медіа <span class="muted" style="font-weight:500">· 64</span></div>
+            <div class="media-grid"><div class="media-tile"><svg class="icon"><use href="#i-image"/></svg></div><div class="media-tile"><svg class="icon"><use href="#i-camera"/></svg></div><div class="media-tile"><svg class="icon"><use href="#i-video"/></svg></div></div>
+          </div>
+        </div>
+        <nav class="bottom-nav" aria-label="Головна навігація">
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-chat"/></svg></span><span class="nav-label">Чати</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-contacts"/></svg></span><span class="nav-label">Контакти</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-calls"/></svg></span><span class="nav-label">Дзвінки</span></button>
+          <button class="nav-item" type="button"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-settings"/></svg></span><span class="nav-label">Налаштування</span></button>
+          <button class="nav-item active" type="button" aria-current="page"><span class="nav-icon-wrap"><svg class="icon"><use href="#i-profile"/></svg></span><span class="nav-label">Профіль</span></button>
+        </nav>
+      </div>
+    </div>
+  </article>
+
+  <article class="screen-card" data-screen="dialog">
+    <div class="screen-label"><span class="screen-index">05</span><span class="screen-title">Діалог</span><span class="screen-note">modal dialog</span></div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="dynamic-island"></div>
+        <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal"><i></i><i></i><i></i><i></i></span><span class="battery"></span></span></div>
+        <div class="modal-screen">
+          <div class="modal-bg-list" aria-hidden="true">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 8px 16px"><span style="font-size:30px;font-weight:800;letter-spacing:-.05em">Чати</span><span style="display:flex;gap:4px"><span class="icon-button"><svg class="icon"><use href="#i-search"/></svg></span><span class="icon-button"><svg class="icon"><use href="#i-more"/></svg></span></span></div>
+            <div class="chat-row"><div class="avatar md a2">О</div><div class="chat-main"><div class="chat-name">Олена</div><div class="chat-preview">Ти вже бачив новий профіль?</div></div><div class="chat-meta"><span class="chat-time">9:31</span><span class="chat-badge">2</span></div></div>
+            <div class="chat-row"><div class="avatar md a3">Д</div><div class="chat-main"><div class="chat-name">Design UA</div><div class="chat-preview">Залишив коментарі до макету</div></div><div class="chat-meta"><span class="chat-time">8:54</span></div></div>
+            <div class="chat-row"><div class="avatar md a4">М</div><div class="chat-main"><div class="chat-name">Марта</div><div class="chat-preview">Голосове · 0:12</div></div><div class="chat-meta"><span class="chat-time">8:40</span></div></div>
+          </div>
+          <div class="modal-backdrop"></div>
+          <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogBody">
+            <div class="dialog-icon"><svg class="icon"><use href="#i-archive"/></svg></div>
+            <h3 id="dialogTitle">Архівувати чат?</h3>
+            <p id="dialogBody">Чат «Олена» зникне зі списку. Ви зможете повернути його з архіву в будь-який момент.</p>
+            <div class="dialog-actions"><button class="text-button" type="button">Скасувати</button><button class="text-button danger" type="button">Архівувати</button></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="screen-card" data-screen="sheet">
+    <div class="screen-label"><span class="screen-index">06</span><span class="screen-title">Нижня шторка</span><span class="screen-note">bottom sheet</span></div>
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="dynamic-island"></div>
+        <div class="statusbar"><span>9:41</span><span class="status-icons"><span class="signal"><i></i><i></i><i></i><i></i></span><span class="battery"></span></span></div>
+        <div class="modal-screen">
+          <div class="modal-bg-list" aria-hidden="true">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 8px 16px"><span style="font-size:30px;font-weight:800;letter-spacing:-.05em">Чати</span><span style="display:flex;gap:4px"><span class="icon-button"><svg class="icon"><use href="#i-search"/></svg></span><span class="icon-button"><svg class="icon"><use href="#i-more"/></svg></span></span></div>
+            <div class="chat-row"><div class="avatar md a2">О</div><div class="chat-main"><div class="chat-name">Олена</div><div class="chat-preview">Ти вже бачив новий профіль?</div></div><div class="chat-meta"><span class="chat-time">9:31</span><span class="chat-badge">2</span></div></div>
+            <div class="chat-row"><div class="avatar md a3">Д</div><div class="chat-main"><div class="chat-name">Design UA</div><div class="chat-preview">Залишив коментарі до макету</div></div><div class="chat-meta"><span class="chat-time">8:54</span></div></div>
+            <div class="chat-row"><div class="avatar md a4">М</div><div class="chat-main"><div class="chat-name">Марта</div><div class="chat-preview">Голосове · 0:12</div></div><div class="chat-meta"><span class="chat-time">8:40</span></div></div>
+          </div>
+          <div class="modal-backdrop"></div>
+          <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+            <div class="drag-handle"></div>
+            <h3 id="sheetTitle">Дії з чатом</h3>
+            <div class="sheet-row"><span class="row-icon primary"><svg class="icon sm"><use href="#i-check"/></svg></span>Позначити прочитаним</div>
+            <div class="sheet-row"><span class="row-icon"><svg class="icon sm"><use href="#i-pin"/></svg></span>Закріпити чат</div>
+            <div class="sheet-row"><span class="row-icon"><svg class="icon sm"><use href="#i-mute"/></svg></span>Вимкнути звук</div>
+            <div class="sheet-row"><span class="row-icon"><svg class="icon sm"><use href="#i-folder"/></svg></span>Перемістити в папку</div>
+            <div class="sheet-divider"></div>
+            <div class="sheet-row danger"><span class="row-icon"><svg class="icon sm"><use href="#i-archive"/></svg></span>Архівувати</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+</section>
+<style>
+.phone-screen > .modal-screen { flex: 1; min-height: 0; height: auto; }
+body.export .dialog, body.export .sheet, body.export .snackbar { animation: none !important; }
+.tablet-list .chat-row { min-height: 52px; padding: 7px 6px; border-radius: 14px; gap: 8px; }
+.tablet-list .avatar { width: 34px; height: 34px; font-size: 11px; }
+.tablet-list .chat-name { font-size: 11.5px; }
+.tablet-list .chat-preview { font-size: 9.5px; margin-top: 2px; }
+.tablet-list .chat-badge { min-width: 15px; height: 15px; font-size: 8px; }
+.tablet-list .section-caption { padding: 5px 4px; font-size: 8px; }
+.tablet-list .search-pill { min-height: 36px; margin: 0 0 8px; border-radius: 18px; padding: 0 10px; font-size: 10px; gap: 6px; }
+.tablet-chat .chat-topbar { background: transparent; border: 0; padding-left: 0; }
+.tablet-chat .message-scroll { position: static; padding: 10px 0; inset: auto; }
+.tablet-chat .composer { position: static; height: 44px; left: auto; right: auto; bottom: auto; margin-top: 4px; }
+.tablet-chat .composer-field { height: 42px; }
+.tablet-chat .send-button { width: 42px; height: 42px; }
+</style>
+
+<section class="tablet-section" aria-label="Планшетний макет">
+  <div class="screen-label" style="margin-bottom:0"><span class="screen-index">07</span><span class="screen-title">Планшет</span><span class="screen-note">rail + 620 dp content cap</span></div>
+  <div class="tablet-frame">
+    <div class="rail" aria-hidden="true">
+      <div class="rail-item active"><svg class="icon"><use href="#i-chat"/></svg></div>
+      <div class="rail-item"><svg class="icon"><use href="#i-contacts"/></svg></div>
+      <div class="rail-item"><svg class="icon"><use href="#i-calls"/></svg></div>
+      <div class="rail-item" style="margin-top:auto"><svg class="icon"><use href="#i-settings"/></svg></div>
+      <div class="rail-item"><svg class="icon"><use href="#i-profile"/></svg></div>
+    </div>
+    <div class="tablet-content">
+      <div class="tablet-cap">
+        <div class="tablet-list">
+          <h3>Чати</h3>
+          <div class="search-pill"><svg class="icon xs"><use href="#i-search"/></svg><span>Пошук</span></div>
+          <div class="section-caption">Закріплені</div>
+          <div class="chat-row pinned"><div class="avatar a1">Y</div><div class="chat-main"><div class="chat-name">Yumi Team</div><div class="chat-preview">Нова збірка ✨</div></div><div class="chat-meta"><span class="chat-time">9:38</span><span class="chat-badge">4</span></div></div>
+          <div class="section-caption">Усі чати</div>
+          <div class="chat-row"><div class="avatar a2">О</div><div class="chat-main"><div class="chat-name">Олена</div><div class="chat-preview">Новий профіль?</div></div><div class="chat-meta"><span class="chat-time">9:31</span><span class="chat-badge">2</span></div></div>
+          <div class="chat-row"><div class="avatar a3">Д</div><div class="chat-main"><div class="chat-name">Design UA</div><div class="chat-preview">Коментарі до макету</div></div><div class="chat-meta"><span class="chat-time">8:54</span></div></div>
+          <div class="chat-row"><div class="avatar a4">М</div><div class="chat-main"><div class="chat-name">Марта</div><div class="chat-preview">Голосове · 0:12</div></div><div class="chat-meta"><span class="chat-time">8:40</span></div></div>
+          <div class="chat-row"><div class="avatar a5">DM</div><div class="chat-main"><div class="chat-name">DM · дизайн</div><div class="chat-preview">Голосове · 0:12</div></div><div class="chat-meta"><span class="chat-time">Пн</span></div></div>
+        </div>
+        <div class="tablet-chat">
+          <div class="chat-topbar"><button class="icon-button" type="button" aria-label="Назад"><svg class="icon"><use href="#i-back"/></svg></button><div class="avatar sm a2">О</div><div class="chat-person"><div class="chat-person-name">Олена</div><div class="chat-person-status">в мережі</div></div><button class="icon-button" type="button" aria-label="Дзвінок"><svg class="icon"><use href="#i-phone"/></svg></button><button class="icon-button" type="button" aria-label="Більше"><svg class="icon"><use href="#i-more"/></svg></button></div>
+          <div class="date-chip">Сьогодні</div>
+          <div class="bubble in">Привіт! Подивилась новий профіль — це вже фінальна версія?<div class="bubble-meta"><span>9:24</span></div></div>
+          <div class="bubble out">Так, залишилось перевірити темну тему. Картки стали спокійнішими, а навігація — живішою.<div class="bubble-meta"><span>9:26</span><svg class="icon xs"><use href="#i-check"/></svg><svg class="icon xs" style="margin-left:-2px"><use href="#i-check"/></svg></div></div>
+          <div class="bubble in">Подобається, як підсвічується активний таб.<div class="bubble-meta"><span>9:28</span></div></div>
+          <div class="bubble out">Це все токени YumiMd3.<div class="bubble-meta"><span>9:29</span><svg class="icon xs"><use href="#i-check"/></svg></div></div>
+          <div class="composer"><div class="composer-field"><span class="placeholder">Повідомлення</span><svg class="icon sm"><use href="#i-emoji"/></svg></div><button class="send-button" type="button" aria-label="Надіслати"><svg class="icon sm"><use href="#i-send"/></svg></button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="tablet-note"><svg class="icon xs"><use href="#i-info"/></svg>Контент центрований і обмежений 620 dp; навігаційний rail лишається поза контентною колонкою.</div>
+</section>
+</main>
+
+<footer class="site-footer">
+  <div class="footer-card">
+    <p><strong>Це дизайн-макет, а не рендер застосунку.</strong> HTML-прев’ю побудоване вручну для перевірки токенів, композиції та станів. Воно не доводить, що застосунок скомпільований або перевірений на пристрої. Усі екрани, діалоги й шторки в застосунку все ще потребують device QA: RTL, великий шрифт, TalkBack, predictive back і світла/темна теми.</p>
+    <div class="legend"><span><i style="background:var(--yumi-primary)"></i>primary</span><span><i style="background:var(--yumi-primary-container)"></i>primary container</span><span><i style="background:var(--yumi-secondary-container)"></i>secondary container</span><span><i style="background:var(--yumi-surface-container-high)"></i>surface high</span></div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var params = new URLSearchParams(window.location.search);
+  var themeToggle = document.getElementById('themeToggle');
+  var themeLabel = document.getElementById('themeLabel');
+  var powerToggle = document.getElementById('powerToggle');
+  var powerDot = document.getElementById('powerDot');
+
+  function applyTheme(theme) {
+    root.dataset.theme = theme;
+    var dark = theme === 'dark';
+    themeToggle.setAttribute('aria-pressed', dark ? 'true' : 'false');
+    themeLabel.textContent = dark ? 'Світла тема' : 'Темна тема';
+    var use = themeToggle.querySelector('use');
+    if (use) use.setAttribute('href', dark ? '#i-sun' : '#i-moon');
+  }
+
+  function applyPower(on) {
+    root.dataset.power = on ? 'on' : 'off';
+    powerToggle.setAttribute('aria-pressed', on ? 'true' : 'false');
+    powerDot.hidden = !on;
+  }
+
+  applyTheme(params.get('theme') === 'dark' ? 'dark' : 'light');
+  applyPower(params.get('power') === 'on');
+  themeToggle.addEventListener('click', function () {
+    applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+  });
+  powerToggle.addEventListener('click', function () {
+    applyPower(root.dataset.power !== 'on');
+  });
+
+  document.querySelectorAll('.switch').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      var on = sw.classList.toggle('on');
+      sw.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+  });
+
+  document.querySelectorAll('.nav-item').forEach(function (item) {
+    if (!item.getAttribute('aria-label')) {
+      var label = item.querySelector('.nav-label');
+      item.setAttribute('aria-label', label ? label.textContent.trim() : 'Навігація');
+    }
+  });
+
+  var exportScreen = params.get('screen');
+  if (exportScreen) {
+    document.body.classList.add('export');
+    document.querySelectorAll('.screen-card').forEach(function (card) {
+      if (card.dataset.screen === exportScreen) {
+        card.classList.add('export-target');
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>

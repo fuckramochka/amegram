@@ -103,6 +103,12 @@ style tokens. Anything not checked on a physical device is
    content; the official header is restyled through roles.
 10. **The HTML preview is a design mock.** It is generated from the tokens by
     hand and is explicitly labelled as not being a runtime render.
+11. **Expressive UI lives modularly in `ui` hotmodule (v1.0.6).** Per design
+    decision, the settings hub and client settings are natively rebuilt inside
+    the client, whereas expressive navigation (`YumiNavController`), floating
+    chat list cards (`YumiChatRowRenderer`), list screen chrome (`YumiScreenChrome`,
+    `YumiTopBar`, `YumiSearchField`) and M3 spring physics are delivered dynamically
+    via the `ui` module in `hotmodules/ui` and synced to `yuimodules`.
 
 ## Verification
 

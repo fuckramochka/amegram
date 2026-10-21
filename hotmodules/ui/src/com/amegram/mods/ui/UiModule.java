@@ -68,6 +68,9 @@ public class UiModule implements HotModule, HotUi {
     public static final int STYLE_ULTRA_BOUNCY = 2;
 
     private HotHost host;
+    private YumiNavController navController;
+    private YumiChatRowRenderer chatRowRenderer;
+    private YumiScreenChrome screenChrome;
     private final List<HotHook.Unhook> activeHooks = new ArrayList<>();
     private final Set<View> animatedViews = Collections.newSetFromMap(new WeakHashMap<View, Boolean>());
 
@@ -104,11 +107,14 @@ public class UiModule implements HotModule, HotUi {
             host.registerService(HotServices.UI, this);
         } catch (Throwable ignore) {
         }
+        navController = new YumiNavController(this, host);
+        chatRowRenderer = new YumiChatRowRenderer(this, host);
+        screenChrome = new YumiScreenChrome(this, host);
         updateThemeState();
         setupThemeListener();
         setupHooks();
         try {
-            host.log("ui v1.0.5 attached with refined M3 Expressive physics & card haptics");
+            host.log("ui v1.0.6 attached with MD3 Expressive navigation, chat cards and chrome");
         } catch (Throwable ignore) {
         }
     }
@@ -128,6 +134,21 @@ public class UiModule implements HotModule, HotUi {
             }
         }
         activeHooks.clear();
+        try {
+            if (navController != null) {
+                navController.restore();
+                navController = null;
+            }
+        } catch (Throwable ignore) {
+        }
+        chatRowRenderer = null;
+        try {
+            if (screenChrome != null) {
+                screenChrome.restoreAll();
+                screenChrome = null;
+            }
+        } catch (Throwable ignore) {
+        }
         synchronized (animatedViews) {
             animatedViews.clear();
         }
@@ -328,6 +349,16 @@ public class UiModule implements HotModule, HotUi {
             }
 
             rebuildPhysicsParameters();
+            if (navController != null) {
+                navController.refreshPalette(host != null ? host.context() : null);
+            }
+            if (chatRowRenderer != null) {
+                chatRowRenderer.refreshPalette(host != null ? host.context() : null);
+                chatRowRenderer.invalidateAll();
+            }
+            if (screenChrome != null) {
+                screenChrome.refreshPalette(host != null ? host.context() : null);
+            }
             if (host != null) {
                 host.log("ui: theme updated -> dark=" + isThemeDark + ", monet=" + isThemeMonet + ", amoled=" + isThemeAmoled);
             }
@@ -748,6 +779,233 @@ public class UiModule implements HotModule, HotUi {
         } catch (Throwable t) {
             host.log("ui: hook GlassTabView failed: " + t.getMessage());
         }
+
+        // 6. Main navigation is rendered by the module. The client activity is
+        // untouched; we only install the Yumi visual layer after it creates its
+        // normal tabs. Touch, long-press and tab selection remain native.
+        try {
+            final Class<?> mainTabs = Class.forName("org.telegram.ui.MainTabsActivity", true, cl);
+            final Method createView = mainTabs.getMethod("createView", Context.class);
+            final HotHook.Unhook u = host.hook(createView, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || navController == null) return;
+                    navController.apply(call.getThis());
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked MainTabsActivity.createView for module navigation");
+        } catch (Throwable t) {
+            host.log("ui: hook MainTabsActivity failed: " + t.getMessage());
+        }
+
+        try {
+            final Class<?> tabClass = Class.forName("org.telegram.ui.Components.glass.GlassTabView", true, cl);
+            final Method setCounter = tabClass.getDeclaredMethod("setCounter", String.class, boolean.class, boolean.class);
+            HotHook.Unhook u = host.hook(setCounter, new HotHook.Callback() {
+                @Override
+                public void before(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || navController == null) return;
+                    Object target = call.getThis();
+                    Object[] args = call.getArgs();
+                    if (target instanceof View && args != null && args.length >= 2) {
+                        navController.onCounter((View) target,
+                                args[0] instanceof String ? (String) args[0] : null,
+                                args[1] instanceof Boolean && (Boolean) args[1]);
+                        call.setResult(null);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked GlassTabView.setCounter");
+
+            final Method setSelected = tabClass.getDeclaredMethod("setSelected", boolean.class, boolean.class);
+            u = host.hook(setSelected, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || navController == null) return;
+                    Object target = call.getThis();
+                    Object[] args = call.getArgs();
+                    if (target instanceof View && args != null && args.length > 0) {
+                        navController.onSelected((View) target, args[0] instanceof Boolean && (Boolean) args[0]);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+
+            final Method setText = tabClass.getDeclaredMethod("setText", CharSequence.class);
+            u = host.hook(setText, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || navController == null) return;
+                    Object target = call.getThis();
+                    Object[] args = call.getArgs();
+                    if (target instanceof View && args != null && args.length > 0) {
+                        navController.onText((View) target, (CharSequence) args[0]);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+
+            final Method updateAvatar = tabClass.getDeclaredMethod("updateUserAvatar", int.class);
+            u = host.hook(updateAvatar, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || navController == null) return;
+                    Object target = call.getThis();
+                    if (target instanceof View) {
+                        navController.onAvatar((View) target);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+
+            final Method onLayout = tabClass.getDeclaredMethod("onLayout",
+                    boolean.class, int.class, int.class, int.class, int.class);
+            u = host.hook(onLayout, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (navController == null) return;
+                    Object target = call.getThis();
+                    if (target instanceof View) {
+                        navController.onLayout((View) target);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+
+            final Method updateColors = tabClass.getDeclaredMethod("updateColorsLottie");
+            u = host.hook(updateColors, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || navController == null) return;
+                    Object target = call.getThis();
+                    if (target instanceof View) {
+                        navController.onColors((View) target);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked GlassTabView visual state for module navigation");
+        } catch (Throwable t) {
+            host.log("ui: hook GlassTabView visual state failed: " + t.getMessage());
+        }
+
+        // 7. Yumi chat-list row renderer. The official DialogCell keeps its
+        // adapter, gestures, swipe, stories and action mode; the module paints
+        // the Yumi card after the cell's own onDraw.
+        try {
+            final Class<?> dialogCell = Class.forName("org.telegram.ui.Cells.DialogCell", true, cl);
+            final Method onDraw = dialogCell.getDeclaredMethod("onDraw", android.graphics.Canvas.class);
+            HotHook.Unhook u = host.hook(onDraw, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (chatRowRenderer == null) return;
+                    Object target = call.getThis();
+                    Object[] args = call.getArgs();
+                    if (target instanceof View && args != null && args.length > 0
+                            && args[0] instanceof android.graphics.Canvas) {
+                        chatRowRenderer.draw((View) target, (android.graphics.Canvas) args[0]);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+
+            final Method update = dialogCell.getDeclaredMethod("update", int.class, boolean.class);
+            u = host.hook(update, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (chatRowRenderer == null) return;
+                    Object target = call.getThis();
+                    if (target instanceof View) {
+                        chatRowRenderer.bind((View) target);
+                        ((View) target).invalidate();
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked DialogCell.onDraw/update for module chat cards");
+
+            for (Method method : dialogCell.getDeclaredMethods()) {
+                final String name = method.getName();
+                if (!"setDialog".equals(name) && !"setDialogSelected".equals(name)) continue;
+                final HotHook.Unhook setDialogHook = host.hook(method, new HotHook.Callback() {
+                    @Override
+                    public void after(HotHook.Call call) throws Throwable {
+                        if (chatRowRenderer == null) return;
+                        Object target = call.getThis();
+                        if (target instanceof View) {
+                            chatRowRenderer.bind((View) target);
+                            ((View) target).invalidate();
+                        }
+                    }
+                });
+                if (setDialogHook != null) activeHooks.add(setDialogHook);
+            }
+        } catch (Throwable t) {
+            host.log("ui: hook DialogCell failed: " + t.getMessage());
+        }
+
+        // 8. Module-owned chrome for official list screens. The fragments and
+        // adapters are untouched; a Yumi top bar / search field is inserted and
+        // the original ActionBar stays measured but invisible.
+        try {
+            hookScreen("org.telegram.ui.ContactsActivity", cl, YumiScreenChrome.KIND_CONTACTS);
+            hookScreen("org.telegram.ui.CallLogActivity", cl, YumiScreenChrome.KIND_CALLS);
+            hookScreen("org.telegram.ui.FiltersSetupActivity", cl, YumiScreenChrome.KIND_FOLDERS);
+
+            final Class<?> actionBar = Class.forName("org.telegram.ui.ActionBar.ActionBar", true, cl);
+            final Method showActionMode = actionBar.getDeclaredMethod("showActionMode",
+                    boolean.class, View.class, View.class, View[].class, boolean[].class, View.class, int.class);
+            HotHook.Unhook u = host.hook(showActionMode, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (screenChrome == null) return;
+                    Object target = call.getThis();
+                    if (target instanceof View) {
+                        screenChrome.onActionMode((View) target, true);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+
+            final Method hideActionMode = actionBar.getDeclaredMethod("hideActionMode");
+            u = host.hook(hideActionMode, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (screenChrome == null) return;
+                    Object target = call.getThis();
+                    if (target instanceof View) {
+                        screenChrome.onActionMode((View) target, false);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked Contacts/Calls/Folders chrome + ActionBar mode");
+        } catch (Throwable t) {
+            host.log("ui: hook list screen chrome failed: " + t.getMessage());
+        }
+    }
+
+    private void hookScreen(String className, ClassLoader cl, final String kind) {
+        try {
+            final Class<?> cls = Class.forName(className, true, cl);
+            final Method createView = cls.getMethod("createView", Context.class);
+            final HotHook.Unhook u = host.hook(createView, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || screenChrome == null) return;
+                    Object[] args = call.getArgs();
+                    if (args != null && args.length > 0 && args[0] instanceof Context) {
+                        screenChrome.apply(call.getThis(), (Context) args[0], kind);
+                    }
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked " + className + ".createView (" + kind + ")");
+        } catch (Throwable t) {
+            host.log("ui: hook " + className + " failed: " + t.getMessage());
+        }
     }
 
     // ==================== Settings UI ====================
@@ -828,10 +1086,16 @@ public class UiModule implements HotModule, HotUi {
             writeInt(KEY_STYLE, value ? 1 : 0);
             writeInt("style", value ? 1 : 0);
             markTouched();
+            if (navController != null) navController.refresh();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            if (screenChrome != null && !isExpressive()) screenChrome.restoreAll();
             return;
         }
         writeBool(key, value);
         markTouched();
+        if (key != null && (key.startsWith("chat_") || key.startsWith("theme_"))) {
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+        }
     }
 
     @Override
@@ -840,6 +1104,7 @@ public class UiModule implements HotModule, HotUi {
             int next = (chatListStyle() + 1) % 3;
             writeInt(KEY_CHAT_STYLE, next);
             markTouched();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             String name = next == CHAT_STYLE_CARDS ? "Виразні плаваючі картки"
                     : (next == CHAT_STYLE_ISLANDS ? "Сегментовані острівці" : "Сучасний плаский");
             if (host != null) host.toast("Стиль списку: " + name);
@@ -847,11 +1112,16 @@ public class UiModule implements HotModule, HotUi {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
             markTouched();
+            if (navController != null) navController.refresh();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             if (host != null) host.toast("Інтерфейс Yumi оновлено");
         } else if ("go_classic".equals(rowId)) {
             writeInt(KEY_STYLE, 0);
             writeInt("style", 0);
             markTouched();
+            if (navController != null) navController.refresh();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            if (screenChrome != null) screenChrome.restoreAll();
             if (host != null) host.toast("Yougram Classic застосовано");
         } else if ("reset_defaults".equals(rowId)) {
             writeInt(KEY_STYLE, 1);
@@ -868,6 +1138,8 @@ public class UiModule implements HotModule, HotUi {
             writeBool(KEY_LOADING, true);
             writeBool("theme_tonal_adaptation", true);
             markTouched();
+            if (navController != null) navController.refresh();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             if (host != null) host.toast("Налаштування скинуто до рекомендованих");
         }
     }

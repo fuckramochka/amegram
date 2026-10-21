@@ -286,22 +286,34 @@
     {
       "id": "ui",
       "name": "Інтерфейс Yumi",
-      "description": "Стиль інтерфейсу на льоту: Yougram Expressive ↔ Classic, власне відображення списку чатів та липкі анімації PixelPlayer (Material You).",
+      "description": "Виразний інтерфейс Yumi у модулі ui: навігація, картки чатів, верхні панелі контактів, дзвінків і папок, пружинна тактильність M3 Expressive.",
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
+          "version": "1.0.6",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.6.hmod",
+          "sha256": "4ce77f2451686cfeeed9c19b925443c06451efdffcb149c22a6d49cc9b97d9e9",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.6: виразна навігація та картки чатів тепер живуть у модулі ui; додано Yumi-панелі для контактів, дзвінків і папок із пошуком, збереженням ActionBar для action mode та відновленням класичного вигляду.",
+          "permissions": [
+            "hook_ui"
+          ],
+          "sizeBytes": 34854
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.5",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.5.hmod",
           "sha256": "7da6100ec634974a7fce5780a33f57044cdeb9e7c85f34c99870935af38e892b",
+          "sizeBytes": 14337,
           "minApp": 7112,
           "changelog": "Версія 1.0.5: преміальна пружинна тактильність (Material 3 Expressive), плавний відгук на картках чатів (DialogCell 0.985x), шовкове відкриття шторок BottomSheet без батутного дрижання та реактивні мікро-анімації кнопок і табів (0.965x) без затримок.",
           "permissions": [
             "hook_ui"
-          ],
-          "sizeBytes": 14337
-        }
-      },
-      "history": [
+          ]
+        },
         {
           "branch": "stable",
           "version": "1.0.4",

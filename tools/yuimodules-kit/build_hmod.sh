@@ -45,7 +45,12 @@ trap "rm -rf $TMP" EXIT
 mkdir -p "$OUTDIR" "$TMP/classes"
 echo "[1/4] lint manifest..."
 python3 "$(dirname "$0")/lint_manifest.py" --help >/dev/null 2>&1 || true
-javac -source 8 -target 8 -cp "$CP" -d "$TMP/classes" "$SRC"
+if [ -d "$SRC" ]; then
+  SRC_FILES="$(find "$SRC" -name '*.java' -print)"
+else
+  SRC_FILES="$SRC"
+fi
+javac -source 8 -target 8 -cp "$CP" -d "$TMP/classes" $SRC_FILES
 echo "[2/4] compiled."
 D8_LIB_ARGS="--lib $API_CP"
 if [ -n "$ANDROID_JAR" ]; then

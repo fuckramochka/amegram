@@ -58,4 +58,27 @@ public class MiogramLocale {
             return template;
         }
     }
+
+    /**
+     * Correct plural form for Ukrainian, Russian and English counts.
+     * Pass three forms for uk, three for ru and two for en.
+     */
+    public static String plural(int count, String ukOne, String ukFew, String ukMany,
+                                String ruOne, String ruFew, String ruMany,
+                                String enOne, String enMany) {
+        String language = getLanguageCode();
+        if ("uk".equals(language) || "ru".equals(language)) {
+            boolean one = count % 10 == 1 && count % 100 != 11;
+            boolean few = count % 10 >= 2 && count % 10 <= 4
+                    && (count % 100 < 12 || count % 100 > 14);
+            if (one) {
+                return "uk".equals(language) ? ukOne : ruOne;
+            }
+            if (few) {
+                return "uk".equals(language) ? ukFew : ruFew;
+            }
+            return "uk".equals(language) ? ukMany : ruMany;
+        }
+        return count == 1 ? enOne : enMany;
+    }
 }

@@ -10,7 +10,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.1.hmod",
-          "sha256": "8278f6d3be36a9899e150dd882b299226673640b8ff6b0f0e7fb5ac27501f3b5",
+          "sha256": "6b758b50ae78284498b023e2a4a6ca665676c7c9780ed8d05120fb76668086ad",
           "minApp": 7112,
           "changelog": "Тумблери прив'язані до реальних префів; фон/блур тільки в олівці плеєра.",
           "permissions": [
@@ -35,7 +35,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.1.hmod",
-          "sha256": "e07725148015b80c032bbb8cb858eca2fdb6041c4521c07e0ed05fa015f530c1",
+          "sha256": "2ae36c240c047ae34d98c719e53a7af111efb0c8be9af1c3662ac08c481a11e6",
           "minApp": 7112,
           "changelog": "Привид+видалені одним модулем; синк префів у ядро; гейт вимкнення.",
           "permissions": [
@@ -58,7 +58,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ame-1.0.0.hmod",
-          "sha256": "7d5ed801510e715a10a97cc6d79001208845326ef1b3aabbd70a7e2909a887db",
+          "sha256": "dd9e00d5804890d018588fe326e0b622252bc401d18f523c74d016e03769bc56",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -82,7 +82,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/vault-1.0.0.hmod",
-          "sha256": "3a9d734f87b07118e6c72f40f43d34bb82a273e01ca1711a16bb5cb3600a5074",
+          "sha256": "fad73205b760c6b5adcd3eff2ee699cece4db548edcd7d885dce38c99d5e3407",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -106,7 +106,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/tiktok-1.0.0.hmod",
-          "sha256": "6c38038686245891b52c91e6ef72b07353e523d6cc8351850c4acb663ecfbc51",
+          "sha256": "6733de58f26dc56f60d0718f9cb7009afa7a6b8cd59f9389fa54a15a9d7f3e9b",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -130,13 +130,13 @@
         "stable": {
           "version": "1.0.2",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.2.hmod",
-          "sha256": "ba0c870bb32978659fa6a0c0cd831d30336e69113773702c212172c021e36810",
+          "sha256": "0ce92b9b06e4b4f1e122b87f5c9975d3905eb705c378529ebfb8885660e48622",
           "minApp": 7112,
           "changelog": "Версія 1.0.2: перехід на Gemini 3.5 Flash Lite (в 10 разів вищі ліміти), резервний ланцюг, форматування емоцій та автопідхоплення ключа з клієнта.",
           "permissions": [
             "network"
           ],
-          "sizeBytes": 7919
+          "sizeBytes": 7924
         }
       },
       "history": [
@@ -165,7 +165,7 @@
           ]
         }
       ],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "media",
       "featured": false
     },
@@ -178,13 +178,13 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.1.hmod",
-          "sha256": "3df04585c84781f6b720e36e3d0dbde57f456479494f4ed2b9014b6e538623f9",
+          "sha256": "55ef22458e9268ab3fcccff6740ef30efe02011eb64a7b057a7417252c2ad8d7",
           "minApp": 7112,
           "changelog": "Тільки Nano vs Gemini API (3.5-flash-lite); кнопка Get Key в AI Studio.",
           "permissions": [
             "network"
           ],
-          "sizeBytes": 10215
+          "sizeBytes": 10245
         }
       },
       "history": [],
@@ -201,7 +201,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.1.hmod",
-          "sha256": "54566a887ff1e7c782197f8a54ffaf50888a0489dae3ba94e1baf4c157b0345f",
+          "sha256": "080ff62911d75487545253a05fda6c18c560b3b4f29e382c89d8a2491d796303",
           "minApp": 7112,
           "changelog": "Видалені переїхали в привида; тут безліміти/буст/жести.",
           "permissions": [
@@ -224,7 +224,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/automation-1.0.0.hmod",
-          "sha256": "44097471aa07fc7da77169b9b5b7b6b9aedccf59dfa376d801660efd2259f945",
+          "sha256": "a2248367f85aad4bad3cb16f024fb37877f873c88d3eb51a09825b35e0d9a2ab",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
@@ -248,7 +248,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
-          "sha256": "0e13d911550a6cb0048da9c48716169f2341bdff94d0ebd9e14de945f2642b2b",
+          "sha256": "a012127dce87dce9c496473794cd084967f5d168079e1715910cacf6c64b775e",
           "minApp": 7112,
           "changelog": "",
           "permissions": [],
@@ -269,7 +269,7 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/fileorganization-1.0.0.hmod",
-          "sha256": "afff4767c286c2dcfbc587b9cd25e01f28177771b92ced57bc7ba6df7afcc4da",
+          "sha256": "d8638f34c944a2c3cb843c058ec97d0cd88ec9d1d3e372f452432fcbf422de24",
           "minApp": 7112,
           "changelog": "Підпапки чатів + збереження по папках винесено в окремий модуль.",
           "permissions": [
@@ -292,13 +292,13 @@
         "stable": {
           "version": "1.0.6",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.6.hmod",
-          "sha256": "4ce77f2451686cfeeed9c19b925443c06451efdffcb149c22a6d49cc9b97d9e9",
+          "sha256": "5d29a0c98a9eae33faa5bbe0c5c5f1df8d73f67076dd282277a9bf833f25ad42",
           "minApp": 7112,
           "changelog": "Версія 1.0.6: виразна навігація та картки чатів тепер живуть у модулі ui; додано Yumi-панелі для контактів, дзвінків і папок із пошуком, збереженням ActionBar для action mode та відновленням класичного вигляду.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 34854
+          "sizeBytes": 33538
         }
       },
       "history": [
@@ -330,8 +330,8 @@
           "branch": "stable",
           "version": "1.0.3",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.3.hmod",
-          "sha256": "1c286492cc5b08a4f694a618f7df22e71be4f04632f1c85f39ec507585adcf13",
-          "sizeBytes": 12169,
+          "sha256": "02f85e39c7f61c7dbb0c7108dddf3ce5ef8b67be8ef37b159433b2ca3ccc5270",
+          "sizeBytes": 10331,
           "minApp": 7112,
           "changelog": "Версія 1.0.3: редизайн меню налаштувань у стилі MD3 Expressive (великі тактильні картки та кнопки зі сліпінг-пружинами), тональна адаптація кольорів (збереження та підсилення темно-рожевої та кастомних тем замість сірого кольору).",
           "permissions": [

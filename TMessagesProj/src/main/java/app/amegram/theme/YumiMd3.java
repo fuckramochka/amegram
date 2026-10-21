@@ -367,6 +367,14 @@ public final class YumiMd3 {
         return isDark() ? 0xFFFFB4AB : 0xFFB3261E;
     }
 
+    public static int errorContainer() {
+        return isDark() ? 0xFF5C1A16 : 0xFFFFDAD6;
+    }
+
+    public static int onErrorContainer() {
+        return isDark() ? 0xFFFFDAD6 : 0xFF410002;
+    }
+
     public static int gradientStart() {
         return 0xFF8B5CF6;
     }
@@ -397,6 +405,11 @@ public final class YumiMd3 {
 
     public static int actionGradientEnd() {
         return 0xFFD92D5C;
+    }
+
+    /** Content colour on the deep action gradient, readable in both themes. */
+    public static int onActionGradient() {
+        return 0xFFFFFFFF;
     }
 
     // ---------------------------------------------------------------------

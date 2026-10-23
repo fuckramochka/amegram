@@ -1005,8 +1005,9 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 }
             }
             if (app.miogram.bridge.vault.MiogramDoubleBottomManager.isPanicLogoutEnabled()) {
+                int safeAccount = decoyAccount >= 0 ? decoyAccount : UserConfig.selectedAccount;
                 for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-                    if (a != decoyAccount && UserConfig.getInstance(a).isClientActivated()) {
+                    if (a != safeAccount && UserConfig.getInstance(a).isClientActivated()) {
                         MessagesController.getInstance(a).performLogout(1);
                     }
                 }

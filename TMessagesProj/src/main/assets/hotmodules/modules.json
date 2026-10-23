@@ -286,22 +286,34 @@
     {
       "id": "ui",
       "name": "Інтерфейс Yumi",
-      "description": "Виразний інтерфейс Yumi у модулі ui: навігація, картки чатів, верхні панелі контактів, дзвінків і папок, пружинна тактильність M3 Expressive.",
+      "description": "Автентичний Google Material Design 3 (Pixel / Android 14/15): чистий інтерфейс, стильна навігація M3 та тональні кольори.",
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
+          "version": "1.0.7",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.7.hmod",
+          "sha256": "40d32be2ff082ddbec6122d360ca1664d608009134137d6105a9d160dd8711af",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.7: автентичний Google Material Design 3 — видалено візуальний шум, чисті тональні поверхні M3, стандартна навігація M3.",
+          "permissions": [
+            "hook_ui"
+          ],
+          "sizeBytes": 34741
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.6",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.6.hmod",
           "sha256": "5d29a0c98a9eae33faa5bbe0c5c5f1df8d73f67076dd282277a9bf833f25ad42",
+          "sizeBytes": 33538,
           "minApp": 7112,
           "changelog": "Версія 1.0.6: виразна навігація та картки чатів тепер живуть у модулі ui; додано Yumi-панелі для контактів, дзвінків і папок із пошуком, збереженням ActionBar для action mode та відновленням класичного вигляду.",
           "permissions": [
             "hook_ui"
-          ],
-          "sizeBytes": 33538
-        }
-      },
-      "history": [
+          ]
+        },
         {
           "branch": "stable",
           "version": "1.0.5",
@@ -375,6 +387,27 @@
           ]
         }
       ],
+      "author": "Yumi Team",
+      "category": "custom",
+      "featured": true
+    },
+    {
+      "id": "wall",
+      "name": "Стіна профілю",
+      "description": "Стіна у власному профілі: думки, опитування-слайдери з графом розподілу, малювання неоновою кистю, медіа, кнопки та HTML-віджети.",
+      "entry": "com.amegram.mods.wall.WallModule",
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/wall-1.0.0.hmod",
+          "sha256": "6c22830f972d4183db4f34b8d7c3439a1fab5f47165f86bd9fd08511969dc4a7",
+          "minApp": 7112,
+          "changelog": "Перший реліз: локальна бета стіни профілю з інтеграцією в шапку профілю.",
+          "permissions": [],
+          "sizeBytes": 4849
+        }
+      },
+      "history": [],
       "author": "Yumi Team",
       "category": "custom",
       "featured": true

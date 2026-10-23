@@ -39,7 +39,6 @@ import java.util.Set;
 
 import app.miogram.bridge.MiogramLocale;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
-import tw.nekomimi.nekogram.settings.NekoPasscodeSettingsActivity;
 
 /**
  * Beautiful, user-friendly UI for Double Bottom (Подвійне сховище).
@@ -74,9 +73,16 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
     private int panicInfoRow;
 
     private int headerAdvanceRow;
-    private int legacyAccountsRow;
     private int clearRow;
     private int advanceInfoRow;
+
+    @Override
+    public boolean onFragmentCreate() {
+        if (MiogramDoubleBottomManager.isDuressActive()) {
+            return false;
+        }
+        return super.onFragmentCreate();
+    }
 
     @Override
     protected String getActionBarTitle() {
@@ -109,7 +115,6 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
         panicInfoRow = addRow();
 
         headerAdvanceRow = addRow();
-        legacyAccountsRow = addRow();
         clearRow = addRow();
         advanceInfoRow = addRow();
     }
@@ -130,10 +135,20 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(next);
             }
-        } else if (position == legacyAccountsRow) {
-            presentFragment(new NekoPasscodeSettingsActivity());
         } else if (position == clearRow) {
             showResetDialog();
+        }
+    }
+
+    private void showHint(String text) {
+        try {
+            org.telegram.ui.Components.BulletinFactory.of(this).createSimpleBulletin(R.raw.info, text).show();
+        } catch (Throwable t) {
+            try {
+                if (getParentActivity() != null) {
+                    android.widget.Toast.makeText(getParentActivity(), text, android.widget.Toast.LENGTH_SHORT).show();
+                }
+            } catch (Throwable ignore) {}
         }
     }
 
@@ -172,22 +187,7 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
         layout.addView(editText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 8));
 
         builder.setView(layout);
-        builder.setPositiveButton(MiogramLocale.get("Зберегти", "Сохранить", "Save"), (dialog, which) -> {
-            String pin = editText.getText().toString().trim();
-            if (pin.isEmpty()) {
-                return; // keep existing PIN
-            }
-            if (pin.length() < 4) {
-                return;
-            }
-            if (isReal) {
-                MiogramDoubleBottomManager.setRealPasscode(pin);
-            } else {
-                MiogramDoubleBottomManager.setDuressPasscode(pin);
-            }
-            updateRows();
-            listAdapter.notifyDataSetChanged();
-        });
+        builder.setPositiveButton(MiogramLocale.get("Зберегти", "Сохранить", "Save"), null);
         builder.setNegativeButton(MiogramLocale.get("Скасувати", "Отмена", "Cancel"), null);
 
         if (hasPin) {
@@ -197,12 +197,46 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
                 } else {
                     MiogramDoubleBottomManager.setDuressPasscode("");
                 }
+                showHint(MiogramLocale.get("PIN видалено", "PIN удалён", "PIN removed"));
                 updateRows();
                 listAdapter.notifyDataSetChanged();
             });
         }
 
-        showDialog(builder.create());
+        AlertDialog dialog = builder.create();
+        showDialog(dialog);
+
+        View positiveBtn = dialog.getButton(Dialog.BUTTON_POSITIVE);
+        if (positiveBtn != null) {
+            positiveBtn.setOnClickListener(v -> {
+                String pin = editText.getText().toString().trim();
+                if (pin.isEmpty()) {
+                    dialog.dismiss();
+                    return; // keep existing PIN
+                }
+                if (pin.length() < 4) {
+                    showHint(MiogramLocale.get("PIN-код повинен містити щонайменше 4 цифри", "PIN-код должен содержать минимум 4 цифры", "PIN must be at least 4 digits"));
+                    return;
+                }
+                if (isReal && MiogramDoubleBottomManager.isSameAsDuress(pin)) {
+                    showHint(MiogramLocale.get("Основний та аварійний PIN не можуть збігатися!", "Основной и аварийный PIN не могут совпадать!", "Real and emergency PIN cannot match!"));
+                    return;
+                }
+                if (!isReal && MiogramDoubleBottomManager.isSameAsReal(pin)) {
+                    showHint(MiogramLocale.get("Аварійний та основний PIN не можуть збігатися!", "Аварийный и основной PIN не могут совпадать!", "Emergency and real PIN cannot match!"));
+                    return;
+                }
+                if (isReal) {
+                    MiogramDoubleBottomManager.setRealPasscode(pin);
+                } else {
+                    MiogramDoubleBottomManager.setDuressPasscode(pin);
+                }
+                showHint(MiogramLocale.get("PIN успішно збережено", "PIN успешно сохранён", "PIN saved successfully"));
+                updateRows();
+                listAdapter.notifyDataSetChanged();
+                dialog.dismiss();
+            });
+        }
     }
 
     private void showAccountSelectDialog() {
@@ -241,6 +275,7 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
         ArrayList<Long> initialList = new ArrayList<>(allowed);
 
         UsersSelectActivity activity = new UsersSelectActivity(true, initialList, 0);
+        activity.setCurrentAccount(targetAccount);
         activity.setDelegate((didSelect, flags) -> {
             MiogramDoubleBottomManager.setAllowedDialogIds(targetAccount, didSelect);
             updateRows();
@@ -320,11 +355,19 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
                     if (position == statusRow) {
-                        boolean active = MiogramDoubleBottomManager.isConfigured();
+                        String val;
+                        if (hasReal && hasDuress) {
+                            val = MiogramLocale.get("Налаштовано і захищено", "Настроено и защищено", "Active & Protected");
+                        } else if (hasReal) {
+                            val = MiogramLocale.get("Потрібен аварійний PIN", "Требуется аварийный PIN", "Emergency PIN required");
+                        } else if (hasDuress) {
+                            val = MiogramLocale.get("Потрібен основний PIN", "Требуется основной PIN", "Real PIN required");
+                        } else {
+                            val = MiogramLocale.get("Не налаштовано", "Не настроено", "Not configured");
+                        }
                         cell.setTextAndValue(
                                 MiogramLocale.get("Подвійне сховище", "Двойное дно", "Double Bottom"),
-                                active ? MiogramLocale.get("Налаштовано і захищено", "Настроено и защищено", "Active & Protected") :
-                                         MiogramLocale.get("Потрібно задати коди", "Требуется настроить коды", "Setup required"),
+                                val,
                                 false
                         );
                     } else if (position == realPinRow) {
@@ -354,8 +397,6 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
                         String val = allowedCount > 0 ? (allowedCount + " " + MiogramLocale.get("чатів", "чатов", "chats")) :
                                                         MiogramLocale.get("Усі чати (без фільтра)", "Все чаты (без фильтра)", "All chats (unfiltered)");
                         cell.setTextAndValue(MiogramLocale.get("Вибрати дозволені чати", "Выбрать разрешенные чаты", "Select allowed chats"), val, false);
-                    } else if (position == legacyAccountsRow) {
-                        cell.setText(MiogramLocale.get("Окремі паролі для кожного акаунта", "Раздельные пароли для каждого аккаунта", "Independent passcodes per account"), true);
                     } else if (position == clearRow) {
                         cell.setText(MiogramLocale.get("Скинути налаштування сховища", "Сбросить настройки сейфа", "Reset Double Bottom"), false);
                         cell.setTextColor(Theme.getColor(Theme.key_text_RedBold));
@@ -388,11 +429,20 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
                                 "Real PIN grants unrestricted access to all chats. Emergency PIN unlocks into duress mode, showing only whitelisted chats."
                         ));
                     } else if (position == accountInfoRow) {
-                        cell.setText(MiogramLocale.get(
-                                "Оберіть, який акаунт показувати під час перевірки. Додаток непомітно перемкнеться на нього при вводі аварійного коду.",
-                                "Выберите, какой аккаунт показывать при проверке. Приложение незаметно переключится на него при вводе аварийного кода.",
-                                "Select which account to display under duress. The app silently switches to it when emergency PIN is entered."
-                        ));
+                        int activeCount = UserConfig.getActivatedAccountsCount();
+                        if (activeCount <= 1) {
+                            cell.setText(MiogramLocale.get(
+                                    "Підключено лише 1 акаунт. Додайте ще один профіль у меню для перемикання або налаштуйте список дозволених чатів нижче.",
+                                    "Подключён только 1 аккаунт. Добавьте ещё один профиль в меню для переключения или настройте список разрешенных чатов ниже.",
+                                    "Only 1 account is active. Add another profile in the menu to enable switching, or configure whitelisted chats below."
+                            ));
+                        } else {
+                            cell.setText(MiogramLocale.get(
+                                    "Оберіть, який акаунт показувати під час перевірки. Додаток непомітно перемкнеться на нього при вводі аварійного коду.",
+                                    "Выберите, какой аккаунт показывать при проверке. Приложение незаметно переключится на него при вводе аварийного кода.",
+                                    "Select which account to display under duress. The app silently switches to it when emergency PIN is entered."
+                            ));
+                        }
                     } else if (position == chatsInfoRow) {
                         cell.setText(MiogramLocale.get(
                                 "Усі чати, які НЕ позначені у списку дозволених, будуть повністю невидимі у списку діалогів та глобальному пошуку при вході за аварійним PIN.",

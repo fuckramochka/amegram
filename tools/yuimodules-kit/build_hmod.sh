@@ -9,6 +9,8 @@ if [ -z "$FQCN" ] || [ -z "$SRC" ] || [ -z "$MANIFEST" ] || [ -z "$OUTDIR" ]; th
   echo "usage: $0 <FQCN> <Src.java> <manifest.json> <outdir>"
   exit 2
 fi
+mkdir -p "$OUTDIR"
+OUTDIR="$(cd "$OUTDIR" && pwd)"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 # api-класи HotModule/HotHost/HotRow живуть у КЛІЄНТІ (app.amegram.hot.api).
 # Шукаємо їх так: $HOTMOD_API -> ./api (дзеркало в цьому репо) ->

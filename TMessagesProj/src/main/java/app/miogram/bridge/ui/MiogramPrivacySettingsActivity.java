@@ -72,9 +72,15 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
     protected void updateRows() {
         super.updateRows();
 
-        headerVaultRow = addRow();
-        vaultManageRow = addRow();
-        vaultInfoRow = addRow();
+        if (!app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive()) {
+            headerVaultRow = addRow();
+            vaultManageRow = addRow();
+            vaultInfoRow = addRow();
+        } else {
+            headerVaultRow = -1;
+            vaultManageRow = -1;
+            vaultInfoRow = -1;
+        }
 
         // Привид + анти-видалення — єдине джерело: секції завжди видимі.
         // Вимкнений модуль = підказка в info-рядах + гейт у onItemClick, а не зникнення секцій.

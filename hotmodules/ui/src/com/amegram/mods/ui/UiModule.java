@@ -251,7 +251,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public int chatListStyle() {
-        return readInt(KEY_CHAT_STYLE, CHAT_STYLE_CARDS);
+        return readInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
     }
 
     public boolean isChatPinnedAccent() {
@@ -259,7 +259,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public boolean isChatSquircleAvatars() {
-        return readBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
+        return readBool(KEY_CHAT_SQUIRCLE_AVATARS, false);
     }
 
     public boolean isChatCardOutline() {

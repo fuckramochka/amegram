@@ -11,7 +11,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.view.animation.OvershootInterpolator;
+import android.view.animation.DecelerateInterpolator;
 
 import androidx.annotation.NonNull;
 
@@ -19,9 +19,11 @@ import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.customui.MiogramHaptic;
 
 /**
- * A compact Material 3 switch with an expressive springy thumb.
- * The platform / Telegram switches are theme-bound; this one accepts a
- * surface palette so it can live on the tinted settings cards.
+ * Authentic Google Material Design 3 switch (Android 14/15 Pixel style).
+ *
+ * Dimensions: 52dp track width, 32dp track height, 16dp corner radius.
+ * Unchecked: outline track with surfaceContainerHighest fill, 16dp outline thumb.
+ * Checked: primary solid fill, 24dp onPrimary thumb with primary checkmark.
  */
 public class YumiSwitch extends View {
 
@@ -30,10 +32,9 @@ public class YumiSwitch extends View {
     }
 
     private final Paint trackPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint thumbPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint shadowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path checkPath = new Path();
     private final RectF trackRect = new RectF();
 
@@ -53,19 +54,18 @@ public class YumiSwitch extends View {
         accent = YumiMd3.primary();
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
 
+        outlinePaint.setStyle(Paint.Style.STROKE);
+        outlinePaint.setStrokeWidth(YumiMd3.dp(2f));
+
         checkPaint.setStyle(Paint.Style.STROKE);
         checkPaint.setStrokeCap(Paint.Cap.ROUND);
         checkPaint.setStrokeJoin(Paint.Join.ROUND);
-        checkPaint.setStrokeWidth(YumiMd3.dp(2.2f));
-
-        outlinePaint.setStyle(Paint.Style.STROKE);
-        outlinePaint.setStrokeWidth(YumiMd3.dp(1.4f));
-        outlinePaint.setStrokeCap(Paint.Cap.ROUND);
+        checkPaint.setStrokeWidth(YumiMd3.dp(2f));
 
         setClickable(true);
         setFocusable(true);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_YES);
-        setBackground(YumiMd3.transparentRipple(18, YumiMd3.defaultRippleColor()));
+        setBackground(YumiMd3.transparentRipple(16, YumiMd3.defaultRippleColor()));
     }
 
     public void setAccent(int color) {
@@ -99,8 +99,8 @@ public class YumiSwitch extends View {
             return;
         }
         animator = ValueAnimator.ofFloat(progress, value ? 1f : 0f);
-        animator.setDuration(280);
-        animator.setInterpolator(new OvershootInterpolator(1.15f));
+        animator.setDuration(220);
+        animator.setInterpolator(new DecelerateInterpolator(1.5f));
         animator.addUpdateListener(animation -> {
             progress = (float) animation.getAnimatedValue();
             invalidate();
@@ -110,8 +110,8 @@ public class YumiSwitch extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = resolveSize(YumiMd3.dp(54), widthMeasureSpec);
-        int height = resolveSize(YumiMd3.dp(36), heightMeasureSpec);
+        int width = resolveSize(YumiMd3.dp(52), widthMeasureSpec);
+        int height = resolveSize(YumiMd3.dp(32), heightMeasureSpec);
         setMeasuredDimension(width, height);
     }
 
@@ -120,55 +120,61 @@ public class YumiSwitch extends View {
         super.onDraw(canvas);
         float width = getWidth();
         float height = getHeight();
-        float trackWidth = Math.min(width, YumiMd3.dp(52));
+        float trackWidth = YumiMd3.dp(52);
         float trackHeight = YumiMd3.dp(32);
         float left = (width - trackWidth) / 2f;
         float top = (height - trackHeight) / 2f;
         trackRect.set(left, top, left + trackWidth, top + trackHeight);
 
-        float amount = Math.max(0f, Math.min(1f, progress));
-        int offTrack = YumiMd3.blend(YumiMd3.surfaceContainerHighest(), YumiMd3.outline(), 0.35f);
-        int trackColor = YumiMd3.blend(offTrack, accent, amount);
+        float p = Math.max(0f, Math.min(1f, progress));
+
+        // Track fill
+        int offTrack = YumiMd3.surfaceContainerHighest();
+        int onTrack = accent;
+        int trackColor = YumiMd3.blend(offTrack, onTrack, p);
         trackPaint.setColor(trackColor);
         canvas.drawRoundRect(trackRect, trackHeight / 2f, trackHeight / 2f, trackPaint);
 
-        if (amount < 0.98f) {
-            outlinePaint.setColor(YumiMd3.withAlpha(YumiMd3.outlineStrong(), 0.44f * (1f - amount)));
-            canvas.drawRoundRect(trackRect, trackHeight / 2f, trackHeight / 2f, outlinePaint);
+        // Track outline (only when unchecked or transitioning)
+        if (p < 0.99f) {
+            int outlineColor = YumiMd3.withAlpha(YumiMd3.outline(), (1f - p));
+            outlinePaint.setColor(outlineColor);
+            float inset = YumiMd3.dp(1f);
+            trackRect.inset(inset, inset);
+            canvas.drawRoundRect(trackRect, (trackHeight - inset * 2) / 2f, (trackHeight - inset * 2) / 2f, outlinePaint);
+            trackRect.inset(-inset, -inset);
         }
 
-        float thumbRadius = YumiMd3.dp(11);
-        float fromX = left + YumiMd3.dp(5) + thumbRadius;
-        float toX = left + trackWidth - YumiMd3.dp(5) - thumbRadius;
+        // Thumb: 16dp unchecked (radius 8dp), 24dp checked (radius 12dp)
+        float offRadius = YumiMd3.dp(8f);
+        float onRadius = YumiMd3.dp(12f);
+        float thumbRadius = offRadius + (onRadius - offRadius) * p;
+
+        float fromX = left + YumiMd3.dp(16f);
+        float toX = left + trackWidth - YumiMd3.dp(16f);
         if (getLayoutDirection() == LAYOUT_DIRECTION_RTL) {
             float swap = fromX;
             fromX = toX;
             toX = swap;
         }
-        float thumbCx = fromX + (toX - fromX) * Math.max(0f, Math.min(1.12f, progress));
+        float thumbCx = fromX + (toX - fromX) * p;
         float thumbCy = top + trackHeight / 2f;
 
-        shadowPaint.setColor(0x2A000000);
-        canvas.drawCircle(thumbCx, thumbCy + YumiMd3.dp(1), thumbRadius + YumiMd3.dp(0.5f), shadowPaint);
-
-        thumbPaint.setColor(YumiMd3.isDark() ? 0xFFFFFFFF : 0xFFFFFFFF);
+        int offThumb = YumiMd3.outline();
+        int onThumb = YumiMd3.onPrimary();
+        int thumbColor = YumiMd3.blend(offThumb, onThumb, p);
+        thumbPaint.setColor(thumbColor);
         canvas.drawCircle(thumbCx, thumbCy, thumbRadius, thumbPaint);
 
-        float checkAmount = Math.max(0f, Math.min(1f, (progress - 0.55f) / 0.45f));
-        if (checkAmount > 0.01f) {
-            // На светлом thumb в тёмной теме акцент должен быть затемнён,
-            // иначе галочка растворяется в белом.
-            int checkColor = YumiMd3.isDark()
-                    ? YumiMd3.blend(accent, 0xFF000000, 0.55f)
-                    : accent;
-            checkPaint.setColor(YumiMd3.withAlpha(checkColor, checkAmount));
-            float cx = thumbCx;
-            float cy = thumbCy;
-            float unit = YumiMd3.dp(3.5f) * (0.75f + checkAmount * 0.25f);
+        // Checkmark inside thumb when checked
+        if (p > 0.4f) {
+            float checkAlpha = (p - 0.4f) / 0.6f;
+            checkPaint.setColor(YumiMd3.withAlpha(accent, checkAlpha));
+            float unit = YumiMd3.dp(3.2f);
             checkPath.reset();
-            checkPath.moveTo(cx - unit, cy);
-            checkPath.lineTo(cx - unit * 0.15f, cy + unit * 0.8f);
-            checkPath.lineTo(cx + unit, cy - unit * 0.7f);
+            checkPath.moveTo(thumbCx - unit, thumbCy);
+            checkPath.lineTo(thumbCx - unit * 0.2f, thumbCy + unit * 0.8f);
+            checkPath.lineTo(thumbCx + unit, thumbCy - unit * 0.65f);
             canvas.drawPath(checkPath, checkPaint);
         }
     }
@@ -184,19 +190,16 @@ public class YumiSwitch extends View {
                 downX = event.getX();
                 downY = event.getY();
                 setPressed(true);
-                animate().scaleX(0.96f).scaleY(0.96f).setDuration(110).start();
                 return true;
             case MotionEvent.ACTION_MOVE:
                 if (pressed && (Math.abs(event.getX() - downX) > touchSlop
                         || Math.abs(event.getY() - downY) > touchSlop)) {
                     pressed = false;
                     setPressed(false);
-                    animate().scaleX(1f).scaleY(1f).setDuration(120).start();
                 }
                 return true;
             case MotionEvent.ACTION_UP:
                 setPressed(false);
-                animate().scaleX(1f).scaleY(1f).setDuration(140).start();
                 if (pressed) {
                     pressed = false;
                     performClick();
@@ -205,7 +208,6 @@ public class YumiSwitch extends View {
             case MotionEvent.ACTION_CANCEL:
                 pressed = false;
                 setPressed(false);
-                animate().scaleX(1f).scaleY(1f).setDuration(120).start();
                 return true;
             default:
                 return super.onTouchEvent(event);

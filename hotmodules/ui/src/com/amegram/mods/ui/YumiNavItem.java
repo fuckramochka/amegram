@@ -47,7 +47,7 @@ final class YumiNavItem extends FrameLayout {
         super(context);
         this.palette = palette;
         this.avatarMode = avatarMode;
-        setWillNotDraw(true);
+        setWillNotDraw(false);
         setClipChildren(false);
         setClipToPadding(false);
         setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);

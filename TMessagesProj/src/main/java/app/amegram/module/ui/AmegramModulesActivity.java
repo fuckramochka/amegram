@@ -138,6 +138,9 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
         headerModulesRow = addRow();
         for (String id : CARD_ORDER) {
+            if ("doublebottom".equals(id) && app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive()) {
+                continue;
+            }
             CardRef ref = new CardRef();
             ref.id = id;
             ref.isAmod = false;

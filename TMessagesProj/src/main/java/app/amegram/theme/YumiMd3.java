@@ -114,39 +114,39 @@ public final class YumiMd3 {
     }
 
     public static int surface() {
-        return isDark() ? 0xFF0D0B10 : 0xFFFBF7FB;
+        return isDark() ? 0xFF141218 : 0xFFFAF9FD;
     }
 
     public static int surfaceContainerLow() {
-        return isDark() ? 0xFF141118 : 0xFFFFFFFF;
+        return isDark() ? 0xFF1D1B20 : 0xFFF7F2FA;
     }
 
     public static int surfaceContainer() {
-        return isDark() ? 0xFF18141D : 0xFFFFFFFF;
+        return isDark() ? 0xFF211F26 : 0xFFF3EDF7;
     }
 
     public static int surfaceContainerHigh() {
-        return isDark() ? 0xFF211B27 : 0xFFF5EDF5;
+        return isDark() ? 0xFF2B2930 : 0xFFECE6F0;
     }
 
     public static int surfaceContainerHighest() {
-        return isDark() ? 0xFF2A2231 : 0xFFEFE5EF;
+        return isDark() ? 0xFF36343B : 0xFFE6E0E9;
     }
 
     public static int surfaceDim() {
-        return isDark() ? 0xFF08070B : 0xFFF2ECF2;
+        return isDark() ? 0xFF100E14 : 0xFFDED8E1;
     }
 
     public static int surfaceBright() {
-        return isDark() ? 0xFF2E2636 : 0xFFFFFBFF;
+        return isDark() ? 0xFF3B383E : 0xFFFEF7FF;
     }
 
     public static int inverseSurface() {
-        return isDark() ? 0xFFF5EFF6 : 0xFF332C37;
+        return isDark() ? 0xFFE6E0E9 : 0xFF313033;
     }
 
     public static int onInverseSurface() {
-        return isDark() ? 0xFF201923 : 0xFFF9EFF8;
+        return isDark() ? 0xFF313033 : 0xFFF4EFF4;
     }
 
     public static int scrim() {
@@ -154,19 +154,23 @@ public final class YumiMd3 {
     }
 
     public static int onSurface() {
-        return isDark() ? 0xFFF5EFF6 : 0xFF201923;
+        return isDark() ? 0xFFE6E0E9 : 0xFF1D1B20;
     }
 
     public static int onSurfaceVariant() {
-        return isDark() ? 0xFFBBB0C4 : 0xFF685C6A;
+        return isDark() ? 0xFFCAC4D0 : 0xFF49454F;
     }
 
     public static int outline() {
-        return isDark() ? 0xFF3B3345 : 0xFFE6DAE6;
+        return isDark() ? 0xFF938F99 : 0xFF79747E;
     }
 
     public static int outlineStrong() {
-        return isDark() ? 0xFF8E8197 : 0xFF8C7E8D;
+        return isDark() ? 0xFF938F99 : 0xFF79747E;
+    }
+
+    public static int outlineVariant() {
+        return isDark() ? 0xFF49454F : 0xFFCAC4D0;
     }
 
     public static int primary() {

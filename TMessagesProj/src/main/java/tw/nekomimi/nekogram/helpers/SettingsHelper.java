@@ -144,7 +144,7 @@ public class SettingsHelper {
         } else if (segments.size() == 1) {
             fragment = new app.amegram.settings.AmegramSettingsActivity();
         } else if (PasscodeHelper.getSettingsKey().equals(segments.get(1))) {
-            fragment = neko_fragment = new NekoPasscodeSettingsActivity();
+            fragment = new app.miogram.bridge.vault.MiogramDoubleBottomActivity();
         } else {
             switch (segments.get(1)) {
                 case "about":

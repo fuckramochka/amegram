@@ -9,6 +9,7 @@ import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.SharedConfig;
+import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
 
 import java.nio.charset.StandardCharsets;
@@ -108,6 +109,11 @@ public class MiogramDoubleBottomManager {
         storePin(KEY_REAL_PIN, trimmed);
         if (!trimmed.isEmpty()) {
             syncToTelegramPasscode(trimmed);
+        } else {
+            SharedConfig.passcodeHash = "";
+            SharedConfig.passcodeSalt = new byte[0];
+            SharedConfig.appLocked = false;
+            SharedConfig.saveConfig();
         }
     }
 
@@ -120,11 +126,29 @@ public class MiogramDoubleBottomManager {
     }
 
     public static void setDuressPasscode(String pin) {
-        storePin(KEY_DURESS_PIN, pin);
+        String trimmed = pin != null ? pin.trim() : "";
+        storePin(KEY_DURESS_PIN, trimmed);
+        if (trimmed.isEmpty()) {
+            setDuressActive(false);
+        }
+    }
+
+    public static boolean isSameAsDuress(String pin) {
+        return verifyPin(KEY_DURESS_PIN, pin);
+    }
+
+    public static boolean isSameAsReal(String pin) {
+        return verifyPin(KEY_REAL_PIN, pin);
     }
 
     public static int getDecoyAccount() {
-        return getPrefs().getInt(KEY_DECOY_ACCOUNT, -1);
+        int decoy = getPrefs().getInt(KEY_DECOY_ACCOUNT, -1);
+        if (decoy >= 0 && decoy < UserConfig.MAX_ACCOUNT_COUNT) {
+            if (!UserConfig.getInstance(decoy).isClientActivated()) {
+                return -1;
+            }
+        }
+        return decoy;
     }
 
     public static void setDecoyAccount(int account) {
@@ -291,6 +315,15 @@ public class MiogramDoubleBottomManager {
 
     private static boolean verifyPin(String key, String pin) {
         String stored = getPrefs().getString(key, "");
+        if (KEY_REAL_PIN.equals(key) && (stored == null || stored.isEmpty())) {
+            if (SharedConfig.checkPasscode(pin)) {
+                try {
+                    storePin(KEY_REAL_PIN, pin);
+                } catch (Throwable ignored) {}
+                return true;
+            }
+            return false;
+        }
         if (stored == null || stored.isEmpty() || pin == null) return false;
         if (stored.startsWith(HASH2_PREFIX)) {
             return verifyPinV2(key, stored, pin);

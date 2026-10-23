@@ -62,13 +62,8 @@ public class NekoPasscodeSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     public boolean onFragmentCreate() {
-        accounts.clear();
-        for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
-            if (UserConfig.getInstance(a).isClientActivated()) {
-                accounts.add(a);
-            }
-        }
-        return super.onFragmentCreate();
+        presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity(), true);
+        return false;
     }
 
     @Override

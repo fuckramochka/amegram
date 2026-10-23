@@ -336,7 +336,7 @@ public class NekoSettingsActivity extends BaseNekoSettingsActivity {
         } else if (position == generalRow) {
             presentFragment(new NekoGeneralSettingsActivity());
         } else if (position == passcodeRow) {
-            presentFragment(new NekoPasscodeSettingsActivity());
+            presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
         } else if (position == experimentRow) {
             presentFragment(new NekoExperimentalSettingsActivity());
         } else if (position == translatorRow) {

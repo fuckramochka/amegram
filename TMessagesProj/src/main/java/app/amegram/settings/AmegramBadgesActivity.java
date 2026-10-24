@@ -31,6 +31,7 @@ public class AmegramBadgesActivity extends BaseFragment {
     private static final int ROW_GRANT = 2;
     private static final int ROW_MASTER_TOGGLE = 3;
     private static final int ROW_MY_SYNC_TOGGLE = 4;
+    private static final int ROW_WORKSHOP = 5;
 
     private UniversalRecyclerView listView;
     private final java.util.List<MiogramBadgeType> catalogOrder = new java.util.ArrayList<>();
@@ -52,6 +53,12 @@ public class AmegramBadgesActivity extends BaseFragment {
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(MiogramLocale.get("Керування та статус", "Управление и статус", "Controls & Status")));
+
+        items.add(YumiSettingCell.Factory.of(ROW_WORKSHOP, R.drawable.msg_edit, YumiTheme.getPrimary(),
+                MiogramLocale.get("Майстерня бейджиків", "Мастерская бейджиков", "Badge Workshop"),
+                MiogramLocale.get("Створити або надіслати свій SVG-бейдж у t.me/yumigram?direct",
+                        "Создать или отправить свой SVG-бейдж в t.me/yumigram?direct",
+                        "Create or submit your custom SVG badge to t.me/yumigram?direct")));
 
         boolean masterEnabled = MiogramBadgeManager.isModuleEnabled();
         items.add(UItem.asCheck(ROW_MASTER_TOGGLE,
@@ -163,6 +170,8 @@ public class AmegramBadgesActivity extends BaseFragment {
             long selfId = getUserConfig() != null && getUserConfig().getCurrentUser() != null
                     ? getUserConfig().getCurrentUser().id : MiogramBadgeManager.FOUNDER_USER_ID;
             MiogramBadgeBottomSheet.show(ctx, selfId);
+        } else if (item.id == ROW_WORKSHOP) {
+            presentFragment(new AmegramBadgeWorkshopActivity());
         } else if (item.id == ROW_GRANT) {
             MiogramBadgeGrantSheet.show(ctx);
         } else if (item.id >= 100) {

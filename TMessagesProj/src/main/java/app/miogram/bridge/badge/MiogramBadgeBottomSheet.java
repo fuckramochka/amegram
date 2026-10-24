@@ -492,6 +492,21 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
 
             root.addView(saveButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+            TextView workshopBtn = new TextView(context);
+            workshopBtn.setText(MiogramLocale.get("✦ Майстерня бейджиків (Створити свій)", "✦ Мастерская бейджиков (Создать свой)", "✦ Badge Workshop (Create your own)"));
+            workshopBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
+            workshopBtn.setGravity(Gravity.CENTER);
+            workshopBtn.setTextColor(app.amegram.theme.YumiTheme.getPrimary());
+            workshopBtn.setBackground(Theme.getSelectorDrawable(false));
+            workshopBtn.setPadding(0, AndroidUtilities.dp(10), 0, AndroidUtilities.dp(10));
+            workshopBtn.setOnClickListener(v -> {
+                dismiss();
+                if (org.telegram.ui.LaunchActivity.getLastFragment() != null) {
+                    org.telegram.ui.LaunchActivity.getLastFragment().presentFragment(new app.amegram.settings.AmegramBadgeWorkshopActivity());
+                }
+            });
+            root.addView(workshopBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+
             // Founder-only: grant badges to other users.
             try {
                 long selfId = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();

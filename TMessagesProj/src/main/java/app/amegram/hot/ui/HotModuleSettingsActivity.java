@@ -144,6 +144,41 @@ public class HotModuleSettingsActivity extends BaseFragment {
             } catch (Throwable ignore) {
             }
         }
+        if ("ai".equals(moduleId)) {
+            try {
+                rows.add(HotRow.button("ai_providers_open",
+                        MiogramLocale.get("Провайдери та моделі ШІ", "Провайдеры и модели ИИ", "AI Providers & Models"),
+                        MiogramLocale.get("Ключі API Gemini, вибір моделі та розпізнавання", "Ключи API Gemini, выбор модели и распознавание", "Gemini API keys, model selection & transcription")));
+                rows.add(HotRow.button("ai_companion_open",
+                        MiogramLocale.get("ШІ-компаньйон (Ame / KAngel)", "ИИ-компаньон (Ame / KAngel)", "AI Companion (Ame / KAngel)"),
+                        MiogramLocale.get("Персона, стиль відповідей та пам'ять", "Персона, стиль ответов и память", "Persona, tone and memory")));
+            } catch (Throwable ignore) {
+            }
+        }
+        if ("vault".equals(moduleId)) {
+            try {
+                rows.add(HotRow.button("vault_manager_open",
+                        MiogramLocale.get("Відкрити хмарне сховище", "Открыть облачное хранилище", "Open Cloud Vault"),
+                        MiogramLocale.get("Файловий менеджер, захищене сховище", "Файловый менеджер, защищённое хранилище", "File manager, secure storage")));
+            } catch (Throwable ignore) {
+            }
+        }
+        if ("automation".equals(moduleId)) {
+            try {
+                rows.add(HotRow.button("automation_account_open",
+                        MiogramLocale.get("Автоматизація акаунта", "Автоматизация аккаунта", "Account Automation"),
+                        MiogramLocale.get("Юзербот, Heroku, авто-дії", "Юзербот, Heroku, авто-действия", "Userbot, Heroku, auto-actions")));
+            } catch (Throwable ignore) {
+            }
+        }
+        if ("tiktok".equals(moduleId)) {
+            try {
+                rows.add(HotRow.button("tiktok_ecosystem_open",
+                        MiogramLocale.get("Екосистема TikTok MI", "Экосистема TikTok MI", "TikTok MI ecosystem"),
+                        MiogramLocale.get("Підключення акаунта та інтеграція", "Подключение аккаунта и интеграция", "Account linking and integration")));
+            } catch (Throwable ignore) {
+            }
+        }
         if (rows.isEmpty()) {
             items.add(UItem.asCustom(buildInfoCard(context, MiogramLocale.get(
                     "Немає додаткових налаштувань.", "Нет дополнительных настроек.", "No additional settings."))));
@@ -395,15 +430,8 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
         card.setOnClickListener(v -> {
             card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-            if ("player".equals(moduleId)) {
-                if ("player_lyrics_open".equals(r.id)) {
-                    openPlayerLyrics();
-                    return;
-                }
-                if ("player_lyrics_ai".equals(r.id)) {
-                    upgradePlayerLyricsToAi();
-                    return;
-                }
+            if (handleCustomAction(r)) {
+                return;
             }
             try {
                 mod.onSettingsAction(r.id);
@@ -568,16 +596,8 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if (mod == null) return;
         HotHost host = HotModulesManager.hostFor(moduleId);
         try {
-            // Блок 5: спец-кейси player — вхід у лірику, повз модульний onSettingsAction.
-            if ("player".equals(moduleId) && r.type == HotRow.BUTTON) {
-                if ("player_lyrics_open".equals(r.id)) {
-                    openPlayerLyrics();
-                    return;
-                }
-                if ("player_lyrics_ai".equals(r.id)) {
-                    upgradePlayerLyricsToAi();
-                    return;
-                }
+            if (r.type == HotRow.BUTTON && handleCustomAction(r)) {
+                return;
             }
             if (r.type == HotRow.SWITCH) {
                 boolean cur = host.getBool(r.id, r.checked);
@@ -616,6 +636,45 @@ public class HotModuleSettingsActivity extends BaseFragment {
     @Override
     public boolean isLightStatusBar() {
         return !Theme.isCurrentThemeDark();
+    }
+
+    private boolean handleCustomAction(HotRow r) {
+        if (r == null) return false;
+        if ("player".equals(moduleId)) {
+            if ("player_lyrics_open".equals(r.id)) {
+                openPlayerLyrics();
+                return true;
+            }
+            if ("player_lyrics_ai".equals(r.id)) {
+                upgradePlayerLyricsToAi();
+                return true;
+            }
+        } else if ("ai".equals(moduleId)) {
+            if ("ai_providers_open".equals(r.id)) {
+                presentFragment(new app.miogram.bridge.ui.MiogramAiSettingsActivity());
+                return true;
+            }
+            if ("ai_companion_open".equals(r.id)) {
+                presentFragment(new app.miogram.bridge.ai.companion.MiogramCompanionActivity());
+                return true;
+            }
+        } else if ("vault".equals(moduleId)) {
+            if ("vault_manager_open".equals(r.id)) {
+                presentFragment(new app.miogram.bridge.cloudvault.MiogramCloudVaultActivity());
+                return true;
+            }
+        } else if ("automation".equals(moduleId)) {
+            if ("automation_account_open".equals(r.id)) {
+                presentFragment(new app.miogram.bridge.userbot.MiogramHerokuActivity());
+                return true;
+            }
+        } else if ("tiktok".equals(moduleId)) {
+            if ("tiktok_ecosystem_open".equals(r.id)) {
+                presentFragment(new app.miogram.bridge.ecosystem.AmegramTikTokSettingsActivity());
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Блок 5: відкрити плеєр з текстами (MiogramModernPlayerLayout lyrics / MiogramLyricsView) через Md3Router. */

@@ -6,26 +6,220 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Фирменный логотип Yumigram (пузырь с градиентом #8B5CF6 → #E5486B и монограммой Y) -->
+    <!-- Wing Shadows for 3D depth -->
     <path
-        android:pathData="M 42,28 L 66,28 C 74.8,28 82,35.2 82,44 L 82,56 C 82,64.8 74.8,72 66,72 L 48,72 C 45,72 40,75 34,79 C 32.5,80 31,79 31.8,77.5 C 33.2,74.5 34,71.5 34,68 L 34,67 C 29.5,64.5 26,59.5 26,54 L 26,44 C 26,35.2 33.2,28 42,28 Z">
+        android:fillColor="#2A003E"
+        android:fillAlpha="0.35"
+        android:pathData="M 50,49 C 44,38 34,28 18,33 C 22,37 26,41 23,46 C 20,49 16,52 19,56 C 24,59 29,60 27,65 C 25,68 24,71 28,73 C 33,75 40,71 44,66 C 47,62 49,56 50,49 Z"/>
+    <path
+        android:fillColor="#2A003E"
+        android:fillAlpha="0.35"
+        android:pathData="M 58,49 C 64,38 74,28 90,33 C 86,37 82,41 85,46 C 88,49 92,52 89,56 C 84,59 79,60 81,65 C 83,68 84,71 80,73 C 75,75 68,71 64,66 C 61,62 59,56 58,49 Z"/>
+
+    <!-- K-Angel Left Wing -->
+    <path
+        android:pathData="M 50,47 C 44,36 34,26 18,31 C 22,35 26,39 23,44 C 20,47 16,50 19,54 C 24,57 29,58 27,63 C 25,66 24,69 28,71 C 33,73 40,69 44,64 C 47,60 49,54 50,47 Z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:type="linear"
-                android:startX="26"
-                android:startY="28"
-                android:endX="82"
-                android:endY="76">
-                <item android:color="#8B5CF6" android:offset="0.0"/>
-                <item android:color="#E5486B" android:offset="1.0"/>
+                android:startX="18"
+                android:startY="26"
+                android:endX="50"
+                android:endY="71">
+                <item android:color="#FFF5D0FE" android:offset="0.0"/>
+                <item android:color="#FFD8B4FE" android:offset="0.4"/>
+                <item android:color="#FFF472B6" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Left Wing Feathers Accent Lines -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.5"
+        android:strokeLineCap="round"
+        android:pathData="M 46,45 C 38,36 30,32 23,34"/>
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.4"
+        android:strokeLineCap="round"
+        android:pathData="M 43,51 C 36,46 30,46 25,49"/>
+
+    <!-- K-Angel Right Wing -->
+    <path
+        android:pathData="M 58,47 C 64,36 74,26 90,31 C 86,35 82,39 85,44 C 88,47 92,50 89,54 C 84,57 79,58 81,63 C 83,66 84,69 80,71 C 75,73 68,69 64,64 C 61,60 59,54 58,47 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="90"
+                android:startY="26"
+                android:endX="58"
+                android:endY="71">
+                <item android:color="#FFF5D0FE" android:offset="0.0"/>
+                <item android:color="#FFD8B4FE" android:offset="0.4"/>
+                <item android:color="#FFF472B6" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <!-- Right Wing Feathers Accent Lines -->
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.5"
+        android:strokeLineCap="round"
+        android:pathData="M 62,45 C 70,36 78,32 85,34"/>
+    <path
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.4"
+        android:strokeLineCap="round"
+        android:pathData="M 65,51 C 72,46 78,46 83,49"/>
+
+    <!-- Telegram Soaring Paper Plane -->
+    <path
+        android:fillColor="#2A003E"
+        android:fillAlpha="0.3"
+        android:pathData="M 54,29.5 L 36,54.5 L 54,49.5 L 72,54.5 Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 54,26 L 36,51 L 54,46 Z"/>
+    <path
+        android:pathData="M 54,26 L 72,51 L 54,46 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
+                android:startY="26"
+                android:endX="72"
+                android:endY="51">
+                <item android:color="#FFE2E8F0" android:offset="0.0"/>
+                <item android:color="#FFCBD5E1" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M 54,46 L 47,54 L 54,51 L 61,54 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="47"
+                android:startY="46"
+                android:endX="61"
+                android:endY="54">
+                <item android:color="#FFC4B5FD" android:offset="0.0"/>
+                <item android:color="#FFA855F7" android:offset="1.0"/>
             </gradient>
         </aapt:attr>
     </path>
 
+    <!-- Gothic Ribbon Tails -->
     <path
-        android:strokeColor="#FFFFFFFF"
-        android:strokeWidth="6"
+        android:pathData="M 50,60 C 46,69 41,76 35,82 L 40,80 L 43,85 C 46,78 49,70 51,62 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="50"
+                android:startY="60"
+                android:endX="35"
+                android:endY="85">
+                <item android:color="#FFFB7185" android:offset="0.0"/>
+                <item android:color="#FFBE185D" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M 58,60 C 62,69 67,76 73,82 L 68,80 L 65,85 C 62,78 59,70 57,62 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="58"
+                android:startY="60"
+                android:endX="73"
+                android:endY="85">
+                <item android:color="#FFFB7185" android:offset="0.0"/>
+                <item android:color="#FFBE185D" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Ribbon Loops -->
+    <path
+        android:pathData="M 53,58 C 43,51 35,55 37,63 C 38,67 45,67 52,61 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="35"
+                android:startY="51"
+                android:endX="53"
+                android:endY="67">
+                <item android:color="#FFFB7185" android:offset="0.0"/>
+                <item android:color="#FFBE185D" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:pathData="M 55,58 C 65,51 73,55 71,63 C 70,67 63,67 56,61 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="73"
+                android:startY="51"
+                android:endX="55"
+                android:endY="67">
+                <item android:color="#FFFB7185" android:offset="0.0"/>
+                <item android:color="#FFBE185D" android:offset="1.0"/>
+            </gradient>
+        </aapt:attr>
+    </path>
+    <path
+        android:strokeColor="#FFFDA4AF"
+        android:strokeWidth="0.7"
         android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M 42.5,38 L 54,49.5 L 65.5,38 M 54,49.5 L 54,62"/>
+        android:pathData="M 48,56 C 43,54 39,56 40,61"/>
+    <path
+        android:strokeColor="#FFFDA4AF"
+        android:strokeWidth="0.7"
+        android:strokeLineCap="round"
+        android:pathData="M 60,56 C 65,54 69,56 68,61"/>
+
+    <!-- Center Heart Gem -->
+    <path
+        android:fillColor="#FFFFF1F2"
+        android:strokeColor="#FFBE185D"
+        android:strokeWidth="0.6"
+        android:pathData="M 54,64 C 54,64 49,60 49,56.5 C 49,54 51,52.5 53,53.5 C 53.6,53.8 54,54.3 54,54.3 C 54,54.3 54.4,53.8 55,53.5 C 57,52.5 59,54 59,56.5 C 59,60 54,64 54,64 Z"/>
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 52.5,54 m -0.8,0 a 0.8,0.8 0 1,0 1.6,0 a 0.8,0.8 0 1,0 -1.6,0"/>
+
+    <!-- K-Angel Halo Star -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M 54,12 C 54.7,15.5 56,16.8 59.5,17.5 C 56,18.2 54.7,19.5 54,23 C 53.3,19.5 52,18.2 48.5,17.5 C 52,16.8 53.3,15.5 54,12 Z"/>
+    <path
+        android:fillColor="#FFF472B6"
+        android:pathData="M 54,17.5 m -0.8,0 a 0.8,0.8 0 1,0 1.6,0 a 0.8,0.8 0 1,0 -1.6,0"/>
+
+    <!-- Sparkles -->
+    <path
+        android:fillColor="#FFFDF4FF"
+        android:pathData="M 80,20 C 80.5,22.8 81.7,24 84.5,24.5 C 81.7,25 80.5,26.2 80,29 C 79.5,26.2 78.3,25 75.5,24.5 C 78.3,24 79.5,22.8 80,20 Z"/>
+    <path
+        android:fillColor="#FFFDF4FF"
+        android:pathData="M 26,67 C 26.4,69.2 27.3,70.1 29.5,70.5 C 27.3,70.9 26.4,71.8 26,74 C 25.6,71.8 24.7,70.9 22.5,70.5 C 24.7,70.1 25.6,69.2 26,67 Z"/>
+
+    <!-- Cross accents -->
+    <path
+        android:strokeColor="#FFF5D0FE"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.85"
+        android:strokeLineCap="round"
+        android:pathData="M 84,43 H 88 M 86,41 V 45"/>
+    <path
+        android:strokeColor="#FFF5D0FE"
+        android:strokeWidth="0.8"
+        android:strokeAlpha="0.85"
+        android:strokeLineCap="round"
+        android:pathData="M 22,46 H 26 M 24,44 V 48"/>
 </vector>

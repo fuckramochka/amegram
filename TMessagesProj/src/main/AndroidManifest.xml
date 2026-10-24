@@ -649,13 +649,6 @@
             android:excludeFromRecents="true"
             android:theme="@style/Theme.TMessages.TransparentWithAlerts"/>
         <activity
-            android:name="app.miogram.bridge.wall.WallDrawActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
-            android:windowSoftInputMode="adjustNothing"
-            android:exported="false"
-        />
-        <activity
             android:name="tw.nekomimi.nekogram.helpers.AppRestartHelper"
             android:theme="@android:style/Theme.Translucent.NoTitleBar"
             android:process=":nagramx"

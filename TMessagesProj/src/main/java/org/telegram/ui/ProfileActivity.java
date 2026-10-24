@@ -3418,18 +3418,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                boolean isSelfProfile = myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId));
-                if (isSelfProfile) {
+                if (myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
                     app.miogram.bridge.customui.MiogramUiEngine.drawProfileBackground(canvas, getWidth(), getHeight());
                     app.miogram.bridge.customui.MiogramUiEngine.drawProfileBanner(canvas, getWidth(), (int) extraHeight);
-                    if (actionBar != null) {
-                        // чип бета-модуля «Стіна» — видимый лише коли список наверху,
-                        // тобто там, де працює тап по банеру (та сама зона)
-                        int wallChipTop = ActionBar.getCurrentActionBarHeight()
-                                + (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0) + AndroidUtilities.dp(12);
-                        int wallCount = app.miogram.bridge.wall.WallStorage.elementCount(getUserConfig().getClientUserId());
-                        app.miogram.bridge.wall.WallModule.drawProfileEntry(canvas, getWidth(), (int) extraHeight, wallChipTop, wallCount);
-                    }
                 }
                 if (Build.VERSION.SDK_INT >= 31 && scrollableViewNoiseSuppressor != null) {
                     blur3_InvalidateBlur();
@@ -4429,13 +4420,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         listView.setGlowColor(0);
         listView.setAdapter(listAdapter);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP | Gravity.LEFT));
-        boolean isSelfForWall = myProfile || (userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId));
-        if (isSelfForWall) {
-            long effectiveUserId = userId != 0 ? userId : getUserConfig().getClientUserId();
-            TLRPC.User selfUser = getMessagesController().getUser(effectiveUserId);
-            String selfName = selfUser != null ? UserObject.getUserName(selfUser) : "";
-            app.miogram.bridge.wall.WallModule.attachBannerTap(listView, this, effectiveUserId, selfName);
-        }
         listView.setOnItemClickListener((view, position, x, y) -> {
             if (getParentActivity() == null) {
                 return;

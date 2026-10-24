@@ -66,6 +66,7 @@ import app.amegram.hot.HotModulesManager;
 import app.amegram.hot.HotPlayerGate;
 import app.amegram.hot.api.HotServices;
 import app.amegram.hot.api.HotTranscribe;
+import app.miogram.bridge.ai.AmegramLocalTranscriber;
 import app.miogram.bridge.ai.MiogramAiService;
 import app.miogram.bridge.lyrics.MiogramLyricsEngine;
 import app.miogram.bridge.lyrics.MiogramLrcModel;
@@ -1380,13 +1381,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
     }
 
     private boolean isAiLyricsAvailable() {
-        boolean hasModule = HotModulesManager.isModuleActive("ai")
-                || HotModulesManager.isModuleActive("stt")
-                || HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
-        if (!hasModule) {
-            return false;
-        }
-        return MiogramAiService.hasApiKey() || HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
+        return true;
     }
 
     private void showLyrics(Lyrics lyrics) {
@@ -1407,58 +1402,94 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
     private void transcribeLyricsWithAi() {
         MessageObject mo = current;
         if (mo == null) return;
-        if (!isAiLyricsAvailable()) {
-            aiLyricsButton.setVisibility(View.GONE);
+        if (MiogramAiService.hasApiKey()) {
+            aiLyricsButton.setEnabled(false);
+            aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("Розшифровка…", "Расшифровка…", "Transcribing…"));
+            String key = currentKey;
+            MiogramLyricsEngine.getInstance().transcribeAudioWithAi(mo, new MiogramLyricsEngine.LyricsCallback() {
+                @Override
+                public void onLyricsLoaded(MiogramLrcModel.LrcSong song) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!TextUtils.equals(key, currentKey)) return;
+                        resetAiLyricsButton();
+                        StringBuilder text = new StringBuilder();
+                        if (song != null && !song.lines.isEmpty()) {
+                            for (MiogramLrcModel.LrcLine line : song.lines) {
+                                long ms = Math.max(0, line.timeMs);
+                                text.append(String.format(Locale.US, "[%02d:%02d.%02d]", ms / 60000, ms / 1000 % 60, ms % 1000 / 10))
+                                        .append(line.text).append('\n');
+                            }
+                        } else if (song != null) {
+                            text.append(song.plainLyrics != null ? song.plainLyrics : "");
+                        }
+                        Lyrics result = Lyrics.parse(text.toString(), Lyrics.SOURCE_ONLINE, "Gemini AI");
+                        if (result != null) showLyrics(result);
+                        else lyricsView.showState(LyricsView.STATE_NOT_FOUND);
+                    });
+                }
+
+                @Override
+                public void onError(String message) {
+                    AndroidUtilities.runOnUIThread(() -> {
+                        if (!TextUtils.equals(key, currentKey)) return;
+                        resetAiLyricsButton();
+                        lyricsView.showState(LyricsView.STATE_ERROR);
+                        sourceView.setText(message);
+                    });
+                }
+            });
             return;
         }
-        if (!MiogramAiService.hasApiKey()) {
-            boolean sttEnabled;
-            try {
-                sttEnabled = HotModulesManager.getService(HotServices.TRANSCRIBE) != null;
-            } catch (Throwable ignored) {
-                sttEnabled = false;
-            }
-            if (!sttEnabled) {
-                aiLyricsButton.setVisibility(View.GONE);
-                return;
-            }
+
+        HotTranscribe service = null;
+        try {
+            service = HotModulesManager.getService(HotServices.TRANSCRIBE);
+        } catch (Throwable ignored) {
+        }
+        if (service != null) {
             transcribeWithModule(mo);
+        } else {
+            transcribeWithLocal(mo);
+        }
+    }
+
+    private void transcribeWithLocal(MessageObject mo) {
+        java.io.File audio;
+        try {
+            audio = FileLoader.getInstance(mo.currentAccount).getPathToMessage(mo.messageOwner);
+        } catch (Throwable ignored) {
+            audio = null;
+        }
+        if (audio == null || !audio.exists()) {
+            try {
+                FileLoader.getInstance(mo.currentAccount)
+                        .loadFile(mo.getDocument(), mo, FileLoader.PRIORITY_HIGH, 0);
+            } catch (Throwable ignored) {
+            }
+            lyricsView.showState(LyricsView.STATE_ERROR);
+            sourceView.setText(app.miogram.bridge.MiogramLocale.get("Спочатку завантаж аудіофайл, потім спробуй ще раз", "Сначала загрузи аудиофайл, затем попробуй ещё раз", "Download the audio first, then try again"));
             return;
         }
         aiLyricsButton.setEnabled(false);
         aiLyricsButton.setText(app.miogram.bridge.MiogramLocale.get("Розшифровка…", "Расшифровка…", "Transcribing…"));
         String key = currentKey;
-        MiogramLyricsEngine.getInstance().transcribeAudioWithAi(mo, new MiogramLyricsEngine.LyricsCallback() {
-            @Override
-            public void onLyricsLoaded(MiogramLrcModel.LrcSong song) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (!TextUtils.equals(key, currentKey)) return;
-                    resetAiLyricsButton();
-                    StringBuilder text = new StringBuilder();
-                    if (song != null && !song.lines.isEmpty()) {
-                        for (MiogramLrcModel.LrcLine line : song.lines) {
-                            long ms = Math.max(0, line.timeMs);
-                            text.append(String.format(Locale.US, "[%02d:%02d.%02d]", ms / 60000, ms / 1000 % 60, ms % 1000 / 10))
-                                    .append(line.text).append('\n');
-                        }
-                    } else if (song != null) {
-                        text.append(song.plainLyrics != null ? song.plainLyrics : "");
+        String audioPath = audio.getAbsolutePath();
+        AmegramLocalTranscriber.transcribe(audioPath, false, (text, err) -> {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!TextUtils.equals(key, currentKey)) return;
+                resetAiLyricsButton();
+                if (!TextUtils.isEmpty(text)) {
+                    Lyrics result = Lyrics.parse(text, Lyrics.SOURCE_ONLINE, "AI STT · без таймінгів");
+                    if (result != null) {
+                        showLyrics(result);
+                    } else {
+                        lyricsView.showState(LyricsView.STATE_NOT_FOUND);
                     }
-                    Lyrics result = Lyrics.parse(text.toString(), Lyrics.SOURCE_ONLINE, "Gemini AI");
-                    if (result != null) showLyrics(result);
-                    else lyricsView.showState(LyricsView.STATE_NOT_FOUND);
-                });
-            }
-
-            @Override
-            public void onError(String message) {
-                AndroidUtilities.runOnUIThread(() -> {
-                    if (!TextUtils.equals(key, currentKey)) return;
-                    resetAiLyricsButton();
+                } else {
                     lyricsView.showState(LyricsView.STATE_ERROR);
-                    sourceView.setText(message);
-                });
-            }
+                    sourceView.setText(err != null ? err.getMessage() : "Помилка розпізнавання");
+                }
+            });
         });
     }
 

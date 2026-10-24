@@ -10,7 +10,7 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/player-1.0.1.hmod",
-          "sha256": "6b758b50ae78284498b023e2a4a6ca665676c7c9780ed8d05120fb76668086ad",
+          "sha256": "2b070e4e7bb193ea45f38199d1e12932237104504a46b5b8750d2c7b4dc7c1d5",
           "minApp": 7112,
           "changelog": "Тумблери прив'язані до реальних префів; фон/блур тільки в олівці плеєра.",
           "permissions": [
@@ -18,7 +18,8 @@
             "network",
             "storage"
           ],
-          "sizeBytes": 36427
+          "sizeBytes": 36427,
+          "bytes": 36427
         }
       },
       "history": [],
@@ -35,13 +36,14 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ghost-1.0.1.hmod",
-          "sha256": "2ae36c240c047ae34d98c719e53a7af111efb0c8be9af1c3662ac08c481a11e6",
+          "sha256": "26f8af308f8c5ce6f42057617a9f21b6ef5e68128976ecd9b20d4f5fa31fd0de",
           "minApp": 7112,
           "changelog": "Привид+видалені одним модулем; синк префів у ядро; гейт вимкнення.",
           "permissions": [
             "hook_net"
           ],
-          "sizeBytes": 3485
+          "sizeBytes": 3485,
+          "bytes": 3485
         }
       },
       "history": [],
@@ -58,14 +60,15 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ame-1.0.0.hmod",
-          "sha256": "dd9e00d5804890d018588fe326e0b622252bc401d18f523c74d016e03769bc56",
+          "sha256": "de0bf582d43e326febcb7be2dfe14df4ed91c4aa7505f04b728a34f19218e268",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "hook_ui",
             "storage"
           ],
-          "sizeBytes": 45210
+          "sizeBytes": 45210,
+          "bytes": 45210
         }
       },
       "history": [],
@@ -82,14 +85,15 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/vault-1.0.0.hmod",
-          "sha256": "fad73205b760c6b5adcd3eff2ee699cece4db548edcd7d885dce38c99d5e3407",
+          "sha256": "d6d7d5bcd3637c1837fd82a64b93bff426e470fb33b3b18502b637c1abc70a19",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "storage",
             "network"
           ],
-          "sizeBytes": 50680
+          "sizeBytes": 50680,
+          "bytes": 50680
         }
       },
       "history": [],
@@ -106,14 +110,15 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/tiktok-1.0.0.hmod",
-          "sha256": "6733de58f26dc56f60d0718f9cb7009afa7a6b8cd59f9389fa54a15a9d7f3e9b",
+          "sha256": "098cf38c188e5d591b4a15591ea0b62367ab7edafcff4d143fed7ef1979fc5f3",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "network",
             "storage"
           ],
-          "sizeBytes": 19281
+          "sizeBytes": 19281,
+          "bytes": 19281
         }
       },
       "history": [],
@@ -130,13 +135,14 @@
         "stable": {
           "version": "1.0.2",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.2.hmod",
-          "sha256": "0ce92b9b06e4b4f1e122b87f5c9975d3905eb705c378529ebfb8885660e48622",
+          "sha256": "ba0c870bb32978659fa6a0c0cd831d30336e69113773702c212172c021e36810",
           "minApp": 7112,
           "changelog": "Версія 1.0.2: перехід на Gemini 3.5 Flash Lite (в 10 разів вищі ліміти), резервний ланцюг, форматування емоцій та автопідхоплення ключа з клієнта.",
           "permissions": [
             "network"
           ],
-          "sizeBytes": 7924
+          "sizeBytes": 7924,
+          "bytes": 7919
         }
       },
       "history": [
@@ -178,13 +184,14 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.1.hmod",
-          "sha256": "55ef22458e9268ab3fcccff6740ef30efe02011eb64a7b057a7417252c2ad8d7",
+          "sha256": "3fb886e935e87f0acdece5430c024426799dfee0eeda0526eda6356a986fa3dd",
           "minApp": 7112,
           "changelog": "Тільки Nano vs Gemini API (3.5-flash-lite); кнопка Get Key в AI Studio.",
           "permissions": [
             "network"
           ],
-          "sizeBytes": 10245
+          "sizeBytes": 10245,
+          "bytes": 10215
         }
       },
       "history": [],
@@ -201,13 +208,14 @@
         "stable": {
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/experimental-1.0.1.hmod",
-          "sha256": "080ff62911d75487545253a05fda6c18c560b3b4f29e382c89d8a2491d796303",
+          "sha256": "fdec263886df087fd99db00d67fd7c9a64e372503c7bd1631bea90dd78b1fc4a",
           "minApp": 7112,
           "changelog": "Видалені переїхали в привида; тут безліміти/буст/жести.",
           "permissions": [
             "hook_net"
           ],
-          "sizeBytes": 4402
+          "sizeBytes": 4402,
+          "bytes": 4402
         }
       },
       "history": [],
@@ -224,14 +232,15 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/automation-1.0.0.hmod",
-          "sha256": "a2248367f85aad4bad3cb16f024fb37877f873c88d3eb51a09825b35e0d9a2ab",
+          "sha256": "101527873a0305d96fb3e42f44d3b4497d92e37c6241ad01c29dca8a1fc15e92",
           "minApp": 7112,
           "changelog": "",
           "permissions": [
             "background",
             "storage"
           ],
-          "sizeBytes": 2613
+          "sizeBytes": 2613,
+          "bytes": 2613
         }
       },
       "history": [],
@@ -248,11 +257,12 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/demo-1.0.0.hmod",
-          "sha256": "a012127dce87dce9c496473794cd084967f5d168079e1715910cacf6c64b775e",
+          "sha256": "d576467bb959e87be935e0fcaf1bcf60c9f64423bcebf4834d8bee379f030d74",
           "minApp": 7112,
           "changelog": "",
           "permissions": [],
-          "sizeBytes": 2209
+          "sizeBytes": 2209,
+          "bytes": 2209
         }
       },
       "history": [],
@@ -269,13 +279,14 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/fileorganization-1.0.0.hmod",
-          "sha256": "d8638f34c944a2c3cb843c058ec97d0cd88ec9d1d3e372f452432fcbf422de24",
+          "sha256": "e3a9ea5f1281747247f393f7be35691e328a4b416b838ce7249de3918e63675a",
           "minApp": 7112,
           "changelog": "Підпапки чатів + збереження по папках винесено в окремий модуль.",
           "permissions": [
             "storage"
           ],
-          "sizeBytes": 2951
+          "sizeBytes": 2951,
+          "bytes": 2951
         }
       },
       "history": [],
@@ -298,7 +309,8 @@
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 34741
+          "sizeBytes": 34741,
+          "bytes": 34741
         }
       },
       "history": [
@@ -387,27 +399,6 @@
           ]
         }
       ],
-      "author": "Yumi Team",
-      "category": "custom",
-      "featured": true
-    },
-    {
-      "id": "wall",
-      "name": "Стіна профілю",
-      "description": "Стіна у власному профілі: думки, опитування-слайдери з графом розподілу, малювання неоновою кистю, медіа, кнопки та HTML-віджети.",
-      "entry": "com.amegram.mods.wall.WallModule",
-      "branches": {
-        "stable": {
-          "version": "1.0.0",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/wall-1.0.0.hmod",
-          "sha256": "6c22830f972d4183db4f34b8d7c3439a1fab5f47165f86bd9fd08511969dc4a7",
-          "minApp": 7112,
-          "changelog": "Перший реліз: локальна бета стіни профілю з інтеграцією в шапку профілю.",
-          "permissions": [],
-          "sizeBytes": 4849
-        }
-      },
-      "history": [],
       "author": "Yumi Team",
       "category": "custom",
       "featured": true

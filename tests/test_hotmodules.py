@@ -151,10 +151,10 @@ def test_lifecycle_and_clean_start():
     badges_path = os.path.join(BASE_DIR, "TMessagesProj", "src", "main", "java", "app", "amegram", "settings", "AmegramBadgesActivity.java")
     assert os.path.isfile(badges_path), "AmegramBadgesActivity має бути нативним класом"
 
-    catalog_path = os.path.join(JAVA_HOT_DIR, "ui", "HotCatalogSheet.java")
+    catalog_path = os.path.join(JAVA_HOT_DIR, "ui", "HotModuleDetailSheet.java")
     with open(catalog_path, "r", encoding="utf-8") as f:
         cat = f.read()
-        assert "Встановити та ввімкнути" in cat, "HotCatalogSheet має містити галочку 'Встановити та ввімкнути'"
+        assert "Встановити" in cat, "HotModuleDetailSheet має містити кнопку 'Встановити'"
 
     print("    -> Життєвий цикл, реактивні слухачі та нативні бейджики успішно верифіковано")
 

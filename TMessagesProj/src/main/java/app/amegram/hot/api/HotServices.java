@@ -43,7 +43,4 @@ public final class HotServices {
 
     /** {@link HotUi}: стиль інтерфейсу (Yougram Expressive ↔ Classic) на льоту. */
     public static final String UI = "ui";
-
-    /** {@link HotWall}: стіна профілю (локальна бета, згодом синк з VPS). */
-    public static final String WALL = "wall";
 }

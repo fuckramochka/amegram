@@ -29,6 +29,8 @@ public class AmegramBadgesActivity extends BaseFragment {
 
     private static final int ROW_MY_BADGE = 1;
     private static final int ROW_GRANT = 2;
+    private static final int ROW_MASTER_TOGGLE = 3;
+    private static final int ROW_MY_SYNC_TOGGLE = 4;
 
     private UniversalRecyclerView listView;
     private final java.util.List<MiogramBadgeType> catalogOrder = new java.util.ArrayList<>();
@@ -49,10 +51,22 @@ public class AmegramBadgesActivity extends BaseFragment {
     }
 
     private void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
-        items.add(UItem.asHeader(MiogramLocale.get("Твій статус", "Твой статус", "Your status")));
+        items.add(UItem.asHeader(MiogramLocale.get("Керування та статус", "Управление и статус", "Controls & Status")));
+
+        boolean masterEnabled = MiogramBadgeManager.isModuleEnabled();
+        items.add(UItem.asCheck(ROW_MASTER_TOGGLE,
+                MiogramLocale.get("Відображати бейджики спільноти", "Отображать бейджики сообщества", "Display community badges"))
+                .setChecked(masterEnabled));
 
         long selfId = getUserConfig() != null && getUserConfig().getCurrentUser() != null
                 ? getUserConfig().getCurrentUser().id : 0;
+        if (selfId > 0 && masterEnabled) {
+            boolean selfSync = MiogramSupabaseBridge.isSyncEnabledForAccount(getContext(), selfId);
+            items.add(UItem.asCheck(ROW_MY_SYNC_TOGGLE,
+                    MiogramLocale.get("Увімкнути бейдж для мого профілю", "Включить бейдж для моего профиля", "Enable badge on my profile"))
+                    .setChecked(selfSync));
+        }
+
         String badgeTitle = selfId > 0 ? MiogramBadgeManager.getBadgeTitle(selfId)
                 : MiogramLocale.get("Увійди, щоб побачити бейдж", "Войди, чтобы увидеть бейдж", "Log in to see your badge");
 
@@ -134,7 +148,18 @@ public class AmegramBadgesActivity extends BaseFragment {
         Context ctx = getContext();
         if (ctx == null) return;
 
-        if (item.id == ROW_MY_BADGE) {
+        if (item.id == ROW_MASTER_TOGGLE) {
+            MiogramBadgeManager.setModuleEnabled(!MiogramBadgeManager.isModuleEnabled());
+            if (listView != null && listView.adapter != null) listView.adapter.update(true);
+        } else if (item.id == ROW_MY_SYNC_TOGGLE) {
+            long selfId = getUserConfig() != null && getUserConfig().getCurrentUser() != null
+                    ? getUserConfig().getCurrentUser().id : 0;
+            if (selfId > 0) {
+                boolean cur = MiogramSupabaseBridge.isSyncEnabledForAccount(ctx, selfId);
+                MiogramSupabaseBridge.setSyncEnabledForAccount(ctx, selfId, !cur);
+                if (listView != null && listView.adapter != null) listView.adapter.update(true);
+            }
+        } else if (item.id == ROW_MY_BADGE) {
             long selfId = getUserConfig() != null && getUserConfig().getCurrentUser() != null
                     ? getUserConfig().getCurrentUser().id : MiogramBadgeManager.FOUNDER_USER_ID;
             MiogramBadgeBottomSheet.show(ctx, selfId);

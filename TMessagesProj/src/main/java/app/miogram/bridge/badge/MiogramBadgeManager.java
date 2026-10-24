@@ -16,7 +16,7 @@ public class MiogramBadgeManager {
     public static final long FOUNDER_USER_ID = 8011880648L;
 
     public static boolean hasArrow(long userId) {
-        if (userId <= 0) {
+        if (userId <= 0 || !isModuleEnabled()) {
             return false;
         }
         return MiogramSupabaseBridge.hasCloudBadge(userId);
@@ -37,6 +37,19 @@ public class MiogramBadgeManager {
         } catch (Throwable ignore) {
         }
         return true;
+    }
+
+    public static void setModuleEnabled(boolean enabled) {
+        try {
+            android.content.Context ctx =
+                    org.telegram.messenger.ApplicationLoader.applicationContext;
+            if (ctx != null) {
+                ctx.getSharedPreferences("amegram_module_prefs",
+                        android.content.Context.MODE_PRIVATE).edit().putBoolean("badges_enabled", enabled).apply();
+            }
+        } catch (Throwable ignore) {
+        }
+        org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.dialogsNeedReload);
     }
 
     public static MiogramBadgeType getBadgeType(long userId) {

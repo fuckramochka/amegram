@@ -19,6 +19,7 @@ import app.miogram.bridge.badge.MiogramBadgeBottomSheet;
 import app.miogram.bridge.badge.MiogramBadgeGrantSheet;
 import app.miogram.bridge.badge.MiogramBadgeManager;
 import app.miogram.bridge.badge.MiogramBadgeType;
+import app.miogram.bridge.badge.MiogramSupabaseBridge;
 
 /**
  * Экран бейджиков сообщества в стиле Material Design 3.

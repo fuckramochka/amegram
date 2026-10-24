@@ -35812,14 +35812,6 @@ public class ChatActivity extends BaseFragment implements
                 createDeleteMessagesAlert(selectedObject, selectedObjectGroup, true);
                 break;
             }
-            case btn_to_wall: {
-                MessageObject target = selectedObject;
-                selectedObject = null;
-                selectedObjectToEditCaption = null;
-                selectedObjectGroup = null;
-                app.miogram.bridge.wall.WallModule.addForwardFromMessage(this, target);
-                break;
-            }
             case OPTION_FORWARD: {
                 if (getMessagesController().isFrozen()) {
                     AccountFrozenAlert.show(currentAccount);
@@ -50872,11 +50864,6 @@ public class ChatActivity extends BaseFragment implements
                     if (chatMode != MODE_WELCOME_MESSAGES && NekoConfig.showAddToSavedMessages.Bool() && !UserObject.isUserSelf(currentUser) && !noforwards && selectedObject.canForwardMessage()) {
                         items.add(getString(R.string.AddToSavedMessages));
                         options.add(nkbtn_savemessage);
-                        icons.add(R.drawable.msg_saved);
-                    }
-                    if (app.miogram.bridge.wall.WallModule.isAvailable() && selectedObject != null) {
-                        items.add(app.miogram.bridge.MiogramLocale.get("На стіну", "На стену", "To wall"));
-                        options.add(btn_to_wall);
                         icons.add(R.drawable.msg_saved);
                     }
                     if (NaConfig.INSTANCE.getShowAddToBookmark().Bool() && selectedObject != null && !selectedObject.isAnyKindOfSticker()) {

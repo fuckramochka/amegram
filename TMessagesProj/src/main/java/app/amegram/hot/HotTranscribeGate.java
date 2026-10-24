@@ -45,8 +45,9 @@ public final class HotTranscribeGate {
             try {
                 FileLoader.getInstance(messageObject.currentAccount)
                         .loadFile(messageObject.getDocument(), messageObject, FileLoader.PRIORITY_HIGH, 0);
-                if (LaunchActivity.instance != null) {
-                    BulletinFactory.of(LaunchActivity.instance).createSimpleBulletin(
+                BulletinFactory bf = BulletinFactory.global();
+                if (bf != null) {
+                    bf.createSimpleBulletin(
                             org.telegram.messenger.R.raw.info,
                             MiogramLocale.get("Завантаження аудіо... Натисніть ще раз через секунду",
                                     "Загрузка аудио... Нажмите ещё раз через секунду",

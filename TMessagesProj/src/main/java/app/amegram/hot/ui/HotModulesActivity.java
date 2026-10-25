@@ -425,7 +425,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
 
         ImageView icon = new ImageView(context);
         icon.setImageResource(R.drawable.yumi_ic_auto_awesome);
-        icon.setColorFilter(YumiTheme.primaryColor());
+        icon.setColorFilter(YumiTheme.getPrimary());
         card.addView(icon, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL));
 
         LinearLayout titles = new LinearLayout(context);

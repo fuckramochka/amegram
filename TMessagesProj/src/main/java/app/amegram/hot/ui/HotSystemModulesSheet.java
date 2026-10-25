@@ -69,7 +69,7 @@ public class HotSystemModulesSheet extends BottomSheet {
 
         ImageView icon = new ImageView(context);
         icon.setImageResource(R.drawable.yumi_ic_auto_awesome);
-        icon.setColorFilter(YumiTheme.primaryColor());
+        icon.setColorFilter(YumiTheme.getPrimary());
         header.addView(icon, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL));
 
         LinearLayout titles = new LinearLayout(context);
@@ -149,7 +149,7 @@ public class HotSystemModulesSheet extends BottomSheet {
         secTitle.setText(MiogramLocale.get("Компоненти ядра", "Компоненты ядра", "Core components"));
         secTitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         secTitle.setTypeface(AndroidUtilities.bold());
-        secTitle.setTextColor(YumiTheme.primaryColor());
+        secTitle.setTextColor(YumiTheme.getPrimary());
         secTitle.setPadding(0, AndroidUtilities.dp(20), 0, AndroidUtilities.dp(8));
         root.addView(secTitle);
 
@@ -174,7 +174,7 @@ public class HotSystemModulesSheet extends BottomSheet {
         checkBtn.setGravity(Gravity.CENTER);
         GradientDrawable btnBg = new GradientDrawable();
         btnBg.setCornerRadius(AndroidUtilities.dp(14));
-        btnBg.setColor(YumiTheme.primaryColor());
+        btnBg.setColor(YumiTheme.getPrimary());
         checkBtn.setBackground(btnBg);
         checkBtn.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(13),
                 AndroidUtilities.dp(16), AndroidUtilities.dp(13));
@@ -231,7 +231,7 @@ public class HotSystemModulesSheet extends BottomSheet {
         badge.setText(MiogramLocale.get("🔒 Системний", "🔒 Системный", "🔒 System"));
         badge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
         badge.setTypeface(AndroidUtilities.bold());
-        badge.setTextColor(YumiTheme.primaryColor());
+        badge.setTextColor(YumiTheme.getPrimary());
         GradientDrawable bBg = new GradientDrawable();
         bBg.setCornerRadius(AndroidUtilities.dp(6));
         bBg.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
@@ -264,7 +264,7 @@ public class HotSystemModulesSheet extends BottomSheet {
             rollbackBtn.setText(MiogramLocale.get("Відкатити на v" + rollbackVer, "Откатить на v" + rollbackVer, "Rollback to v" + rollbackVer));
             rollbackBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
             rollbackBtn.setTypeface(AndroidUtilities.bold());
-            rollbackBtn.setTextColor(YumiTheme.primaryColor());
+            rollbackBtn.setTextColor(YumiTheme.getPrimary());
             rollbackBtn.setPadding(0, AndroidUtilities.dp(6), 0, 0);
             rollbackBtn.setOnClickListener(v -> {
                 HotModulesManager.activateVersion(info.manifest.id, rollbackVer, (ok, m, d) -> {

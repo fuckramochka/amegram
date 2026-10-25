@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 
 import app.amegram.hot.HotModulesManager;
+import app.amegram.hot.HotSettingsUiGate;
 import app.amegram.hot.ui.HotModuleMeta;
 import app.amegram.hot.ui.HotModuleSettingsActivity;
 import app.amegram.hot.ui.HotModulesActivity;
@@ -123,6 +124,12 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         HotModulesManager.init(context.getApplicationContext());
         HotModulesManager.addListener(this);
 
+        View customView = HotSettingsUiGate.createCustomSettingsView(this, context);
+        if (customView != null) {
+            fragmentView = customView;
+            return fragmentView;
+        }
+
         settingsView = new YumiSettingsView(context, this::buildModel, new YumiSettingsView.Listener() {
             @Override
             public void onBack() {
@@ -199,6 +206,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             buildMainModel(model);
             indexClientRows(model);
         }
+        HotSettingsUiGate.customizeModel(model);
         return model;
     }
 
@@ -302,14 +310,14 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Налаштування клієнта", "Настройки клиента", "Client settings"),
                 MiogramLocale.get("Чати, приватність, перекладач, оформлення", "Чаты, приватность, переводчик, оформление", "Chats, privacy, translator, appearance")));
         client.rows.add(row(ROW_HOTMODULES, R.drawable.yumi_ic_extension, YumiMd3.primary(),
-                MiogramLocale.get("Каталог хот-модулів", "Каталог хот-модулей", "Hot modules catalog"),
+                MiogramLocale.get("Модулі", "Модули", "Modules"),
                 enabledCount > 0
                         ? MiogramLocale.get("Увімкнено: " + enabledCount + " • Каталог та версії",
                         "Включено: " + enabledCount + " • Каталог и версии",
                         "Active: " + enabledCount + " • Catalog & versions")
-                        : MiogramLocale.get("Каталог розширень • 0 активних",
-                        "Каталог расширений • 0 активных",
-                        "Extension catalog • 0 active")));
+                        : MiogramLocale.get("Каталог модулів • 0 активних",
+                        "Каталог модулей • 0 активных",
+                        "Module catalog • 0 active")));
         client.rows.add(row(ROW_PLUGINS, R.drawable.yumi_ic_apps, YumiMd3.primary(),
                 MiogramLocale.get("Плагіни", "Плагины", "Plugins"),
                 MiogramLocale.get("Python + Lua + Java скрипти", "Python + Lua + Java скрипты", "Python + Lua + Java scripts")));
@@ -318,9 +326,9 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Інструкції та підказки", "Инструкции и подсказки", "Instructions & tips")));
         model.sections.add(client);
 
-        // --- Хот-модули ------------------------------------------------
+        // --- Модулі ----------------------------------------------------
         YumiSettingsModel.Section modules = section(
-                MiogramLocale.get("Хот-модулі", "Хот-модули", "Hot modules"),
+                MiogramLocale.get("Модулі", "Модули", "Modules"),
                 null);
 
         addModuleRow(modules, "ghost", ROW_GHOST, R.drawable.yumi_ic_ghost, YumiMd3.primary(),

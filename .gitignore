@@ -45,6 +45,7 @@ miogram.jpg
 # Web-артефакты
 node_modules/
 dist/
+out/
 
 # Rust - тільки збірка target/, сорси Cargo.toml/lock лишаються
 **/target/

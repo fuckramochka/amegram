@@ -59,14 +59,22 @@ public final class HotModulesManager {
         public final String entry;
         public final String name;
         public final int minApp;
+        public final String type;
+        public final boolean isSystem;
 
-        Manifest(String id, String version, String branch, String entry, String name, int minApp) {
+        Manifest(String id, String version, String branch, String entry, String name, int minApp, String type, boolean isSystem) {
             this.id = id;
             this.version = version;
             this.branch = branch;
             this.entry = entry;
             this.name = name;
             this.minApp = minApp;
+            this.type = type != null ? type : (isSystem ? "system" : "addon");
+            this.isSystem = isSystem;
+        }
+
+        Manifest(String id, String version, String branch, String entry, String name, int minApp) {
+            this(id, version, branch, entry, name, minApp, "addon", false);
         }
     }
 
@@ -155,6 +163,10 @@ public final class HotModulesManager {
         if (appContext == null) return;
         new Thread(() -> {
             try {
+                ensureSystemModulesInstalled();
+            } catch (Throwable ignore) {
+            }
+            try {
                 ensureBundledModulesInstalled();
             } catch (Throwable ignore) {
             }
@@ -163,11 +175,40 @@ public final class HotModulesManager {
             } catch (InterruptedException ignore) {
             }
             for (InstalledInfo info : listInstalled()) {
-                if (info.enabled && info.active) {
+                if ((info.enabled || info.manifest.isSystem) && info.active) {
                     getHandle(info.manifest.id);
                 }
             }
         }, "hotmods-attach").start();
+    }
+
+    /**
+     * Системні модулі ядра («Внутрішній світ Yumi»): авто-сід із assets/hotmodules при старті.
+     * Не потребують ручного завантаження та активуються автоматично.
+     */
+    public static void ensureSystemModulesInstalled() {
+        init(ApplicationLoader.applicationContext);
+        if (appContext == null) return;
+        try {
+            android.content.res.AssetManager am = appContext.getAssets();
+            String[] list = am.list("hotmodules");
+            if (list == null) return;
+            for (String f : list) {
+                if (!f.endsWith(".hmod")) continue;
+                if (f.startsWith("settings_ui") || f.contains("system")) {
+                    String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
+                    if (!isModuleInstalled(modId)) {
+                        try {
+                            installBundledModuleDirect(modId, true);
+                        } catch (Throwable e) {
+                            FileLog.e("hotmods: auto-install system module failed: " + modId, e);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable e) {
+            FileLog.e("hotmods: ensureSystemModulesInstalled error", e);
+        }
     }
 
     /**
@@ -207,8 +248,32 @@ public final class HotModulesManager {
         return false;
     }
 
+    public static boolean isSystem(String moduleId) {
+        if (moduleId == null) return false;
+        if ("settings_ui".equals(moduleId)) return true;
+        for (InstalledInfo info : listInstalled()) {
+            if (moduleId.equals(info.manifest.id) && info.active) {
+                return info.manifest.isSystem;
+            }
+        }
+        return false;
+    }
+
+    public static boolean isSystemAutoUpdateEnabled() {
+        if (appContext == null) init(ApplicationLoader.applicationContext);
+        if (appContext == null) return true;
+        return prefs().getBoolean("system_auto_update", true);
+    }
+
+    public static void setSystemAutoUpdateEnabled(boolean enabled) {
+        if (appContext == null) init(ApplicationLoader.applicationContext);
+        if (appContext == null) return;
+        prefs().edit().putBoolean("system_auto_update", enabled).apply();
+    }
+
     public static boolean isModuleEnabled(String moduleId) {
         if (moduleId == null) return false;
+        if (isSystem(moduleId)) return true;
         if (appContext == null) init(ApplicationLoader.applicationContext);
         if (appContext == null) return false;
         if (prefs().getBoolean("uninstalled_" + moduleId, false)) return false;
@@ -476,8 +541,10 @@ public final class HotModulesManager {
                 if (id.isEmpty() || version.isEmpty() || entry.isEmpty()) {
                     throw new IllegalStateException("bad manifest");
                 }
+                String type = o.optString("type", "addon");
+                boolean isSystem = o.optBoolean("system", false) || "system".equalsIgnoreCase(type) || "settings_ui".equals(id);
                 return new Manifest(id, version, o.optString("branch", "stable"),
-                        entry, o.optString("name", id), o.optInt("minApp", 0));
+                        entry, o.optString("name", id), o.optInt("minApp", 0), type, isSystem);
             }
         }
     }
@@ -581,6 +648,46 @@ public final class HotModulesManager {
         appContext.getSharedPreferences("hotmod_" + moduleId, Context.MODE_PRIVATE).edit().putString(key, value).apply();
     }
 
+    public static String installBundledModuleDirect(String modId, boolean enable) throws Exception {
+        init(ApplicationLoader.applicationContext);
+        if (appContext == null) throw new IllegalStateException("no context");
+        android.content.res.AssetManager am = appContext.getAssets();
+        String[] list = am.list("hotmodules");
+        if (list == null) throw new IllegalStateException("no assets");
+        String targetFile = null;
+        for (String f : list) {
+            if (f.equals(modId + ".hmod") || f.startsWith(modId + "-")) {
+                targetFile = f;
+                break;
+            }
+        }
+        if (targetFile == null) throw new IllegalStateException("bundled module not found: " + modId);
+        File tmp = new File(root(), targetFile + ".tmp");
+        try (InputStream in = am.open("hotmodules/" + targetFile);
+             FileOutputStream out = new FileOutputStream(tmp)) {
+            byte[] buf = new byte[16 * 1024];
+            int n;
+            while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+        }
+        Manifest m = readManifest(tmp);
+        File vdir = new File(new File(root(), m.id), m.version);
+        vdir.mkdirs();
+        File dest = new File(vdir, "module.hmod");
+        if (!tmp.renameTo(dest)) {
+            tmp.delete();
+            throw new IllegalStateException("rename failed");
+        }
+        makeReadOnly(dest);
+        boolean shouldEnable = enable || m.isSystem;
+        prefs().edit().putString("installed_" + m.id, m.version)
+                .putBoolean("enabled_" + m.id, shouldEnable).apply();
+        if (shouldEnable) {
+            getHandle(m.id);
+        }
+        notifyChanged();
+        return m.version;
+    }
+
     public static void installBundledModule(String modId, boolean enable, Callback<Void> cb) {
         init(ApplicationLoader.applicationContext);
         if (appContext == null) {
@@ -589,47 +696,8 @@ public final class HotModulesManager {
         }
         new Thread(() -> {
             try {
-                android.content.res.AssetManager am = appContext.getAssets();
-                String[] list = am.list("hotmodules");
-                if (list == null) {
-                    post(cb, false, "no assets", null);
-                    return;
-                }
-                String targetFile = null;
-                for (String f : list) {
-                    if (f.equals(modId + ".hmod") || f.startsWith(modId + "-")) {
-                        targetFile = f;
-                        break;
-                    }
-                }
-                if (targetFile == null) {
-                    post(cb, false, "bundled module not found: " + modId, null);
-                    return;
-                }
-                File tmp = new File(root(), targetFile + ".tmp");
-                try (InputStream in = am.open("hotmodules/" + targetFile);
-                     FileOutputStream out = new FileOutputStream(tmp)) {
-                    byte[] buf = new byte[16 * 1024];
-                    int n;
-                    while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
-                }
-                Manifest m = readManifest(tmp);
-                File vdir = new File(new File(root(), m.id), m.version);
-                vdir.mkdirs();
-                File dest = new File(vdir, "module.hmod");
-                if (!tmp.renameTo(dest)) {
-                    tmp.delete();
-                    post(cb, false, "rename failed", null);
-                    return;
-                }
-                makeReadOnly(dest);
-                prefs().edit().putString("installed_" + m.id, m.version)
-                        .putBoolean("enabled_" + m.id, enable).apply();
-                if (enable) {
-                    getHandle(m.id);
-                }
-                notifyChanged();
-                post(cb, true, m.version, null);
+                String ver = installBundledModuleDirect(modId, enable);
+                post(cb, true, ver, null);
             } catch (Throwable e) {
                 FileLog.e("hotmods: installBundled failed", e);
                 post(cb, false, e.getMessage(), null);
@@ -823,6 +891,13 @@ public final class HotModulesManager {
     }
 
     public static void setEnabled(String moduleId, boolean enabled, Callback<Void> cb) {
+        if (!enabled && isSystem(moduleId)) {
+            post(cb, false, MiogramLocale.get(
+                    "Системний модуль ядра не можна вимкнути",
+                    "Системный модуль ядра нельзя отключить",
+                    "System core module cannot be disabled"), null);
+            return;
+        }
         new Thread(() -> {
             if (enabled) {
                 prefs().edit().remove("uninstalled_" + moduleId).putBoolean("enabled_" + moduleId, true).apply();
@@ -869,6 +944,10 @@ public final class HotModulesManager {
     }
 
     public static void deleteModule(String moduleId) {
+        if (isSystem(moduleId)) {
+            FileLog.e("hotmods: cannot delete system module: " + moduleId);
+            return;
+        }
         dropLoaded(moduleId);
         deleteRecursive(new File(root(), moduleId));
         prefs().edit()

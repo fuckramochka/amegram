@@ -43,4 +43,7 @@ public final class HotServices {
 
     /** {@link HotUi}: стиль інтерфейсу (Yougram Expressive ↔ Classic) на льоту. */
     public static final String UI = "ui";
+
+    /** {@link HotSettingsUi}: інтерфейс налаштувань Yumigram (Внутрішній світ). */
+    public static final String SETTINGS_UI = "settings_ui";
 }

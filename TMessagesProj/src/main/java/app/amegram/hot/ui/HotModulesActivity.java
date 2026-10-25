@@ -60,7 +60,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(MiogramLocale.get("Хот-модулі", "Хот-модули", "Hot modules"));
+        actionBar.setTitle(MiogramLocale.get("Модулі", "Модули", "Modules"));
         actionBar.setActionBarMenuOnItemClick(new org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -329,7 +329,17 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 byId.put(info.manifest.id, info.active ? info : cur == null ? info : cur);
             }
         }
-        shown.addAll(byId.values());
+
+        List<HotModulesManager.InstalledInfo> systemModules = new ArrayList<>();
+        List<HotModulesManager.InstalledInfo> userModules = new ArrayList<>();
+        for (HotModulesManager.InstalledInfo info : byId.values()) {
+            if (info.manifest.isSystem) {
+                systemModules.add(info);
+            } else {
+                userModules.add(info);
+            }
+        }
+        shown.addAll(userModules);
         reloadPendingUpdates();
 
         // Пошук + сортування: оновлення першими, далі увімкнені, далі вимкнені, далі за назвою.
@@ -351,10 +361,14 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         for (HotModulesManager.InstalledInfo i : filtered) {
             if (i.enabled) enabledCount++;
         }
-        items.add(UItem.asHeader(MiogramLocale.get("Встановлені модулі", "Установленные модули", "Installed modules")
+
+        if (query.isEmpty()) {
+            items.add(UItem.asCustom(buildSystemCoreCard(context, systemModules)));
+        }
+
+        items.add(UItem.asHeader(MiogramLocale.get("Користувацькі модулі", "Пользовательские модули", "User modules")
                 + " • " + filtered.size()
-                + MiogramLocale.get(" • увімкнено: ", " • включено: ", " • on: ") + enabledCount
-                + " • 0 " + MiogramLocale.get("вбудовано", "встроено", "built-in")));
+                + MiogramLocale.get(" • увімкнено: ", " • включено: ", " • on: ") + enabledCount));
 
         if (!pendingUpdates.isEmpty() && query.isEmpty()) {
             items.add(UItem.asCustom(buildUpdatesBanner(context)));
@@ -391,6 +405,62 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 "Чистий клієнт: 0 модулів вбудовано — все ставиться з магазину. Вимкнений модуль вивантажується з пам'яті (0 KB RAM). Торкніть картку, щоб побачити опис і версії.",
                 "Чистый клиент: 0 модулей встроено — всё ставится из магазина. Выключенный модуль выгружается из памяти (0 KB RAM). Нажмите на карточку, чтобы увидеть описание и версии.",
                 "Clean client: 0 built-in — everything comes from the store. Disabled modules unload (0 KB RAM). Tap a card for details & versions.")));
+    }
+
+    private View buildSystemCoreCard(Context context, List<HotModulesManager.InstalledInfo> systemModules) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setCornerRadius(AndroidUtilities.dp(16));
+        bg.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        bg.setStroke(AndroidUtilities.dp(1), Theme.getColor(Theme.key_divider));
+        card.setBackground(bg);
+        card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(13),
+                AndroidUtilities.dp(16), AndroidUtilities.dp(13));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(6), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
+        card.setLayoutParams(lp);
+
+        ImageView icon = new ImageView(context);
+        icon.setImageResource(R.drawable.yumi_ic_auto_awesome);
+        icon.setColorFilter(YumiTheme.primaryColor());
+        card.addView(icon, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL));
+
+        LinearLayout titles = new LinearLayout(context);
+        titles.setOrientation(LinearLayout.VERTICAL);
+        titles.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(8), 0);
+
+        TextView title = new TextView(context);
+        title.setText(MiogramLocale.get("Внутрішній світ Yumi", "Внутренний мир Yumi", "Yumi Core System"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        titles.addView(title);
+
+        TextView sub = new TextView(context);
+        sub.setText(MiogramLocale.get("Системні модулі (" + systemModules.size() + ") • Завжди активні",
+                "Системные модули (" + systemModules.size() + ") • Всегда активны",
+                "System modules (" + systemModules.size() + ") • Always active"));
+        sub.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+        sub.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+        titles.addView(sub);
+
+        card.addView(titles, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+        TextView chevron = new TextView(context);
+        chevron.setText("›");
+        chevron.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
+        chevron.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+        chevron.setGravity(Gravity.CENTER);
+        card.addView(chevron, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        card.setOnClickListener(v -> {
+            HotSystemModulesSheet.show(this, systemModules, this::refresh);
+        });
+
+        return card;
     }
 
     private View buildUpdatesBanner(Context context) {

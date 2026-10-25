@@ -1,0 +1,17 @@
+{
+  "id": "settings_ui",
+  "version": "1.0.0",
+  "branch": "stable",
+  "type": "system",
+  "entry": "com.amegram.mods.settings.SettingsUiModule",
+  "name": "Інтерфейс налаштувань Yumi",
+  "minApp": 7112,
+  "description": "Системний модуль керування інтерфейсом налаштувань Yumigram: динамічні акценти, фірмовий Hero-банер та адаптивне меню.",
+  "changelog": "Перший реліз системного модуля інтерфейсу налаштувань Yumi.",
+  "author": "Yumi Core Team",
+  "category": "custom",
+  "featured": true,
+  "permissions": [
+    "hook_ui"
+  ]
+}

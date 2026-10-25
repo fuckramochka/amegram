@@ -24,8 +24,10 @@ fi
 
 API_CP="${HOTMOD_API:-}"
 if [ -z "$API_CP" ]; then
-  if [ -d "$ROOT/TMessagesProj/src/main/java" ]; then API_CP="$ROOT/TMessagesProj/src/main/java"
+  if [ -f "$(dirname "$0")/hot-api.jar" ]; then API_CP="$(cd "$(dirname "$0")" && pwd)/hot-api.jar"
+  elif [ -f "$ROOT/tools/yuimodules-kit/hot-api.jar" ]; then API_CP="$ROOT/tools/yuimodules-kit/hot-api.jar"
   elif [ -d "$ROOT/api" ]; then API_CP="$ROOT/api"
+  elif [ -d "$ROOT/TMessagesProj/src/main/java" ]; then API_CP="$ROOT/TMessagesProj/src/main/java"
   elif [ -d "$ROOT/../amegram/TMessagesProj/src/main/java" ]; then API_CP="$ROOT/../amegram/TMessagesProj/src/main/java"
   else
     echo "нема api-класів: скопіюй app/amegram/hot/api/*.java з клієнта в ./api/ або вкажи HOTMOD_API"

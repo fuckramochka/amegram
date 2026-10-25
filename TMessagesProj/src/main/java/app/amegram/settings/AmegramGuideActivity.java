@@ -34,7 +34,7 @@ public class AmegramGuideActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(MiogramLocale.get("Гід по плагінах", "Гид по плагинам", "Plugins guide"));
+        actionBar.setTitle(MiogramLocale.get("Гід по розширеннях", "Гид по расширениям", "Extensions guide"));
         actionBar.setActionBarMenuOnItemClick(new org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -91,14 +91,16 @@ public class AmegramGuideActivity extends BaseFragment {
                 catSubtitle));
 
         items.add(UItem.asShadow(MiogramLocale.get(
-                "Повний посібник для розробників: docs/AMEGRAM_PLUGINS_GUIDE.md",
-                "Полное руководство для разработчиков: docs/AMEGRAM_PLUGINS_GUIDE.md",
-                "Full developer guide in docs/AMEGRAM_PLUGINS_GUIDE.md")));
+                "Повний посібник для розробників: docs/PLUGINS_DEV_GUIDE.md",
+                "Полное руководство для разработчиков: docs/PLUGINS_DEV_GUIDE.md",
+                "Full developer guide in docs/PLUGINS_DEV_GUIDE.md")));
     }
 
     private void onClick(UItem item, View view, int position, float x, float y) {
-        if (item.id == ROW_OPEN_PLUGINS || item.id == ROW_OPEN_CATALOG) {
+        if (item.id == ROW_OPEN_PLUGINS) {
             presentFragment(new PluginsActivity());
+        } else if (item.id == ROW_OPEN_CATALOG) {
+            presentFragment(new PluginsActivity(true));
         }
     }
 

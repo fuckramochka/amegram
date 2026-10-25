@@ -86,6 +86,19 @@ public class PluginsActivity extends BaseFragment {
     public static final int FILTER_CATALOG = 3;
     private int currentFilter = FILTER_ALL;
     private LinearLayout tabsBar;
+    private final boolean openCatalogOnCreate;
+
+    public PluginsActivity() {
+        this(false);
+    }
+
+    /**
+     * @param openCatalogOnCreate якщо true, після відкриття одразу показує
+     *                            каталог плагінів замість списку встановлених.
+     */
+    public PluginsActivity(boolean openCatalogOnCreate) {
+        this.openCatalogOnCreate = openCatalogOnCreate;
+    }
 
     @Override
     public View createView(Context context) {
@@ -156,6 +169,13 @@ public class PluginsActivity extends BaseFragment {
         actionBar.setAdaptiveBackground(listView);
 
         fragmentView = contentView;
+        if (openCatalogOnCreate) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (getParentActivity() != null) {
+                    new MiogramPluginCatalogAlert(getParentActivity()).show();
+                }
+            }, 250);
+        }
         return fragmentView;
     }
 
@@ -275,9 +295,6 @@ public class PluginsActivity extends BaseFragment {
         items.add(UItem.asButton(ID_MIOPLUGIN_FOLDER, R.drawable.msg_folders,
                 app.miogram.bridge.MiogramLocale.get("Папка mioplugin (автоімпорт)", "Папка mioplugin (автоимпорт)", "mioplugin folder (auto-import)"),
                 folderLabel != null ? folderLabel : app.miogram.bridge.MiogramLocale.get("не вибрано — натисни", "не выбрана — нажми", "not set — tap")));
-        items.add(UItem.asButton(ID_MARKET_CATALOG, R.drawable.baseline_stars_24,
-                app.miogram.bridge.MiogramLocale.get("Завантажити з маркету", "Загрузить из маркета", "Download from Market"),
-                app.miogram.bridge.MiogramLocale.get("Каталог плагінів ໒꒱", "Каталог плагинов ໒꒱", "Plugins Catalog ໒꒱")));
         items.add(UItem.asSpace(dp(8)));
 
         List<Plugin> visible = visiblePlugins();

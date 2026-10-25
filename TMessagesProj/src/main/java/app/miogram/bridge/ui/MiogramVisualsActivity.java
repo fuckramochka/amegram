@@ -25,8 +25,10 @@ import app.exteraless.appearance.AppearanceConfig;
 import app.miogram.bridge.MiogramFlags;
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.ui.discord.MiogramDiscordLayout;
+import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
+import xyz.nextalone.nagram.NaConfig;
 
 /**
  * Clean & unified Miogram Appearance Settings with dynamic multilingual localization.
@@ -68,9 +70,22 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
     private int md3MiniPlayerRow;
     private int playerInfoRow;
 
+    private int headerFontsRow;
+    private int typefaceRow;
+    private int fontsInfoRow;
+
+    private int headerChatListRow;
+    private int centerTitleRow;
+    private int hideSearchBarRow;
+    private int hideFloatingButtonRow;
+    private int chatListInfoRow;
+
+    private int headerAdvancedRow;
+    private int advancedAppearanceRow;
+
     @Override
     protected String getActionBarTitle() {
-        return MiogramLocale.get("Зовнішній вигляд", "Внешний вид", "Appearance & Design");
+        return MiogramLocale.get("Персоналізація", "Персонализация", "Personalization");
     }
 
     @Override
@@ -119,6 +134,19 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
         headerPlayerRow = addRow();
         md3MiniPlayerRow = addRow();
         playerInfoRow = addRow();
+
+        headerFontsRow = addRow();
+        typefaceRow = addRow();
+        fontsInfoRow = addRow();
+
+        headerChatListRow = addRow();
+        centerTitleRow = addRow();
+        hideSearchBarRow = addRow();
+        hideFloatingButtonRow = addRow();
+        chatListInfoRow = addRow();
+
+        headerAdvancedRow = addRow();
+        advancedAppearanceRow = addRow();
     }
 
     private Context getSafeContext() {
@@ -223,6 +251,38 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(next);
             }
+        } else if (position == typefaceRow) {
+            boolean next = !NekoConfig.typeface.Bool();
+            NekoConfig.typeface.setConfigBool(next);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(next);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+            });
+        } else if (position == centerTitleRow) {
+            boolean next = !AppearanceConfig.centerTitle.Bool();
+            AppearanceConfig.centerTitle.setConfigBool(next);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(next);
+            }
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        } else if (position == hideSearchBarRow) {
+            boolean next = !NaConfig.INSTANCE.getHideDialogsSearchField().Bool();
+            NaConfig.INSTANCE.getHideDialogsSearchField().setConfigBool(next);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(next);
+            }
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        } else if (position == hideFloatingButtonRow) {
+            boolean next = !NaConfig.INSTANCE.getDisableDialogsFloatingButton().Bool();
+            NaConfig.INSTANCE.getDisableDialogsFloatingButton().setConfigBool(next);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(next);
+            }
+            getNotificationCenter().postNotificationName(NotificationCenter.dialogsNeedReload);
+        } else if (position == advancedAppearanceRow) {
+            presentFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
         }
     }
 
@@ -373,14 +433,16 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (position == headerModeRow || position == headerGlassRow || position == headerAvatarsRow || position == headerUiRow || position == headerPlayerRow) {
+            if (position == headerModeRow || position == headerGlassRow || position == headerAvatarsRow || position == headerUiRow || position == headerPlayerRow || position == headerFontsRow || position == headerChatListRow || position == headerAdvancedRow) {
                 return TYPE_HEADER;
             } else if (position == ameVibeRow || position == activeLyricsLineRow
                     || position == glassToggleRow || position == singleCornerRadiusRow
                     || position == senderMiniAvatarsRow || position == squareFabRow
-                    || position == md3MiniPlayerRow) {
+                    || position == md3MiniPlayerRow || position == typefaceRow
+                    || position == centerTitleRow || position == hideSearchBarRow
+                    || position == hideFloatingButtonRow) {
                 return TYPE_CHECK;
-            } else if (position == modeInfoRow || position == glassInfoRow || position == avatarsInfoRow || position == uiInfoRow || position == playerInfoRow) {
+            } else if (position == modeInfoRow || position == glassInfoRow || position == avatarsInfoRow || position == uiInfoRow || position == playerInfoRow || position == fontsInfoRow || position == chatListInfoRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_SETTINGS;
@@ -401,6 +463,12 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Елементи інтерфейсу та Теми", "Элементы интерфейса и Темы", "UI & Themes"));
                     } else if (position == headerPlayerRow) {
                         cell.setText(MiogramLocale.get("Музичний плеєр (Material 3)", "Музыкальный плеер (Material 3)", "Music Player (Material 3)"));
+                    } else if (position == headerFontsRow) {
+                        cell.setText(MiogramLocale.get("Шрифт та типографіка", "Шрифт и типографика", "Font & Typography"));
+                    } else if (position == headerChatListRow) {
+                        cell.setText(MiogramLocale.get("Список чатів та навігація", "Список чатов и навигация", "Chat List & Navigation"));
+                    } else if (position == headerAdvancedRow) {
+                        cell.setText(MiogramLocale.get("Розширено", "Расширенно", "Advanced"));
                     }
                     break;
                 }
@@ -420,6 +488,14 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(MiogramLocale.get("Квадратна («Squircle») плаваюча кнопка", "Квадратная («Squircle») плавающая кнопка", "Squircle Floating Action Button"), AppearanceConfig.squareFab.Bool(), true);
                     } else if (position == md3MiniPlayerRow) {
                         cell.setTextAndCheck(MiogramLocale.get("MD3 міні-плеєр у чатах", "MD3 мини-плеер в чатах", "MD3 Mini Player in chats"), AppearanceConfig.md3MiniPlayer(), false);
+                    } else if (position == typefaceRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Системний шрифт", "Системный шрифт", "System font"), NekoConfig.typeface.Bool(), false);
+                    } else if (position == centerTitleRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Центрувати заголовок", "Центрировать заголовок", "Center header title"), AppearanceConfig.centerTitle.Bool(), true);
+                    } else if (position == hideSearchBarRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Приховати рядок пошуку", "Скрыть строку поиска", "Hide search bar"), NaConfig.INSTANCE.getHideDialogsSearchField().Bool(), true);
+                    } else if (position == hideFloatingButtonRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Приховати плаваючу кнопку (FAB)", "Скрыть плавающую кнопку (FAB)", "Hide floating action button (FAB)"), NaConfig.INSTANCE.getDisableDialogsFloatingButton().Bool(), false);
                     }
                     break;
                 }
@@ -463,6 +539,9 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                                 ? "Telemone (Material 3)"
                                 : MiogramLocale.get("Класичний", "Классический", "Classic");
                         cell.setTextAndValue(MiogramLocale.get("Стиль Monet теми", "Стиль Monet темы", "Monet Theme Style"), val, false);
+                    } else if (position == advancedAppearanceRow) {
+                        cell.setTextAndValue(MiogramLocale.get("Розширене оформлення (Extera)", "Расширенное оформление (Extera)", "Advanced appearance (Extera)"),
+                                MiogramLocale.get("Шрифти, список чатів, папки", "Шрифты, список чатов, папки", "Fonts, chat list, folders"), false);
                     }
                     break;
                 }
@@ -488,6 +567,14 @@ public class MiogramVisualsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("MD3 — основний плеєр для музики. Тут можна окремо ввімкнути або вимкнути його міні-панель у чатах.",
                                 "MD3 — основной плеер для музыки. Здесь можно отдельно включить или выключить его мини-панель в чатах.",
                                 "MD3 is the default music player. Toggle its mini-player bar in chats here."));
+                    } else if (position == fontsInfoRow) {
+                        cell.setText(MiogramLocale.get("Використовувати системний шрифт пристрою замість стандартного шрифту Telegram.",
+                                "Использовать системный шрифт устройства вместо стандартного шрифта Telegram.",
+                                "Use device system font instead of default Telegram font."));
+                    } else if (position == chatListInfoRow) {
+                        cell.setText(MiogramLocale.get("Налаштування розташування заголовка та видимості службових кнопок на головному екрані.",
+                                "Настройки расположения заголовка и видимости служебных кнопок на главном экране.",
+                                "Configure header alignment and visibility of quick buttons on the main screen."));
                     }
                     break;
                 }

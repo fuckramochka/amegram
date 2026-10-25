@@ -107,15 +107,6 @@ public class SettingsUiModule implements HotModule, HotSettingsUi {
         return EYEBROW_PRESETS[preset];
     }
 
-    private static int getResId(Context context, String name) {
-        if (context == null || name == null) return 0;
-        try {
-            return context.getResources().getIdentifier(name, "drawable", context.getPackageName());
-        } catch (Throwable ignore) {
-            return 0;
-        }
-    }
-
     @Override
     public void fillSettings(List<HotRow> rows) {
         rows.add(HotRow.header("Головний банер (Hero)"));
@@ -145,12 +136,6 @@ public class SettingsUiModule implements HotModule, HotSettingsUi {
         rows.add(HotRow.switchRow("show_module_badges", "Позначки стану модулів",
                 "Відображати статус активності у рядках списку",
                 getHostBool("show_module_badges", true)));
-        rows.add(HotRow.switchRow("footer_actions", "Кнопки дій у підвалі",
-                "Швидкі кнопки 'Каталог модулів' та 'Налаштування клієнта' внизу",
-                getHostBool("footer_actions", true)));
-        rows.add(HotRow.switchRow("deep_search", "Розширений швидкий пошук",
-                "Індексація прихованих функцій (подвійне дно, антиблок тощо)",
-                getHostBool("deep_search", true)));
 
         rows.add(HotRow.header("Системні інструменти"));
         rows.add(HotRow.button("action_reset_ui", "Скинути налаштування інтерфейсу",
@@ -185,8 +170,6 @@ public class SettingsUiModule implements HotModule, HotSettingsUi {
             setHostBool("quick_ghost_first", true);
             setHostBool("clean_subtitles", false);
             setHostBool("show_module_badges", true);
-            setHostBool("footer_actions", true);
-            setHostBool("deep_search", true);
             host.toast("Параметри інтерфейсу повернуто до стандартних");
         }
     }
@@ -203,8 +186,6 @@ public class SettingsUiModule implements HotModule, HotSettingsUi {
     @Override
     public void customizeModel(YumiSettingsModel model) {
         if (model == null) return;
-
-        Context ctx = host != null ? host.context() : null;
 
         // 1. Hero banner
         if (model.hero != null) {
@@ -269,65 +250,9 @@ public class SettingsUiModule implements HotModule, HotSettingsUi {
             }
         }
 
-        // 5. Footer actions
-        boolean footerActions = getHostBool("footer_actions", true);
-        if (footerActions && model.footerPrimary == null && model.footerSecondary == null) {
-            int extIcon = getResId(ctx, "yumi_ic_extension");
-            int cfgIcon = getResId(ctx, "yumi_ic_settings");
-
-            YumiSettingsModel.Action primary = new YumiSettingsModel.Action();
-            primary.id = 20; // ROW_HOTMODULES
-            primary.icon = extIcon;
-            primary.label = "Каталог модулів";
-            primary.primary = true;
-            model.footerPrimary = primary;
-
-            YumiSettingsModel.Action secondary = new YumiSettingsModel.Action();
-            secondary.id = 33; // ROW_CLIENT_SETTINGS
-            secondary.icon = cfgIcon;
-            secondary.label = "Налаштування клієнта";
-            secondary.primary = false;
-            model.footerSecondary = secondary;
-        }
-
-        model.footerNote = "Yumigram · Material Design 3 Expressive";
-
-        // 6. Deep search index enrichment
-        if (getHostBool("deep_search", true)) {
-            enrichSearchIndex(model, ctx);
-        }
-    }
-
-    private void enrichSearchIndex(YumiSettingsModel model, Context ctx) {
-        if (model == null || model.searchIndex == null) return;
-        int lockIcon = getResId(ctx, "yumi_ic_lock");
-        int vpnIcon = getResId(ctx, "yumi_ic_vpn");
-        int badgeIcon = getResId(ctx, "yumi_ic_badges");
-        int musicIcon = getResId(ctx, "yumi_ic_music");
-        int cloudIcon = getResId(ctx, "yumi_ic_storage");
-        int extIcon = getResId(ctx, "yumi_ic_extension");
-
-        addSearchRow(model, 43, lockIcon, "Код-пароль і Подвійне дно",
-                "PIN-код, дублікат профілю, секретний пароль duress");
-        addSearchRow(model, 75, vpnIcon, "Обхід блокувань (Антиблок)",
-                "Автоматичні проксі, MTProto, захист з'єднання");
-        addSearchRow(model, 30, badgeIcon, "Майстерня бейджиків",
-                "Створення та подача бейджиків спільноти Yumigram");
-        addSearchRow(model, 3, musicIcon, "Музичний плеєр та тексти LRC",
-                "Пошук треків, тексти пісень, синхронізовані слова");
-        addSearchRow(model, 2, cloudIcon, "AES-256 Хмарне сховище",
-                "Зашифрований віртуальний диск, форум-папки");
-        addSearchRow(model, 20, extIcon, "Системні модулі",
-                "Базові системні компоненти, оновлення");
-    }
-
-    private void addSearchRow(YumiSettingsModel model, int id, int icon, String title, String subtitle) {
-        YumiSettingsModel.Row r = new YumiSettingsModel.Row();
-        r.id = id;
-        r.icon = icon;
-        r.title = title;
-        r.subtitle = subtitle;
-        model.searchIndex.add(r);
+        // 5. Підвал і пошуковий індекс більше НЕ налаштовуються модулем.
+        // Хаб сам будує footer та searchIndex у finalizeModel() — це
+        // захищає від дублів, якщо встановлена стара версія модуля.
     }
 
     @Override

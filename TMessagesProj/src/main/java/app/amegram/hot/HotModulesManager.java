@@ -109,6 +109,7 @@ public final class HotModulesManager {
 
     private static volatile Context appContext;
     private static final Map<String, Handle> LOADED = new HashMap<>();
+    private static final java.util.Set<String> ACTIVE_MODULES = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
     private static final Map<String, Object> SERVICES = new HashMap<>();
 
     /** Історичні ID колись вшитих модулів. APK тепер чистий (0 вбудованих),
@@ -197,7 +198,7 @@ public final class HotModulesManager {
                 if (!f.endsWith(".hmod")) continue;
                 if (f.startsWith("settings_ui") || f.contains("system")) {
                     String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
-                    if (!isModuleInstalled(modId)) {
+                    if (shouldSeedSystemModule(modId, f)) {
                         try {
                             installBundledModuleDirect(modId, true);
                         } catch (Throwable e) {
@@ -208,6 +209,75 @@ public final class HotModulesManager {
             }
         } catch (Throwable e) {
             FileLog.e("hotmods: ensureSystemModulesInstalled error", e);
+        }
+    }
+
+    /**
+     * Чи варто сіяти системний модуль із assets: коли його ще нема, або коли
+     * у сіді лежить версія новіша за встановлену (у assets буває кілька
+     * файлів різних версій — старі пропускаємо).
+     */
+    private static boolean shouldSeedSystemModule(String modId, String assetFile) {
+        String installed = prefs().getString("installed_" + modId, "");
+        if (!isModuleInstalled(modId)) {
+            return installed.isEmpty(); // уже сіяли, потім видалили/вимкнули руками
+        }
+        String seed = bundledAssetVersion(assetFile);
+        if (seed.isEmpty()) {
+            return false;
+        }
+        if (seed.equals(installed)) {
+            return false;
+        }
+        return compareVersions(seed, installed) > 0;
+    }
+
+    /** Версія з manifest.json безпосередньо з assets (тимчасовий файл не лишаємо). */
+    private static String bundledAssetVersion(String assetFile) {
+        if (appContext == null) return "";
+        File tmp = null;
+        try {
+            android.content.res.AssetManager am = appContext.getAssets();
+            tmp = new File(root(), assetFile + ".meta.tmp");
+            try (InputStream in = am.open("hotmodules/" + assetFile);
+                 FileOutputStream out = new FileOutputStream(tmp)) {
+                byte[] buf = new byte[16 * 1024];
+                int n;
+                while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+            }
+            Manifest m = readManifest(tmp);
+            return m == null || m.version == null ? "" : m.version;
+        } catch (Throwable ignore) {
+            return "";
+        } finally {
+            if (tmp != null) tmp.delete();
+        }
+    }
+
+    /** Порівняння версій "1.0.2" > "1.0.1". Суфікси на кшталт "rc1" ігноруються. */
+    private static int compareVersions(String a, String b) {
+        String[] pa = a.split("[.+\\-]");
+        String[] pb = b.split("[.+\\-]");
+        int n = Math.max(pa.length, pb.length);
+        for (int i = 0; i < n; i++) {
+            int x = i < pa.length ? versionPart(pa[i]) : 0;
+            int y = i < pb.length ? versionPart(pb[i]) : 0;
+            if (x != y) {
+                return x < y ? -1 : 1;
+            }
+        }
+        return 0;
+    }
+
+    private static int versionPart(String s) {
+        if (s == null || s.isEmpty()) return 0;
+        int end = 0;
+        while (end < s.length() && Character.isDigit(s.charAt(end))) end++;
+        if (end == 0) return 0;
+        try {
+            return Integer.parseInt(s.substring(0, end));
+        } catch (NumberFormatException ignore) {
+            return 0;
         }
     }
 
@@ -282,9 +352,8 @@ public final class HotModulesManager {
     }
 
     public static boolean isModuleActive(String moduleId) {
-        if (!isModuleEnabled(moduleId)) return false;
-        Handle h = getHandle(moduleId);
-        return h != null && h.instance != null;
+        if (moduleId == null) return false;
+        return ACTIVE_MODULES.contains(moduleId);
     }
 
     // ---------- crash-ізоляція: карантин після 3 провалів ----------
@@ -580,6 +649,10 @@ public final class HotModulesManager {
     }
 
     public static void notifyChanged() {
+        try {
+            app.exteraless.appearance.AppearanceConfig.invalidateExpressiveCache();
+        } catch (Throwable ignore) {
+        }
         AndroidUtilities.runOnUIThread(() -> {
             for (ModulesChangeListener l : LISTENERS) {
                 try {
@@ -1173,12 +1246,14 @@ public final class HotModulesManager {
             HostImpl host = new HostImpl(moduleId);
             Handle handle = new Handle(info, mod, modLoader, host);
             LOADED.put(moduleId, handle);
+            ACTIVE_MODULES.add(moduleId);
             try {
                 mod.onAttach(appContext, host);
             } catch (Throwable e) {
                 // Падіння в onAttach не роняє апку: знімаємо хендл, рахуємо провал.
                 FileLog.e("hotmods: onAttach failed: " + moduleId, e);
                 LOADED.remove(moduleId);
+                ACTIVE_MODULES.remove(moduleId);
                 try {
                     mod.onDetach();
                 } catch (Throwable ignore) {
@@ -1262,6 +1337,7 @@ public final class HotModulesManager {
     }
 
     private static synchronized void dropLoaded(String moduleId) {
+        ACTIVE_MODULES.remove(moduleId);
         Handle h = LOADED.remove(moduleId);
         if (h != null) {
             if (h.instance != null) {

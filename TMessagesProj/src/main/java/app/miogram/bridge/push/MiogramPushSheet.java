@@ -222,6 +222,14 @@ public class MiogramPushSheet extends BottomSheet {
             refreshAll();
         });
 
+        addAction(context, MiogramLocale.get("Нативні сповіщення Telegram", "Нативные уведомления Telegram", "Native Telegram notifications"), 0x18FFFFFF, 0xFFD2DBE3, v -> {
+            dismiss();
+            org.telegram.ui.ActionBar.BaseFragment last = org.telegram.ui.LaunchActivity.getLastFragment();
+            if (last != null) {
+                last.presentFragment(new org.telegram.ui.NotificationsSettingsActivity());
+            }
+        });
+
         TextView hint = new TextView(context);
         hint.setText(MiogramLocale.get(
                 "Якщо токен OK, а пуші при закритому додатку все одно не йдуть — рветься серверна ланка (FCM-ключ api_id) або вбивця фону в прошивці. Keep-alive обходить обидві проблеми ціною батареї.",

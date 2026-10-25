@@ -2695,15 +2695,7 @@ public class RecyclerListView extends RecyclerView implements IBlur3Capture {
 
     @Override
     public boolean drawChild(Canvas canvas, View child, long drawingTime) {
-        if (hasSections() && !ignoreClipChild) {
-            canvas.save();
-            clipChild(canvas, child);
-            boolean r = super.drawChild(canvas, child, drawingTime);
-            canvas.restore();
-            return r;
-        } else {
-            return super.drawChild(canvas, child, drawingTime);
-        }
+        return super.drawChild(canvas, child, drawingTime);
     }
 
     @Override

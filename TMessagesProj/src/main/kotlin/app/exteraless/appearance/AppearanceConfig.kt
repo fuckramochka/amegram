@@ -68,17 +68,31 @@ object AppearanceConfig {
         return uiStyleMode.Int()
     }
 
+    @Volatile
+    private var expressiveCache: Boolean? = null
+
+    @JvmStatic
+    fun invalidateExpressiveCache() {
+        expressiveCache = null
+        dividerHiddenCache = null
+    }
+
     @JvmStatic
     fun isYougramExpressive(): Boolean {
-        try {
+        val cached = expressiveCache
+        if (cached != null) return cached
+        val value = try {
             if (!app.amegram.hot.HotModulesManager.isModuleActive("ui")) {
-                return false
+                false
+            } else {
+                ensureLoaded()
+                uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE
             }
         } catch (t: Throwable) {
-            return false
+            false
         }
-        ensureLoaded()
-        return uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE
+        expressiveCache = value
+        return value
     }
 
     @JvmStatic
@@ -652,6 +666,11 @@ object AppearanceConfig {
     @JvmStatic
     fun init() {
         loadConfig(false)
+        try {
+            app.amegram.hot.HotModulesManager.addListener {
+                invalidateExpressiveCache()
+            }
+        } catch (ignore: Throwable) {}
     }
 
     @JvmStatic
@@ -713,5 +732,6 @@ object AppearanceConfig {
             editor.apply()
         }
         GlassOutlineStyle.dispatchChange()
+        invalidateExpressiveCache()
     }
 }

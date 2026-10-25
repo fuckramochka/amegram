@@ -235,7 +235,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return getString(R.string.OEGeneralOtherTitle);
+        return app.miogram.bridge.MiogramLocale.get("Інші (Extera)", "Другие (Extera)", "Other (Extera)");
     }
 
     @Override

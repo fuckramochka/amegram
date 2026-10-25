@@ -43,9 +43,14 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
     private int allowScreenshotRow;
     private int generalPrivacyInfoRow;
 
+    private int headerExtraRow;
+    private int antiblockRow;
+    private int telegramPrivacyRow;
+    private int extraInfoRow;
+
     @Override
     protected String getActionBarTitle() {
-        return MiogramLocale.get("Конфіденційність та Захист", "Конфиденциальность и Защита", "Privacy & Security");
+        return MiogramLocale.get("Приватність і безпека", "Приватность и безопасность", "Privacy & Security");
     }
 
     private boolean isGhostOn() {
@@ -99,6 +104,11 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         hidePhoneRow = addRow();
         allowScreenshotRow = addRow();
         generalPrivacyInfoRow = addRow();
+
+        headerExtraRow = addRow();
+        antiblockRow = addRow();
+        telegramPrivacyRow = addRow();
+        extraInfoRow = addRow();
     }
 
     @Override
@@ -178,6 +188,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             boolean v = !NekoConfig.ignoreContentRestrictions.Bool();
             NekoConfig.ignoreContentRestrictions.setConfigBool(v);
             if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
+        } else if (position == antiblockRow) {
+            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
+        } else if (position == telegramPrivacyRow) {
+            presentFragment(new org.telegram.ui.PrivacySettingsActivity());
         }
     }
 
@@ -190,14 +204,16 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         @Override
         public int getItemViewType(int position) {
             if (position == headerVaultRow || position == headerGhostRow
-                    || position == headerHistoryRow || position == headerGeneralPrivacyRow) {
+                    || position == headerHistoryRow || position == headerGeneralPrivacyRow
+                    || position == headerExtraRow) {
                 return TYPE_HEADER;
             } else if (position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
                     || position == saveDeletedMessagesRow || position == saveDeletedMediaRow
                     || position == hidePhoneRow || position == allowScreenshotRow) {
                 return TYPE_CHECK;
             } else if (position == vaultInfoRow || position == ghostInfoRow
-                    || position == historyInfoRow || position == generalPrivacyInfoRow) {
+                    || position == historyInfoRow || position == generalPrivacyInfoRow
+                    || position == extraInfoRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_TEXT;
@@ -216,6 +232,8 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Історія та збереження повідомлень", "История и сохранение сообщений", "Message History & Anti-Delete"));
                     } else if (position == headerGeneralPrivacyRow) {
                         cell.setText(MiogramLocale.get("Загальна конфіденційність", "Общая конфиденциальность", "General Privacy"));
+                    } else if (position == headerExtraRow) {
+                        cell.setText(MiogramLocale.get("З'єднання та акаунт", "Соединение и аккаунт", "Connection & Account"));
                     }
                     break;
                 }
@@ -242,6 +260,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                     TextCell cell = (TextCell) holder.itemView;
                     if (position == vaultManageRow) {
                         cell.setTextAndIcon(MiogramLocale.get("Налаштування прихованих акаунтів та кодів", "Настройки скрытых аккаунтов и кодов", "Hidden accounts & Passcodes setup"), R.drawable.msg_permissions, false);
+                    } else if (position == antiblockRow) {
+                        cell.setTextAndIcon(MiogramLocale.get("Обхід блокувань (Антиблок)", "Обход блокировок (Антиблок)", "Anti-block bypass"), R.drawable.msg_permissions, true);
+                    } else if (position == telegramPrivacyRow) {
+                        cell.setTextAndIcon(MiogramLocale.get("Приватність Telegram", "Приватность Telegram", "Telegram privacy"), R.drawable.msg_permissions, false);
                     }
                     break;
                 }
@@ -275,6 +297,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Додатковий захист персональних даних та екрану.",
                                 "Дополнительная защита персональных данных и экрана.",
                                 "Additional protection for personal identity and screen captures."));
+                    } else if (position == extraInfoRow) {
+                        cell.setText(MiogramLocale.get("Антиблок керує проксі та з'єднанням. Приватність Telegram відкриває нативні правила видимості акаунта.",
+                                "Антиблок управляет прокси и соединением. Приватность Telegram открывает нативные правила видимости аккаунта.",
+                                "Anti-block manages proxies and connectivity. Telegram privacy opens the native account visibility rules."));
                     }
                     break;
                 }

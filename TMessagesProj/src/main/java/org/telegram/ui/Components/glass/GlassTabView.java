@@ -237,14 +237,14 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
         }
 
         final float hasCounter = (usePremiumCounter ? 1f : isHasCounterAnimator.getFloatValue()) * attachScale;
-        final boolean saveLayer = hasCounter > 0 && !skipDrawSelector;
+        final boolean saveLayer = hasCounter > 0;
         if (saveLayer) {
             canvas.saveLayer(0, 0, viewWidth, getHeight(), null);
         }
 
         super.dispatchDraw(canvas);
 
-        if (hasCounter > 0 && !skipDrawSelector) {
+        if (hasCounter > 0) {
             canvas.save();
 
             final float gap = dpf2(1.33f);

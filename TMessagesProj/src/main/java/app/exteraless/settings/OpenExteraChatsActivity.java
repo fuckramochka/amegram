@@ -763,7 +763,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             case SCREEN_HIDING:
                 return getString(R.string.OEAppearanceHiding);
             default:
-                return getString(R.string.OpenExteraChats);
+                return app.miogram.bridge.MiogramLocale.get("Чати та медіа", "Чаты и медиа", "Chats & media");
         }
     }
 

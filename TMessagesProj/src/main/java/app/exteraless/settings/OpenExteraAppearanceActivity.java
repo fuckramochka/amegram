@@ -258,7 +258,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return getString(R.string.OEAppearanceTitle);
+        return app.miogram.bridge.MiogramLocale.get("Розширене оформлення", "Расширенное оформление", "Advanced appearance");
     }
 
     @Override

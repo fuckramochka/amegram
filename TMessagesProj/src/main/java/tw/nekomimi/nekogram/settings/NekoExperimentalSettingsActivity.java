@@ -196,6 +196,13 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
     private final AbstractConfigCell enablePanguOnSendingRow = cellGroup.appendCell(new ConfigCellTextCheck(NaConfig.INSTANCE.getEnablePanguOnSending(), getString(R.string.PanguInfo)));
     private final AbstractConfigCell dividerPangu = cellGroup.appendCell(new ConfigCellDivider());
 
+    // Hardware / Other experiments
+    private final AbstractConfigCell headerHardware = cellGroup.appendCell(new ConfigCellHeader(app.miogram.bridge.MiogramLocale.get("Апаратні експерименти", "Аппаратные эксперименты", "Hardware experiments")));
+    private final AbstractConfigCell glyphRow = cellGroup.appendCell(new ConfigCellText(null,
+            app.miogram.bridge.MiogramLocale.get("Glyph-інтерфейс (Nothing Phone)", "Glyph-интерфейс (Nothing Phone)", "Glyph interface (Nothing Phone)"),
+            () -> presentFragment(new app.exteraless.settings.OpenExteraGlyphActivity())));
+    private final AbstractConfigCell dividerHardware = cellGroup.appendCell(new ConfigCellDivider());
+
     public NekoExperimentalSettingsActivity() {
         if (NaConfig.INSTANCE.getUseDeletedIcon().Bool()) {
             cellGroup.rows.remove(customDeletedMarkRow);
@@ -406,7 +413,7 @@ public class NekoExperimentalSettingsActivity extends BaseNekoXSettingsActivity 
 
     @Override
     public String getTitle() {
-        return getString(R.string.Experimental);
+        return app.miogram.bridge.MiogramLocale.get("Лабораторія", "Лаборатория", "Laboratory");
     }
 
     private void checkSensitive() {

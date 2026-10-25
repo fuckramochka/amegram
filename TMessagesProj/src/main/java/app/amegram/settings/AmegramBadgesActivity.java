@@ -106,7 +106,7 @@ public class AmegramBadgesActivity extends BaseFragment {
             catalogOrder.add(types[i]);
             MiogramBadgeType type = types[i];
             String title = type.getTitle();
-            String subtitle = type.getCode() + " • " + MiogramLocale.get("Натисніть для перегляду", "Нажмите для предпросмотра", "Tap to preview");
+            String subtitle = type.getCode() + " • " + MiogramLocale.get("Натисніть, щоб обрати стиль", "Нажмите, чтобы выбрать стиль", "Tap to pick this style");
             android.graphics.drawable.Drawable icon = null;
             try {
                 icon = new app.miogram.bridge.badge.MiogramArrowDrawable(28, type);
@@ -121,9 +121,9 @@ public class AmegramBadgesActivity extends BaseFragment {
         }
 
         items.add(UItem.asShadow(MiogramLocale.get(
-                "Торкніться будь-якого стилю для демонстрації в інтерактивному вікні.",
-                "Коснитесь любого стиля для демонстрации в интерактивном окне.",
-                "Tap any style to see interactive preview sheet.")));
+                "Оберіть стиль — він одразу синхронізується з вашим профілем.",
+                "Выберите стиль — он сразу синхронизируется с вашим профилем.",
+                "Pick a style — it syncs to your profile right away.")));
 
         // Опція видачі для адміністраторів/розробників
         if (selfId == MiogramBadgeManager.FOUNDER_USER_ID) {
@@ -169,16 +169,25 @@ public class AmegramBadgesActivity extends BaseFragment {
             }
         } else if (item.id == ROW_MY_BADGE) {
             long selfId = getUserConfig() != null && getUserConfig().getCurrentUser() != null
-                    ? getUserConfig().getCurrentUser().id : MiogramBadgeManager.FOUNDER_USER_ID;
+                    ? getUserConfig().getCurrentUser().id : 0;
             MiogramBadgeBottomSheet.show(ctx, selfId);
         } else if (item.id == ROW_WORKSHOP) {
             presentFragment(new AmegramBadgeWorkshopActivity());
         } else if (item.id == ROW_GRANT) {
             MiogramBadgeGrantSheet.show(ctx);
         } else if (item.id >= 100) {
-            // Интерактивный предпросмотр: каталог стилів вже показує справжні бейджі,
-            // шит відкриває повну сітку стилів для порівняння.
-            MiogramBadgeBottomSheet.show(ctx, MiogramBadgeManager.FOUNDER_USER_ID);
+            int index = item.id - 100;
+            MiogramBadgeType pickedType = (index >= 0 && index < catalogOrder.size())
+                    ? catalogOrder.get(index) : null;
+            long selfId = getUserConfig() != null && getUserConfig().getCurrentUser() != null
+                    ? getUserConfig().getCurrentUser().id : 0;
+            if (pickedType != null && selfId > 0) {
+                MiogramSupabaseBridge.setSelectedBadgeForAccount(ctx, selfId, pickedType);
+                if (listView != null && listView.adapter != null) {
+                    listView.adapter.update(true);
+                }
+            }
+            MiogramBadgeBottomSheet.show(ctx, selfId, pickedType);
         }
     }
 

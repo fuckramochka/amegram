@@ -26,11 +26,8 @@ import app.amegram.theme.YumiMd3;
 import app.exteraless.plugins.ui.PluginsActivity;
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.settings.MiogramAboutActivity;
-import app.miogram.bridge.ui.MiogramAiSettingsActivity;
-import app.miogram.bridge.ui.MiogramChatsSettingsActivity;
 import app.miogram.bridge.ui.MiogramPrivacySettingsActivity;
 import app.miogram.bridge.ui.MiogramVisualsActivity;
-import app.miogram.bridge.ai.companion.MiogramCompanionActivity;
 import tw.nekomimi.nekogram.settings.NekoChatSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity;
 import tw.nekomimi.nekogram.settings.NekoGeneralSettingsActivity;
@@ -59,24 +56,22 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private static final int ROW_UI = 11;
     private static final int ROW_FILEORG = 12;
 
+    // Канонічні розділи клієнта: один екран на одну область.
+    private static final int ROW_PERSONALIZATION = 50;
+    private static final int ROW_CHATS_MEDIA = 51;
+    private static final int ROW_NOTIFICATIONS = 52;
+    private static final int ROW_PRIVACY_SECURITY = 53;
+    private static final int ROW_DATA_STORAGE = 54;
+    private static final int ROW_CHANNEL = 55;
+    private static final int ROW_ADVANCED = 56;
+
+    // Класичні екрани Neko / Extera. Більше не мають верхнього рівня:
+    // доступні з екрана «Додатково» та з контекстних посилань.
     private static final int ROW_NEKO_GENERAL = 40;
     private static final int ROW_NEKO_CHAT = 41;
     private static final int ROW_NEKO_TRANSLATOR = 42;
     private static final int ROW_NEKO_PASSCODE = 43;
     private static final int ROW_NEKO_EXPERIMENTAL = 44;
-    private static final int ROW_MIO_VISUALS = 50;
-    private static final int ROW_MIO_CHATS = 51;
-    private static final int ROW_MIO_PRIVACY = 52;
-    private static final int ROW_MIO_COMPANION = 53;
-    private static final int ROW_MIO_AI = 54;
-    private static final int ROW_MIO_VAULT = 55;
-    private static final int ROW_MIO_PLAYER = 56;
-    private static final int ROW_MIO_BADGES = 57;
-    private static final int ROW_MIO_MUSIC = 58;
-    private static final int ROW_MIO_TIKTOK = 59;
-    private static final int ROW_MIO_PUSH = 60;
-    private static final int ROW_MIO_HISTORY = 61;
-    private static final int ROW_MIO_AUTOMATION = 62;
     private static final int ROW_EXTERA_GENERAL = 70;
     private static final int ROW_EXTERA_APPEARANCE = 71;
     private static final int ROW_EXTERA_CHATS = 72;
@@ -86,12 +81,20 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private static final int ROW_HOTMODULES = 20;
     private static final int ROW_PLUGINS = 21;
     private static final int ROW_GUIDE = 22;
-    private static final int ROW_BETA_MODULES = 23;
 
     private static final int ROW_BADGES = 30;
     private static final int ROW_UPDATES = 31;
     private static final int ROW_ABOUT = 32;
-    private static final int ROW_CLIENT_SETTINGS = 33;
+
+    // Службові id для прихованого пошукового індексу. Вони не збігаються
+    // з id видимих рядків, тому пошук більше не втрачає ці пункти в дедуплі.
+    private static final int SEARCH_PASSCODE = 80;
+    private static final int SEARCH_ANTIBLOCK = 81;
+    private static final int SEARCH_BADGE_WORKSHOP = 82;
+    private static final int SEARCH_PLAYER = 83;
+    private static final int SEARCH_VAULT = 84;
+    private static final int SEARCH_SYSTEM_MODULES = 85;
+    private static final int SEARCH_HISTORY = 86;
 
     /** Сторонні модули получают стабильный диапазон идентификаторов. */
     private static final int ROW_CUSTOM_BASE = 1000;
@@ -103,14 +106,17 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
     private YumiSettingsView settingsView;
     private final List<HotModulesManager.InstalledInfo> customInstalledModules = new ArrayList<>();
-    private final boolean clientSettingsPage;
 
     public AmegramSettingsActivity() {
-        this(false);
     }
 
-    public AmegramSettingsActivity(boolean clientSettingsPage) {
-        this.clientSettingsPage = clientSettingsPage;
+    /**
+     * @deprecated Окрему сторінку «Налаштування клієнта» прибрано: усі
+     * канонічні розділи тепер живуть на головному екрані. Конструктор
+     * залишено для сумісності зі старими диплінками та викликами.
+     */
+    @Deprecated
+    public AmegramSettingsActivity(boolean ignored) {
     }
 
     @Override
@@ -200,49 +206,63 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private YumiSettingsModel buildModel() {
         customInstalledModules.clear();
         YumiSettingsModel model = new YumiSettingsModel();
-        if (clientSettingsPage) {
-            buildClientModel(model);
-        } else {
-            buildMainModel(model);
-            indexClientRows(model);
-        }
+        buildMainModel(model);
         HotSettingsUiGate.customizeModel(model);
+        finalizeModel(model);
         return model;
     }
 
     /**
-     * Поиск на главном экране должен находить и те пункты, которые живут
-     * на странице клиента. Строим их один раз и складываем в скрытый индекс.
+     * Службовий етап після кастомізації hot-модулем. Модуль settings_ui
+     * історично додавав дублюючі кнопки в підвал і пошукові рядки з чужими
+     * id. Хаб сам відповідає за навігацию та пошук, тому футер і індекс
+     * перебудовуються тут — незалежно від версії встановленого модуля.
      */
-    private void indexClientRows(YumiSettingsModel model) {
-        Set<String> visible = new HashSet<>();
-        for (YumiSettingsModel.Section section : model.sections) {
-            for (YumiSettingsModel.Row row : section.rows) {
-                visible.add(rowKey(row));
-            }
-        }
-        YumiSettingsModel client = new YumiSettingsModel();
-        buildClientModel(client);
-        for (YumiSettingsModel.Section section : client.sections) {
-            for (YumiSettingsModel.Row row : section.rows) {
-                if (visible.add(rowKey(row))) {
-                    model.searchIndex.add(row);
-                }
-            }
-        }
+    private void finalizeModel(YumiSettingsModel model) {
+        model.footerPrimary = null;
+        model.footerSecondary = null;
+        // Старі версії модуля settings_ui перезаписували нотатку підвалу.
+        model.footerNote = MiogramLocale.get(
+                "Yumigram " + BuildConfig.VERSION_NAME + " · Клієнт → Розширення → Спільнота",
+                "Yumigram " + BuildConfig.VERSION_NAME + " · Клиент → Расширения → Сообщество",
+                "Yumigram " + BuildConfig.VERSION_NAME + " · Client → Extensions → Community");
+
+        model.searchIndex.clear();
+        addSearchRow(model, SEARCH_PASSCODE, R.drawable.yumi_ic_lock,
+                MiogramLocale.get("Код-пароль і Подвійне дно", "Код-пароль и Двойное дно", "Passcode & Double Bottom"),
+                MiogramLocale.get("PIN, приховані акаунти та аварійний код", "PIN, скрытые аккаунты и аварийный код", "PIN, hidden accounts and duress code"));
+        addSearchRow(model, SEARCH_ANTIBLOCK, R.drawable.yumi_ic_vpn,
+                MiogramLocale.get("Обхід блокувань (Антиблок)", "Обход блокировок (Антиблок)", "Anti-block bypass"),
+                MiogramLocale.get("Автоматичні проксі, MTProto та захист з'єднання", "Автоматические прокси, MTProto и защита соединения", "Automatic proxies, MTProto and connection protection"));
+        addSearchRow(model, SEARCH_BADGE_WORKSHOP, R.drawable.yumi_ic_badges,
+                MiogramLocale.get("Майстерня бейджиків", "Мастерская бейджиков", "Badge Workshop"),
+                MiogramLocale.get("Створення та подання власного SVG-бейджа", "Создание и подача собственного SVG-бейджа", "Create and submit your own SVG badge"));
+        addSearchRow(model, SEARCH_PLAYER, R.drawable.yumi_ic_music,
+                MiogramLocale.get("Музичний плеєр і тексти", "Музыкальный плеер и тексты", "Music player & lyrics"),
+                MiogramLocale.get("Пошук треків, LRC та міні-плеєр", "Поиск треков, LRC и мини-плеер", "Track search, LRC and mini player"));
+        addSearchRow(model, SEARCH_VAULT, R.drawable.yumi_ic_storage,
+                MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud vault"),
+                MiogramLocale.get("AES-256 диск і шифрування", "AES-256 диск и шифрование", "AES-256 disk and encryption"));
+        addSearchRow(model, SEARCH_SYSTEM_MODULES, R.drawable.yumi_ic_extension,
+                MiogramLocale.get("Системні модулі", "Системные модули", "System modules"),
+                MiogramLocale.get("Базові компоненти Yumi та їх оновлення", "Базовые компоненты Yumi и их обновления", "Yumi core components and updates"));
+        addSearchRow(model, SEARCH_HISTORY, R.drawable.yumi_ic_history,
+                MiogramLocale.get("Історія та видалені повідомлення", "История и удалённые сообщения", "History & deleted messages"),
+                MiogramLocale.get("Лабораторія: збереження видалених, regex, glyphs", "Лаборатория: сохранение удалённых, regex, glyphs", "Lab: deleted messages, regex, glyphs"));
     }
 
-    private static String rowKey(YumiSettingsModel.Row row) {
-        return row.id + ":" + (row.moduleId == null ? "" : row.moduleId);
+    private void addSearchRow(YumiSettingsModel model, int id, int icon, CharSequence title, CharSequence subtitle) {
+        YumiSettingsModel.Row row = row(id, icon, YumiMd3.primary(), title, subtitle);
+        model.searchIndex.add(row);
     }
 
     private void buildMainModel(YumiSettingsModel model) {
         model.pageTitle = MiogramLocale.get("Налаштування Yumigram", "Настройки Yumigram", "Yumigram settings");
         model.hero.title = model.pageTitle;
         model.hero.subtitle = MiogramLocale.get(
-                "Модулі, клієнт і стиль — усе в одному місці.",
-                "Модули, клиент и стиль — всё в одном месте.",
-                "Modules, client and style — all in one place.");
+                "Клієнт, розширення та спільнота — в одному місці.",
+                "Клиент, расширения и сообщество — в одном месте.",
+                "Client, extensions and community — all in one place.");
         model.hero.logoRes = R.drawable.yumi_logo;
 
         List<HotModulesManager.InstalledInfo> active = activeInstalled();
@@ -276,7 +296,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
         boolean uiInstalled = HotModulesManager.isModuleInstalled("ui");
         boolean uiOn = uiInstalled && HotModulesManager.isModuleEnabled("ui");
-        YumiSettingsModel.Quick ui = quick(uiInstalled ? ROW_UI : ROW_CLIENT_SETTINGS,
+        YumiSettingsModel.Quick ui = quick(uiInstalled ? ROW_UI : ROW_PERSONALIZATION,
                 uiInstalled ? "ui" : null, R.drawable.yumi_ic_palette, YumiMd3.primary(),
                 MiogramLocale.get("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi interface"),
                 !uiInstalled
@@ -302,15 +322,37 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                         ? MiogramLocale.get("Плеєр, пошук і LRC", "Плеер, поиск и LRC", "Player, search & LRC")
                         : MiogramLocale.get("Встановити плеєр", "Установить плеер", "Install the player")));
 
-        // --- Управление клиентом ---------------------------------------
+        // --- Клієнт: один канонічний екран на область --------------------
         YumiSettingsModel.Section client = section(
-                MiogramLocale.get("Керування та клієнт", "Управление и клиент", "Management & Client"),
-                null);
-        client.rows.add(row(ROW_CLIENT_SETTINGS, R.drawable.yumi_ic_settings, YumiMd3.primary(),
-                MiogramLocale.get("Налаштування клієнта", "Настройки клиента", "Client settings"),
-                MiogramLocale.get("Чати, приватність, перекладач, оформлення", "Чаты, приватность, переводчик, оформление", "Chats, privacy, translator, appearance")));
-        client.rows.add(row(ROW_HOTMODULES, R.drawable.yumi_ic_extension, YumiMd3.primary(),
-                MiogramLocale.get("Модулі", "Модули", "Modules"),
+                MiogramLocale.get("Клієнт", "Клиент", "Client"),
+                MiogramLocale.get("Один екран на кожну область — без дублів", "Один экран на каждую область — без дублей", "One screen per domain — no duplicates"));
+        client.rows.add(row(ROW_PERSONALIZATION, R.drawable.yumi_ic_palette, YumiMd3.primary(),
+                MiogramLocale.get("Персоналізація", "Персонализация", "Personalization"),
+                MiogramLocale.get("Тема, стиль, шрифт, аватари та кастомізація", "Тема, стиль, шрифт, аватары и кастомизация", "Theme, style, fonts, avatars and customization")));
+        client.rows.add(row(ROW_CHATS_MEDIA, R.drawable.yumi_ic_chat, YumiMd3.primary(),
+                MiogramLocale.get("Чати та медіа", "Чаты и медиа", "Chats & media"),
+                MiogramLocale.get("Повідомлення, меню, камера, стікери та папки", "Сообщения, меню, камера, стикеры и папки", "Messages, menus, camera, stickers and folders")));
+        client.rows.add(row(ROW_NOTIFICATIONS, R.drawable.yumi_ic_notifications, YumiMd3.primary(),
+                MiogramLocale.get("Сповіщення", "Уведомления", "Notifications"),
+                app.miogram.bridge.push.MiogramPushSheet.getShortStatus()
+                        + " • " + MiogramLocale.get("фон і батарея", "фон и батарея", "background & battery")));
+        client.rows.add(row(ROW_PRIVACY_SECURITY, R.drawable.yumi_ic_lock, YumiMd3.primary(),
+                MiogramLocale.get("Приватність і безпека", "Приватность и безопасность", "Privacy & security"),
+                MiogramLocale.get("Ghost, анти-видалення, PIN і антиблок", "Ghost, анти-удаление, PIN и антиблок", "Ghost, anti-delete, PIN and anti-block")));
+        client.rows.add(row(ROW_DATA_STORAGE, R.drawable.yumi_ic_storage, YumiMd3.primary(),
+                MiogramLocale.get("Дані та сховище", "Данные и хранилище", "Data & storage"),
+                MiogramLocale.get("Медіа, кеш, мережа та автозавантаження", "Медиа, кеш, сеть и автозагрузка", "Media, cache, network and auto-download")));
+        client.rows.add(row(ROW_NEKO_TRANSLATOR, R.drawable.yumi_ic_translate, YumiMd3.primary(),
+                MiogramLocale.get("Перекладач", "Переводчик", "Translator"),
+                MiogramLocale.get("Мови, сервіси та поведінка перекладу", "Языки, сервисы и поведение перевода", "Languages, providers and translation behavior")));
+        model.sections.add(client);
+
+        // --- Розширення -------------------------------------------------
+        YumiSettingsModel.Section extensions = section(
+                MiogramLocale.get("Розширення", "Расширения", "Extensions"),
+                MiogramLocale.get("Модулі, плагіни та довідка", "Модули, плагины и справка", "Modules, plugins and guides"));
+        extensions.rows.add(row(ROW_HOTMODULES, R.drawable.yumi_ic_extension, YumiMd3.primary(),
+                MiogramLocale.get("Керування модулями", "Управление модулями", "Manage modules"),
                 enabledCount > 0
                         ? MiogramLocale.get("Увімкнено: " + enabledCount + " • Каталог та версії",
                         "Включено: " + enabledCount + " • Каталог и версии",
@@ -318,18 +360,18 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                         : MiogramLocale.get("Каталог модулів • 0 активних",
                         "Каталог модулей • 0 активных",
                         "Module catalog • 0 active")));
-        client.rows.add(row(ROW_PLUGINS, R.drawable.yumi_ic_apps, YumiMd3.primary(),
+        extensions.rows.add(row(ROW_PLUGINS, R.drawable.yumi_ic_apps, YumiMd3.primary(),
                 MiogramLocale.get("Плагіни", "Плагины", "Plugins"),
                 MiogramLocale.get("Python + Lua + Java скрипти", "Python + Lua + Java скрипты", "Python + Lua + Java scripts")));
-        client.rows.add(row(ROW_GUIDE, R.drawable.yumi_ic_help, YumiMd3.primary(),
-                MiogramLocale.get("Гід по функціях", "Гид по функциям", "Feature guide"),
-                MiogramLocale.get("Інструкції та підказки", "Инструкции и подсказки", "Instructions & tips")));
-        model.sections.add(client);
+        extensions.rows.add(row(ROW_GUIDE, R.drawable.yumi_ic_help, YumiMd3.primary(),
+                MiogramLocale.get("Гід по розширеннях", "Гид по расширениям", "Extensions guide"),
+                MiogramLocale.get("Як встановлювати плагіни та модулі", "Как устанавливать плагины и модули", "How to install plugins and modules")));
+        model.sections.add(extensions);
 
-        // --- Модулі ----------------------------------------------------
+        // --- Швидкі модулі (перемикачі встановлених) -----------------
         YumiSettingsModel.Section modules = section(
-                MiogramLocale.get("Модулі", "Модули", "Modules"),
-                null);
+                MiogramLocale.get("Швидкі модулі", "Быстрые модули", "Quick modules"),
+                MiogramLocale.get("Швидке вмикання та вимкнення", "Быстрое включение и выключение", "Toggle installed modules"));
 
         addModuleRow(modules, "ghost", ROW_GHOST, R.drawable.yumi_ic_ghost, YumiMd3.primary(),
                 MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode"),
@@ -380,109 +422,36 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             model.sections.add(modules);
         }
 
-        // --- Сообщество и информация -----------------------------------
-        YumiSettingsModel.Section about = section(
-                MiogramLocale.get("Про застосунок", "О приложении", "About"),
+        // --- Спільнота --------------------------------------------------
+        YumiSettingsModel.Section community = section(
+                MiogramLocale.get("Спільнота", "Сообщество", "Community"),
                 null);
-        about.rows.add(row(ROW_BADGES, R.drawable.yumi_ic_badges, YumiMd3.primary(),
+        community.rows.add(row(ROW_BADGES, R.drawable.yumi_ic_badges, YumiMd3.primary(),
                 MiogramLocale.get("Бейджики", "Бейджики", "Badges"),
-                MiogramLocale.get("Спільнота Yumigram • Каталог стилів", "Сообщество Yumigram • Каталог стилей", "Yumigram community • Style catalog")));
-        about.rows.add(row(ROW_UPDATES, R.drawable.yumi_ic_update, YumiMd3.primary(),
-                MiogramLocale.get("Автооновлення", "Автообновления", "Auto-updates"),
+                MiogramLocale.get("Мій бейдж, каталог стилів і майстерня", "Мой бейдж, каталог стилей и мастерская", "My badge, style catalog and workshop")));
+        community.rows.add(row(ROW_CHANNEL, R.drawable.msg_channel, YumiMd3.tertiary(),
+                MiogramLocale.get("Канал Yumigram", "Канал Yumigram", "Yumigram channel"),
+                "@" + MiogramAboutActivity.CHANNEL_USERNAME + " • "
+                        + MiogramLocale.get("новини та оновлення", "новости и обновления", "news & updates")));
+        model.sections.add(community);
+
+        // --- Система ----------------------------------------------------
+        YumiSettingsModel.Section system = section(
+                MiogramLocale.get("Система", "Система", "System"),
+                null);
+        system.rows.add(row(ROW_NEKO_EXPERIMENTAL, R.drawable.yumi_ic_science, YumiMd3.primary(),
+                MiogramLocale.get("Лабораторія", "Лаборатория", "Laboratory"),
+                MiogramLocale.get("Видалені повідомлення, regex, безліміти та експерименти", "Удалённые сообщения, regex, безлимиты и эксперименты", "Deleted messages, regex, unlimited and experiments")));
+        system.rows.add(row(ROW_UPDATES, R.drawable.yumi_ic_update, YumiMd3.primary(),
+                MiogramLocale.get("Оновлення застосунку", "Обновление приложения", "App updates"),
                 "v" + BuildConfig.VERSION_NAME + " • " + app.miogram.bridge.updater.MiogramUpdater.getUpdateChannelName()));
-        about.rows.add(row(ROW_ABOUT, R.drawable.yumi_ic_info, YumiMd3.primary(),
+        system.rows.add(row(ROW_ABOUT, R.drawable.yumi_ic_info, YumiMd3.primary(),
                 MiogramLocale.get("Про Yumigram", "О Yumigram", "About Yumigram"),
                 MiogramLocale.get("Інформація про клієнт та ліцензії", "Информация о клиенте и лицензии", "Client information and licenses")));
-        model.sections.add(about);
-
-        model.footerPrimary = null;
-        model.footerSecondary = null;
-        model.footerNote = MiogramLocale.get(
-                "Yumigram " + BuildConfig.VERSION_NAME + " · Material Design 3",
-                "Yumigram " + BuildConfig.VERSION_NAME + " · Material Design 3",
-                "Yumigram " + BuildConfig.VERSION_NAME + " · Material Design 3");
-    }
-
-    private void buildClientModel(YumiSettingsModel model) {
-        model.pageTitle = MiogramLocale.get("Налаштування клієнта", "Настройки клиента", "Client settings");
-        model.hero.title = model.pageTitle;
-        model.hero.subtitle = MiogramLocale.get(
-                "Чати, приватність і зовнішній вигляд — без компромісів.",
-                "Чаты, приватность и внешний вид — без компромиссов.",
-                "Chats, privacy and appearance — without compromise.");
-        model.hero.logoRes = R.drawable.yumi_logo;
-        model.hero.statVersion = "v" + BuildConfig.VERSION_NAME;
-        model.hero.statSecurity = MiogramLocale.get("Приватність", "Приватность", "Privacy");
-
-        YumiSettingsModel.Section general = section(
-                MiogramLocale.get("Основні налаштування", "Основные настройки", "General settings"),
-                null);
-        general.rows.add(row(ROW_NEKO_GENERAL, R.drawable.yumi_ic_settings, YumiMd3.primary(),
-                MiogramLocale.get("Загальні", "Общие", "General"),
-                MiogramLocale.get("Мова, поведінка та параметри застосунку", "Язык, поведение и параметры приложения", "Language, behavior and app options")));
-        general.rows.add(row(ROW_NEKO_CHAT, R.drawable.yumi_ic_chat, YumiMd3.primary(),
-                MiogramLocale.get("Чати", "Чаты", "Chats"),
-                MiogramLocale.get("Налаштування чатів та повідомлень", "Настройки чатов и сообщений", "Chat and message options")));
-        general.rows.add(row(ROW_NEKO_TRANSLATOR, R.drawable.yumi_ic_translate, YumiMd3.primary(),
-                MiogramLocale.get("Перекладач", "Переводчик", "Translator"),
-                MiogramLocale.get("Мови, сервіси та поведінка перекладу", "Языки, сервисы и поведение перевода", "Languages, providers and translation behavior")));
-        if (!app.miogram.bridge.vault.MiogramDoubleBottomManager.isDuressActive()) {
-            general.rows.add(row(ROW_NEKO_PASSCODE, R.drawable.yumi_ic_lock, YumiMd3.primary(),
-                    MiogramLocale.get("Код-пароль", "Код-пароль", "Passcode"),
-                    MiogramLocale.get("Блокування, PIN і подвійне дно", "Блокировка, PIN и двойное дно", "Lock, PIN & double bottom")));
-        }
-        general.rows.add(row(ROW_ANTIBLOCK, R.drawable.yumi_ic_vpn, YumiMd3.primary(),
-                MiogramLocale.get("Обхід блокувань (Антиблок)", "Обход блокировок (Антиблок)", "Anti-block bypass"),
-                MiogramLocale.get("Автоматичний вибір проксі та захист з'єднання", "Автоматический выбор прокси и защита соединения", "Automatic proxy selection and connection protection")));
-        general.rows.add(row(ROW_NEKO_EXPERIMENTAL, R.drawable.yumi_ic_science, YumiMd3.primary(),
-                MiogramLocale.get("Експериментальні функції", "Экспериментальные функции", "Experimental features"),
-                MiogramLocale.get("Додаткові можливості клієнта", "Дополнительные возможности клиента", "Additional client features")));
-        model.sections.add(general);
-
-        YumiSettingsModel.Section tools = section(
-                MiogramLocale.get("Інтерфейс та сповіщення", "Интерфейс и уведомления", "Interface & Notifications"),
-                null);
-        tools.rows.add(row(ROW_MIO_VISUALS, R.drawable.yumi_ic_palette, YumiMd3.primary(),
-                MiogramLocale.get("Оформлення та інтерфейс", "Оформление и интерфейс", "Appearance & interface"),
-                MiogramLocale.get("Вигляд клієнта та елементи інтерфейсу", "Вид клиента и элементы интерфейса", "Client look and interface elements")));
-        tools.rows.add(row(ROW_MIO_CHATS, R.drawable.yumi_ic_chat, YumiMd3.primary(),
-                MiogramLocale.get("Додаткові налаштування чатів", "Дополнительные настройки чатов", "More chat options"),
-                MiogramLocale.get("Жести, панелі та вигляд списку чатів", "Жесты, панели и вид списка чатов", "Gestures, panels and chat list layout")));
-        tools.rows.add(row(ROW_MIO_PUSH, R.drawable.yumi_ic_notifications, YumiMd3.primary(),
-                MiogramLocale.get("Сповіщення та робота у фоні", "Уведомления и работа в фоне", "Notifications & background"),
-                app.miogram.bridge.push.MiogramPushSheet.getShortStatus()));
-        tools.rows.add(row(ROW_MIO_HISTORY, R.drawable.yumi_ic_history, YumiMd3.primary(),
-                MiogramLocale.get("Історія повідомлень", "История сообщений", "Message history"),
-                MiogramLocale.get("Перегляд збережених змін повідомлень", "Просмотр сохранённых изменений сообщений", "Review saved message changes")));
-        model.sections.add(tools);
-
-        YumiSettingsModel.Section other = section(
-                MiogramLocale.get("Інші параметри клієнта", "Другие параметры клиента", "Additional client options"),
-                null);
-        other.rows.add(row(ROW_EXTERA_GENERAL, R.drawable.yumi_ic_settings, YumiMd3.primary(),
-                MiogramLocale.get("Загальні функції", "Общие функции", "General options"), null));
-        other.rows.add(row(ROW_EXTERA_APPEARANCE, R.drawable.yumi_ic_palette, YumiMd3.primary(),
-                MiogramLocale.get("Зовнішній вигляд", "Внешний вид", "Appearance"), null));
-        other.rows.add(row(ROW_EXTERA_CHATS, R.drawable.yumi_ic_chat, YumiMd3.primary(),
-                MiogramLocale.get("Налаштування чатів", "Настройки чатов", "Chat options"), null));
-        other.rows.add(row(ROW_EXTERA_OTHER, R.drawable.yumi_ic_tune, YumiMd3.primary(),
-                MiogramLocale.get("Інші налаштування", "Другие настройки", "Other options"), null));
-        model.sections.add(other);
-
-        YumiSettingsModel.Section about = section(
-                MiogramLocale.get("Про застосунок", "О приложении", "About"),
-                null);
-        about.rows.add(row(ROW_ABOUT, R.drawable.yumi_ic_info, YumiMd3.primary(),
-                MiogramLocale.get("Про Yumigram", "О Yumigram", "About Yumigram"),
-                MiogramLocale.get("Версія " + BuildConfig.VERSION_NAME, "Версия " + BuildConfig.VERSION_NAME, "Version " + BuildConfig.VERSION_NAME)));
-        model.sections.add(about);
-
-        model.footerPrimary = null;
-        model.footerSecondary = null;
-        model.footerNote = MiogramLocale.get(
-                "Yumigram Client " + BuildConfig.VERSION_NAME + " · Material Design 3",
-                "Yumigram Client " + BuildConfig.VERSION_NAME + " · Material Design 3",
-                "Yumigram Client " + BuildConfig.VERSION_NAME + " · Material Design 3");
+        system.rows.add(row(ROW_ADVANCED, R.drawable.yumi_ic_tune, YumiMd3.secondary(),
+                MiogramLocale.get("Додатково (Extera)", "Дополнительно (Extera)", "Advanced (Extera)"),
+                MiogramLocale.get("Застарілі екрани на час міграції", "Устаревшие экраны на время миграции", "Legacy screens during migration")));
+        model.sections.add(system);
     }
 
     // ------------------------------------------------------------------
@@ -605,13 +574,59 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             presentFragment(new HotModuleSettingsActivity(moduleId));
             return;
         }
-        if (id == ROW_CLIENT_SETTINGS) {
-            presentFragment(new AmegramSettingsActivity(true));
+        if (id == ROW_PERSONALIZATION) {
+            presentFragment(new MiogramVisualsActivity());
+        } else if (id == ROW_CHATS_MEDIA) {
+            presentFragment(new app.exteraless.settings.OpenExteraChatsActivity());
+        } else if (id == ROW_NOTIFICATIONS) {
+            new app.miogram.bridge.push.MiogramPushSheet(getParentActivity(), getResourceProvider()).show();
+        } else if (id == ROW_PRIVACY_SECURITY) {
+            presentFragment(new MiogramPrivacySettingsActivity());
+        } else if (id == ROW_DATA_STORAGE) {
+            presentFragment(new org.telegram.ui.DataSettingsActivity());
+        } else if (id == ROW_NEKO_TRANSLATOR) {
+            presentFragment(new NekoTranslatorSettingsActivity());
+        } else if (id == ROW_NEKO_EXPERIMENTAL || id == SEARCH_HISTORY) {
+            presentFragment(new NekoExperimentalSettingsActivity());
+        } else if (id == ROW_CHANNEL) {
+            openChannel();
+        } else if (id == ROW_ADVANCED) {
+            presentFragment(new AmegramAdvancedSettingsActivity());
+        } else if (id == ROW_NEKO_GENERAL) {
+            presentFragment(new NekoGeneralSettingsActivity());
+        } else if (id == ROW_NEKO_CHAT) {
+            presentFragment(new NekoChatSettingsActivity());
+        } else if (id == ROW_NEKO_PASSCODE || id == SEARCH_PASSCODE) {
+            presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
+        } else if (id == ROW_ANTIBLOCK || id == SEARCH_ANTIBLOCK) {
+            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
+        } else if (id == ROW_EXTERA_GENERAL) {
+            presentFragment(new app.exteraless.settings.OpenExteraGeneralActivity());
+        } else if (id == ROW_EXTERA_APPEARANCE) {
+            presentFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
+        } else if (id == ROW_EXTERA_CHATS) {
+            presentFragment(new app.exteraless.settings.OpenExteraChatsActivity());
+        } else if (id == ROW_EXTERA_OTHER) {
+            presentFragment(new app.exteraless.settings.OpenExteraOtherActivity());
+        } else if (id == ROW_HOTMODULES || id == SEARCH_SYSTEM_MODULES) {
+            presentFragment(new HotModulesActivity());
+        } else if (id == ROW_PLUGINS) {
+            presentFragment(new PluginsActivity());
+        } else if (id == ROW_GUIDE) {
+            presentFragment(new AmegramGuideActivity());
+        } else if (id == ROW_BADGES) {
+            presentFragment(new AmegramBadgesActivity());
+        } else if (id == SEARCH_BADGE_WORKSHOP) {
+            presentFragment(new AmegramBadgeWorkshopActivity());
+        } else if (id == ROW_UPDATES) {
+            presentFragment(new AmegramUpdateSettingsActivity());
+        } else if (id == ROW_ABOUT) {
+            presentFragment(new MiogramAboutActivity());
         } else if (id == ROW_GHOST) {
             openModule("ghost");
-        } else if (id == ROW_VAULT) {
+        } else if (id == ROW_VAULT || id == SEARCH_VAULT) {
             openModule("vault");
-        } else if (id == ROW_PLAYER) {
+        } else if (id == ROW_PLAYER || id == SEARCH_PLAYER) {
             openModule("player");
         } else if (id == ROW_AME) {
             openModule("ame");
@@ -631,79 +646,16 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             openModule("fileorganization");
         } else if (id == ROW_DEMO) {
             openModule("demo");
-        } else if (id == ROW_NEKO_GENERAL) {
-            presentFragment(new NekoGeneralSettingsActivity());
-        } else if (id == ROW_NEKO_CHAT) {
-            presentFragment(new NekoChatSettingsActivity());
-        } else if (id == ROW_NEKO_TRANSLATOR) {
-            presentFragment(new NekoTranslatorSettingsActivity());
-        } else if (id == ROW_NEKO_PASSCODE) {
-            presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
-        } else if (id == ROW_NEKO_EXPERIMENTAL) {
-            presentFragment(new NekoExperimentalSettingsActivity());
-        } else if (id == ROW_ANTIBLOCK) {
-            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
-        } else if (id == ROW_MIO_VISUALS) {
-            presentFragment(new MiogramVisualsActivity());
-        } else if (id == ROW_MIO_CHATS) {
-            presentFragment(new MiogramChatsSettingsActivity());
-        } else if (id == ROW_MIO_PRIVACY) {
-            presentFragment(new MiogramPrivacySettingsActivity());
-        } else if (id == ROW_MIO_COMPANION) {
-            presentFragment(new MiogramCompanionActivity());
-        } else if (id == ROW_MIO_AI) {
-            presentFragment(new MiogramAiSettingsActivity());
-        } else if (id == ROW_MIO_VAULT) {
-            presentFragment(new app.miogram.bridge.cloudvault.MiogramCloudVaultActivity());
-        } else if (id == ROW_MIO_PLAYER) {
-            try {
-                org.telegram.messenger.MessageObject now = org.telegram.messenger.MediaController.getInstance().getPlayingMessageObject();
-                if (now != null && now.isMusic()) {
-                    showDialog(app.amegram.hot.Md3Router.create(getParentActivity(), getResourceProvider()));
-                } else {
-                    org.telegram.ui.Components.BulletinFactory.of(this).createSimpleBulletin(
-                            R.raw.info,
-                            MiogramLocale.get("Увімкніть музичний трек, щоб налаштувати MD3-плеєр",
-                                    "Включите музыкальный трек, чтобы настроить MD3-плеер",
-                                    "Play a track to customize the MD3 player")
-                    ).show();
-                }
-            } catch (Throwable ignored) {
-            }
-        } else if (id == ROW_MIO_BADGES) {
-            app.miogram.bridge.badge.MiogramBadgeBottomSheet.show(getParentActivity(),
-                    org.telegram.messenger.UserConfig.getInstance(currentAccount).getClientUserId());
-        } else if (id == ROW_MIO_MUSIC) {
-            new app.miogram.bridge.presence.MiogramConnectedAppsSheet(getParentActivity(), null).show();
-        } else if (id == ROW_MIO_TIKTOK) {
-            presentFragment(new app.miogram.bridge.ecosystem.AmegramTikTokSettingsActivity());
-        } else if (id == ROW_MIO_PUSH) {
-            new app.miogram.bridge.push.MiogramPushSheet(getParentActivity(), getResourceProvider()).show();
-        } else if (id == ROW_MIO_HISTORY) {
-            presentFragment(new NekoExperimentalSettingsActivity());
-        } else if (id == ROW_MIO_AUTOMATION) {
-            presentFragment(new app.miogram.bridge.userbot.MiogramHerokuActivity());
-        } else if (id == ROW_EXTERA_GENERAL) {
-            presentFragment(new app.exteraless.settings.OpenExteraGeneralActivity());
-        } else if (id == ROW_EXTERA_APPEARANCE) {
-            presentFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
-        } else if (id == ROW_EXTERA_CHATS) {
-            presentFragment(new app.exteraless.settings.OpenExteraChatsActivity());
-        } else if (id == ROW_EXTERA_OTHER) {
-            presentFragment(new app.exteraless.settings.OpenExteraOtherActivity());
-        } else if (id == ROW_HOTMODULES) {
-            presentFragment(new HotModulesActivity());
-        } else if (id == ROW_PLUGINS) {
-            presentFragment(new PluginsActivity());
-        } else if (id == ROW_GUIDE) {
-            presentFragment(new AmegramGuideActivity());
+        }
+    }
 
-        } else if (id == ROW_BADGES) {
-            presentFragment(new AmegramBadgesActivity());
-        } else if (id == ROW_UPDATES) {
-            presentFragment(new AmegramUpdateSettingsActivity());
-        } else if (id == ROW_ABOUT) {
-            presentFragment(new MiogramAboutActivity());
+    private void openChannel() {
+        try {
+            org.telegram.messenger.MessagesController.getInstance(currentAccount)
+                    .openByUserName(MiogramAboutActivity.CHANNEL_USERNAME, this, 1);
+        } catch (Throwable ignore) {
+            org.telegram.messenger.browser.Browser.openUrl(getParentActivity(),
+                    "https://t.me/" + MiogramAboutActivity.CHANNEL_USERNAME);
         }
     }
 

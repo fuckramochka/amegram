@@ -64,7 +64,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(MiogramLocale.get("Модулі", "Модули", "Modules"));
+        actionBar.setTitle(MiogramLocale.get("Керування модулями", "Управление модулями", "Manage modules"));
         actionBar.setActionBarMenuOnItemClick(new org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {

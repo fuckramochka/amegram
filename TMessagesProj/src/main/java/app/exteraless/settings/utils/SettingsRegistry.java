@@ -150,6 +150,12 @@ public class SettingsRegistry {
 
     private static Map<Class<? extends BaseFragment>, Integer> buildIcons() {
         Map<Class<? extends BaseFragment>, Integer> icons = new HashMap<>();
+        icons.put(app.amegram.settings.AmegramSettingsActivity.class, R.drawable.msg_settings);
+        icons.put(app.miogram.bridge.ui.MiogramVisualsActivity.class, R.drawable.msg_theme);
+        icons.put(app.miogram.bridge.ui.MiogramPrivacySettingsActivity.class, R.drawable.msg_permissions);
+        icons.put(app.amegram.hot.ui.HotModulesActivity.class, R.drawable.msg_fave);
+        icons.put(app.exteraless.plugins.ui.PluginsActivity.class, R.drawable.msg_folders);
+        icons.put(tw.nekomimi.nekogram.settings.NekoExperimentalSettingsActivity.class, R.drawable.msg_secret);
         icons.put(OpenExteraSettingsActivity.class, R.drawable.msg_settings);
         icons.put(OpenExteraGeneralActivity.class, R.drawable.msg_media);
         icons.put(OpenExteraAppearanceActivity.class, R.drawable.msg_theme);

@@ -106,53 +106,195 @@ public final class YumiMd3 {
     }
 
     // ---------------------------------------------------------------------
-    // Palette
+    // Palette with high-performance cache
     // ---------------------------------------------------------------------
 
-    public static boolean isDark() {
-        return Theme.isCurrentThemeDark();
+    private static volatile boolean sCacheValid = false;
+    private static volatile int sLastKey = 0;
+    private static boolean sDark;
+    private static int sSurface;
+    private static int sSurfaceContainerLow;
+    private static int sSurfaceContainer;
+    private static int sSurfaceContainerHigh;
+    private static int sSurfaceContainerHighest;
+    private static int sOnSurface;
+    private static int sOnSurfaceVariant;
+    private static int sOutline;
+    private static int sPrimary;
+    private static int sOnPrimary;
+    private static int sPrimaryContainer;
+    private static int sOnPrimaryContainer;
+    private static int sActionGradientStart;
+    private static int sActionGradientEnd;
+    private static int sHeroStart;
+    private static int sHeroMid;
+    private static int sHeroEnd;
+
+    public static void invalidateCache() {
+        sCacheValid = false;
     }
 
-    public static int surface() {
+    private static synchronized void ensureCache() {
+        try {
+            int key = Theme.getColor(Theme.key_windowBackgroundWhite)
+                    ^ Theme.getColor(Theme.key_chats_actionBackground)
+                    ^ (Theme.isCurrentThemeDark() ? 0x55555555 : 0xAAAAAAAA);
+            if (sCacheValid && key == sLastKey) {
+                return;
+            }
+            recomputeCache(key);
+        } catch (Throwable t) {
+            if (!sCacheValid) {
+                recomputeCache(0);
+            }
+        }
+    }
+
+    private static void recomputeCache(int key) {
+        boolean dark = false;
+        try {
+            dark = Theme.isCurrentThemeDark();
+        } catch (Throwable ignore) {
+        }
+        sDark = dark;
+
+        int surf = dark ? 0xFF141218 : 0xFFFAF9FD;
         try {
             int bg = Theme.getColor(Theme.key_windowBackgroundWhite);
             if (bg != 0 && (bg & 0xFF000000) != 0) {
-                return bg;
+                surf = bg;
             }
         } catch (Throwable ignore) {
         }
-        return isDark() ? 0xFF141218 : 0xFFFAF9FD;
+        sSurface = surf;
+
+        sSurfaceContainerLow = dark
+                ? blend(surf, 0xFF000000, 0.15f)
+                : blend(surf, 0xFF000000, 0.03f);
+
+        int gray = 0;
+        try {
+            gray = Theme.getColor(Theme.key_windowBackgroundGray);
+        } catch (Throwable ignore) {
+        }
+        if (gray != 0 && (gray & 0xFF000000) != 0) {
+            sSurfaceContainer = gray;
+        } else {
+            sSurfaceContainer = dark
+                    ? blend(surf, 0xFFFFFFFF, 0.04f)
+                    : blend(surf, 0xFF000000, 0.05f);
+        }
+
+        sSurfaceContainerHigh = dark
+                ? blend(surf, 0xFFFFFFFF, 0.08f)
+                : blend(surf, 0xFF000000, 0.08f);
+
+        sSurfaceContainerHighest = dark
+                ? blend(surf, 0xFFFFFFFF, 0.12f)
+                : blend(surf, 0xFF000000, 0.12f);
+
+        int text = dark ? 0xFFE6E0E9 : 0xFF1D1B20;
+        try {
+            int tColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+            if (tColor != 0 && (tColor & 0xFF000000) != 0) {
+                text = tColor;
+            }
+        } catch (Throwable ignore) {
+        }
+        sOnSurface = text;
+
+        int sub = dark ? 0xFFCAC4D0 : 0xFF49454F;
+        try {
+            int subColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2);
+            if (subColor != 0 && (subColor & 0xFF000000) != 0) {
+                sub = subColor;
+            }
+        } catch (Throwable ignore) {
+        }
+        sOnSurfaceVariant = sub;
+
+        int div = dark ? 0xFF938F99 : 0xFF79747E;
+        try {
+            int divColor = Theme.getColor(Theme.key_divider);
+            if (divColor != 0 && (divColor & 0xFF000000) != 0) {
+                div = divColor;
+            }
+        } catch (Throwable ignore) {
+        }
+        sOutline = div;
+
+        int prim = dark ? 0xFFE5486B : 0xFFD81B60;
+        try {
+            int themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
+            if (isValidAccent(themeAccent)) {
+                prim = themeAccent;
+            } else {
+                themeAccent = Theme.getColor(Theme.key_featuredStickers_addButton);
+                if (isValidAccent(themeAccent)) {
+                    prim = themeAccent;
+                } else {
+                    themeAccent = Theme.getColor(Theme.key_switchTrackChecked);
+                    if (isValidAccent(themeAccent)) {
+                        prim = themeAccent;
+                    } else {
+                        themeAccent = Theme.getColor(Theme.key_dialogFloatingButton);
+                        if (isValidAccent(themeAccent)) {
+                            prim = themeAccent;
+                        } else {
+                            themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+                            if (isValidAccent(themeAccent)) {
+                                prim = themeAccent;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        sPrimary = prim;
+        sOnPrimary = ColorUtils.calculateLuminance(prim) > 0.5 ? 0xFF000000 : 0xFFFFFFFF;
+        sPrimaryContainer = dark ? blend(surf, prim, 0.28f) : blend(0xFFFFFFFF, prim, 0.16f);
+        sOnPrimaryContainer = dark ? blend(prim, 0xFFFFFFFF, 0.85f) : blend(prim, 0xFF000000, 0.85f);
+
+        sActionGradientStart = prim;
+        sActionGradientEnd = blend(prim, 0xFF7C3AED, 0.30f);
+
+        sHeroStart = blend(dark ? 0xFF14101E : 0xFFEDE7F6, prim, 0.30f);
+        sHeroMid = blend(dark ? 0xFF1E1022 : 0xFFF3E5F5, prim, 0.22f);
+        sHeroEnd = blend(dark ? 0xFF241020 : 0xFFFCE4EC, prim, 0.18f);
+
+        sLastKey = key;
+        sCacheValid = true;
+    }
+
+    public static boolean isDark() {
+        if (!sCacheValid) ensureCache();
+        return sDark;
+    }
+
+    public static int surface() {
+        if (!sCacheValid) ensureCache();
+        return sSurface;
     }
 
     public static int surfaceContainerLow() {
-        return isDark()
-                ? blend(surface(), 0xFF000000, 0.15f)
-                : blend(surface(), 0xFF000000, 0.03f);
+        if (!sCacheValid) ensureCache();
+        return sSurfaceContainerLow;
     }
 
     public static int surfaceContainer() {
-        try {
-            int gray = Theme.getColor(Theme.key_windowBackgroundGray);
-            if (gray != 0 && (gray & 0xFF000000) != 0) {
-                return gray;
-            }
-        } catch (Throwable ignore) {
-        }
-        return isDark()
-                ? blend(surface(), 0xFFFFFFFF, 0.04f)
-                : blend(surface(), 0xFF000000, 0.05f);
+        if (!sCacheValid) ensureCache();
+        return sSurfaceContainer;
     }
 
     public static int surfaceContainerHigh() {
-        return isDark()
-                ? blend(surface(), 0xFFFFFFFF, 0.08f)
-                : blend(surface(), 0xFF000000, 0.08f);
+        if (!sCacheValid) ensureCache();
+        return sSurfaceContainerHigh;
     }
 
     public static int surfaceContainerHighest() {
-        return isDark()
-                ? blend(surface(), 0xFFFFFFFF, 0.12f)
-                : blend(surface(), 0xFF000000, 0.12f);
+        if (!sCacheValid) ensureCache();
+        return sSurfaceContainerHighest;
     }
 
     public static int surfaceDim() {
@@ -176,40 +318,22 @@ public final class YumiMd3 {
     }
 
     public static int onSurface() {
-        try {
-            int text = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
-            if (text != 0 && (text & 0xFF000000) != 0) {
-                return text;
-            }
-        } catch (Throwable ignore) {
-        }
-        return isDark() ? 0xFFE6E0E9 : 0xFF1D1B20;
+        if (!sCacheValid) ensureCache();
+        return sOnSurface;
     }
 
     public static int onSurfaceVariant() {
-        try {
-            int sub = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2);
-            if (sub != 0 && (sub & 0xFF000000) != 0) {
-                return sub;
-            }
-        } catch (Throwable ignore) {
-        }
-        return isDark() ? 0xFFCAC4D0 : 0xFF49454F;
+        if (!sCacheValid) ensureCache();
+        return sOnSurfaceVariant;
     }
 
     public static int outline() {
-        try {
-            int div = Theme.getColor(Theme.key_divider);
-            if (div != 0 && (div & 0xFF000000) != 0) {
-                return div;
-            }
-        } catch (Throwable ignore) {
-        }
-        return isDark() ? 0xFF938F99 : 0xFF79747E;
+        if (!sCacheValid) ensureCache();
+        return sOutline;
     }
 
     public static int outlineStrong() {
-        return isDark() ? 0xFF938F99 : 0xFF79747E;
+        return outline();
     }
 
     public static int outlineVariant() {
@@ -217,30 +341,8 @@ public final class YumiMd3 {
     }
 
     public static int primary() {
-        try {
-            int themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
-            if (isValidAccent(themeAccent)) {
-                return themeAccent;
-            }
-            themeAccent = Theme.getColor(Theme.key_featuredStickers_addButton);
-            if (isValidAccent(themeAccent)) {
-                return themeAccent;
-            }
-            themeAccent = Theme.getColor(Theme.key_switchTrackChecked);
-            if (isValidAccent(themeAccent)) {
-                return themeAccent;
-            }
-            themeAccent = Theme.getColor(Theme.key_dialogFloatingButton);
-            if (isValidAccent(themeAccent)) {
-                return themeAccent;
-            }
-            themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
-            if (isValidAccent(themeAccent)) {
-                return themeAccent;
-            }
-        } catch (Throwable ignore) {
-        }
-        return isDark() ? 0xFFE5486B : 0xFFD81B60;
+        if (!sCacheValid) ensureCache();
+        return sPrimary;
     }
 
     private static boolean isValidAccent(int color) {
@@ -251,22 +353,18 @@ public final class YumiMd3 {
     }
 
     public static int onPrimary() {
-        int p = primary();
-        return ColorUtils.calculateLuminance(p) > 0.5 ? 0xFF000000 : 0xFFFFFFFF;
+        if (!sCacheValid) ensureCache();
+        return sOnPrimary;
     }
 
     public static int primaryContainer() {
-        int p = primary();
-        return isDark()
-                ? blend(surface(), p, 0.28f)
-                : blend(0xFFFFFFFF, p, 0.16f);
+        if (!sCacheValid) ensureCache();
+        return sPrimaryContainer;
     }
 
     public static int onPrimaryContainer() {
-        int p = primary();
-        return isDark()
-                ? blend(p, 0xFFFFFFFF, 0.85f)
-                : blend(p, 0xFF000000, 0.85f);
+        if (!sCacheValid) ensureCache();
+        return sOnPrimaryContainer;
     }
 
     public static int secondary() {
@@ -464,23 +562,28 @@ public final class YumiMd3 {
     }
 
     public static int gradientStart() {
-        return primary();
+        if (!sCacheValid) ensureCache();
+        return sPrimary;
     }
 
     public static int gradientEnd() {
-        return blend(primary(), 0xFF7C3AED, 0.4f);
+        if (!sCacheValid) ensureCache();
+        return sActionGradientEnd;
     }
 
     public static int heroStart() {
-        return blend(isDark() ? 0xFF14101E : 0xFFEDE7F6, primary(), 0.30f);
+        if (!sCacheValid) ensureCache();
+        return sHeroStart;
     }
 
     public static int heroMid() {
-        return blend(isDark() ? 0xFF1E1022 : 0xFFF3E5F5, primary(), 0.22f);
+        if (!sCacheValid) ensureCache();
+        return sHeroMid;
     }
 
     public static int heroEnd() {
-        return blend(isDark() ? 0xFF241020 : 0xFFFCE4EC, primary(), 0.18f);
+        if (!sCacheValid) ensureCache();
+        return sHeroEnd;
     }
 
     /**
@@ -488,11 +591,13 @@ public final class YumiMd3 {
      * Keeps the violet → pink story while clearing 4.5:1 contrast at 13–14sp.
      */
     public static int actionGradientStart() {
-        return primary();
+        if (!sCacheValid) ensureCache();
+        return sActionGradientStart;
     }
 
     public static int actionGradientEnd() {
-        return blend(primary(), 0xFF7C3AED, 0.30f);
+        if (!sCacheValid) ensureCache();
+        return sActionGradientEnd;
     }
 
     /** Content colour on the deep action gradient, readable in both themes. */

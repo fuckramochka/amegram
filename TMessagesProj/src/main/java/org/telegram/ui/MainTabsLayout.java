@@ -426,6 +426,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 selectedColor = Theme.multAlpha(Theme.getColor(Theme.key_chats_actionBackground, resourcesProvider), 0.22f);
             }
             selectorPaint.setColor(selectedColor);
+            dividerPaint.setColor(Theme.getDividerColor(resourcesProvider));
         }
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
@@ -469,7 +470,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         super.dispatchDraw(canvas);
 
         if (drawTopDivider && MainTabsUiHelper.isMaterial3NavigationBar()) {
-            dividerPaint.setColor(Theme.getDividerColor(resourcesProvider));
             canvas.drawLine(0, 1, getMeasuredWidth(), 1, dividerPaint);
         }
     }

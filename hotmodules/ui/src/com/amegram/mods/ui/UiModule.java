@@ -670,52 +670,7 @@ public class UiModule implements HotModule, HotUi {
         if (host == null) return;
         ClassLoader cl = host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
 
-        // 1. View.setOnClickListener: пружинний відгук для кнопок, FAB та іконок
-        try {
-            Method m = View.class.getDeclaredMethod("setOnClickListener", View.OnClickListener.class);
-            HotHook.Unhook u = host.hook(m, new HotHook.Callback() {
-                @Override
-                public void after(HotHook.Call call) throws Throwable {
-                    if (!isStickyEnabled()) return;
-                    Object target = call.getThis();
-                    Object[] args = call.getArgs();
-                    if (target instanceof View) {
-                        View v = (View) target;
-                        View.OnClickListener l = (args != null && args.length > 0) ? (View.OnClickListener) args[0] : null;
-                        if (l != null && isInteractiveButton(v)) {
-                            applySpringStateListAnimator(v);
-                        }
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
-            host.log("ui: hooked View.setOnClickListener for spring buttons");
-        } catch (Throwable t) {
-            host.log("ui: hook View.setOnClickListener failed: " + t.getMessage());
-        }
-
-        // 2. DialogCell.onTouchEvent: тактильне вдавлювання карток чатів (0.985x)
-        try {
-            Class<?> cellClass = Class.forName("org.telegram.ui.Cells.DialogCell", true, cl);
-            Method mTouch = cellClass.getDeclaredMethod("onTouchEvent", MotionEvent.class);
-            HotHook.Unhook u = host.hook(mTouch, new HotHook.Callback() {
-                @Override
-                public void before(HotHook.Call call) throws Throwable {
-                    if (!isStickyEnabled() || !isChatCardsTouch() || chatListStyle() == CHAT_STYLE_FLAT) return;
-                    Object target = call.getThis();
-                    Object[] args = call.getArgs();
-                    if (target instanceof View && args != null && args.length > 0 && args[0] instanceof MotionEvent) {
-                        handleCardTouch((View) target, (MotionEvent) args[0]);
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
-            host.log("ui: hooked DialogCell.onTouchEvent for card press physics");
-        } catch (Throwable t) {
-            host.log("ui: hook DialogCell.onTouchEvent failed: " + t.getMessage());
-        }
-
-        // 3. BottomSheet: шовкове плавне відкриття шторок без батутного дрижання
+        // 1. BottomSheet: шовкове плавне відкриття шторок без батутного дрижання
         try {
             final Class<?> bsClass = Class.forName("org.telegram.ui.ActionBar.BottomSheet", true, cl);
             List<HotHook.Unhook> sheetHooks = host.hookAll(bsClass, "show", new HotHook.Callback() {
@@ -738,49 +693,7 @@ public class UiModule implements HotModule, HotUi {
             host.log("ui: hook BottomSheet failed: " + t.getMessage());
         }
 
-        // 4. ActionBarMenuItem.onTouchEvent: реактивний мікровідгук тулбара з першого тапу
-        try {
-            Class<?> itemClass = Class.forName("org.telegram.ui.ActionBar.ActionBarMenuItem", true, cl);
-            Method m = itemClass.getDeclaredMethod("onTouchEvent", MotionEvent.class);
-            HotHook.Unhook u = host.hook(m, new HotHook.Callback() {
-                @Override
-                public void before(HotHook.Call call) throws Throwable {
-                    if (!isStickyEnabled()) return;
-                    Object target = call.getThis();
-                    Object[] args = call.getArgs();
-                    if (target instanceof View && args != null && args.length > 0 && args[0] instanceof MotionEvent) {
-                        handleMenuItemTouch((View) target, (MotionEvent) args[0]);
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
-            host.log("ui: hooked ActionBarMenuItem.onTouchEvent");
-        } catch (Throwable t) {
-            host.log("ui: hook ActionBarMenuItem failed: " + t.getMessage());
-        }
-
-        // 5. GlassTabView.onTouchEvent: пружинний відгук для нижніх табів
-        try {
-            Class<?> tabClass = Class.forName("org.telegram.ui.Components.glass.GlassTabView", true, cl);
-            Method m = tabClass.getDeclaredMethod("onTouchEvent", MotionEvent.class);
-            HotHook.Unhook u = host.hook(m, new HotHook.Callback() {
-                @Override
-                public void before(HotHook.Call call) throws Throwable {
-                    if (!isStickyEnabled()) return;
-                    Object target = call.getThis();
-                    Object[] args = call.getArgs();
-                    if (target instanceof View && args != null && args.length > 0 && args[0] instanceof MotionEvent) {
-                        handleTabTouch((View) target, (MotionEvent) args[0]);
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
-            host.log("ui: hooked GlassTabView.onTouchEvent");
-        } catch (Throwable t) {
-            host.log("ui: hook GlassTabView failed: " + t.getMessage());
-        }
-
-        // 6. Main navigation is rendered by the module. The client activity is
+        // 2. Main navigation is rendered by the module. The client activity is
         // untouched; we only install the Yumi visual layer after it creates its
         // normal tabs. Touch, long-press and tab selection remain native.
         try {
@@ -891,62 +804,7 @@ public class UiModule implements HotModule, HotUi {
             host.log("ui: hook GlassTabView visual state failed: " + t.getMessage());
         }
 
-        // 7. Yumi chat-list row renderer. The official DialogCell keeps its
-        // adapter, gestures, swipe, stories and action mode; the module paints
-        // the Yumi card after the cell's own onDraw.
-        try {
-            final Class<?> dialogCell = Class.forName("org.telegram.ui.Cells.DialogCell", true, cl);
-            final Method onDraw = dialogCell.getDeclaredMethod("onDraw", android.graphics.Canvas.class);
-            HotHook.Unhook u = host.hook(onDraw, new HotHook.Callback() {
-                @Override
-                public void after(HotHook.Call call) throws Throwable {
-                    if (chatRowRenderer == null) return;
-                    Object target = call.getThis();
-                    Object[] args = call.getArgs();
-                    if (target instanceof View && args != null && args.length > 0
-                            && args[0] instanceof android.graphics.Canvas) {
-                        chatRowRenderer.draw((View) target, (android.graphics.Canvas) args[0]);
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
-
-            final Method update = dialogCell.getDeclaredMethod("update", int.class, boolean.class);
-            u = host.hook(update, new HotHook.Callback() {
-                @Override
-                public void after(HotHook.Call call) throws Throwable {
-                    if (chatRowRenderer == null) return;
-                    Object target = call.getThis();
-                    if (target instanceof View) {
-                        chatRowRenderer.bind((View) target);
-                        ((View) target).invalidate();
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
-            host.log("ui: hooked DialogCell.onDraw/update for module chat cards");
-
-            for (Method method : dialogCell.getDeclaredMethods()) {
-                final String name = method.getName();
-                if (!"setDialog".equals(name) && !"setDialogSelected".equals(name)) continue;
-                final HotHook.Unhook setDialogHook = host.hook(method, new HotHook.Callback() {
-                    @Override
-                    public void after(HotHook.Call call) throws Throwable {
-                        if (chatRowRenderer == null) return;
-                        Object target = call.getThis();
-                        if (target instanceof View) {
-                            chatRowRenderer.bind((View) target);
-                            ((View) target).invalidate();
-                        }
-                    }
-                });
-                if (setDialogHook != null) activeHooks.add(setDialogHook);
-            }
-        } catch (Throwable t) {
-            host.log("ui: hook DialogCell failed: " + t.getMessage());
-        }
-
-        // 8. Module-owned chrome for official list screens. The fragments and
+        // 3. Module-owned chrome for official list screens. The fragments and
         // adapters are untouched; a Yumi top bar / search field is inserted and
         // the original ActionBar stays measured but invisible.
         try {

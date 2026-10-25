@@ -130,7 +130,8 @@ public class YumiSettingsView extends FrameLayout {
         recyclerView.setClipToPadding(false);
         recyclerView.setOverScrollMode(OVER_SCROLL_NEVER);
         recyclerView.setVerticalScrollBarEnabled(false);
-        recyclerView.setItemAnimator(new DefaultItemAnimator());
+        recyclerView.setItemAnimator(null);
+        recyclerView.setItemViewCacheSize(6);
         layoutManager = new LinearLayoutManager(context, RecyclerView.VERTICAL, false);
         recyclerView.setLayoutManager(layoutManager);
         adapter = new Adapter();
@@ -963,6 +964,9 @@ public class YumiSettingsView extends FrameLayout {
 
     private class QuickHolder extends RecyclerView.ViewHolder {
         private final LinearLayout root;
+        private final List<LinearLayout> rowLayouts = new ArrayList<>();
+        private final List<QuickTile> tiles = new ArrayList<>();
+        private final List<View> spacers = new ArrayList<>();
 
         QuickHolder(Context context) {
             super(new LinearLayout(context));
@@ -972,39 +976,64 @@ public class YumiSettingsView extends FrameLayout {
         }
 
         void bind(List<YumiSettingsModel.Quick> quick) {
-            root.removeAllViews();
-            for (int i = 0; i < quick.size(); i += 2) {
+            int count = quick.size();
+            int neededRows = (count + 1) / 2;
+
+            while (rowLayouts.size() < neededRows) {
                 LinearLayout row = new LinearLayout(context);
                 row.setOrientation(LinearLayout.HORIZONTAL);
                 row.setGravity(Gravity.TOP);
                 root.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                         LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+                rowLayouts.add(row);
 
-                View left = buildQuickTile(quick.get(i));
+                QuickTile left = new QuickTile(context);
+                tiles.add(left);
                 LinearLayout.LayoutParams leftLp = new LinearLayout.LayoutParams(0,
                         LayoutHelper.WRAP_CONTENT, 1f);
                 leftLp.setMarginEnd(YumiMd3.dp(5));
                 row.addView(left, leftLp);
 
-                if (i + 1 < quick.size()) {
-                    View right = buildQuickTile(quick.get(i + 1));
-                    LinearLayout.LayoutParams rightLp = new LinearLayout.LayoutParams(0,
-                            LayoutHelper.WRAP_CONTENT, 1f);
-                    rightLp.setMarginStart(YumiMd3.dp(5));
-                    row.addView(right, rightLp);
+                QuickTile right = new QuickTile(context);
+                tiles.add(right);
+                LinearLayout.LayoutParams rightLp = new LinearLayout.LayoutParams(0,
+                        LayoutHelper.WRAP_CONTENT, 1f);
+                rightLp.setMarginStart(YumiMd3.dp(5));
+                row.addView(right, rightLp);
+
+                View spacer = new View(context);
+                spacers.add(spacer);
+                LinearLayout.LayoutParams spacerLp = new LinearLayout.LayoutParams(0, 1, 1f);
+                spacerLp.setMarginStart(YumiMd3.dp(5));
+                row.addView(spacer, spacerLp);
+            }
+
+            for (int r = 0; r < neededRows; r++) {
+                LinearLayout row = rowLayouts.get(r);
+                row.setVisibility(View.VISIBLE);
+
+                int leftIdx = r * 2;
+                QuickTile left = tiles.get(leftIdx);
+                left.setVisibility(View.VISIBLE);
+                left.bind(quick.get(leftIdx));
+
+                int rightIdx = leftIdx + 1;
+                QuickTile right = tiles.get(rightIdx);
+                View spacer = spacers.get(r);
+
+                if (rightIdx < count) {
+                    right.setVisibility(View.VISIBLE);
+                    right.bind(quick.get(rightIdx));
+                    spacer.setVisibility(View.GONE);
                 } else {
-                    View spacer = new View(context);
-                    LinearLayout.LayoutParams spacerLp = new LinearLayout.LayoutParams(0, 1, 1f);
-                    spacerLp.setMarginStart(YumiMd3.dp(5));
-                    row.addView(spacer, spacerLp);
+                    right.setVisibility(View.GONE);
+                    spacer.setVisibility(View.VISIBLE);
                 }
             }
-        }
 
-        private View buildQuickTile(YumiSettingsModel.Quick quick) {
-            QuickTile tile = new QuickTile(context);
-            tile.bind(quick);
-            return tile;
+            for (int r = neededRows; r < rowLayouts.size(); r++) {
+                rowLayouts.get(r).setVisibility(View.GONE);
+            }
         }
     }
 
@@ -1119,17 +1148,17 @@ public class YumiSettingsView extends FrameLayout {
 
     private class GroupHolder extends RecyclerView.ViewHolder {
         private final LinearLayout root;
+        private final LinearLayout card;
+        private final List<RowItemView> rowViews = new ArrayList<>();
+        private final List<View> dividerViews = new ArrayList<>();
 
         GroupHolder(Context context) {
             super(new LinearLayout(context));
             root = (LinearLayout) itemView;
             root.setOrientation(LinearLayout.VERTICAL);
             root.setPadding(YumiMd3.dp(16), 0, YumiMd3.dp(16), 0);
-        }
 
-        void bind(YumiSettingsModel.Section section) {
-            root.removeAllViews();
-            LinearLayout card = new LinearLayout(context);
+            card = new LinearLayout(context);
             card.setOrientation(LinearLayout.VERTICAL);
             GradientDrawable cardBackground = new GradientDrawable();
             cardBackground.setShape(GradientDrawable.RECTANGLE);
@@ -1141,128 +1170,191 @@ public class YumiSettingsView extends FrameLayout {
             card.setClipToOutline(true);
             root.addView(card, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                     LayoutHelper.WRAP_CONTENT));
+        }
 
-            for (int i = 0; i < section.rows.size(); i++) {
-                YumiSettingsModel.Row row = section.rows.get(i);
-                if (i > 0) {
+        void bind(YumiSettingsModel.Section section) {
+            GradientDrawable cardBg = (GradientDrawable) card.getBackground();
+            if (cardBg != null) {
+                cardBg.setColor(YumiMd3.surfaceContainerLow());
+                cardBg.setStroke(Math.max(1, YumiMd3.dp(0.75f)),
+                        YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f));
+            }
+
+            int rowCount = section.rows.size();
+            while (rowViews.size() < rowCount) {
+                if (rowViews.size() > 0) {
                     View divider = new View(context);
                     divider.setBackgroundColor(YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.18f : 0.12f));
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                             LayoutHelper.MATCH_PARENT, Math.max(1, YumiMd3.dp(0.75f)));
                     lp.setMarginStart(YumiMd3.dp(68));
+                    dividerViews.add(divider);
                     card.addView(divider, lp);
                 }
-                card.addView(buildRow(row, i == 0, i == section.rows.size() - 1));
+                RowItemView rowView = new RowItemView(context);
+                rowViews.add(rowView);
+                card.addView(rowView);
+            }
+
+            for (int i = 0; i < rowCount; i++) {
+                if (i > 0 && i - 1 < dividerViews.size()) {
+                    View div = dividerViews.get(i - 1);
+                    div.setVisibility(View.VISIBLE);
+                    div.setBackgroundColor(YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.18f : 0.12f));
+                }
+                RowItemView rView = rowViews.get(i);
+                rView.setVisibility(View.VISIBLE);
+                rView.bind(section.rows.get(i), i == 0, i == rowCount - 1);
+            }
+
+            for (int i = rowCount; i < rowViews.size(); i++) {
+                rowViews.get(i).setVisibility(View.GONE);
+                if (i > 0 && i - 1 < dividerViews.size()) {
+                    dividerViews.get(i - 1).setVisibility(View.GONE);
+                }
             }
         }
 
-        private View buildRow(YumiSettingsModel.Row row, boolean first, boolean last) {
-            LinearLayout rowView = new LinearLayout(context);
-            rowView.setOrientation(LinearLayout.HORIZONTAL);
-            rowView.setGravity(Gravity.CENTER_VERTICAL);
-            rowView.setMinimumHeight(YumiMd3.dp(68));
-            rowView.setPadding(YumiMd3.dp(16), YumiMd3.dp(11), YumiMd3.dp(13), YumiMd3.dp(11));
-            rowView.setClickable(true);
-            rowView.setFocusable(true);
-            rowView.setEnabled(row.enabled);
+        private class RowItemView extends LinearLayout {
+            private final FrameLayout iconBox;
+            private final ImageView icon;
+            private final TextView title;
+            private final TextView subtitle;
+            private final YumiSwitch toggle;
+            private final TextView value;
+            private final ImageView chevron;
+            private final GradientDrawable mask = new GradientDrawable();
+            private final RippleDrawable ripple;
 
-            float radius = YumiMd3.dp(24);
-            float[] corners;
-            if (first && last) {
-                corners = new float[]{radius, radius, radius, radius, radius, radius, radius, radius};
-            } else if (first) {
-                corners = new float[]{radius, radius, radius, radius, 0, 0, 0, 0};
-            } else if (last) {
-                corners = new float[]{0, 0, 0, 0, radius, radius, radius, radius};
-            } else {
-                corners = new float[]{0, 0, 0, 0, 0, 0, 0, 0};
-            }
-            GradientDrawable mask = new GradientDrawable();
-            mask.setColor(0xFFFFFFFF);
-            mask.setCornerRadii(corners);
-            RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(
-                    YumiMd3.accentRippleColor(row.accent)), null, mask);
-            rowView.setBackground(ripple);
+            RowItemView(Context context) {
+                super(context);
+                setOrientation(LinearLayout.HORIZONTAL);
+                setGravity(Gravity.CENTER_VERTICAL);
+                setMinimumHeight(YumiMd3.dp(68));
+                setPadding(YumiMd3.dp(16), YumiMd3.dp(11), YumiMd3.dp(13), YumiMd3.dp(11));
+                setClickable(true);
+                setFocusable(true);
 
-            int accent = row.kind == YumiSettingsModel.KIND_DANGER ? YumiMd3.error() : row.accent;
-            FrameLayout iconBox = new FrameLayout(context);
-            iconBox.setBackground(YumiMd3.rounded(YumiMd3.iconTone(accent, 0.16f), 13));
-            ImageView icon = new ImageView(context);
-            icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-            icon.setImageResource(row.icon);
-            icon.setColorFilter(new PorterDuffColorFilter(accent, PorterDuff.Mode.SRC_IN));
-            iconBox.addView(icon, LayoutHelper.createFrame(21, 21, Gravity.CENTER));
-            LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(YumiMd3.dp(40), YumiMd3.dp(40));
-            iconLp.setMarginEnd(YumiMd3.dp(13));
-            rowView.addView(iconBox, iconLp);
+                mask.setColor(0xFFFFFFFF);
+                ripple = new RippleDrawable(ColorStateList.valueOf(0x20888888), null, mask);
+                setBackground(ripple);
 
-            LinearLayout textCol = new LinearLayout(context);
-            textCol.setOrientation(LinearLayout.VERTICAL);
-            textCol.setGravity(Gravity.CENTER_VERTICAL);
+                iconBox = new FrameLayout(context);
+                icon = new ImageView(context);
+                icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                iconBox.addView(icon, LayoutHelper.createFrame(21, 21, Gravity.CENTER));
+                LinearLayout.LayoutParams iconLp = new LinearLayout.LayoutParams(YumiMd3.dp(40), YumiMd3.dp(40));
+                iconLp.setMarginEnd(YumiMd3.dp(13));
+                addView(iconBox, iconLp);
 
-            TextView title = YumiMd3.text(context, row.title, 15.5f, YumiMd3.onSurface(), YumiMd3.MEDIUM);
-            title.setSingleLine(true);
-            title.setEllipsize(TextUtils.TruncateAt.END);
-            if (row.kind == YumiSettingsModel.KIND_DANGER) {
-                title.setTextColor(YumiMd3.error());
-            }
-            textCol.addView(title);
+                LinearLayout textCol = new LinearLayout(context);
+                textCol.setOrientation(LinearLayout.VERTICAL);
+                textCol.setGravity(Gravity.CENTER_VERTICAL);
 
-            if (!TextUtils.isEmpty(row.subtitle)) {
-                TextView subtitle = YumiMd3.text(context, row.subtitle, 12.5f,
-                        YumiMd3.onSurfaceVariant(), YumiMd3.REGULAR);
+                title = YumiMd3.text(context, "", 15.5f, YumiMd3.onSurface(), YumiMd3.MEDIUM);
+                title.setSingleLine(true);
+                title.setEllipsize(TextUtils.TruncateAt.END);
+                textCol.addView(title);
+
+                subtitle = YumiMd3.text(context, "", 12.5f, YumiMd3.onSurfaceVariant(), YumiMd3.REGULAR);
                 subtitle.setMaxLines(2);
                 subtitle.setEllipsize(TextUtils.TruncateAt.END);
                 subtitle.setLineSpacing(YumiMd3.dp(1), 1f);
                 textCol.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                         LayoutHelper.WRAP_CONTENT, 0, 3, 0, 0));
-            }
-            rowView.addView(textCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+                addView(textCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
-            if (row.kind == YumiSettingsModel.KIND_SWITCH) {
-                YumiSwitch toggle = new YumiSwitch(context);
-                toggle.setAccent(accent);
-                toggle.setChecked(row.checked, false);
-                toggle.setContentDescription(row.title);
-                toggle.setOnCheckedChangeListener((view, checked) -> listener.onToggle(row, checked));
+                toggle = new YumiSwitch(context);
                 LinearLayout.LayoutParams switchLp = new LinearLayout.LayoutParams(YumiMd3.dp(54), YumiMd3.dp(48));
                 switchLp.setMarginStart(YumiMd3.dp(10));
-                toggle.setEnabled(row.enabled);
-                rowView.addView(toggle, switchLp);
-            } else {
-                if (!TextUtils.isEmpty(row.value)) {
-                    TextView value = YumiMd3.text(context, row.value, 11.5f, accent, YumiMd3.MEDIUM);
-                    value.setSingleLine(true);
-                    value.setGravity(Gravity.CENTER);
-                    value.setBackground(YumiMd3.rounded(YumiMd3.tone(accent, 0.12f), 99));
-                    value.setPadding(YumiMd3.dp(9), YumiMd3.dp(4), YumiMd3.dp(9), YumiMd3.dp(4));
-                    LinearLayout.LayoutParams valueLp = new LinearLayout.LayoutParams(
-                            LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-                    valueLp.setMarginStart(YumiMd3.dp(8));
-                    rowView.addView(value, valueLp);
-                }
-                ImageView chevron = new ImageView(context);
+                addView(toggle, switchLp);
+
+                value = YumiMd3.text(context, "", 11.5f, YumiMd3.primary(), YumiMd3.MEDIUM);
+                value.setSingleLine(true);
+                value.setGravity(Gravity.CENTER);
+                value.setPadding(YumiMd3.dp(9), YumiMd3.dp(4), YumiMd3.dp(9), YumiMd3.dp(4));
+                LinearLayout.LayoutParams valueLp = new LinearLayout.LayoutParams(
+                        LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
+                valueLp.setMarginStart(YumiMd3.dp(8));
+                addView(value, valueLp);
+
+                chevron = new ImageView(context);
                 chevron.setImageResource(R.drawable.yumi_ic_chevron_right);
-                chevron.setColorFilter(new PorterDuffColorFilter(
-                        YumiMd3.muted(YumiMd3.onSurfaceVariant()), PorterDuff.Mode.SRC_IN));
                 LinearLayout.LayoutParams chevronLp = new LinearLayout.LayoutParams(YumiMd3.dp(18), YumiMd3.dp(18));
                 chevronLp.setMarginStart(YumiMd3.dp(8));
-                rowView.addView(chevron, chevronLp);
+                addView(chevron, chevronLp);
             }
 
-            if (!row.enabled) {
-                rowView.setAlpha(0.45f);
-            }
-            rowView.setOnClickListener(v -> {
-                if (!row.enabled) {
-                    return;
+            void bind(YumiSettingsModel.Row row, boolean first, boolean last) {
+                setEnabled(row.enabled);
+                setAlpha(row.enabled ? 1.0f : 0.45f);
+
+                float radius = YumiMd3.dp(24);
+                float[] corners;
+                if (first && last) {
+                    corners = new float[]{radius, radius, radius, radius, radius, radius, radius, radius};
+                } else if (first) {
+                    corners = new float[]{radius, radius, radius, radius, 0, 0, 0, 0};
+                } else if (last) {
+                    corners = new float[]{0, 0, 0, 0, radius, radius, radius, radius};
+                } else {
+                    corners = new float[]{0, 0, 0, 0, 0, 0, 0, 0};
                 }
-                haptic(v);
-                hideSearchFocus();
-                listener.onRow(row);
-            });
-            rowView.setContentDescription(row.title + ". " + (row.subtitle == null ? "" : row.subtitle));
-            return rowView;
+                mask.setCornerRadii(corners);
+                ripple.setColor(ColorStateList.valueOf(YumiMd3.accentRippleColor(row.accent)));
+
+                int accent = row.kind == YumiSettingsModel.KIND_DANGER ? YumiMd3.error() : row.accent;
+                iconBox.setBackground(YumiMd3.rounded(YumiMd3.iconTone(accent, 0.16f), 13));
+                icon.setImageResource(row.icon);
+                icon.setColorFilter(new PorterDuffColorFilter(accent, PorterDuff.Mode.SRC_IN));
+
+                title.setText(row.title);
+                title.setTextColor(row.kind == YumiSettingsModel.KIND_DANGER ? YumiMd3.error() : YumiMd3.onSurface());
+
+                if (!TextUtils.isEmpty(row.subtitle)) {
+                    subtitle.setVisibility(View.VISIBLE);
+                    subtitle.setText(row.subtitle);
+                    subtitle.setTextColor(YumiMd3.onSurfaceVariant());
+                } else {
+                    subtitle.setVisibility(View.GONE);
+                }
+
+                if (row.kind == YumiSettingsModel.KIND_SWITCH) {
+                    toggle.setVisibility(View.VISIBLE);
+                    value.setVisibility(View.GONE);
+                    chevron.setVisibility(View.GONE);
+
+                    toggle.setAccent(accent);
+                    toggle.setChecked(row.checked, false);
+                    toggle.setContentDescription(row.title);
+                    toggle.setEnabled(row.enabled);
+                    toggle.setOnCheckedChangeListener((v, checked) -> listener.onToggle(row, checked));
+                    setOnClickListener(v -> {
+                        if (!row.enabled) return;
+                        toggle.performClick();
+                    });
+                } else {
+                    toggle.setVisibility(View.GONE);
+                    if (!TextUtils.isEmpty(row.value)) {
+                        value.setVisibility(View.VISIBLE);
+                        value.setText(row.value);
+                        value.setTextColor(accent);
+                        value.setBackground(YumiMd3.rounded(YumiMd3.tone(accent, 0.12f), 99));
+                    } else {
+                        value.setVisibility(View.GONE);
+                    }
+                    chevron.setVisibility(View.VISIBLE);
+                    chevron.setColorFilter(new PorterDuffColorFilter(
+                            YumiMd3.muted(YumiMd3.onSurfaceVariant()), PorterDuff.Mode.SRC_IN));
+                    setOnClickListener(v -> {
+                        if (!row.enabled) return;
+                        haptic(v);
+                        hideSearchFocus();
+                        listener.onRow(row);
+                    });
+                }
+                setContentDescription(row.title + ". " + (row.subtitle == null ? "" : row.subtitle));
+            }
         }
     }
 

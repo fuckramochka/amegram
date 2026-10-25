@@ -132,7 +132,7 @@ public final class YumiChatRowRenderer {
                 : palette.surfaceContainerLow);
         canvas.drawPath(cardPath, cardPaint);
         if (owner.isChatCardOutline()) {
-            strokePaint.setColor(YumiPalette.alpha(palette.navBorder, 0.7f));
+            strokePaint.setColor(YumiPalette.alpha(palette.outline, 0.22f));
             canvas.drawPath(cardPath, strokePaint);
         }
 

@@ -421,7 +421,11 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private void setSkipDrawSelector(boolean skipDrawSelector) {
         drawCustomSelector = skipDrawSelector;
         if (drawCustomSelector) {
-            selectorPaint.setColor(Theme.multAlpha(Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider), 0.09f));
+            int selectedColor = Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider);
+            if (selectedColor == 0 || (selectedColor & 0xFF000000) == 0) {
+                selectedColor = Theme.multAlpha(Theme.getColor(Theme.key_chats_actionBackground, resourcesProvider), 0.22f);
+            }
+            selectorPaint.setColor(selectedColor);
         }
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
@@ -447,7 +451,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
         if (drawCustomSelector) {
             final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
             final float sWidth = getInterpolatedWidthByX(x, this);
-            if (MainTabsUiHelper.isMaterial3NavigationBar()) {
+            if (MainTabsUiHelper.isMaterial3NavigationBar() || MainTabsUiHelper.isFloatingPill()) {
                 MainTabsUiHelper.setMainTabSelectedIndicatorBounds(selectorRect, sWidth,
                         getHeight() - getPaddingTop() - getPaddingBottom());
                 selectorRect.offset(x - sWidth / 2f, getPaddingTop());

@@ -277,6 +277,10 @@ public final class YougramExpressive {
         put(colors, Theme.key_chat_outReplyNameText, dark ? 0xFFFFFFFF : 0xFF1A1A1C);
         put(colors, Theme.key_chat_outSentCheck, bubbleMeta);
         put(colors, Theme.key_chat_outSentCheckRead, bubbleText);
+
+        // Switches
+        put(colors, Theme.key_switchTrackChecked, accent);
+        put(colors, Theme.key_switch2TrackChecked, accent);
     }
 
     private static void put(SparseIntArray colors, int key, int value) {
@@ -284,17 +288,22 @@ public final class YougramExpressive {
     }
 
     private static int accentColor(SparseIntArray colors) {
-        int accent = colors.get(Theme.key_windowBackgroundWhiteBlueText, 0);
-        if (accent == 0 || (accent & 0xff000000) == 0) {
-            accent = colors.get(Theme.key_chats_actionBackground, 0);
-        }
-        if (accent == 0 || (accent & 0xff000000) == 0) {
-            accent = colors.get(Theme.key_featuredStickers_addButton, 0);
-        }
-        if (accent == 0 || (accent & 0xff000000) == 0) {
-            accent = 0xFFE5486B; // Yumi soft pink default
-        }
-        return accent;
+        int accent = colors.get(Theme.key_chats_actionBackground, 0);
+        if (isValidAccent(accent)) return accent;
+        accent = colors.get(Theme.key_featuredStickers_addButton, 0);
+        if (isValidAccent(accent)) return accent;
+        accent = colors.get(Theme.key_switchTrackChecked, 0);
+        if (isValidAccent(accent)) return accent;
+        accent = colors.get(Theme.key_windowBackgroundWhiteBlueText, 0);
+        if (isValidAccent(accent)) return accent;
+        return 0xFFE5486B; // Yumi rose default
+    }
+
+    private static boolean isValidAccent(int color) {
+        if (color == 0 || (color & 0xff000000) == 0) return false;
+        float[] hsl = new float[3];
+        ColorUtils.colorToHSL(color, hsl);
+        return hsl[1] >= 0.08f && hsl[2] >= 0.10f && hsl[2] <= 0.90f;
     }
 
     private static int lerp(int from, int to, float amount) {

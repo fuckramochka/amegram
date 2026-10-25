@@ -566,9 +566,9 @@ public class YumiSettingsView extends FrameLayout {
         protected void onDraw(Canvas canvas) {
             super.onDraw(canvas);
             if (reveal > 0.001f) {
-                backgroundPaint.setColor(YumiMd3.withAlpha(YumiMd3.surface(), 0.97f * reveal));
+                backgroundPaint.setColor(YumiMd3.withAlpha(YumiMd3.surfaceContainer(), reveal));
                 canvas.drawRect(0, 0, getWidth(), getHeight(), backgroundPaint);
-                hairlinePaint.setColor(YumiMd3.withAlpha(YumiMd3.outline(), 0.75f * reveal));
+                hairlinePaint.setColor(YumiMd3.withAlpha(YumiMd3.outline(), 0.18f * reveal));
                 canvas.drawRect(0, getHeight() - YumiMd3.dp(1), getWidth(), getHeight(), hairlinePaint);
             }
         }
@@ -581,8 +581,8 @@ public class YumiSettingsView extends FrameLayout {
             setFocusable(true);
             setContentDescription(description);
             GradientDrawable content = YumiMd3.rounded(
-                    YumiMd3.withAlpha(YumiMd3.surfaceContainerHigh(), YumiMd3.isDark() ? 0.9f : 1f),
-                    YumiMd3.hairline(), 24, 1);
+                    YumiMd3.surfaceContainerHigh(),
+                    YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f), 24, 0.75f);
             GradientDrawable mask = YumiMd3.rounded(0xFFFFFFFF, 24);
             setBackground(new RippleDrawable(
                     ColorStateList.valueOf(YumiMd3.defaultRippleColor()), content, mask));
@@ -676,17 +676,6 @@ public class YumiSettingsView extends FrameLayout {
         }
     }
     private class HeroCard extends FrameLayout {
-        private final Paint gradientPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint glowPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint ringPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final RectF bounds = new RectF();
-        private final RectF ringBounds = new RectF();
-        private final Path clipPath = new Path();
-        private LinearGradient gradient;
-        private RadialGradient pinkGlow;
-        private RadialGradient whiteGlow;
-
         private final LinearLayout content;
         private final ImageView logo;
         private final TextView eyebrow;
@@ -699,60 +688,63 @@ public class YumiSettingsView extends FrameLayout {
 
         HeroCard(Context context) {
             super(context);
-            setWillNotDraw(false);
-            setPadding(YumiMd3.dp(16), YumiMd3.dp(12), YumiMd3.dp(16), YumiMd3.dp(6));
+            setPadding(YumiMd3.dp(16), YumiMd3.dp(8), YumiMd3.dp(16), YumiMd3.dp(6));
 
             content = new LinearLayout(context);
             content.setOrientation(LinearLayout.VERTICAL);
-            content.setPadding(YumiMd3.dp(20), YumiMd3.dp(20), YumiMd3.dp(20), YumiMd3.dp(20));
+            content.setBackground(YumiMd3.rounded(
+                    YumiMd3.surfaceContainerLow(),
+                    YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f), 26, 0.75f));
+            content.setPadding(YumiMd3.dp(20), YumiMd3.dp(18), YumiMd3.dp(20), YumiMd3.dp(18));
             addView(content, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             LinearLayout top = new LinearLayout(context);
             top.setOrientation(LinearLayout.HORIZONTAL);
-            top.setGravity(Gravity.TOP);
+            top.setGravity(Gravity.CENTER_VERTICAL);
 
             FrameLayout logoBox = new FrameLayout(context);
-            logoBox.setBackground(YumiMd3.rounded(0x1FFFFFFF, 20));
+            logoBox.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.primary(), 0.14f), 16));
             logo = new ImageView(context);
             logo.setImageResource(R.drawable.yumi_logo);
             logo.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            logoBox.addView(logo, LayoutHelper.createFrame(42, 42, Gravity.CENTER));
-            top.addView(logoBox, LayoutHelper.createLinear(64, 64));
+            logoBox.addView(logo, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
+            top.addView(logoBox, LayoutHelper.createLinear(48, 48, Gravity.CENTER_VERTICAL));
 
             LinearLayout textCol = new LinearLayout(context);
             textCol.setOrientation(LinearLayout.VERTICAL);
-            textCol.setPadding(YumiMd3.dp(16), YumiMd3.dp(1), 0, 0);
+            textCol.setPadding(YumiMd3.dp(14), 0, 0, 0);
 
-            eyebrow = YumiMd3.text(context, "", 9.5f, 0xB8FFFFFF, YumiMd3.MEDIUM);
-            eyebrow.setLetterSpacing(0.12f);
+            LinearLayout eyebrowRow = new LinearLayout(context);
+            eyebrowRow.setOrientation(LinearLayout.HORIZONTAL);
+            eyebrowRow.setGravity(Gravity.CENTER_VERTICAL);
+
+            eyebrow = YumiMd3.text(context, "", 10.5f, YumiMd3.primary(), YumiMd3.BOLD);
+            eyebrow.setLetterSpacing(0.08f);
             eyebrow.setSingleLine(true);
             eyebrow.setEllipsize(TextUtils.TruncateAt.END);
-            textCol.addView(eyebrow);
+            eyebrowRow.addView(eyebrow, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
-            title = YumiMd3.text(context, "", 27, 0xFFFFFFFF, YumiMd3.MEDIUM);
-            title.setSingleLine(true);
+            badge = YumiMd3.text(context, "MD3", 10.5f, YumiMd3.primary(), YumiMd3.BOLD);
+            badge.setGravity(Gravity.CENTER);
+            badge.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.primary(), 0.12f), 99));
+            badge.setPadding(YumiMd3.dp(8), YumiMd3.dp(2), YumiMd3.dp(8), YumiMd3.dp(2));
+            eyebrowRow.addView(badge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 0, 0));
+            textCol.addView(eyebrowRow);
+
+            title = YumiMd3.text(context, "", 20, YumiMd3.onSurface(), YumiMd3.BOLD);
+            title.setMaxLines(2);
             title.setEllipsize(TextUtils.TruncateAt.END);
             textCol.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                    LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
+                    LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
-            subtitle = YumiMd3.text(context, "", 12.5f, 0xB8FFFFFF, YumiMd3.REGULAR);
+            subtitle = YumiMd3.text(context, "", 13f, YumiMd3.onSurfaceVariant(), YumiMd3.REGULAR);
             subtitle.setMaxLines(2);
             subtitle.setEllipsize(TextUtils.TruncateAt.END);
             subtitle.setLineSpacing(YumiMd3.dp(1), 1f);
             textCol.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                    LayoutHelper.WRAP_CONTENT, 0, 5, 0, 0));
+                    LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
 
             top.addView(textCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
-
-            badge = YumiMd3.text(context, "MD3", 10, 0xE6FFFFFF, YumiMd3.BOLD);
-            badge.setGravity(Gravity.CENTER);
-            badge.setBackground(YumiMd3.rounded(0x1FFFFFFF, 99));
-            badge.setPadding(YumiMd3.dp(9), YumiMd3.dp(4), YumiMd3.dp(9), YumiMd3.dp(4));
-            LinearLayout.LayoutParams badgeLp = new LinearLayout.LayoutParams(
-                    LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
-            badgeLp.topMargin = YumiMd3.dp(4);
-            badgeLp.setMarginStart(YumiMd3.dp(8));
-            top.addView(badge, badgeLp);
 
             content.addView(top);
 
@@ -763,32 +755,28 @@ public class YumiSettingsView extends FrameLayout {
             statVersion = statChip(context, "");
             statSecurity = statChip(context, "");
             LinearLayout.LayoutParams one = new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f);
-            one.setMarginEnd(YumiMd3.dp(5));
+            one.setMarginEnd(YumiMd3.dp(6));
             LinearLayout.LayoutParams two = new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f);
-            two.setMarginStart(YumiMd3.dp(2));
-            two.setMarginEnd(YumiMd3.dp(2));
+            two.setMarginStart(YumiMd3.dp(3));
+            two.setMarginEnd(YumiMd3.dp(3));
             LinearLayout.LayoutParams three = new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f);
-            three.setMarginStart(YumiMd3.dp(5));
+            three.setMarginStart(YumiMd3.dp(6));
             stats.addView(statModules, one);
             stats.addView(statVersion, two);
             stats.addView(statSecurity, three);
             content.addView(stats, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
-                    LayoutHelper.WRAP_CONTENT, 0, 17, 0, 0));
-
-            ringPaint.setStyle(Paint.Style.STROKE);
-            ringPaint.setStrokeWidth(YumiMd3.dp(1));
-            borderPaint.setStyle(Paint.Style.STROKE);
-            borderPaint.setStrokeWidth(YumiMd3.dp(1));
-            borderPaint.setColor(0x1FFFFFFF);
+                    LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
         }
 
         private TextView statChip(Context context, CharSequence text) {
-            TextView view = YumiMd3.text(context, text, 10.5f, 0xE0FFFFFF, YumiMd3.MEDIUM);
+            TextView view = YumiMd3.text(context, text, 11f, YumiMd3.onSurface(), YumiMd3.MEDIUM);
             view.setGravity(Gravity.CENTER);
             view.setSingleLine(true);
             view.setEllipsize(TextUtils.TruncateAt.END);
-            view.setBackground(YumiMd3.rounded(0x17FFFFFF, 99));
-            view.setPadding(YumiMd3.dp(7), YumiMd3.dp(5), YumiMd3.dp(7), YumiMd3.dp(5));
+            view.setBackground(YumiMd3.rounded(
+                    YumiMd3.surfaceContainerHigh(),
+                    YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.20f : 0.12f), 99, 0.75f));
+            view.setPadding(YumiMd3.dp(8), YumiMd3.dp(6), YumiMd3.dp(8), YumiMd3.dp(6));
             return view;
         }
 
@@ -808,64 +796,7 @@ public class YumiSettingsView extends FrameLayout {
         }
 
         private void updateBadge() {
-            // On 320dp devices the badge steals the space the title needs to
-            // breathe; the hero reads better without it there.
             badge.setVisibility(getWidth() > 0 && getWidth() < YumiMd3.dp(320) ? GONE : VISIBLE);
-        }
-
-        @Override
-        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-            super.onSizeChanged(w, h, oldw, oldh);
-            int pad = YumiMd3.dp(16);
-            int left = pad;
-            int top = pad;
-            int right = w - pad;
-            int bottom = h - YumiMd3.dp(6);
-            bounds.set(left, top, right, bottom);
-            float radius = YumiMd3.dp(28);
-            gradient = new LinearGradient(left, top, right, bottom,
-                    new int[]{YumiMd3.heroStart(), YumiMd3.heroMid(), YumiMd3.heroEnd()},
-                    new float[]{0f, 0.55f, 1f}, Shader.TileMode.CLAMP);
-            float glowRadius = Math.max(bounds.width() * 0.72f, YumiMd3.dp(180));
-            pinkGlow = new RadialGradient(right - bounds.width() * 0.1f, top + bounds.height() * 0.12f,
-                    glowRadius, new int[]{0x55FF7DA4, 0x1AFF7DA4, 0x00FF7DA4},
-                    new float[]{0f, 0.45f, 1f}, Shader.TileMode.CLAMP);
-            whiteGlow = new RadialGradient(left + bounds.width() * 0.15f, bottom,
-                    glowRadius * 0.8f, new int[]{0x22FFFFFF, 0x08FFFFFF, 0x00FFFFFF},
-                    new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP);
-            ringBounds.set(right - bounds.width() * 0.46f, top - bounds.height() * 0.28f,
-                    right + bounds.width() * 0.24f, top + bounds.height() * 0.42f);
-            clipPath.reset();
-            clipPath.addRoundRect(bounds, radius, radius, Path.Direction.CW);
-            updateBadge();
-            invalidate();
-        }
-
-        @Override
-        protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            if (gradient == null) {
-                return;
-            }
-            float radius = YumiMd3.dp(28);
-            gradientPaint.setShader(gradient);
-            canvas.drawRoundRect(bounds, radius, radius, gradientPaint);
-            glowPaint.setShader(pinkGlow);
-            canvas.drawRoundRect(bounds, radius, radius, glowPaint);
-            glowPaint.setShader(whiteGlow);
-            canvas.drawRoundRect(bounds, radius, radius, glowPaint);
-            glowPaint.setShader(null);
-
-            canvas.save();
-            canvas.clipPath(clipPath);
-            ringPaint.setColor(0x2EFFFFFF);
-            canvas.drawCircle(ringBounds.centerX(), ringBounds.centerY(), ringBounds.width() / 2f, ringPaint);
-            ringPaint.setColor(0x18FFFFFF);
-            canvas.drawCircle(bounds.left + bounds.width() * 0.04f,
-                    bounds.top + bounds.height() * 0.12f, bounds.width() * 0.23f, ringPaint);
-            canvas.restore();
-
-            canvas.drawRoundRect(bounds, radius, radius, borderPaint);
         }
     }
 
@@ -887,8 +818,8 @@ public class YumiSettingsView extends FrameLayout {
             outer.setPadding(YumiMd3.dp(16), YumiMd3.dp(8), YumiMd3.dp(16), YumiMd3.dp(4));
 
             box = new FrameLayout(context);
-            box.setBackground(YumiMd3.rounded(YumiMd3.withAlpha(YumiMd3.surfaceContainerHigh(), 0.92f),
-                    YumiMd3.withAlpha(YumiMd3.outline(), 0.8f), 28, 1));
+            box.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHigh(),
+                    YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f), 28, 0.75f));
             box.setClipToOutline(true);
             box.setClickable(true);
             outer.addView(box, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56));
@@ -980,9 +911,11 @@ public class YumiSettingsView extends FrameLayout {
         }
 
         private void updateSearchOutline(boolean focused) {
-            box.setBackground(YumiMd3.rounded(YumiMd3.withAlpha(YumiMd3.surfaceContainerHigh(), 0.92f),
-                    focused ? YumiMd3.withAlpha(YumiMd3.primary(), 0.72f)
-                            : YumiMd3.withAlpha(YumiMd3.outline(), 0.8f), 28, focused ? 1.6f : 1f));
+            box.setBackground(YumiMd3.rounded(
+                    YumiMd3.surfaceContainerHigh(),
+                    focused ? YumiMd3.primary()
+                            : YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f),
+                    28, focused ? 1.5f : 0.75f));
         }
     }
 
@@ -1155,13 +1088,13 @@ public class YumiSettingsView extends FrameLayout {
             title.setText(quick.title);
             subtitle.setText(quick.subtitle);
 
-            GradientDrawable content = new GradientDrawable(
-                    GradientDrawable.Orientation.TL_BR,
-                    new int[]{YumiMd3.tone(accent, 0.15f), YumiMd3.tone(accent, 0.055f)});
-            content.setCornerRadius(YumiMd3.dp(24));
-            content.setStroke(Math.max(1, YumiMd3.dp(1)),
-                    YumiMd3.withAlpha(accent, YumiMd3.isDark() ? 0.22f : 0.18f));
-            GradientDrawable mask = YumiMd3.rounded(0xFFFFFFFF, 24);
+            GradientDrawable content = new GradientDrawable();
+            content.setShape(GradientDrawable.RECTANGLE);
+            content.setColor(YumiMd3.tone(accent, YumiMd3.isDark() ? 0.12f : 0.08f));
+            content.setCornerRadius(YumiMd3.dp(22));
+            content.setStroke(Math.max(1, YumiMd3.dp(0.75f)),
+                    YumiMd3.withAlpha(accent, YumiMd3.isDark() ? 0.22f : 0.15f));
+            GradientDrawable mask = YumiMd3.rounded(0xFFFFFFFF, 22);
             RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(
                     YumiMd3.accentRippleColor(accent)), content, mask);
             setBackground(ripple);
@@ -1198,14 +1131,12 @@ public class YumiSettingsView extends FrameLayout {
             root.removeAllViews();
             LinearLayout card = new LinearLayout(context);
             card.setOrientation(LinearLayout.VERTICAL);
-            GradientDrawable cardBackground = new GradientDrawable(
-                    GradientDrawable.Orientation.TOP_BOTTOM,
-                    new int[]{
-                            YumiMd3.withAlpha(YumiMd3.surfaceContainer(), 0.96f),
-                            YumiMd3.withAlpha(YumiMd3.surfaceContainerLow(), 0.95f)});
-            cardBackground.setCornerRadius(YumiMd3.dp(26));
-            cardBackground.setStroke(Math.max(1, YumiMd3.dp(1)),
-                    YumiMd3.withAlpha(YumiMd3.outline(), 0.7f));
+            GradientDrawable cardBackground = new GradientDrawable();
+            cardBackground.setShape(GradientDrawable.RECTANGLE);
+            cardBackground.setColor(YumiMd3.surfaceContainerLow());
+            cardBackground.setCornerRadius(YumiMd3.dp(24));
+            cardBackground.setStroke(Math.max(1, YumiMd3.dp(0.75f)),
+                    YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f));
             card.setBackground(cardBackground);
             card.setClipToOutline(true);
             root.addView(card, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
@@ -1215,9 +1146,9 @@ public class YumiSettingsView extends FrameLayout {
                 YumiSettingsModel.Row row = section.rows.get(i);
                 if (i > 0) {
                     View divider = new View(context);
-                    divider.setBackgroundColor(YumiMd3.hairline());
+                    divider.setBackgroundColor(YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.18f : 0.12f));
                     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                            LayoutHelper.MATCH_PARENT, Math.max(1, YumiMd3.dp(1)));
+                            LayoutHelper.MATCH_PARENT, Math.max(1, YumiMd3.dp(0.75f)));
                     lp.setMarginStart(YumiMd3.dp(68));
                     card.addView(divider, lp);
                 }
@@ -1235,7 +1166,7 @@ public class YumiSettingsView extends FrameLayout {
             rowView.setFocusable(true);
             rowView.setEnabled(row.enabled);
 
-            float radius = YumiMd3.dp(26);
+            float radius = YumiMd3.dp(24);
             float[] corners;
             if (first && last) {
                 corners = new float[]{radius, radius, radius, radius, radius, radius, radius, radius};
@@ -1255,7 +1186,7 @@ public class YumiSettingsView extends FrameLayout {
 
             int accent = row.kind == YumiSettingsModel.KIND_DANGER ? YumiMd3.error() : row.accent;
             FrameLayout iconBox = new FrameLayout(context);
-            iconBox.setBackground(YumiMd3.rounded(YumiMd3.iconTone(accent, 0.17f), 13));
+            iconBox.setBackground(YumiMd3.rounded(YumiMd3.iconTone(accent, 0.16f), 13));
             ImageView icon = new ImageView(context);
             icon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             icon.setImageResource(row.icon);
@@ -1269,7 +1200,7 @@ public class YumiSettingsView extends FrameLayout {
             textCol.setOrientation(LinearLayout.VERTICAL);
             textCol.setGravity(Gravity.CENTER_VERTICAL);
 
-            TextView title = YumiMd3.text(context, row.title, 15, YumiMd3.onSurface(), YumiMd3.MEDIUM);
+            TextView title = YumiMd3.text(context, row.title, 15.5f, YumiMd3.onSurface(), YumiMd3.MEDIUM);
             title.setSingleLine(true);
             title.setEllipsize(TextUtils.TruncateAt.END);
             if (row.kind == YumiSettingsModel.KIND_DANGER) {
@@ -1303,8 +1234,8 @@ public class YumiSettingsView extends FrameLayout {
                     TextView value = YumiMd3.text(context, row.value, 11.5f, accent, YumiMd3.MEDIUM);
                     value.setSingleLine(true);
                     value.setGravity(Gravity.CENTER);
-                    value.setBackground(YumiMd3.rounded(YumiMd3.tone(accent, 0.16f), 9));
-                    value.setPadding(YumiMd3.dp(8), YumiMd3.dp(4), YumiMd3.dp(8), YumiMd3.dp(4));
+                    value.setBackground(YumiMd3.rounded(YumiMd3.tone(accent, 0.12f), 99));
+                    value.setPadding(YumiMd3.dp(9), YumiMd3.dp(4), YumiMd3.dp(9), YumiMd3.dp(4));
                     LinearLayout.LayoutParams valueLp = new LinearLayout.LayoutParams(
                             LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT);
                     valueLp.setMarginStart(YumiMd3.dp(8));

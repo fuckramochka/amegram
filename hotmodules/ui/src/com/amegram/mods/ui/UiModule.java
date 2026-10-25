@@ -263,7 +263,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public boolean isChatCardOutline() {
-        return readBool(KEY_CHAT_CARD_OUTLINE, true);
+        return readBool(KEY_CHAT_CARD_OUTLINE, false);
     }
 
     public boolean isChatCardsTouch() {
@@ -1014,70 +1014,61 @@ public class UiModule implements HotModule, HotUi {
     public void fillSettings(List<HotRow> rows) {
         boolean exp = styleMode() == 1;
 
-        rows.add(HotRow.header("Стиль оформлення"));
+        rows.add(HotRow.header("Стиль інтерфейсу"));
         rows.add(HotRow.switchRow("expressive",
-                "Yougram Expressive",
-                "Рідке скло, плаваюча панель та стиль Material You",
+                "Yougram Expressive (MD3)",
+                "Плавна Material Design 3 навігація, плаваючі панелі та скруглення",
                 exp));
         rows.add(HotRow.switchRow("theme_tonal_adaptation",
-                "Тональні кольори теми",
-                "Зберігає та насичує рожеві, темні та будь-які кастомні тони теми замість сірого",
+                "Адаптація під активну тему",
+                "Гармонійно наслідувати відтінки та акценти поточної теми користувача",
                 readBool("theme_tonal_adaptation", true)));
 
-        rows.add(HotRow.header("Список чатів Yumi"));
-        int cStyle = chatListStyle();
-        String cStyleName = cStyle == CHAT_STYLE_CARDS ? "Виразні плаваючі картки (M3)"
-                : (cStyle == CHAT_STYLE_ISLANDS ? "Сегментовані острівці" : "Сучасний плаский");
-        rows.add(HotRow.button("cycle_chat_style",
-                "Стиль списку: " + cStyleName,
-                "Натисніть для перемикання (Картки → Острівці → Плаский)"));
-        rows.add(HotRow.switchRow(KEY_CHAT_CARDS_TOUCH,
-                "Тактильність карток чатів",
-                "М'яке пружинне притискання (0.985x) при натисканні на діалог",
-                isChatCardsTouch()));
+        rows.add(HotRow.header("Список чатів"));
+        rows.add(HotRow.switchRow("chat_card_style",
+                "Картковий стиль чатів",
+                "Візуально виділяти діалоги в м'які плитки (вимкнено — чистий плаский MD3)",
+                chatListStyle() == CHAT_STYLE_CARDS));
         rows.add(HotRow.switchRow(KEY_CHAT_PINNED_ACCENT,
-                "Тональні закріплені чати",
-                "М'яке підсвічування закріплених чатів акцентним відтінком теми",
+                "Підсвічування закріплених чатів",
+                "Тональний колірний акорд для важливих діалогів",
                 isChatPinnedAccent()));
         rows.add(HotRow.switchRow(KEY_CHAT_SQUIRCLE_AVATARS,
-                "Squircle-аватарки (PixelPlayer)",
-                "Виразне скруглення аватарок чатів у стилі Material You",
+                "Скруглені аватари (Squircle)",
+                "Форма аватарок чатів у стилі Material You",
                 isChatSquircleAvatars()));
-        rows.add(HotRow.switchRow(KEY_CHAT_CARD_OUTLINE,
-                "Мікро-контур карток (M3)",
-                "Тонка адаптивна обводка карток для ефекту глибини",
-                isChatCardOutline()));
+        rows.add(HotRow.switchRow(KEY_CHAT_CARDS_TOUCH,
+                "Пружинний відгук на дотик",
+                "Тактильна мікро-анімація при натисканні на діалог",
+                isChatCardsTouch()));
 
-        rows.add(HotRow.header("Пружинна тактильність (Pixel M3)"));
+        rows.add(HotRow.header("Тактильність та анімації"));
         rows.add(HotRow.switchRow(KEY_STICKY_ENABLED,
-                "Липкі анімації та вібровідгук",
-                "Пружинна фізика кнопок, шторок і меню з адаптацією під тему",
+                "Пружинна фізика та вібровідгук",
+                "Плавні переходи, відкриття шторок та мікро-анімації кнопок",
                 isStickyEnabled()));
 
-        rows.add(HotRow.header("Елементи інтерфейсу"));
+        rows.add(HotRow.header("Компоненти"));
         rows.add(HotRow.switchRow(KEY_MINI_PLAYER,
                 "MD3 Міні-плеєр",
-                "Плаваюча плашка медіаплеєра над чатами",
+                "Компактна плашка аудіоплеєра над списком чатів",
                 readBool(KEY_MINI_PLAYER, true)));
         rows.add(HotRow.switchRow(KEY_GLASS_MENU,
-                "Скляне меню",
-                "Ефект рідкого скла для контекстних дій",
+                "Скляне контекстне меню",
+                "Напівпрозоре розмите меню дій для повідомлень",
                 readBool(KEY_GLASS_MENU, true)));
         rows.add(HotRow.switchRow(KEY_LOADING,
-                "M3-індикатори",
-                "Плавні Material You індикатори завантаження",
+                "M3 індикатори завантаження",
+                "Сучасні плавні прогрес-бари Material You",
                 readBool(KEY_LOADING, true)));
-
-        rows.add(HotRow.header("Адаптація під тему"));
-        rows.add(HotRow.info("Активний профіль: " + getThemeSummary() + "\n" + getAdaptiveProfileDescription()));
 
         rows.add(HotRow.header("Дії"));
         rows.add(HotRow.button("apply_live",
                 "Оновити інтерфейс",
-                "Миттєво перезастосувати кольори та стилі без перезапуску"));
+                "Миттєво застосувати всі параметри на льоту"));
         rows.add(HotRow.button("reset_defaults",
-                "Скинути до стандартних",
-                "Повернути рекомендовані налаштування інтерфейсу Yumi"));
+                "Скинути до рекомендованих",
+                "Повернути чистий стандартний стиль Material 3"));
     }
 
     @Override
@@ -1091,30 +1082,29 @@ public class UiModule implements HotModule, HotUi {
             if (screenChrome != null && !isExpressive()) screenChrome.restoreAll();
             return;
         }
+        if ("chat_card_style".equals(key)) {
+            writeInt(KEY_CHAT_STYLE, value ? CHAT_STYLE_CARDS : CHAT_STYLE_FLAT);
+            writeBool(KEY_CHAT_CARD_OUTLINE, false);
+            markTouched();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            return;
+        }
         writeBool(key, value);
         markTouched();
-        if (key != null && (key.startsWith("chat_") || key.startsWith("theme_"))) {
+        if (key != null && (key.startsWith("chat_") || key.startsWith("theme_") || key.startsWith("OEAppearanceChat"))) {
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
         }
     }
 
     @Override
     public void onSettingsAction(String rowId) {
-        if ("cycle_chat_style".equals(rowId)) {
-            int next = (chatListStyle() + 1) % 3;
-            writeInt(KEY_CHAT_STYLE, next);
-            markTouched();
-            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
-            String name = next == CHAT_STYLE_CARDS ? "Виразні плаваючі картки"
-                    : (next == CHAT_STYLE_ISLANDS ? "Сегментовані острівці" : "Сучасний плаский");
-            if (host != null) host.toast("Стиль списку: " + name);
-        } else if ("apply_live".equals(rowId) || "go_expressive".equals(rowId)) {
+        if ("apply_live".equals(rowId) || "go_expressive".equals(rowId)) {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
             markTouched();
             if (navController != null) navController.refresh();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
-            if (host != null) host.toast("Інтерфейс Yumi оновлено");
+            if (host != null) host.toast("Інтерфейс оновлено");
         } else if ("go_classic".equals(rowId)) {
             writeInt(KEY_STYLE, 0);
             writeInt("style", 0);
@@ -1122,15 +1112,15 @@ public class UiModule implements HotModule, HotUi {
             if (navController != null) navController.refresh();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             if (screenChrome != null) screenChrome.restoreAll();
-            if (host != null) host.toast("Yougram Classic застосовано");
+            if (host != null) host.toast("Класичний стиль застосовано");
         } else if ("reset_defaults".equals(rowId)) {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
-            writeInt(KEY_CHAT_STYLE, CHAT_STYLE_CARDS);
+            writeInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
             writeBool(KEY_CHAT_CARDS_TOUCH, true);
             writeBool(KEY_CHAT_PINNED_ACCENT, true);
-            writeBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
-            writeBool(KEY_CHAT_CARD_OUTLINE, true);
+            writeBool(KEY_CHAT_SQUIRCLE_AVATARS, false);
+            writeBool(KEY_CHAT_CARD_OUTLINE, false);
             writeBool(KEY_STICKY_ENABLED, true);
             writeBool(KEY_STICKY_THEME_ADAPTIVE, true);
             writeBool(KEY_MINI_PLAYER, true);
@@ -1140,7 +1130,7 @@ public class UiModule implements HotModule, HotUi {
             markTouched();
             if (navController != null) navController.refresh();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
-            if (host != null) host.toast("Налаштування скинуто до рекомендованих");
+            if (host != null) host.toast("Встановлено чистий стиль Material 3");
         }
     }
 

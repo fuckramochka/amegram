@@ -120,7 +120,7 @@ object AppearanceConfig {
 
     @JvmField
     val chatListStyle =
-        addConfig("OEAppearanceChatListStyle", ConfigItem.configTypeInt, CHAT_LIST_STYLE_CARDS)
+        addConfig("OEAppearanceChatListStyle", ConfigItem.configTypeInt, CHAT_LIST_STYLE_FLAT)
 
     @JvmStatic
     fun chatListStyle(): Int {
@@ -142,7 +142,7 @@ object AppearanceConfig {
     /** Виразні squircle-аватарки чатів (Material 3 Expressive у стилі PixelPlayer). */
     @JvmField
     val chatSquircleAvatars =
-        addConfig("OEAppearanceChatSquircleAvatars", ConfigItem.configTypeBool, true)
+        addConfig("OEAppearanceChatSquircleAvatars", ConfigItem.configTypeBool, false)
 
     @JvmStatic
     fun chatSquircleAvatars(): Boolean {
@@ -153,7 +153,7 @@ object AppearanceConfig {
     /** Тонкий мікро-контур карток чатів для відчуття глибини Material 3 Elevation. */
     @JvmField
     val chatCardOutline =
-        addConfig("OEAppearanceChatCardOutline", ConfigItem.configTypeBool, true)
+        addConfig("OEAppearanceChatCardOutline", ConfigItem.configTypeBool, false)
 
     @JvmStatic
     fun chatCardOutline(): Boolean {

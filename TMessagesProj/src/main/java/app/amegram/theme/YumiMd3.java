@@ -126,8 +126,8 @@ public final class YumiMd3 {
 
     public static int surfaceContainerLow() {
         return isDark()
-                ? blend(surface(), 0xFF1D1B20, 0.5f)
-                : blend(surface(), 0xFFF7F2FA, 0.5f);
+                ? blend(surface(), 0xFF000000, 0.15f)
+                : blend(surface(), 0xFF000000, 0.03f);
     }
 
     public static int surfaceContainer() {
@@ -139,20 +139,20 @@ public final class YumiMd3 {
         } catch (Throwable ignore) {
         }
         return isDark()
-                ? blend(surface(), 0xFF211F26, 0.6f)
-                : blend(surface(), 0xFFF3EDF7, 0.6f);
+                ? blend(surface(), 0xFFFFFFFF, 0.04f)
+                : blend(surface(), 0xFF000000, 0.05f);
     }
 
     public static int surfaceContainerHigh() {
         return isDark()
-                ? blend(surfaceContainer(), 0xFF2B2930, 0.6f)
-                : blend(surfaceContainer(), 0xFFECE6F0, 0.6f);
+                ? blend(surface(), 0xFFFFFFFF, 0.08f)
+                : blend(surface(), 0xFF000000, 0.08f);
     }
 
     public static int surfaceContainerHighest() {
         return isDark()
-                ? blend(surfaceContainer(), 0xFF36343B, 0.8f)
-                : blend(surfaceContainer(), 0xFFE6E0E9, 0.8f);
+                ? blend(surface(), 0xFFFFFFFF, 0.12f)
+                : blend(surface(), 0xFF000000, 0.12f);
     }
 
     public static int surfaceDim() {
@@ -218,19 +218,36 @@ public final class YumiMd3 {
 
     public static int primary() {
         try {
-            int themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader);
-            if (themeAccent == 0 || (themeAccent & 0xFF000000) == 0) {
-                themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
+            int themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
+            if (isValidAccent(themeAccent)) {
+                return themeAccent;
             }
-            if (themeAccent == 0 || (themeAccent & 0xFF000000) == 0) {
-                themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+            themeAccent = Theme.getColor(Theme.key_featuredStickers_addButton);
+            if (isValidAccent(themeAccent)) {
+                return themeAccent;
             }
-            if (themeAccent != 0 && (themeAccent & 0xFF000000) != 0) {
+            themeAccent = Theme.getColor(Theme.key_switchTrackChecked);
+            if (isValidAccent(themeAccent)) {
+                return themeAccent;
+            }
+            themeAccent = Theme.getColor(Theme.key_dialogFloatingButton);
+            if (isValidAccent(themeAccent)) {
+                return themeAccent;
+            }
+            themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
+            if (isValidAccent(themeAccent)) {
                 return themeAccent;
             }
         } catch (Throwable ignore) {
         }
-        return isDark() ? 0xFFD0BCFF : 0xFF6750A4;
+        return isDark() ? 0xFFE5486B : 0xFFD81B60;
+    }
+
+    private static boolean isValidAccent(int color) {
+        if (color == 0 || (color & 0xFF000000) == 0) return false;
+        float[] hsl = new float[3];
+        ColorUtils.colorToHSL(color, hsl);
+        return hsl[1] >= 0.08f && hsl[2] >= 0.10f && hsl[2] <= 0.90f;
     }
 
     public static int onPrimary() {
@@ -253,7 +270,7 @@ public final class YumiMd3 {
     }
 
     public static int secondary() {
-        return blend(primary(), isDark() ? 0xFFCCC2DC : 0xFF625B71, 0.55f);
+        return blend(primary(), onSurface(), isDark() ? 0.25f : 0.20f);
     }
 
     public static int onSecondary() {

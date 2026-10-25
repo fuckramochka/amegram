@@ -303,14 +303,14 @@
         "stable": {
           "version": "1.0.7",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.7.hmod",
-          "sha256": "40d32be2ff082ddbec6122d360ca1664d608009134137d6105a9d160dd8711af",
+          "sha256": "791b02a391f82648ea1b88fdd19e1feb1d0ea1559f8b745deff7b317ea9e9ea4",
           "minApp": 7112,
           "changelog": "Версія 1.0.7: автентичний Google Material Design 3 — видалено візуальний шум, чисті тональні поверхні M3, стандартна навігація M3.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 34741,
-          "bytes": 34741
+          "sizeBytes": 32528,
+          "bytes": 32528
         }
       },
       "history": [

@@ -88,17 +88,7 @@ public final class YumiTheme {
     }
 
     public static int getPrimary() {
-        try {
-            int themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
-            if (themeAccent == 0 || (themeAccent & 0xFF000000) == 0) {
-                themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
-            }
-            if (themeAccent != 0 && (themeAccent & 0xFF000000) != 0) {
-                return themeAccent;
-            }
-        } catch (Throwable ignore) {
-        }
-        return isDark() ? DARK_PRIMARY : LIGHT_PRIMARY;
+        return YumiMd3.primary();
     }
 
     public static int getOnPrimary() {

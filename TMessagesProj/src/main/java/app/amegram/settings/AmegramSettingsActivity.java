@@ -277,7 +277,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         boolean uiInstalled = HotModulesManager.isModuleInstalled("ui");
         boolean uiOn = uiInstalled && HotModulesManager.isModuleEnabled("ui");
         YumiSettingsModel.Quick ui = quick(uiInstalled ? ROW_UI : ROW_CLIENT_SETTINGS,
-                uiInstalled ? "ui" : null, R.drawable.yumi_ic_palette, YumiMd3.secondary(),
+                uiInstalled ? "ui" : null, R.drawable.yumi_ic_palette, YumiMd3.primary(),
                 MiogramLocale.get("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi interface"),
                 !uiInstalled
                         ? MiogramLocale.get("Оформлення та теми", "Оформление и темы", "Appearance & themes")
@@ -366,7 +366,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Збереження завантажень у папки чатів", "Сохранение загрузок в папки чатов", "Save downloads into chat folders"));
 
         for (HotModulesManager.InstalledInfo info : active) {
-            if (info == null || info.manifest == null || BUILTIN_IDS.contains(info.manifest.id)) {
+            if (info == null || info.manifest == null || BUILTIN_IDS.contains(info.manifest.id) || HotModulesManager.isSystem(info.manifest.id)) {
                 continue;
             }
             YumiSettingsModel.Row row = moduleRow(info.manifest.id, ROW_CUSTOM_BASE + customInstalledModules.size(),

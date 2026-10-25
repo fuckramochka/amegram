@@ -1,7 +1,9 @@
 package app.amegram.hot.ui;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.TypedValue;
@@ -25,6 +27,8 @@ import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
 
 import app.amegram.theme.YumiComponents;
+import app.amegram.theme.YumiMd3;
+import app.amegram.theme.YumiSwitch;
 import app.amegram.theme.YumiTheme;
 
 import java.util.ArrayList;
@@ -408,59 +412,73 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
     }
 
     private View buildSystemCoreCard(Context context, List<HotModulesManager.InstalledInfo> systemModules) {
+        FrameLayout container = new FrameLayout(context);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(YumiMd3.dp(14), YumiMd3.dp(6), YumiMd3.dp(14), YumiMd3.dp(8));
+        container.setLayoutParams(lp);
+
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(AndroidUtilities.dp(16));
-        bg.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
-        bg.setStroke(AndroidUtilities.dp(1), Theme.getColor(Theme.key_divider));
-        card.setBackground(bg);
-        card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(13),
-                AndroidUtilities.dp(16), AndroidUtilities.dp(13));
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(6), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
-        card.setLayoutParams(lp);
+        GradientDrawable cardContent = YumiMd3.rounded(
+                YumiMd3.surfaceContainerLow(),
+                YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f), 22, 0.75f);
+        GradientDrawable cardMask = YumiMd3.rounded(0xFFFFFFFF, 22);
+        card.setBackground(new RippleDrawable(
+                ColorStateList.valueOf(YumiMd3.defaultRippleColor()), cardContent, cardMask));
+        card.setPadding(YumiMd3.dp(16), YumiMd3.dp(14), YumiMd3.dp(16), YumiMd3.dp(14));
+        card.setClickable(true);
+        card.setFocusable(true);
 
+        // Сквіркул-іконка в тоні бренду
+        FrameLayout iconFrame = new FrameLayout(context);
+        iconFrame.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.primary(), 0.14f), 14));
         ImageView icon = new ImageView(context);
         icon.setImageResource(R.drawable.yumi_ic_auto_awesome);
-        icon.setColorFilter(YumiTheme.getPrimary());
-        card.addView(icon, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL));
+        icon.setColorFilter(new android.graphics.PorterDuffColorFilter(YumiMd3.primary(), android.graphics.PorterDuff.Mode.SRC_IN));
+        iconFrame.addView(icon, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
+        card.addView(iconFrame, LayoutHelper.createLinear(44, 44, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
 
+        // Текстовий блок
         LinearLayout titles = new LinearLayout(context);
         titles.setOrientation(LinearLayout.VERTICAL);
-        titles.setPadding(AndroidUtilities.dp(12), 0, AndroidUtilities.dp(8), 0);
 
-        TextView title = new TextView(context);
-        title.setText(MiogramLocale.get("Внутрішній світ Yumi", "Внутренний мир Yumi", "Yumi Core System"));
-        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        title.setTypeface(AndroidUtilities.bold());
-        title.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
-        titles.addView(title);
+        TextView eyebrow = YumiMd3.text(context, "СИСТЕМНІ МОДУЛІ", 10.5f, YumiMd3.primary(), YumiMd3.BOLD);
+        eyebrow.setLetterSpacing(0.08f);
+        titles.addView(eyebrow);
 
-        TextView sub = new TextView(context);
-        sub.setText(MiogramLocale.get("Системні модулі (" + systemModules.size() + ") • Завжди активні",
-                "Системные модули (" + systemModules.size() + ") • Всегда активны",
-                "System modules (" + systemModules.size() + ") • Always active"));
-        sub.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        sub.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+        TextView title = YumiMd3.text(context,
+                MiogramLocale.get("Системні модулі", "Системные модули", "System modules"),
+                16f, YumiMd3.onSurface(), YumiMd3.BOLD);
+        titles.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 2));
+
+        TextView sub = YumiMd3.text(context,
+                MiogramLocale.get("Активні компоненти системи (" + systemModules.size() + ")",
+                        "Активные компоненты системы (" + systemModules.size() + ")",
+                        "Active system components (" + systemModules.size() + ")"),
+                13f, YumiMd3.onSurfaceVariant(), YumiMd3.REGULAR);
         titles.addView(sub);
 
         card.addView(titles, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
-        TextView chevron = new TextView(context);
-        chevron.setText("›");
-        chevron.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
-        chevron.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
-        chevron.setGravity(Gravity.CENTER);
-        card.addView(chevron, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        // MD3 Pill Badge
+        TextView badge = YumiMd3.text(context, MiogramLocale.get("Системні", "Системные", "System"), 12f, YumiMd3.primary(), YumiMd3.BOLD);
+        badge.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.primary(), 0.12f), 99));
+        badge.setPadding(YumiMd3.dp(10), YumiMd3.dp(5), YumiMd3.dp(10), YumiMd3.dp(5));
+        card.addView(badge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 8, 0));
+
+        ImageView chevron = new ImageView(context);
+        chevron.setImageResource(R.drawable.yumi_ic_chevron_right);
+        chevron.setColorFilter(new android.graphics.PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), android.graphics.PorterDuff.Mode.SRC_IN));
+        card.addView(chevron, LayoutHelper.createLinear(18, 18, Gravity.CENTER_VERTICAL));
 
         card.setOnClickListener(v -> {
             HotSystemModulesSheet.show(this, systemModules, this::refresh);
         });
 
-        return card;
+        container.addView(card, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        return container;
     }
 
     private View buildUpdatesBanner(Context context) {
@@ -574,13 +592,18 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         LinearLayout card = new LinearLayout(context);
         card.setOrientation(LinearLayout.VERTICAL);
 
-        card.setBackground(YumiTheme.cardBackground(YumiTheme.RADIUS_LG));
+        GradientDrawable cardContent = YumiMd3.rounded(
+                YumiMd3.surfaceContainerLow(),
+                YumiMd3.withAlpha(YumiMd3.outline(), YumiMd3.isDark() ? 0.22f : 0.14f), 22, 0.75f);
+        GradientDrawable cardMask = YumiMd3.rounded(0xFFFFFFFF, 22);
+        card.setBackground(new RippleDrawable(
+                ColorStateList.valueOf(YumiMd3.defaultRippleColor()), cardContent, cardMask));
 
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(5), AndroidUtilities.dp(14), AndroidUtilities.dp(5));
+        lp.setMargins(YumiMd3.dp(14), YumiMd3.dp(5), YumiMd3.dp(14), YumiMd3.dp(5));
         card.setLayoutParams(lp);
-        card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
+        card.setPadding(YumiMd3.dp(16), YumiMd3.dp(14), YumiMd3.dp(16), YumiMd3.dp(12));
 
         // Головний рядок: Іконка + Опис + Світч
         LinearLayout topRow = new LinearLayout(context);
@@ -590,11 +613,11 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         // 1. Іконка модуля
         int modColor = getModuleColor(info.manifest.id);
         FrameLayout iconFrame = new FrameLayout(context);
-        iconFrame.setBackground(YumiTheme.squircleIconBackground(modColor));
+        iconFrame.setBackground(YumiMd3.rounded(YumiMd3.iconTone(modColor, 0.18f), 14));
 
         ImageView iconView = new ImageView(context);
         iconView.setImageResource(getModuleIcon(info.manifest.id));
-        iconView.setColorFilter(0xFFFFFFFF);
+        iconView.setColorFilter(new android.graphics.PorterDuffColorFilter(modColor, android.graphics.PorterDuff.Mode.SRC_IN));
         iconFrame.addView(iconView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
         topRow.addView(iconFrame, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
@@ -606,87 +629,69 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         titleRow.setOrientation(LinearLayout.HORIZONTAL);
         titleRow.setGravity(Gravity.CENTER_VERTICAL);
 
-        TextView titleView = new TextView(context);
-        titleView.setText(info.manifest.name);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
-        titleView.setTypeface(AndroidUtilities.bold());
-        titleView.setTextColor(info.enabled
-                ? Theme.getColor(Theme.key_windowBackgroundWhiteBlackText)
-                : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        TextView titleView = YumiMd3.text(context, info.manifest.name, 15.5f,
+                info.enabled ? YumiMd3.onSurface() : YumiMd3.onSurfaceVariant(), YumiMd3.BOLD);
         titleView.setMaxLines(1);
         titleView.setEllipsize(android.text.TextUtils.TruncateAt.END);
         titleRow.addView(titleView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
         // Бейдж версії
-        TextView verBadge = YumiComponents.badge(context, "v" + info.manifest.version,
-                Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        TextView verBadge = YumiMd3.text(context, "v" + info.manifest.version, 11f, YumiMd3.onSurfaceVariant(), YumiMd3.MEDIUM);
+        verBadge.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHigh(), 99));
+        verBadge.setPadding(YumiMd3.dp(7), YumiMd3.dp(2), YumiMd3.dp(7), YumiMd3.dp(2));
         titleRow.addView(verBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 6, 0, 0, 0));
 
         infoCol.addView(titleRow);
 
         // Навантаження / статус пам'яті в реальному часі
-        TextView loadView = new TextView(context);
-        loadView.setText(HotModulesManager.getModuleLoadEstimate(info.manifest.id));
-        loadView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        loadView.setTextColor(info.enabled ? 0xFF4CAF50 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        TextView loadView = YumiMd3.text(context, HotModulesManager.getModuleLoadEstimate(info.manifest.id),
+                12f, info.enabled ? YumiMd3.success() : YumiMd3.onSurfaceVariant(), YumiMd3.REGULAR);
         infoCol.addView(loadView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 2));
 
         // Опис модуля
-        TextView descView = new TextView(context);
-        descView.setText(getModuleDescription(info.manifest.id));
-        descView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-        descView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        TextView descView = YumiMd3.text(context, getModuleDescription(info.manifest.id),
+                13f, YumiMd3.onSurfaceVariant(), YumiMd3.REGULAR);
         descView.setMaxLines(2);
         infoCol.addView(descView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
         // Тонкий неблокуючий прогрес оновлення (пер-рядок).
         int pct0 = progress.containsKey(info.manifest.id) ? progress.get(info.manifest.id) : 0;
         boolean isUpdating = updating.contains(info.manifest.id);
-        TextView progressView = new TextView(context);
-        progressView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-        progressView.setTextColor(YumiTheme.getPrimary());
-        if (isUpdating) {
-            progressView.setVisibility(View.VISIBLE);
-            progressView.setText(pct0 > 0 ? pct0 + "%" : "…");
-        } else {
-            progressView.setVisibility(View.GONE);
-        }
+        TextView progressView = YumiMd3.text(context, isUpdating ? (pct0 > 0 ? pct0 + "%" : "…") : "",
+                12f, YumiMd3.primary(), YumiMd3.MEDIUM);
+        progressView.setVisibility(isUpdating ? View.VISIBLE : View.GONE);
         infoCol.addView(progressView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
 
         // Бейджі: доступне оновлення • карантин
         String upd = pendingUpdates.get(info.manifest.id);
         if (upd != null) {
-            TextView upBadge = new TextView(context);
-            upBadge.setText("v" + upd + MiogramLocale.get(" доступно", " доступно", " available"));
-            upBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            upBadge.setTypeface(AndroidUtilities.bold());
-            upBadge.setTextColor(YumiTheme.getPrimary());
-            infoCol.addView(upBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+            TextView upBadge = YumiMd3.text(context, "v" + upd + MiogramLocale.get(" доступно", " доступно", " available"),
+                    11.5f, YumiMd3.primary(), YumiMd3.BOLD);
+            upBadge.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.primary(), 0.12f), 99));
+            upBadge.setPadding(YumiMd3.dp(8), YumiMd3.dp(3), YumiMd3.dp(8), YumiMd3.dp(3));
+            infoCol.addView(upBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
         }
         if (HotModulesManager.isQuarantined(info.manifest.id)) {
-            TextView qBadge = new TextView(context);
-            qBadge.setText(MiogramLocale.get("Карантин: падав "
+            TextView qBadge = YumiMd3.text(context, MiogramLocale.get("Карантин: падав "
                     + HotModulesManager.getLoadFailures(info.manifest.id) + "× — торкніть щоб скинути",
                     "Карантин: падал " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — нажмите чтобы сбросить",
-                    "Quarantined: crashed " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — tap to reset"));
-            qBadge.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
-            qBadge.setTextColor(YumiTheme.getError());
+                    "Quarantined: crashed " + HotModulesManager.getLoadFailures(info.manifest.id) + "× — tap to reset"),
+                    11.5f, YumiMd3.error(), YumiMd3.MEDIUM);
             qBadge.setOnClickListener(v -> {
                 HotModulesManager.unquarantine(info.manifest.id);
                 refresh();
             });
-            infoCol.addView(qBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+            infoCol.addView(qBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
         }
 
         topRow.addView(infoCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 8, 0));
 
-        // 3. Світч увімкнення/вимкнення — стабільний клік без рекурсії
-        Switch sw = new Switch(context);
+        // 3. YumiSwitch увімкнення/вимкнення
+        YumiSwitch sw = new YumiSwitch(context);
+        sw.setAccent(modColor);
         sw.setChecked(info.enabled, false);
-        View.OnClickListener toggleAction = v -> {
-            boolean next = !sw.isChecked();
-            sw.setChecked(next, true);
-            HotModulesManager.setEnabled(info.manifest.id, next, (ok, msg, data) -> {
+        sw.setOnCheckedChangeListener((view, checked) -> {
+            HotModulesManager.setEnabled(info.manifest.id, checked, (ok, msg, data) -> {
                 if (!ok && msg != null && !msg.isEmpty()) {
                     try {
                         android.widget.Toast.makeText(context, msg,
@@ -696,11 +701,8 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 }
                 refresh();
             });
-        };
-        sw.setOnClickListener(toggleAction);
-        // Тап по рядку більше НЕ тоглить: тап по картці відкриває деталку,
-        // тоглить тільки сам світч. Раніше topRow перехоплював тап і плутав юзера.
-        topRow.addView(sw, LayoutHelper.createLinear(40, 26, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
+        });
+        topRow.addView(sw, LayoutHelper.createLinear(52, 32, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
         card.addView(topRow);
 

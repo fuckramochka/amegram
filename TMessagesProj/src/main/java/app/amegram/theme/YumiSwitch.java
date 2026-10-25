@@ -110,8 +110,16 @@ public class YumiSwitch extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int width = resolveSize(YumiMd3.dp(52), widthMeasureSpec);
-        int height = resolveSize(YumiMd3.dp(32), heightMeasureSpec);
+        int wMode = MeasureSpec.getMode(widthMeasureSpec);
+        int wSize = MeasureSpec.getSize(widthMeasureSpec);
+        int hMode = MeasureSpec.getMode(heightMeasureSpec);
+        int hSize = MeasureSpec.getSize(heightMeasureSpec);
+
+        int desiredW = YumiMd3.dp(52);
+        int desiredH = YumiMd3.dp(32);
+
+        int width = (wMode == MeasureSpec.EXACTLY) ? Math.min(wSize, desiredW + YumiMd3.dp(8)) : desiredW;
+        int height = (hMode == MeasureSpec.EXACTLY) ? Math.min(hSize, desiredH + YumiMd3.dp(8)) : desiredH;
         setMeasuredDimension(width, height);
     }
 
@@ -127,10 +135,11 @@ public class YumiSwitch extends View {
         trackRect.set(left, top, left + trackWidth, top + trackHeight);
 
         float p = Math.max(0f, Math.min(1f, progress));
+        int currentAccent = accent != 0 ? accent : YumiMd3.primary();
 
         // Track fill
         int offTrack = YumiMd3.surfaceContainerHighest();
-        int onTrack = accent;
+        int onTrack = currentAccent;
         int trackColor = YumiMd3.blend(offTrack, onTrack, p);
         trackPaint.setColor(trackColor);
         canvas.drawRoundRect(trackRect, trackHeight / 2f, trackHeight / 2f, trackPaint);
@@ -161,7 +170,7 @@ public class YumiSwitch extends View {
         float thumbCy = top + trackHeight / 2f;
 
         int offThumb = YumiMd3.outline();
-        int onThumb = YumiMd3.onPrimary();
+        int onThumb = androidx.core.graphics.ColorUtils.calculateLuminance(currentAccent) > 0.5 ? 0xFF000000 : 0xFFFFFFFF;
         int thumbColor = YumiMd3.blend(offThumb, onThumb, p);
         thumbPaint.setColor(thumbColor);
         canvas.drawCircle(thumbCx, thumbCy, thumbRadius, thumbPaint);
@@ -169,7 +178,7 @@ public class YumiSwitch extends View {
         // Checkmark inside thumb when checked
         if (p > 0.4f) {
             float checkAlpha = (p - 0.4f) / 0.6f;
-            checkPaint.setColor(YumiMd3.withAlpha(accent, checkAlpha));
+            checkPaint.setColor(YumiMd3.withAlpha(currentAccent, checkAlpha));
             float unit = YumiMd3.dp(3.2f);
             checkPath.reset();
             checkPath.moveTo(thumbCx - unit, thumbCy);

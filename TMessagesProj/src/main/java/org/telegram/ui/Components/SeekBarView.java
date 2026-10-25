@@ -372,6 +372,35 @@ public class SeekBarView extends FrameLayout {
         return hasCustomInnerColor ? customInnerColor : getThemedColor(Theme.key_player_progressBackground);
     }
 
+    private int getMd3ActiveColor() {
+        int accent = getThemedColor(Theme.key_chats_actionBackground);
+        if (accent == 0 || (accent & 0xFF000000) == 0 || accent == 0xFFFFFFFF || accent == 0xFF000000) {
+            accent = getThemedColor(Theme.key_featuredStickers_addButton);
+        }
+        if (accent == 0 || (accent & 0xFF000000) == 0 || accent == 0xFFFFFFFF || accent == 0xFF000000) {
+            accent = getThemedColor(Theme.key_switchTrackChecked);
+        }
+        if (accent == 0 || (accent & 0xFF000000) == 0 || accent == 0xFFFFFFFF || accent == 0xFF000000) {
+            accent = getThemedColor(Theme.key_windowBackgroundWhiteBlueText);
+        }
+        if (accent == 0 || (accent & 0xFF000000) == 0 || accent == 0xFFFFFFFF || accent == 0xFF000000) {
+            accent = 0xFFE5486B;
+        }
+        return accent;
+    }
+
+    private int getMd3InactiveColor() {
+        if (hasCustomInnerColor) {
+            return customInnerColor;
+        }
+        int track = getThemedColor(Theme.key_switchTrack);
+        if (track != 0 && (track & 0xFF000000) != 0 && track != 0xFFFFFFFF && track != 0xFF000000) {
+            return track;
+        }
+        int active = getMd3ActiveColor();
+        return ColorUtils.setAlphaComponent(active, 0x38);
+    }
+
     private int minThumbX() {
         return Math.max((int) (minProgress * (getMeasuredWidth() - selectorWidth)), 0);
     }
@@ -570,7 +599,12 @@ public class SeekBarView extends FrameLayout {
             thumbX = (int) (Math.round((thumbX) / step) * step);
         }
         int y = (getMeasuredHeight() - thumbSize) / 2;
-        innerPaint1.setColor(getInnerTrackColor());
+        if (isModern && effectiveStyle == SLIDER_STYLE_MD3) {
+            outerPaint1.setColor(getMd3ActiveColor());
+            innerPaint1.setColor(getMd3InactiveColor());
+        } else {
+            innerPaint1.setColor(getInnerTrackColor());
+        }
 
         float centerY = getMeasuredHeight() / 2f;
         float left = selectorWidth / 2f, right = getMeasuredWidth() - selectorWidth / 2;

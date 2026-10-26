@@ -1,11 +1,20 @@
 package app.amegram.settings;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.util.TypedValue;
 import android.view.View;
+import android.widget.FrameLayout;
+import android.widget.Toast;
 
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -33,6 +42,9 @@ public class AmegramBadgesActivity extends BaseFragment {
     private static final int ROW_MASTER_TOGGLE = 3;
     private static final int ROW_MY_SYNC_TOGGLE = 4;
     private static final int ROW_WORKSHOP = 5;
+    private static final int ROW_LAPTOP_TOGGLE = 6;
+    private static final int ROW_LAPTOP_URL = 7;
+    private static final int ROW_LAPTOP_SYNC = 8;
 
     private UniversalRecyclerView listView;
     private final java.util.List<MiogramBadgeType> catalogOrder = new java.util.ArrayList<>();
@@ -98,6 +110,28 @@ public class AmegramBadgesActivity extends BaseFragment {
                 "Бейджі видає спільнота Yumigram. Кеш оновлюється при відкритті профілю.",
                 "Бейджи выдаёт сообщество Yumigram. Кэш обновляется при открытии профиля.",
                 "Badges are granted by the Yumigram community. Cache refreshes on profile open.")));
+
+        Context ctx = getContext();
+        SharedPreferences modPrefs = ctx != null ? ctx.getSharedPreferences("badges_module_prefs", Context.MODE_PRIVATE) : null;
+        boolean useLaptop = modPrefs != null && modPrefs.getBoolean("badges_use_laptop", true);
+        String laptopUrl = modPrefs != null ? modPrefs.getString("badges_laptop_url", "http://192.168.1.100:8765") : "http://192.168.1.100:8765";
+
+        items.add(UItem.asHeader(MiogramLocale.get("Сервер на ноутбуці (Локальний бекенд)", "Сервер на ноутбуке (Локальный бэкенд)", "Laptop server (Local backend)")));
+        items.add(UItem.asCheck(ROW_LAPTOP_TOGGLE,
+                MiogramLocale.get("Синхронізація з ноутбуком", "Синхронизация с ноутбуком", "Sync with laptop"))
+                .setChecked(useLaptop));
+        if (useLaptop) {
+            items.add(YumiSettingCell.Factory.of(ROW_LAPTOP_URL, R.drawable.msg_link, YumiTheme.getPrimary(),
+                    MiogramLocale.get("Адреса сервера на ПК", "Адрес сервера на ПК", "Laptop server URL"),
+                    laptopUrl));
+            items.add(YumiSettingCell.Factory.of(ROW_LAPTOP_SYNC, R.drawable.msg_retry, YumiTheme.getPrimary(),
+                    MiogramLocale.get("Синхронізувати зараз", "Синхронизировать сейчас", "Sync now"),
+                    MiogramLocale.get("Завантажити бейджі з ноутбука або GitHub", "Загрузить бейджи с ноутбука или GitHub", "Fetch badges from laptop or GitHub")));
+        }
+        items.add(UItem.asShadow(MiogramLocale.get(
+                "Гібридний режим: клієнт бере бейджі з сервера на ноутбуці в локальній мережі, а при його відсутності — автоматично перемикається на GitHub-дзеркало.",
+                "Гибридный режим: клиент берёт бейджи с сервера на ноутбуке в локальной сети, а при его отсутствии — автоматически переключается на GitHub-зеркало.",
+                "Hybrid mode: client fetches badges from the laptop server in local network, falling back to GitHub mirror when offline.")));
 
         items.add(UItem.asHeader(MiogramLocale.get("Каталог стилів", "Каталог стилей", "Style catalog")));
         catalogOrder.clear();
@@ -171,6 +205,61 @@ public class AmegramBadgesActivity extends BaseFragment {
             long selfId = getUserConfig() != null && getUserConfig().getCurrentUser() != null
                     ? getUserConfig().getCurrentUser().id : 0;
             MiogramBadgeBottomSheet.show(ctx, selfId);
+        } else if (item.id == ROW_LAPTOP_TOGGLE) {
+            SharedPreferences prefs = ctx.getSharedPreferences("badges_module_prefs", Context.MODE_PRIVATE);
+            boolean cur = prefs.getBoolean("badges_use_laptop", true);
+            prefs.edit().putBoolean("badges_use_laptop", !cur).apply();
+            if (listView != null && listView.adapter != null) listView.adapter.update(true);
+            MiogramBadgeManager.refreshBadges(null);
+        } else if (item.id == ROW_LAPTOP_URL) {
+            SharedPreferences prefs = ctx.getSharedPreferences("badges_module_prefs", Context.MODE_PRIVATE);
+            String current = prefs.getString("badges_laptop_url", "http://192.168.1.100:8765");
+
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(MiogramLocale.get("Адреса сервера на ПК", "Адрес сервера на ПК", "Laptop Server URL"));
+            builder.setMessage(MiogramLocale.get(
+                    "Введіть IP-адресу та порт вашого ноутбука у локальній Wi-Fi мережі (наприклад http://192.168.1.100:8765):",
+                    "Введите IP-адрес и порт вашего ноутбука в локальной Wi-Fi сети (например http://192.168.1.100:8765):",
+                    "Enter your laptop's local Wi-Fi IP and port (e.g. http://192.168.1.100:8765):"));
+
+            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+            frameLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
+            EditTextBoldCursor editText = new EditTextBoldCursor(getParentActivity());
+            editText.setText(current);
+            editText.setSelection(editText.getText().length());
+            editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            editText.setBackground(Theme.createEditTextDrawable(getParentActivity(), false));
+            frameLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            builder.setView(frameLayout);
+
+            builder.setPositiveButton(MiogramLocale.get("Зберегти", "Сохранить", "Save"), (dialog, which) -> {
+                String val = editText.getText().toString().trim();
+                if (!val.isEmpty()) {
+                    if (!val.startsWith("http://") && !val.startsWith("https://")) {
+                        val = "http://" + val;
+                    }
+                    prefs.edit().putString("badges_laptop_url", val).apply();
+                    if (listView != null && listView.adapter != null) listView.adapter.update(true);
+                    Toast.makeText(ctx, MiogramLocale.get("Збережено ✓ Синхронізація...", "Сохранено ✓ Синхронизация...", "Saved ✓ Syncing..."), Toast.LENGTH_SHORT).show();
+                    MiogramBadgeManager.refreshBadges(() -> {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            Toast.makeText(ctx, MiogramLocale.get("Бейджі успішно оновлено ✓", "Бейджи успешно обновлены ✓", "Badges updated ✓"), Toast.LENGTH_SHORT).show();
+                            if (listView != null && listView.adapter != null) listView.adapter.update(true);
+                        });
+                    });
+                }
+            });
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            showDialog(builder.create());
+        } else if (item.id == ROW_LAPTOP_SYNC) {
+            Toast.makeText(ctx, MiogramLocale.get("Синхронізація з сервером...", "Синхронизация с сервером...", "Syncing with server..."), Toast.LENGTH_SHORT).show();
+            MiogramBadgeManager.refreshBadges(() -> {
+                AndroidUtilities.runOnUIThread(() -> {
+                    Toast.makeText(ctx, MiogramLocale.get("Бейджі успішно оновлено ✓", "Бейджи успешно обновлены ✓", "Badges updated ✓"), Toast.LENGTH_SHORT).show();
+                    if (listView != null && listView.adapter != null) listView.adapter.update(true);
+                });
+            });
         } else if (item.id == ROW_WORKSHOP) {
             presentFragment(new AmegramBadgeWorkshopActivity());
         } else if (item.id == ROW_GRANT) {

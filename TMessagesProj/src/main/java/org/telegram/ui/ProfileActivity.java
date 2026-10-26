@@ -12081,6 +12081,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     }
                     Long selfEmojiDocId = (user != null && user.self) ? UserObject.getEmojiStatusDocumentId(user) : null;
                     app.miogram.bridge.badge.MiogramSupabaseBridge.checkRefreshBadges();
+                    app.miogram.bridge.badge.MiogramBadgeManager.refreshBadges(null);
                     if (user != null && app.miogram.bridge.badge.MiogramBadgeManager.hasArrow(user.id)) {
                         rightIconIsStatus = true;
                         rightIconIsPremium = false;

@@ -128,4 +128,13 @@ public class MiogramBadgeManager {
         }
         fragment.presentFragment(new app.amegram.settings.AmegramBadgesActivity());
     }
+
+    public static void refreshBadges(Runnable onComplete) {
+        HotBadges service = getService();
+        if (service != null) {
+            service.refreshBadges(onComplete);
+        } else {
+            MiogramSupabaseBridge.fetchBadgesFromCloud(onComplete);
+        }
+    }
 }

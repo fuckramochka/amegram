@@ -44,6 +44,74 @@ public final class PluginMediaServices {
         return document;
     }
 
+    public static TLRPC.TL_photo generatePhotoSizes(int account, String path, boolean highQuality, TLRPC.TL_photo photo) {
+        readableFile(path);
+        TLRPC.TL_photo res = null;
+        try {
+            res = SendMessagesHelper.getInstance(account).generatePhotoSizes(photo, path, null, highQuality);
+        } catch (Exception e) {
+            org.telegram.messenger.FileLog.e(e);
+        }
+        if (res == null) {
+            res = photo != null ? photo : new TLRPC.TL_photo();
+            res.date = (int) (System.currentTimeMillis() / 1000L);
+            res.file_reference = new byte[0];
+            if (res.sizes == null) {
+                res.sizes = new ArrayList<>();
+            }
+        }
+        return res;
+    }
+
+    public static TLRPC.TL_photo generatePhotoSizes(int account, String path, boolean highQuality) {
+        return generatePhotoSizes(account, path, highQuality, null);
+    }
+
+    public static TLRPC.TL_photo generatePhotoSizes(String path, boolean highQuality) {
+        return generatePhotoSizes(org.telegram.messenger.UserConfig.selectedAccount, path, highQuality, null);
+    }
+
+    public static TLRPC.TL_photo generatePhotoSizes(String path) {
+        return generatePhotoSizes(path, false);
+    }
+
+    public static TLRPC.TL_documentAttributeVideo addVideoAttributes(TLRPC.TL_document document, String path, int width, int height, int duration, boolean supportsStreaming) {
+        TLRPC.TL_documentAttributeVideo attributeVideo = new TLRPC.TL_documentAttributeVideo();
+        attributeVideo.supports_streaming = supportsStreaming;
+        if (path != null && !path.isEmpty()) {
+            readableFile(path);
+            try {
+                SendMessagesHelper.fillVideoAttribute(path, attributeVideo, null);
+            } catch (Exception ignored) {
+            }
+        }
+        if (width > 0) {
+            attributeVideo.w = width;
+        }
+        if (height > 0) {
+            attributeVideo.h = height;
+        }
+        if (duration > 0) {
+            attributeVideo.duration = duration;
+        }
+        if (document != null) {
+            if (document.attributes == null) {
+                document.attributes = new ArrayList<>();
+            }
+            for (int i = document.attributes.size() - 1; i >= 0; i--) {
+                if (document.attributes.get(i) instanceof TLRPC.TL_documentAttributeVideo) {
+                    document.attributes.remove(i);
+                }
+            }
+            document.attributes.add(attributeVideo);
+        }
+        return attributeVideo;
+    }
+
+    public static TLRPC.TL_documentAttributeVideo addVideoAttributes(TLRPC.TL_document document, String path) {
+        return addVideoAttributes(document, path, 0, 0, 0, true);
+    }
+
 
 
     public static void editMedia(int account, MessageObject message, String path, String caption,

@@ -600,6 +600,10 @@ class BasePlugin:
     def plugin_id(self) -> Optional[str]:
         return self._exteraless_plugin_id
 
+    @property
+    def _menu_callbacks(self) -> dict:
+        return self._exteraless_state("_exteraless_menu_callbacks", dict)
+
     def _exteraless_bridge_available(self) -> bool:
         return PythonBridge is not None and bool(self._exteraless_plugin_id)
 

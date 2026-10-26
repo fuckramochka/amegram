@@ -658,6 +658,110 @@ def _prepare_document(path):
     return _media_services().prepareDocument(os.fspath(path))
 
 
+def _generate_photo_sizes(*args, **kwargs):
+    """Generate photo sizes for *path*, returning a TLRPC.TL_photo.
+
+    Supports calling conventions:
+    - _generate_photo_sizes(path, high_quality=False, account=None, photo=None)
+    - _generate_photo_sizes(photo, path, high_quality=False, account=None)
+    """
+    path = None
+    photo = kwargs.get('photo')
+    high_quality = kwargs.get('high_quality', False)
+    account = kwargs.get('account')
+
+    if len(args) == 1:
+        if isinstance(args[0], (str, bytes, os.PathLike)):
+            path = args[0]
+        else:
+            photo = args[0]
+    elif len(args) == 2:
+        if isinstance(args[0], (str, bytes, os.PathLike)):
+            path = args[0]
+            if isinstance(args[1], bool):
+                high_quality = args[1]
+            elif isinstance(args[1], int):
+                account = args[1]
+            else:
+                photo = args[1]
+        else:
+            photo = args[0]
+            path = args[1]
+    elif len(args) >= 3:
+        if isinstance(args[0], (str, bytes, os.PathLike)):
+            path = args[0]
+            high_quality = args[1]
+            account = args[2]
+            if len(args) >= 4:
+                photo = args[3]
+        else:
+            photo = args[0]
+            path = args[1]
+            high_quality = args[2]
+            if len(args) >= 4:
+                account = args[3]
+
+    path = kwargs.get('path', path)
+    if path is None:
+        raise ValueError("path must be provided to _generate_photo_sizes")
+
+    from file_utils import _require_files
+    _require_files(path, "generate photo sizes")
+    resolved = _resolve_account(account, "generate_photo_sizes")
+    p = os.fspath(path)
+    return _media_services().generatePhotoSizes(resolved, p, bool(high_quality), photo)
+
+
+def _add_video_attributes(*args, **kwargs):
+    """Populate and append a TLRPC.TL_documentAttributeVideo to *document*.
+
+    Accepts (document, path) or (path, document) as positional arguments, as
+    well as keyword overrides for width/w, height/h, duration, supports_streaming.
+    Returns *document* if provided, otherwise the newly created attribute.
+    """
+    document = kwargs.get('document')
+    path = kwargs.get('path') or kwargs.get('video_path') or kwargs.get('file_path')
+
+    if len(args) == 1:
+        if isinstance(args[0], (str, bytes, os.PathLike)):
+            path = args[0]
+        else:
+            document = args[0]
+    elif len(args) >= 2:
+        if isinstance(args[0], (str, bytes, os.PathLike)):
+            path = args[0]
+            document = args[1]
+        else:
+            document = args[0]
+            path = args[1]
+
+    width = kwargs.get('w', kwargs.get('width', 0))
+    height = kwargs.get('h', kwargs.get('height', 0))
+    duration = kwargs.get('duration', 0)
+    supports_streaming = kwargs.get('supports_streaming', True)
+
+    p = os.fspath(path) if path is not None else None
+    if p:
+        from file_utils import _require_files
+        _require_files(p, "add video attributes")
+
+    attr = _media_services().addVideoAttributes(
+        document, p, int(width or 0), int(height or 0), int(duration or 0), bool(supports_streaming))
+    if document is not None:
+        try:
+            document.video_attribute = attr
+        except Exception:
+            pass
+        return document
+    return attr
+
+
+# Public aliases without leading underscores
+prepare_document = _prepare_document
+generate_photo_sizes = _generate_photo_sizes
+add_video_attributes = _add_video_attributes
+
+
 class _LocalFileSystem:
     @classmethod
     def tempdir(cls):
@@ -857,6 +961,28 @@ class AccountClient:
         return edit_message(message_obj, text=text, file_path=file_path,
                             with_spoiler=with_spoiler, parse_mode=parse_mode,
                             account=self.account)
+
+    def _prepare_document(self, path):
+        return _prepare_document(path)
+
+    def prepare_document(self, path):
+        return _prepare_document(path)
+
+    def _generate_photo_sizes(self, path, high_quality=False, photo=None):
+        return _generate_photo_sizes(path, high_quality=high_quality, account=self.account, photo=photo)
+
+    def generate_photo_sizes(self, path, high_quality=False, photo=None):
+        return _generate_photo_sizes(path, high_quality=high_quality, account=self.account, photo=photo)
+
+    def _add_video_attributes(self, document, path=None, width=0, height=0, duration=0,
+                              supports_streaming=True, **kwargs):
+        return _add_video_attributes(document, path=path, width=width, height=height,
+                                     duration=duration, supports_streaming=supports_streaming, **kwargs)
+
+    def add_video_attributes(self, document, path=None, width=0, height=0, duration=0,
+                             supports_streaming=True, **kwargs):
+        return _add_video_attributes(document, path=path, width=width, height=height,
+                                     duration=duration, supports_streaming=supports_streaming, **kwargs)
 
 
 # Re-exports: some plugins reach for these through client_utils rather than

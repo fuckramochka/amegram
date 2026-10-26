@@ -193,6 +193,61 @@ def test_document_preparation_checks_file_access(sdk, monkeypatch):
     assert seen == [('/plugin/export.json', 'prepare document')]
 
 
+def test_generate_photo_sizes_checks_files_and_calls_media_services(sdk, monkeypatch):
+    seen, photo = [], object()
+    monkeypatch.setitem(sys.modules, 'file_utils', types.SimpleNamespace(_require_files=lambda *args: seen.append(args)))
+    calls = []
+    fake_services = types.SimpleNamespace(
+        generatePhotoSizes=lambda account, path, hq, ph: (calls.append((account, path, hq, ph)) or photo)
+    )
+    monkeypatch.setattr(sdk.client, '_media_services', lambda: fake_services)
+    monkeypatch.setattr(sdk.client, '_resolve_account', lambda account, name: 3)
+
+    res = sdk.client._generate_photo_sizes('/sdcard/pic.jpg', high_quality=True, account=3)
+    assert res is photo
+    assert seen == [('/sdcard/pic.jpg', 'generate photo sizes')]
+    assert calls == [(3, '/sdcard/pic.jpg', True, None)]
+
+    # Alternative argument order (photo, path)
+    calls.clear()
+    existing_photo = object()
+    res2 = sdk.client._generate_photo_sizes(existing_photo, '/sdcard/pic2.jpg', high_quality=False)
+    assert res2 is photo
+    assert calls == [(3, '/sdcard/pic2.jpg', False, existing_photo)]
+
+
+def test_add_video_attributes_populates_document(sdk, monkeypatch):
+    seen = []
+    monkeypatch.setitem(sys.modules, 'file_utils', types.SimpleNamespace(_require_files=lambda *args: seen.append(args)))
+    attr = object()
+    calls = []
+    fake_services = types.SimpleNamespace(
+        addVideoAttributes=lambda doc, path, w, h, dur, streaming: (calls.append((doc, path, w, h, dur, streaming)) or attr)
+    )
+    monkeypatch.setattr(sdk.client, '_media_services', lambda: fake_services)
+
+    doc = types.SimpleNamespace(attributes=[])
+    res = sdk.client._add_video_attributes(doc, '/sdcard/video.mp4', width=1920, height=1080, duration=60)
+    assert res is doc
+    assert seen == [('/sdcard/video.mp4', 'add video attributes')]
+    assert calls == [(doc, '/sdcard/video.mp4', 1920, 1080, 60, True)]
+
+
+def test_visual_editor_imports_succeed(sdk):
+    from client_utils import get_last_fragment, get_user_config, _generate_photo_sizes, _prepare_document, _add_video_attributes
+    assert callable(get_last_fragment)
+    assert callable(get_user_config)
+    assert callable(_generate_photo_sizes)
+    assert callable(_prepare_document)
+    assert callable(_add_video_attributes)
+
+
+def test_ui_package_reexports_widgets_and_helpers():
+    import ui
+    for name in ['AlertDialogBuilder', 'BulletinHelper', 'Custom', 'Divider', 'Header', 'Input', 'Selector', 'Switch', 'Text', 'Slider']:
+        assert hasattr(ui, name), f"ui missing {name}"
+
+
 def test_temporary_exports_do_not_overwrite_each_other(sdk, monkeypatch, tmp_path):
     monkeypatch.setattr(sdk.client._LocalFileSystem, 'tempdir', classmethod(lambda cls: str(tmp_path)))
     first = sdk.client._LocalFileSystem.write_temp_file('export.plugin', b'first')

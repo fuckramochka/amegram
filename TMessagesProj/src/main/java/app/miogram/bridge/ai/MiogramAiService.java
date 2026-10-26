@@ -154,6 +154,14 @@ public class MiogramAiService {
                 addApiKeys(keys, prefs.getString(KEY_API_KEYS, ""));
                 addApiKeys(keys, prefs.getString("gemini_api_key", ""));
                 addApiKeys(keys, prefs.getString("gemini_key", ""));
+
+                android.content.SharedPreferences aiPrefs = ctx.getSharedPreferences("hotmod_ai", Context.MODE_PRIVATE);
+                addApiKeys(keys, aiPrefs.getString("gemini_key", ""));
+                addApiKeys(keys, aiPrefs.getString("api_key", ""));
+
+                android.content.SharedPreferences sttPrefs = ctx.getSharedPreferences("hotmod_stt", Context.MODE_PRIVATE);
+                addApiKeys(keys, sttPrefs.getString("gemini_key", ""));
+                addApiKeys(keys, sttPrefs.getString("api_key", ""));
             }
         } catch (Throwable ignored) {}
 
@@ -187,6 +195,12 @@ public class MiogramAiService {
                 ctx.getSharedPreferences(AI_PREFS, Context.MODE_PRIVATE).edit()
                         .putString(KEY_API_KEYS, serialized)
                         .putString("gemini_api_key", primary)
+                        .putString("gemini_key", primary)
+                        .apply();
+                ctx.getSharedPreferences("hotmod_ai", Context.MODE_PRIVATE).edit()
+                        .putString("gemini_key", primary)
+                        .apply();
+                ctx.getSharedPreferences("hotmod_stt", Context.MODE_PRIVATE).edit()
                         .putString("gemini_key", primary)
                         .apply();
             }

@@ -1666,12 +1666,28 @@ public final class HotModulesManager {
 
         @Override
         public String getString(String key, String def) {
-            return modPrefs().getString(key, def);
+            String v = modPrefs().getString(key, def);
+            if (("gemini_key".equals(key) || "gemini_api_key".equals(key) || "api_key".equals(key)) && (v == null || v.trim().isEmpty() || v.equals(def))) {
+                try {
+                    String globalKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
+                    if (globalKey != null && !globalKey.trim().isEmpty()) {
+                        return globalKey;
+                    }
+                } catch (Throwable ignore) {
+                }
+            }
+            return v;
         }
 
         @Override
         public void putString(String key, String value) {
             modPrefs().edit().putString(key, value).apply();
+            if (("gemini_key".equals(key) || "gemini_api_key".equals(key) || "api_key".equals(key)) && value != null && !value.trim().isEmpty()) {
+                try {
+                    app.miogram.bridge.ai.MiogramAiService.setApiKey(value.trim());
+                } catch (Throwable ignore) {
+                }
+            }
         }
 
         @Override

@@ -32,6 +32,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DefaultItemAnimator;
@@ -1322,6 +1323,7 @@ public class YumiSettingsView extends FrameLayout {
                 if (row.kind == YumiSettingsModel.KIND_SWITCH) {
                     toggle.setVisibility(View.VISIBLE);
                     value.setVisibility(View.GONE);
+                    chevron.setVisibility(View.GONE);
 
                     toggle.setAccent(accent);
                     toggle.setChecked(row.checked, false);
@@ -1329,23 +1331,29 @@ public class YumiSettingsView extends FrameLayout {
                     toggle.setEnabled(row.enabled);
                     toggle.setOnCheckedChangeListener((v, checked) -> listener.onToggle(row, checked));
 
-                    boolean hasDestination = row.moduleId != null || row.id != 0;
-                    chevron.setVisibility(hasDestination ? View.VISIBLE : View.GONE);
-                    if (hasDestination) {
-                        chevron.setColorFilter(new PorterDuffColorFilter(
-                                YumiMd3.muted(YumiMd3.onSurfaceVariant()), PorterDuff.Mode.SRC_IN));
-                        setOnClickListener(v -> {
-                            if (!row.enabled) return;
+                    setOnClickListener(v -> {
+                        if (!row.enabled) return;
+                        haptic(v);
+                        toggle.performClick();
+                    });
+
+                    setOnLongClickListener(v -> {
+                        if (!row.enabled) return false;
+                        if (row.moduleId != null || row.id != 0) {
+                            if (!row.checked) {
+                                Toast.makeText(context, MiogramLocale.get(
+                                        "Модуль вимкнено. Увімкніть його для переходу в налаштування.",
+                                        "Модуль выключен. Включите его для перехода в настройки.",
+                                        "Module is disabled. Enable it to configure settings."), Toast.LENGTH_SHORT).show();
+                                return true;
+                            }
                             haptic(v);
                             hideSearchFocus();
                             listener.onRow(row);
-                        });
-                    } else {
-                        setOnClickListener(v -> {
-                            if (!row.enabled) return;
-                            toggle.performClick();
-                        });
-                    }
+                            return true;
+                        }
+                        return false;
+                    });
                 } else {
                     toggle.setVisibility(View.GONE);
                     if (!TextUtils.isEmpty(row.value)) {

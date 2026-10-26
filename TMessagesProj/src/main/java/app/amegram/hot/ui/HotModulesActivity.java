@@ -14,6 +14,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -730,9 +731,19 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             btnSettings.setText(MiogramLocale.get("Налаштування", "Настройки", "Settings"));
             btnSettings.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             btnSettings.setTypeface(AndroidUtilities.bold());
-            btnSettings.setTextColor(YumiTheme.getPrimary());
+            btnSettings.setTextColor(info.enabled ? YumiTheme.getPrimary() : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            btnSettings.setAlpha(info.enabled ? 1f : 0.45f);
             btnSettings.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
-            btnSettings.setOnClickListener(v -> presentFragment(new HotModuleSettingsActivity(info.manifest.id)));
+            btnSettings.setOnClickListener(v -> {
+                if (!info.enabled) {
+                    Toast.makeText(context, MiogramLocale.get(
+                            "Увімкніть модуль, щоб налаштувати його",
+                            "Включите модуль, чтобы настроить его",
+                            "Enable module to configure settings"), Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                presentFragment(new HotModuleSettingsActivity(info.manifest.id));
+            });
             bottomRow.addView(btnSettings);
         }
 

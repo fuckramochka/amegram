@@ -125,6 +125,14 @@ public class HotModuleSettingsActivity extends BaseFragment {
         boolean isEnabled = HotModulesManager.isModuleEnabled(moduleId);
         items.add(UItem.asCustom(buildHeroCard(context, isEnabled)));
 
+        if (!isEnabled) {
+            items.add(UItem.asCustom(buildInfoCard(context, MiogramLocale.get(
+                    "Модуль наразі вимкнено. Увімкніть його перемикачем угорі, щоб налаштувати параметри.",
+                    "Модуль сейчас выключен. Включите его переключателем вверху, чтобы настроить параметры.",
+                    "Module is currently disabled. Enable it with the switch above to configure settings."))));
+            return;
+        }
+
         HotModulesManager.Handle h = handle();
         HotModule mod = (h != null && h.instance != null) ? h.instance : HotModulesManager.getModuleForSettings(moduleId);
         if (mod == null) {

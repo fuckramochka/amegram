@@ -235,11 +235,29 @@ public class UiModule implements HotModule, HotUi {
         try {
             ClassLoader cl = host != null && host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
             Class<?> ncClass = Class.forName("org.telegram.messenger.NotificationCenter", true, cl);
-            Method mGetGlobal = ncClass.getMethod("getGlobalInstance");
-            Object nc = mGetGlobal.invoke(null);
             int updateInterfaces = ncClass.getField("updateInterfaces").getInt(null);
             Method mPost = ncClass.getMethod("postNotificationName", int.class, Object[].class);
-            mPost.invoke(nc, updateInterfaces, new Object[]{127});
+
+            try {
+                Method mGetGlobal = ncClass.getMethod("getGlobalInstance");
+                Object nc = mGetGlobal.invoke(null);
+                mPost.invoke(nc, updateInterfaces, new Object[]{127});
+            } catch (Throwable ignore) {
+            }
+
+            try {
+                Method mGetInstance = ncClass.getMethod("getInstance", int.class);
+                for (int a = 0; a < 4; a++) {
+                    try {
+                        Object nc = mGetInstance.invoke(null, a);
+                        if (nc != null) {
+                            mPost.invoke(nc, updateInterfaces, new Object[]{127});
+                        }
+                    } catch (Throwable ignore) {
+                    }
+                }
+            } catch (Throwable ignore) {
+            }
         } catch (Throwable ignore) {
         }
     }

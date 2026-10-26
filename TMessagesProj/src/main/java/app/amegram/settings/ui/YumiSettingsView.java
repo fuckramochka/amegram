@@ -1322,17 +1322,30 @@ public class YumiSettingsView extends FrameLayout {
                 if (row.kind == YumiSettingsModel.KIND_SWITCH) {
                     toggle.setVisibility(View.VISIBLE);
                     value.setVisibility(View.GONE);
-                    chevron.setVisibility(View.GONE);
 
                     toggle.setAccent(accent);
                     toggle.setChecked(row.checked, false);
                     toggle.setContentDescription(row.title);
                     toggle.setEnabled(row.enabled);
                     toggle.setOnCheckedChangeListener((v, checked) -> listener.onToggle(row, checked));
-                    setOnClickListener(v -> {
-                        if (!row.enabled) return;
-                        toggle.performClick();
-                    });
+
+                    boolean hasDestination = row.moduleId != null || row.id != 0;
+                    chevron.setVisibility(hasDestination ? View.VISIBLE : View.GONE);
+                    if (hasDestination) {
+                        chevron.setColorFilter(new PorterDuffColorFilter(
+                                YumiMd3.muted(YumiMd3.onSurfaceVariant()), PorterDuff.Mode.SRC_IN));
+                        setOnClickListener(v -> {
+                            if (!row.enabled) return;
+                            haptic(v);
+                            hideSearchFocus();
+                            listener.onRow(row);
+                        });
+                    } else {
+                        setOnClickListener(v -> {
+                            if (!row.enabled) return;
+                            toggle.performClick();
+                        });
+                    }
                 } else {
                     toggle.setVisibility(View.GONE);
                     if (!TextUtils.isEmpty(row.value)) {

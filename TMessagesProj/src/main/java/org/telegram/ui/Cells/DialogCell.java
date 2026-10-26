@@ -710,13 +710,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         this.resourcesProvider = resourcesProvider;
         parentFragment = fragment;
         Theme.createDialogsResources(context);
-        if (app.exteraless.appearance.YougramExpressive.enabled()) {
-            avatarStart = 24;
-            messagePaddingStart = 86;
-        }
+        updateGeometry();
         drawMonoforumAvatar = false;
         drawCommunityAvatar = false;
-        avatarImage.setRoundRadius(dp(26));
         for (int i = 0; i < thumbImage.length; ++i) {
             thumbImage[i] = new ImageReceiver(this);
             thumbImage[i].ignoreNotifications = true;
@@ -1291,6 +1287,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private static final float BADGE_DRAWABLE_OFFSET = (BADGE_SIZE - BADGE_DRAWABLE_SIZE) / 2f;
 
     public void buildLayout() {
+        updateGeometry();
         if (isTransitionSupport) {
             return;
         }
@@ -3941,6 +3938,20 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private RectF yougramRectF;
     private float[] yougramRadii;
 
+    public void updateGeometry() {
+        if (app.exteraless.appearance.YougramExpressive.enabled()
+                && app.exteraless.appearance.AppearanceConfig.chatListStyle() != app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT) {
+            avatarStart = 24;
+            messagePaddingStart = 86;
+        } else {
+            avatarStart = 11;
+            messagePaddingStart = 72;
+        }
+        if (avatarImage != null && (forumTopic == null || forumTopic.icon == 0)) {
+            avatarImage.setRoundRadius(app.exteraless.appearance.AppearanceConfig.getAvatarCorners(dp(56)));
+        }
+    }
+
     private void drawYougramSegment(Canvas canvas) {
         if (!app.exteraless.appearance.YougramExpressive.enabled()) {
             return;
@@ -4008,8 +4019,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             yougramPath.addRoundRect(yougramRectF, yougramRadii, Path.Direction.CW);
             canvas.drawPath(yougramPath, yougramPlatePaint);
 
-            if (drawOutline) {
-                int strokeAlpha = isPinned ? (dark ? 0x30 : 0x22) : (dark ? 0x1E : 0x14);
+            if (drawOutline || (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent())) {
+                int strokeAlpha = isPinned ? (dark ? 0x30 : 0x22) : (dark ? 0x1E : 0x16);
                 yougramStrokePaint.setColor(ColorUtils.setAlphaComponent(accent, strokeAlpha));
                 canvas.drawPath(yougramPath, yougramStrokePaint);
             }
@@ -4043,8 +4054,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             yougramPath.addRoundRect(yougramRectF, yougramRadii, Path.Direction.CW);
             canvas.drawPath(yougramPath, yougramPlatePaint);
 
-            if (drawOutline) {
-                int strokeAlpha = isPinned ? (dark ? 0x28 : 0x1E) : (dark ? 0x18 : 0x10);
+            if (drawOutline || (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent())) {
+                int strokeAlpha = isPinned ? (dark ? 0x28 : 0x1E) : (dark ? 0x18 : 0x12);
                 yougramStrokePaint.setColor(ColorUtils.setAlphaComponent(accent, strokeAlpha));
                 canvas.drawPath(yougramPath, yougramStrokePaint);
             }

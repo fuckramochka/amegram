@@ -154,11 +154,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
             @Override
             public void onQuick(YumiSettingsModel.Quick quick) {
-                if (quick.toggle) {
-                    toggleModule(quick.moduleId, !quick.checked);
-                } else {
-                    route(quick.id, quick.moduleId);
-                }
+                route(quick.id, quick.moduleId);
             }
 
             @Override

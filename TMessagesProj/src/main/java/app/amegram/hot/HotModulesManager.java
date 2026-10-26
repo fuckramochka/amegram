@@ -196,7 +196,7 @@ public final class HotModulesManager {
             if (list == null) return;
             for (String f : list) {
                 if (!f.endsWith(".hmod")) continue;
-                if (f.startsWith("settings_ui") || f.contains("system")) {
+                if (f.startsWith("settings_ui") || f.startsWith("ui-") || f.equals("ui.hmod") || f.contains("system")) {
                     String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
                     if (shouldSeedSystemModule(modId, f)) {
                         try {
@@ -298,6 +298,24 @@ public final class HotModulesManager {
         return false;
     }
 
+    public static boolean hasBundledSeed(String moduleId) {
+        if (moduleId == null) return false;
+        if (appContext == null) init(ApplicationLoader.applicationContext);
+        if (appContext == null) return false;
+        try {
+            android.content.res.AssetManager am = appContext.getAssets();
+            String[] list = am.list("hotmodules");
+            if (list == null) return false;
+            for (String f : list) {
+                if (f.equals(moduleId + ".hmod") || f.startsWith(moduleId + "-")) {
+                    return true;
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        return false;
+    }
+
     public static boolean isModuleInstalled(String moduleId) {
         if (moduleId == null) return false;
         if (appContext == null) init(ApplicationLoader.applicationContext);
@@ -309,13 +327,15 @@ public final class HotModulesManager {
             if (c.exists()) return true;
         }
         File modDir = new File(root(), moduleId);
-        if (!modDir.exists() || !modDir.isDirectory()) return false;
-        File[] vers = modDir.listFiles();
-        if (vers == null) return false;
-        for (File vdir : vers) {
-            if (vdir.isDirectory() && new File(vdir, "module.hmod").exists()) return true;
+        if (modDir.exists() && modDir.isDirectory()) {
+            File[] vers = modDir.listFiles();
+            if (vers != null) {
+                for (File vdir : vers) {
+                    if (vdir.isDirectory() && new File(vdir, "module.hmod").exists()) return true;
+                }
+            }
         }
-        return false;
+        return hasBundledSeed(moduleId);
     }
 
     public static boolean isSystem(String moduleId) {
@@ -1360,6 +1380,119 @@ public final class HotModulesManager {
         if (h != null && h.info.manifest.version.equals(version)) {
             dropLoaded(moduleId);
         }
+    }
+
+    /** Включённі або встановлені модулі з вкладкою настроек. */
+    public static boolean hasSettings(String moduleId) {
+        if (moduleId == null) return false;
+        Handle h = LOADED.get(moduleId);
+        if (h != null && h.instance != null) {
+            try {
+                return h.instance.hasSettings();
+            } catch (Throwable ignore) {
+            }
+        }
+        HotModule mod = getModuleForSettings(moduleId);
+        if (mod != null) {
+            try {
+                return mod.hasSettings();
+            } catch (Throwable ignore) {
+            }
+        }
+        return false;
+    }
+
+    public static HotModule getModuleForSettings(String moduleId) {
+        if (moduleId == null) return null;
+        Handle cached = LOADED.get(moduleId);
+        if (cached != null && cached.instance != null) return cached.instance;
+        if (appContext == null) init(ApplicationLoader.applicationContext);
+        if (appContext == null) return null;
+
+        String entryClass = null;
+        String version = prefs().getString("installed_" + moduleId, "");
+        File hmod = null;
+        Manifest m = null;
+        if (version != null && !version.isEmpty()) {
+            File candidate = new File(new File(new File(root(), moduleId), version), "module.hmod");
+            if (candidate.exists()) {
+                hmod = candidate;
+                try {
+                    m = readManifest(hmod);
+                    if (m != null && m.entry != null) {
+                        entryClass = m.entry;
+                    }
+                } catch (Throwable ignore) {
+                }
+            }
+        }
+        if (m == null) {
+            try {
+                File modDir = new File(root(), moduleId);
+                File[] vers = modDir.listFiles();
+                Manifest best = null;
+                File bestFile = null;
+                if (vers != null) {
+                    for (File vdir : vers) {
+                        if (!vdir.isDirectory()) continue;
+                        File c = new File(vdir, "module.hmod");
+                        if (!c.exists()) continue;
+                        try {
+                            Manifest cm = readManifest(c);
+                            if (!moduleId.equals(cm.id)) continue;
+                            if (best == null || cm.version.compareTo(best.version) > 0) {
+                                best = cm;
+                                bestFile = c;
+                            }
+                        } catch (Throwable ignore) {
+                        }
+                    }
+                }
+                if (best != null) {
+                    m = best;
+                    hmod = bestFile;
+                    entryClass = m.entry;
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+
+        if (entryClass == null && hasBundledSeed(moduleId)) {
+            try {
+                installBundledModuleDirect(moduleId, false);
+                return getModuleForSettings(moduleId);
+            } catch (Throwable ignore) {
+            }
+        }
+
+        if (entryClass == null) return null;
+
+        Class<?> cls = null;
+        if (hmod != null && hmod.exists()) {
+            try {
+                makeReadOnly(hmod);
+                DexClassLoader loader = new DexClassLoader(hmod.getAbsolutePath(),
+                        dexOptDir().getAbsolutePath(), null, appContext.getClassLoader());
+                cls = Class.forName(entryClass, true, loader);
+            } catch (Throwable ignore) {
+            }
+        }
+        if (cls == null) {
+            try {
+                cls = appContext.getClassLoader().loadClass(entryClass);
+            } catch (Throwable ignore) {
+            }
+        }
+        if (cls != null) {
+            try {
+                Object obj = cls.newInstance();
+                if (obj instanceof HotModule) {
+                    return (HotModule) obj;
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+        return null;
     }
 
     /** Включённые модули с вкладкой настроек — для хаба Yumigram. */

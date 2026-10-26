@@ -4313,7 +4313,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPage.listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
             viewPage.listView.setClipToPadding(false);
             viewPage.listView.setPivotY(0);
-            if (initialDialogsType == DIALOGS_TYPE_BOT_REQUEST_PEER) {
+            boolean isYougramCards = app.exteraless.appearance.YougramExpressive.enabled()
+                    && app.exteraless.appearance.AppearanceConfig.chatListStyle() != app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT;
+            if (initialDialogsType == DIALOGS_TYPE_BOT_REQUEST_PEER || isYougramCards) {
                 viewPage.listView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
             }
             viewPage.dialogsItemAnimator = new DialogsItemAnimator(viewPage.listView) {
@@ -5910,9 +5912,36 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         // Бургер ставится и при создании: иначе до первого mainUserInfoChanged
         // кнопки слева не будет.
         updateDrawerButton();
+        updateChatListBackground();
 
         ViewCompat.setOnApplyWindowInsetsListener(fragmentView, this::onApplyWindowInsets);
         return fragmentView;
+    }
+
+    public void updateChatListBackground() {
+        if (fragmentView == null) return;
+        final boolean isIosLayout = app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext());
+        final boolean isDiscordLayout = app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled();
+        if (isDiscordLayout || isIosLayout) {
+            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        } else {
+            boolean isYougramCards = app.exteraless.appearance.YougramExpressive.enabled()
+                    && app.exteraless.appearance.AppearanceConfig.chatListStyle() != app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT;
+            int bgColor = Theme.getColor(isYougramCards ? Theme.key_windowBackgroundGray : Theme.key_windowBackgroundWhite);
+            fragmentView.setBackgroundColor(bgColor);
+            if (viewPages != null) {
+                for (ViewPage vp : viewPages) {
+                    if (vp != null && vp.listView != null) {
+                        vp.listView.setBackgroundColor(isYougramCards ? bgColor : 0);
+                        vp.listView.invalidateViews();
+                    }
+                }
+            }
+            if (searchViewPager != null && searchViewPager.searchListView != null) {
+                searchViewPager.searchListView.setBackgroundColor(isYougramCards ? bgColor : 0);
+                searchViewPager.searchListView.invalidateViews();
+            }
+        }
     }
 
     private void setStoriesOvercroll(ViewPage viewPage, float storiesOverscroll) {
@@ -7341,6 +7370,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onResume() {
         super.onResume();
+        updateChatListBackground();
         if (dialogStoriesCell != null) {
             dialogStoriesCell.onResume();
         }
@@ -11006,6 +11036,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (id == NotificationCenter.proxySettingsChanged) {
             updateProxyButton(false, false);
         } else if (id == NotificationCenter.updateInterfaces) {
+            updateChatListBackground();
             Integer mask = (Integer) args[0];
             updateVisibleRows(mask);
             if (filterTabsView != null && filterTabsView.getVisibility() == View.VISIBLE && (mask & MessagesController.UPDATE_MASK_READ_DIALOG_MESSAGE) != 0) {
@@ -13763,10 +13794,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 }
             }
         } else {
+            updateChatListBackground();
             final boolean isIosLayout = app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext());
-            if (!isIosLayout) {
-                fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            }
             if (actionBar != null && !isIosLayout && actionBar.getVisibility() != View.VISIBLE) {
                 actionBar.setVisibility(View.VISIBLE);
             }

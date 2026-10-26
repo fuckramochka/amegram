@@ -658,9 +658,46 @@ object AppearanceConfig {
         return item
     }
 
+    @Volatile
+    private var listenerRegistered = false
+
+    private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { preferences, key ->
+        if (key == null) {
+            loadConfig(true)
+            invalidateExpressiveCache()
+            return@OnSharedPreferenceChangeListener
+        }
+        for (item in configs) {
+            if (item.key == key) {
+                try {
+                    when (item.type) {
+                        ConfigItem.configTypeBool -> item.value = preferences.getBoolean(key, item.defaultValue as Boolean)
+                        ConfigItem.configTypeInt -> item.value = preferences.getInt(key, item.defaultValue as Int)
+                        ConfigItem.configTypeLong -> item.value = preferences.getLong(key, item.defaultValue as Long)
+                        ConfigItem.configTypeFloat -> item.value = preferences.getFloat(key, item.defaultValue as Float)
+                        ConfigItem.configTypeString -> item.value = preferences.getString(key, item.defaultValue as String?)
+                    }
+                } catch (e: Exception) {
+                    FileLog.e(e)
+                }
+                break
+            }
+        }
+        if (key == "OEAppearanceUiStyleMode" || key == "OEAppearanceChatListStyle" || key == "OEAppearanceChatPinnedAccent" || key == "OEAppearanceChatSquircleAvatars" || key == "OEAppearanceChatCardOutline") {
+            invalidateExpressiveCache()
+        }
+    }
+
     @JvmStatic
     fun ensureLoaded() {
         if (!configLoaded) loadConfig(false)
+        if (!listenerRegistered && ApplicationLoader.applicationContext != null) {
+            try {
+                getPreferences().registerOnSharedPreferenceChangeListener(prefListener)
+                listenerRegistered = true
+            } catch (t: Throwable) {
+            }
+        }
     }
 
     @JvmStatic
@@ -676,9 +713,16 @@ object AppearanceConfig {
     @JvmStatic
     fun loadConfig(force: Boolean) {
         synchronized(sync) {
-            if (configLoaded && !force) return
             if (ApplicationLoader.applicationContext == null) return
             val preferences = getPreferences()
+            if (!listenerRegistered) {
+                try {
+                    preferences.registerOnSharedPreferenceChangeListener(prefListener)
+                    listenerRegistered = true
+                } catch (t: Throwable) {
+                }
+            }
+            if (configLoaded && !force) return
             for (item in configs) {
                 try {
                     when (item.type) {

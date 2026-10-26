@@ -56,6 +56,14 @@ public class HotModuleSettingsActivity extends BaseFragment {
             String t = handle.instance.settingsTitle();
             if (t != null && !t.isEmpty()) return t;
         }
+        HotModule modInst = HotModulesManager.getModuleForSettings(moduleId);
+        if (modInst != null) {
+            String t = modInst.settingsTitle();
+            if (t != null && !t.isEmpty()) return t;
+        }
+        if ("settings_ui".equals(moduleId)) {
+            return MiogramLocale.get("Інтерфейс налаштувань Yumi", "Интерфейс настроек Yumi", "Yumi Settings UI");
+        }
         if ("ghost".equals(moduleId)) {
             return MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode");
         }
@@ -117,7 +125,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
         items.add(UItem.asCustom(buildHeroCard(context, isEnabled)));
 
         HotModulesManager.Handle h = handle();
-        HotModule mod = (h != null && h.instance != null) ? h.instance : HotModulesManager.createBuiltinModule(moduleId);
+        HotModule mod = (h != null && h.instance != null) ? h.instance : HotModulesManager.getModuleForSettings(moduleId);
         if (mod == null) {
             items.add(UItem.asCustom(buildInfoCard(context, MiogramLocale.get(
                     "Модуль не знайдено або він видалений.",

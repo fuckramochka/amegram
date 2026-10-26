@@ -36,6 +36,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import app.amegram.settings.ui.YumiBackgroundView;
+import app.amegram.theme.YumiMd3;
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.customui.MiogramHaptic;
 
@@ -68,6 +70,7 @@ import androidx.core.content.FileProvider;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -92,6 +95,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
     private static final int SUBMENU_SYNC = 102;
     private static final int SUBMENU_KEY = 103;
     private static final int SUBMENU_UNLINK = 104;
+    private static final int SUBMENU_ENCRYPTION = 105;
 
     public static final int VIEW_TYPE_LIST = 0;
     public static final int VIEW_TYPE_GRID = 1;
@@ -108,12 +112,9 @@ public class MiogramCloudVaultActivity extends BaseFragment {
     private LinearLayout onboardingLayout;
     private LinearLayout mainContentLayout;
 
-    private TextView storageTitleText;
-    private TextView storageSubtitleText;
-    private ProgressBar storageProgressBar;
-
-    private LinearLayout topicsContainer;
-    private HorizontalScrollView topicsScrollView;
+    private TextView folderChipTitle;
+    private TextView secBadgeChip;
+    private LinearLayout categoryChipsContainer;
     private RecyclerView filesRecyclerView;
     private FilesAdapter filesAdapter;
     private LinearLayout emptyView;
@@ -146,6 +147,11 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud Vault"));
+        actionBar.setBackgroundColor(YumiMd3.surface());
+        actionBar.setTitleColor(YumiMd3.onSurface());
+        actionBar.setSubtitleColor(YumiMd3.onSurfaceVariant());
+        actionBar.setItemsColor(YumiMd3.onSurface(), false);
+        actionBar.setItemsBackgroundColor(YumiMd3.defaultRippleColor(), false);
         updateSubtitle();
 
         ActionBarMenu menu = actionBar.createMenu();
@@ -174,6 +180,10 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         ActionBarMenuItem otherItem = menu.addItem(MENU_OTHER, R.drawable.ic_ab_other);
         otherItem.addSubItem(SUBMENU_CHAT, R.drawable.msg_channel, MiogramLocale.get("Відкрити форум у чаті", "Открыть форум в чате", "Open Forum in Chat"));
         otherItem.addSubItem(SUBMENU_SYNC, R.drawable.msg_retry, MiogramLocale.get("Синхронізувати з хмарою", "Синхронизировать с облаком", "Sync with Cloud"));
+        otherItem.addSubItem(SUBMENU_ENCRYPTION, R.drawable.msg_secret,
+                MiogramCloudVaultEngine.isEncryptionEnabled(currentAccount)
+                        ? MiogramLocale.get("Шифрування: Увімкнено (AES-256)", "Шифрование: Включено (AES-256)", "Encryption: Enabled (AES-256)")
+                        : MiogramLocale.get("Шифрування: Вимкнено", "Шифрование: Выключено", "Encryption: Disabled"));
         otherItem.addSubItem(SUBMENU_KEY, R.drawable.msg_secret, MiogramLocale.get("Ключ шифрування (AES-256)", "Ключ шифрования (AES-256)", "Encryption Key (AES-256)"));
         otherItem.addSubItem(SUBMENU_UNLINK, R.drawable.msg_delete, MiogramLocale.get("Відв'язати супергрупу", "Отвязать супергруппу", "Unlink Vault Chat"));
 
@@ -188,6 +198,8 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                     openVaultChat();
                 } else if (id == SUBMENU_SYNC) {
                     syncFromCloud();
+                } else if (id == SUBMENU_ENCRYPTION) {
+                    toggleEncryption();
                 } else if (id == SUBMENU_KEY) {
                     showMasterKeyDialog();
                 } else if (id == SUBMENU_UNLINK) {
@@ -197,7 +209,8 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         });
 
         rootLayout = new FrameLayout(context);
-        rootLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        YumiBackgroundView bgView = new YumiBackgroundView(context);
+        rootLayout.addView(bgView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         buildOnboardingView(context);
         buildMainContentView(context);
@@ -230,7 +243,9 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         if (context == null) context = getParentActivity();
         if (context == null) return;
         if (currentViewMode == VIEW_TYPE_GRID) {
-            filesRecyclerView.setLayoutManager(new GridLayoutManager(context, 3));
+            int screenWidth = AndroidUtilities.displaySize.x;
+            int spanCount = Math.max(2, screenWidth / AndroidUtilities.dp(120));
+            filesRecyclerView.setLayoutManager(new GridLayoutManager(context, spanCount));
         } else {
             filesRecyclerView.setLayoutManager(new LinearLayoutManager(context));
         }
@@ -280,14 +295,85 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         }
     }
 
+    private void toggleEncryption() {
+        boolean next = !MiogramCloudVaultEngine.isEncryptionEnabled(currentAccount);
+        MiogramCloudVaultEngine.setEncryptionEnabled(currentAccount, next);
+        updateSubtitle();
+        updateSecBadgeChip();
+        Toast.makeText(getParentActivity() != null ? getParentActivity() : getContext(), next
+                ? MiogramLocale.get("Шифрування AES-256-GCM увімкнено", "Шифрование AES-256-GCM включено", "AES-256-GCM encryption enabled")
+                : MiogramLocale.get("Шифрування вимкнено (прямий диск)", "Шифрование выключено (прямой диск)", "Encryption disabled (direct drive)"),
+                Toast.LENGTH_SHORT).show();
+    }
+
     private void updateSubtitle() {
         if (actionBar == null) return;
         long totalSize = MiogramCloudVaultEngine.getTotalVaultSize();
         int count = MiogramCloudVaultEngine.getTotalVaultFilesCount();
-        String sub = MiogramLocale.get("AES-256-GCM • ", "AES-256-GCM • ", "AES-256-GCM • ")
+        boolean enc = MiogramCloudVaultEngine.isEncryptionEnabled(currentAccount);
+        String prefix = enc ? "🔒 AES-256 • " : "📁 " + MiogramLocale.get("Прямий диск • ", "Прямой диск • ", "Direct • ");
+        String sub = prefix
                 + count + " " + MiogramLocale.get("файлів", "файлов", "files")
                 + " (" + AndroidUtilities.formatFileSize(totalSize) + ")";
         actionBar.setSubtitle(sub);
+    }
+
+    private void updateFolderChipText() {
+        if (folderChipTitle == null) return;
+        if (currentSelectedTopicId == 0L || TextUtils.isEmpty(currentSelectedTopicName)) {
+            folderChipTitle.setText(MiogramLocale.get("Усі файли", "Все файлы", "All files"));
+        } else {
+            folderChipTitle.setText(currentSelectedTopicName);
+        }
+    }
+
+    private void updateSecBadgeChip() {
+        if (secBadgeChip == null) return;
+        boolean enc = MiogramCloudVaultEngine.isEncryptionEnabled(currentAccount);
+        if (enc) {
+            secBadgeChip.setText("🔒 AES-256");
+            secBadgeChip.setTextColor(YumiMd3.green());
+            secBadgeChip.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.green(), 0.16f), YumiMd3.RADIUS_FULL_DP));
+        } else {
+            secBadgeChip.setText(MiogramLocale.get("Прямий диск", "Прямой диск", "Direct drive"));
+            secBadgeChip.setTextColor(YumiMd3.blue());
+            secBadgeChip.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.blue(), 0.16f), YumiMd3.RADIUS_FULL_DP));
+        }
+    }
+
+    private void showFolderSelectorDialog() {
+        if (getParentActivity() == null) return;
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(MiogramLocale.get("Папки сховища", "Папки хранилища", "Vault folders"));
+
+        ArrayList<String> names = new ArrayList<>();
+        ArrayList<Long> ids = new ArrayList<>();
+
+        names.add(MiogramLocale.get("📁 Усі файли", "📁 Все файлы", "📁 All files"));
+        ids.add(0L);
+
+        for (TLRPC.TL_forumTopic t : cachedTopics) {
+            names.add("📁 " + (t.title != null ? t.title : ("Папка #" + t.id)));
+            ids.add((long) t.id);
+        }
+
+        names.add("➕ " + MiogramLocale.get("Створити нову папку", "Создать новую папку", "Create new folder"));
+        ids.add(-1L);
+
+        CharSequence[] items = names.toArray(new CharSequence[0]);
+        builder.setItems(items, (d, which) -> {
+            long selectedId = ids.get(which);
+            if (selectedId == -1L) {
+                promptCreateFolder();
+            } else {
+                currentSelectedTopicId = selectedId;
+                currentSelectedTopicName = (selectedId == 0L) ? "" : names.get(which).replace("📁 ", "");
+                updateFolderChipText();
+                filterAndReloadFiles();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     private void updateVaultVisibility() {
@@ -303,72 +389,123 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         onboardingLayout = new LinearLayout(context);
         onboardingLayout.setOrientation(LinearLayout.VERTICAL);
         onboardingLayout.setGravity(Gravity.CENTER);
-        onboardingLayout.setPadding(AndroidUtilities.dp(32), AndroidUtilities.dp(32), AndroidUtilities.dp(32), AndroidUtilities.dp(32));
+        onboardingLayout.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(24), AndroidUtilities.dp(20), AndroidUtilities.dp(24));
 
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setGravity(Gravity.CENTER_HORIZONTAL);
+        card.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainer(), YumiMd3.hairline(), YumiMd3.RADIUS_XXL_DP, 1));
+        card.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(28), AndroidUtilities.dp(24), AndroidUtilities.dp(28));
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        iconFrame.setBackground(YumiMd3.rounded(YumiMd3.iconTone(YumiMd3.primary(), 0.14f), YumiMd3.RADIUS_L_DP));
         ImageView iconView = new ImageView(context);
         iconView.setImageResource(R.drawable.cloud);
-        iconView.setColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton));
-        onboardingLayout.addView(iconView, LayoutHelper.createLinear(88, 88, Gravity.CENTER, 0, 0, 0, 16));
+        iconView.setColorFilter(YumiMd3.primary());
+        iconFrame.addView(iconView, LayoutHelper.createFrame(34, 34, Gravity.CENTER));
+        card.addView(iconFrame, LayoutHelper.createLinear(68, 68, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16));
 
         TextView title = new TextView(context);
-        title.setText(MiogramLocale.get("Miogram Zero-Knowledge Vault", "Miogram Zero-Knowledge Vault", "Miogram Zero-Knowledge Vault"));
-        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
-        title.setTypeface(AndroidUtilities.bold());
-        title.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        title.setText("Miogram Cloud Vault");
+        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, YumiMd3.TITLE_LARGE);
+        title.setTypeface(YumiMd3.typeface(YumiMd3.BOLD));
+        title.setTextColor(YumiMd3.onSurface());
         title.setGravity(Gravity.CENTER);
-        onboardingLayout.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 12));
+        card.addView(title, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
 
         TextView desc = new TextView(context);
         desc.setText(MiogramLocale.get(
-                "Безлімітне приватне хмарне сховище без локальних слідів:\n\n"
-                        + "• Повний Zero-Knowledge: жоден файл чи список не зберігаються на пристрої.\n"
-                        + "• Тільки ключ AES-256-GCM зберігається локально. Все інше розшифровується в RAM.\n"
-                        + "• Файли будь-якого розміру автоматично ріжуться на чанки в Telegram.\n"
-                        + "• Звичайні клієнти Telegram бачать лише зашифровані бінарні дані.",
-                "Безлимитное приватное облачное хранилище без локальных следов:\n\n"
-                        + "• Полный Zero-Knowledge: ни один файл и список не сохраняются на устройстве.\n"
-                        + "• Только ключ AES-256-GCM хранится локально. Всё остальное расшифровывается в RAM.\n"
-                        + "• Файлы любого размера автоматически нарезаются на чанки в Telegram.\n"
-                        + "• Обычные клиенты Telegram видят лишь зашифрованные бинарные данные.",
-                "Unlimited zero-knowledge cloud vault with zero local storage footprint:\n\n"
-                        + "• True Zero-Knowledge: no files or file lists are stored on this device.\n"
-                        + "• Only your AES-256-GCM key lives locally. Everything else decrypts in RAM.\n"
-                        + "• Files of any size automatically chunked and stored in Telegram.\n"
-                        + "• Standard Telegram clients only see raw opaque ciphertext."
+                "Приватне хмарне сховище без обмежень на базі Telegram",
+                "Приватное облачное хранилище без ограничений на базе Telegram",
+                "Private unlimited cloud vault powered by Telegram"
         ));
-        desc.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
-        desc.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        desc.setTextSize(TypedValue.COMPLEX_UNIT_SP, YumiMd3.BODY_SMALL);
+        desc.setTextColor(YumiMd3.onSurfaceVariant());
         desc.setGravity(Gravity.CENTER);
-        desc.setLineSpacing(AndroidUtilities.dp(3), 1.15f);
-        onboardingLayout.addView(desc, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 24));
+        card.addView(desc, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 20));
 
-        // 1-Tap Create Forum Supergroup with Topics
+        card.addView(createFeatureRow(context, R.drawable.msg_secret, YumiMd3.violet(),
+                MiogramLocale.get("Zero-Knowledge AES-256", "Zero-Knowledge AES-256", "Zero-Knowledge AES-256"),
+                MiogramLocale.get("Шифрування файлів локальним ключем перед відправкою.", "Шифрование файлов локальным ключом перед отправкой.", "Client-side file encryption before upload.")));
+
+        card.addView(createFeatureRow(context, R.drawable.cloud, YumiMd3.cyan(),
+                MiogramLocale.get("Безлімітне сховище", "Безлимитное хранилище", "Unlimited Storage"),
+                MiogramLocale.get("Файли будь-якого розміру автоматично нарізаються на чанки.", "Файлы любого размера автоматически нарезаются на чанки.", "Large files transparently sliced into cloud chunks.")));
+
+        card.addView(createFeatureRow(context, R.drawable.msg_folders, YumiMd3.amber(),
+                MiogramLocale.get("Папки та топіки", "Папки и топики", "Folders & Topics"),
+                MiogramLocale.get("Топіки форум-супергрупи стають окремими папками сховища.", "Топики форум-супергруппы становятся отдельными папками хранилища.", "Forum supergroup topics act as virtual folders.")));
+
+        View spacer = new View(context);
+        card.addView(spacer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 18));
+
         TextView createBtn = new TextView(context);
         createBtn.setText(MiogramLocale.get("Створити сховище з топіками (1 тап)", "Создать хранилище с топиками (1 тап)", "Create Vault with Topics (1 Tap)"));
         createBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        createBtn.setTypeface(AndroidUtilities.bold());
-        createBtn.setTextColor(Color.WHITE);
+        createBtn.setTypeface(YumiMd3.typeface(YumiMd3.BOLD));
+        createBtn.setTextColor(YumiMd3.onActionGradient());
         createBtn.setGravity(Gravity.CENTER);
+        createBtn.setBackground(YumiMd3.gradient(YumiMd3.actionGradientStart(), YumiMd3.actionGradientEnd(), YumiMd3.RADIUS_M_DP));
+        createBtn.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(14));
+        createBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            createVaultAutomatically();
+        });
+        card.addView(createBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 10));
 
-        GradientDrawable createBtnBg = new GradientDrawable();
-        createBtnBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        createBtnBg.setCornerRadius(AndroidUtilities.dp(12));
-        createBtn.setBackground(createBtnBg);
-        createBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(14), AndroidUtilities.dp(20), AndroidUtilities.dp(14));
-        createBtn.setOnClickListener(v -> createVaultAutomatically());
-        onboardingLayout.addView(createBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 16, 0, 16, 12));
-
-        // Link existing chat button
         TextView linkBtn = new TextView(context);
         linkBtn.setText(MiogramLocale.get("Прив'язати існуючу групу чи форум", "Привязать существующую группу или форум", "Link Existing Group or Forum"));
         linkBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f);
-        linkBtn.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        linkBtn.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+        linkBtn.setTextColor(YumiMd3.primary());
         linkBtn.setGravity(Gravity.CENTER);
-        linkBtn.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(8), AndroidUtilities.dp(16), AndroidUtilities.dp(8));
-        linkBtn.setOnClickListener(v -> showLinkExistingDialog());
-        onboardingLayout.addView(linkBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        linkBtn.setBackground(YumiMd3.ripple(YumiMd3.surfaceContainerHigh(), YumiMd3.RADIUS_M_DP, YumiMd3.defaultRippleColor()));
+        linkBtn.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(11), AndroidUtilities.dp(16), AndroidUtilities.dp(11));
+        linkBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            showLinkExistingDialog();
+        });
+        card.addView(linkBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
-        rootLayout.addView(onboardingLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        LinearLayout.LayoutParams clp = new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT);
+        clp.gravity = Gravity.CENTER;
+        onboardingLayout.addView(card, clp);
+
+        rootLayout.addView(onboardingLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
+    }
+
+    private View createFeatureRow(Context context, int iconRes, int accentColor, String title, String subtitle) {
+        LinearLayout row = new LinearLayout(context);
+        row.setOrientation(LinearLayout.HORIZONTAL);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(0, AndroidUtilities.dp(7), 0, AndroidUtilities.dp(7));
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        iconFrame.setBackground(YumiMd3.rounded(YumiMd3.iconTone(accentColor, 0.16f), YumiMd3.RADIUS_S_DP));
+        ImageView iv = new ImageView(context);
+        iv.setImageResource(iconRes);
+        iv.setColorFilter(accentColor);
+        iconFrame.addView(iv, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
+        row.addView(iconFrame, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        LinearLayout texts = new LinearLayout(context);
+        texts.setOrientation(LinearLayout.VERTICAL);
+
+        TextView tView = new TextView(context);
+        tView.setText(title);
+        tView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        tView.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+        tView.setTextColor(YumiMd3.onSurface());
+        texts.addView(tView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        TextView sView = new TextView(context);
+        sView.setText(subtitle);
+        sView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        sView.setTextColor(YumiMd3.onSurfaceVariant());
+        texts.addView(sView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+
+        row.addView(texts, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
+        return row;
     }
 
     // --- Main Content View (Drive Interface) ---
@@ -377,92 +514,84 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         mainContentLayout = new LinearLayout(context);
         mainContentLayout.setOrientation(LinearLayout.VERTICAL);
 
-        // 1. Storage Banner Card with modern Zero-Knowledge styling
-        FrameLayout bannerCard = new FrameLayout(context);
-        GradientDrawable cardBg = new GradientDrawable();
-        cardBg.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        cardBg.setCornerRadius(AndroidUtilities.dp(16));
-        bannerCard.setBackground(cardBg);
-        bannerCard.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(14));
+        // 1. Sub-Header: Folder Selector Chip (left) + E2E Encryption Badge (right)
+        LinearLayout subHeader = new LinearLayout(context);
+        subHeader.setOrientation(LinearLayout.HORIZONTAL);
+        subHeader.setGravity(Gravity.CENTER_VERTICAL);
+        subHeader.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(10), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
 
-        LinearLayout bannerInner = new LinearLayout(context);
-        bannerInner.setOrientation(LinearLayout.VERTICAL);
+        // Folder Chip (Dropdown)
+        LinearLayout folderChip = new LinearLayout(context);
+        folderChip.setOrientation(LinearLayout.HORIZONTAL);
+        folderChip.setGravity(Gravity.CENTER_VERTICAL);
+        folderChip.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHigh(), YumiMd3.hairline(), YumiMd3.RADIUS_FULL_DP, 1));
+        folderChip.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(6), AndroidUtilities.dp(10), AndroidUtilities.dp(6));
 
-        LinearLayout titleRow = new LinearLayout(context);
-        titleRow.setOrientation(LinearLayout.HORIZONTAL);
-        titleRow.setGravity(Gravity.CENTER_VERTICAL);
+        ImageView folderIco = new ImageView(context);
+        folderIco.setImageResource(R.drawable.msg_folders);
+        folderIco.setColorFilter(YumiMd3.primary());
+        folderChip.addView(folderIco, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
 
-        ImageView cloudIco = new ImageView(context);
-        cloudIco.setImageResource(R.drawable.cloud);
-        cloudIco.setColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton));
-        titleRow.addView(cloudIco, LayoutHelper.createLinear(24, 24, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+        folderChipTitle = new TextView(context);
+        folderChipTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        folderChipTitle.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+        folderChipTitle.setTextColor(YumiMd3.onSurface());
+        updateFolderChipText();
+        folderChip.addView(folderChipTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
 
-        storageTitleText = new TextView(context);
-        storageTitleText.setText(MiogramLocale.get("Miogram Cloud Vault", "Miogram Cloud Vault", "Miogram Cloud Vault"));
-        storageTitleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
-        storageTitleText.setTypeface(AndroidUtilities.bold());
-        storageTitleText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        titleRow.addView(storageTitleText, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, Gravity.CENTER_VERTICAL));
+        ImageView chevron = new ImageView(context);
+        chevron.setImageResource(R.drawable.ic_arrow_drop_down);
+        chevron.setColorFilter(YumiMd3.onSurfaceVariant());
+        folderChip.addView(chevron, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL));
 
-        TextView secBadge = new TextView(context);
-        secBadge.setText("Zero-Knowledge");
-        secBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
-        secBadge.setTypeface(AndroidUtilities.bold());
-        secBadge.setTextColor(0xFF10B981);
-        GradientDrawable badgeBg = new GradientDrawable();
-        badgeBg.setColor(0x1A10B981);
-        badgeBg.setCornerRadius(AndroidUtilities.dp(10));
-        secBadge.setBackground(badgeBg);
-        secBadge.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(3), AndroidUtilities.dp(8), AndroidUtilities.dp(3));
-        titleRow.addView(secBadge, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        folderChip.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            showFolderSelectorDialog();
+        });
+        subHeader.addView(folderChip, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        bannerInner.addView(titleRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+        // Spacer
+        View spacer = new View(context);
+        subHeader.addView(spacer, LayoutHelper.createLinear(0, 0, 1.0f));
 
-        storageSubtitleText = new TextView(context);
-        storageSubtitleText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        storageSubtitleText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
-        bannerInner.addView(storageSubtitleText, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 8));
+        // Encryption Badge Chip
+        secBadgeChip = new TextView(context);
+        secBadgeChip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        secBadgeChip.setTypeface(YumiMd3.typeface(YumiMd3.BOLD));
+        secBadgeChip.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(5), AndroidUtilities.dp(10), AndroidUtilities.dp(5));
+        updateSecBadgeChip();
+        secBadgeChip.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            toggleEncryption();
+        });
+        subHeader.addView(secBadgeChip, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
-        storageProgressBar = new ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal);
-        storageProgressBar.setIndeterminate(false);
-        storageProgressBar.setMax(100);
-        storageProgressBar.setProgress(15);
-        bannerInner.addView(storageProgressBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 5));
+        mainContentLayout.addView(subHeader, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        TextView zeroStorageNotice = new TextView(context);
-        zeroStorageNotice.setText(MiogramLocale.get(
-                "Тільки ключ на пристрої • Безлімітна хмара Telegram • Розшифрування на льоту",
-                "Только ключ на устройстве • Безлимитное облако Telegram • Дешифрование на лету",
-                "Key only on device • Unlimited Telegram cloud • On-the-fly streaming decryption"
-        ));
-        zeroStorageNotice.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
-        zeroStorageNotice.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-        bannerInner.addView(zeroStorageNotice, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 6, 0, 0));
+        // 2. Category Filter Chips (Horizontal Scroll)
+        HorizontalScrollView catScrollView = new HorizontalScrollView(context);
+        catScrollView.setHorizontalScrollBarEnabled(false);
 
-        bannerCard.addView(bannerInner, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
-        mainContentLayout.addView(bannerCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 12, 10, 12, 6));
+        categoryChipsContainer = new LinearLayout(context);
+        categoryChipsContainer.setOrientation(LinearLayout.HORIZONTAL);
+        categoryChipsContainer.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(2), AndroidUtilities.dp(12), AndroidUtilities.dp(6));
+        catScrollView.addView(categoryChipsContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
+        mainContentLayout.addView(catScrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-        // 2. Horizontal Topic Folder Tabs
-        topicsScrollView = new HorizontalScrollView(context);
-        topicsScrollView.setHorizontalScrollBarEnabled(false);
-
-        topicsContainer = new LinearLayout(context);
-        topicsContainer.setOrientation(LinearLayout.HORIZONTAL);
-        topicsContainer.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
-        topicsScrollView.addView(topicsContainer, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT));
-
-        mainContentLayout.addView(topicsScrollView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        refreshCategoryChips();
 
         // 3. RecyclerView for Files
         FrameLayout listContainer = new FrameLayout(context);
 
         filesRecyclerView = new RecyclerView(context);
+        filesRecyclerView.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(2), AndroidUtilities.dp(6), AndroidUtilities.dp(84));
+        filesRecyclerView.setClipToPadding(false);
         updateLayoutManager();
         filesRecyclerView.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
             public void getItemOffsets(@NonNull Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
                 if (currentViewMode == VIEW_TYPE_GRID) {
-                    int s = AndroidUtilities.dp(3);
+                    int s = AndroidUtilities.dp(4);
                     outRect.set(s, s, s, s);
                 } else {
                     outRect.set(0, 0, 0, 0);
@@ -477,25 +606,43 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         emptyView = new LinearLayout(context);
         emptyView.setOrientation(LinearLayout.VERTICAL);
         emptyView.setGravity(Gravity.CENTER);
+        emptyView.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(32), AndroidUtilities.dp(24), AndroidUtilities.dp(32));
 
+        FrameLayout emptyIcoFrame = new FrameLayout(context);
+        emptyIcoFrame.setBackground(YumiMd3.rounded(YumiMd3.tone(YumiMd3.primary(), 0.12f), YumiMd3.RADIUS_XL_DP));
         ImageView emptyIco = new ImageView(context);
         emptyIco.setImageResource(R.drawable.baseline_cloud_download_24);
-        emptyIco.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
-        emptyView.addView(emptyIco, LayoutHelper.createLinear(64, 64, Gravity.CENTER, 0, 0, 0, 12));
+        emptyIco.setColorFilter(YumiMd3.primary());
+        emptyIcoFrame.addView(emptyIco, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
+        emptyView.addView(emptyIcoFrame, LayoutHelper.createLinear(64, 64, Gravity.CENTER, 0, 0, 0, 16));
 
         emptyText = new TextView(context);
         emptyText.setText(MiogramLocale.get("У цій папці поки немає файлів", "В этой папке пока нет файлов", "No files in this folder yet"));
-        emptyText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-        emptyText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        emptyText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        emptyText.setTypeface(YumiMd3.typeface(YumiMd3.BOLD));
+        emptyText.setTextColor(YumiMd3.onSurface());
         emptyText.setGravity(Gravity.CENTER);
         emptyView.addView(emptyText, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 6));
 
         emptyHint = new TextView(context);
         emptyHint.setText(MiogramLocale.get("Натисніть (+), щоб завантажити файл будь-якого розміру", "Нажмите (+), чтобы загрузить файл любого размера", "Tap (+) to upload files of any size"));
-        emptyHint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        emptyHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        emptyHint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f);
+        emptyHint.setTextColor(YumiMd3.onSurfaceVariant());
         emptyHint.setGravity(Gravity.CENTER);
-        emptyView.addView(emptyHint, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+        emptyView.addView(emptyHint, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER, 0, 0, 0, 18));
+
+        TextView uploadEmptyBtn = new TextView(context);
+        uploadEmptyBtn.setText(MiogramLocale.get("Завантажити файл", "Загрузить файл", "Upload file"));
+        uploadEmptyBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+        uploadEmptyBtn.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+        uploadEmptyBtn.setTextColor(YumiMd3.primary());
+        uploadEmptyBtn.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHigh(), YumiMd3.RADIUS_M_DP));
+        uploadEmptyBtn.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20), AndroidUtilities.dp(10));
+        uploadEmptyBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            openFilePicker();
+        });
+        emptyView.addView(uploadEmptyBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
 
         listContainer.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.CENTER));
         mainContentLayout.addView(listContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1.0f));
@@ -503,131 +650,63 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         rootLayout.addView(mainContentLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
     }
 
+    private void refreshCategoryChips() {
+        if (categoryChipsContainer == null) return;
+        categoryChipsContainer.removeAllViews();
+        Context context = getContext();
+        if (context == null) return;
+
+        addCategoryChip(context, CATEGORY_ALL, MiogramLocale.get("Всі", "Все", "All"), currentCategoryFilter == CATEGORY_ALL);
+        addCategoryChip(context, CATEGORY_MEDIA, MiogramLocale.get("Фото й відео", "Фото и видео", "Media"), currentCategoryFilter == CATEGORY_MEDIA);
+        addCategoryChip(context, CATEGORY_DOCS, MiogramLocale.get("Документи", "Документы", "Documents"), currentCategoryFilter == CATEGORY_DOCS);
+        addCategoryChip(context, CATEGORY_AUDIO, MiogramLocale.get("Музика", "Музыка", "Music"), currentCategoryFilter == CATEGORY_AUDIO);
+        addCategoryChip(context, CATEGORY_ARCHIVES, MiogramLocale.get("Архіви", "Архивы", "Archives"), currentCategoryFilter == CATEGORY_ARCHIVES);
+    }
+
+    private void addCategoryChip(Context context, int category, String title, boolean active) {
+        TextView chip = new TextView(context);
+        chip.setText(title);
+        chip.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
+        chip.setTypeface(YumiMd3.typeface(active ? YumiMd3.BOLD : YumiMd3.MEDIUM));
+        chip.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(6), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
+
+        if (active) {
+            chip.setBackground(YumiMd3.rounded(YumiMd3.primary(), YumiMd3.RADIUS_FULL_DP));
+            chip.setTextColor(YumiMd3.onPrimary());
+        } else {
+            chip.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainer(), YumiMd3.RADIUS_FULL_DP));
+            chip.setTextColor(YumiMd3.onSurfaceVariant());
+        }
+
+        chip.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            currentCategoryFilter = category;
+            refreshCategoryChips();
+            filterAndReloadFiles();
+        });
+
+        categoryChipsContainer.addView(chip, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 6, 0));
+    }
+
     // --- Floating Action Button (Upload) ---
 
     private void buildFab(Context context) {
         fabButton = new FrameLayout(context);
-        int fabSize = AndroidUtilities.dp(56);
-
-        GradientDrawable fabBg = new GradientDrawable();
-        fabBg.setShape(GradientDrawable.OVAL);
-        fabBg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        fabButton.setBackground(fabBg);
-        fabButton.setElevation(AndroidUtilities.dp(6));
+        fabButton.setBackground(YumiMd3.gradient(YumiMd3.actionGradientStart(), YumiMd3.actionGradientEnd(), YumiMd3.RADIUS_M_DP));
+        fabButton.setElevation(AndroidUtilities.dp(4));
 
         ImageView addIcon = new ImageView(context);
         addIcon.setImageResource(R.drawable.baseline_add_24);
-        addIcon.setColorFilter(Color.WHITE);
-        fabButton.addView(addIcon, LayoutHelper.createFrame(28, 28, Gravity.CENTER));
+        addIcon.setColorFilter(YumiMd3.onActionGradient());
+        fabButton.addView(addIcon, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
 
-        fabButton.setOnClickListener(v -> openFilePicker());
+        fabButton.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            openFilePicker();
+        });
 
         FrameLayout.LayoutParams lp = LayoutHelper.createFrame(56, 56, Gravity.BOTTOM | Gravity.END, 0, 0, 20, 20);
         rootLayout.addView(fabButton, lp);
-    }
-
-    // --- Topics / Folder Pills Management ---
-
-    private void refreshTopicPills() {
-        if (topicsContainer == null) return;
-        topicsContainer.removeAllViews();
-        Context context = getContext();
-        if (context == null) return;
-
-        // 1. Media Type Filter Pills
-        addCategoryPill(context, CATEGORY_ALL, MiogramLocale.get("Всі", "Все", "All"), currentCategoryFilter == CATEGORY_ALL);
-        addCategoryPill(context, CATEGORY_MEDIA, MiogramLocale.get("Галерея", "Галерея", "Gallery"), currentCategoryFilter == CATEGORY_MEDIA);
-        addCategoryPill(context, CATEGORY_DOCS, MiogramLocale.get("Документи", "Документы", "Docs"), currentCategoryFilter == CATEGORY_DOCS);
-        addCategoryPill(context, CATEGORY_AUDIO, MiogramLocale.get("Музика", "Музыка", "Music"), currentCategoryFilter == CATEGORY_AUDIO);
-        addCategoryPill(context, CATEGORY_ARCHIVES, MiogramLocale.get("Архіви", "Архивы", "Archives"), currentCategoryFilter == CATEGORY_ARCHIVES);
-
-        // Separator between categories and folder topics
-        if (!cachedTopics.isEmpty()) {
-            View sep = new View(context);
-            sep.setBackgroundColor(0x33888888);
-            topicsContainer.addView(sep, LayoutHelper.createLinear(1, 20, Gravity.CENTER_VERTICAL, 4, 0, 8, 0));
-        }
-
-        // 2. Topics from supergroup
-        for (TLRPC.TL_forumTopic t : cachedTopics) {
-            boolean active = (currentSelectedTopicId == t.id);
-            addTopicPill(context, t.id, t.title != null ? t.title : "Папка #" + t.id, active);
-        }
-
-        // "+ Папка" pill
-        TextView addPill = new TextView(context);
-        addPill.setText("+ " + MiogramLocale.get("Папка", "Папка", "Folder"));
-        addPill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        addPill.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        addPill.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        addPill.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(6), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
-
-        GradientDrawable addBg = new GradientDrawable();
-        addBg.setColor(Color.TRANSPARENT);
-        addBg.setStroke(AndroidUtilities.dp(1), Theme.getColor(Theme.key_featuredStickers_addButton));
-        addBg.setCornerRadius(AndroidUtilities.dp(16));
-        addPill.setBackground(addBg);
-
-        addPill.setOnClickListener(v -> promptCreateFolder());
-        topicsContainer.addView(addPill, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 6, 0));
-    }
-
-    private void addCategoryPill(Context context, int category, String title, boolean active) {
-        TextView pill = new TextView(context);
-        pill.setText(title);
-        pill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        pill.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        pill.setPadding(AndroidUtilities.dp(13), AndroidUtilities.dp(6), AndroidUtilities.dp(13), AndroidUtilities.dp(6));
-
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(AndroidUtilities.dp(16));
-        if (active) {
-            bg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-            pill.setTextColor(Color.WHITE);
-        } else {
-            bg.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            pill.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        }
-        pill.setBackground(bg);
-
-        pill.setOnClickListener(v -> {
-            currentCategoryFilter = category;
-            if (category == CATEGORY_MEDIA && currentViewMode != VIEW_TYPE_GRID) {
-                toggleViewMode();
-            }
-            refreshTopicPills();
-            filterAndReloadFiles();
-        });
-
-        topicsContainer.addView(pill, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 6, 0));
-    }
-
-    private void addTopicPill(Context context, long topicId, String title, boolean active) {
-        TextView pill = new TextView(context);
-        pill.setText(title);
-        pill.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-        pill.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-        pill.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(6), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
-
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(AndroidUtilities.dp(16));
-        if (active) {
-            bg.setColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-            pill.setTextColor(Color.WHITE);
-        } else {
-            bg.setColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-            pill.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        }
-        pill.setBackground(bg);
-
-        pill.setOnClickListener(v -> {
-            currentSelectedTopicId = topicId;
-            currentSelectedTopicName = topicId == 0 ? "" : title;
-            refreshTopicPills();
-            filterAndReloadFiles();
-        });
-
-        topicsContainer.addView(pill, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 6, 0));
     }
 
     private void promptCreateFolder() {
@@ -662,7 +741,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
         if (MiogramCloudVaultEngine.isSavedMessagesVault(currentAccount, vaultChatId)) {
             cachedTopics.clear();
-            refreshTopicPills();
+            updateFolderChipText();
             return;
         }
 
@@ -677,7 +756,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 }
             }
         }
-        refreshTopicPills();
+        updateFolderChipText();
     }
 
     // --- Files Filtering & Display ---
@@ -717,21 +796,9 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             }
         }
 
-        updateStatsBanner();
         updateSubtitle();
-    }
-
-    private void updateStatsBanner() {
-        if (storageSubtitleText == null || storageProgressBar == null) return;
-        long totalSize = MiogramCloudVaultEngine.getTotalVaultSize();
-        int totalFiles = MiogramCloudVaultEngine.getTotalVaultFilesCount();
-
-        storageSubtitleText.setText(totalFiles + " " + MiogramLocale.get("файлів", "файлов", "files")
-                + " • " + AndroidUtilities.formatFileSize(totalSize) + " " + MiogramLocale.get("у хмарі", "в облаке", "in cloud"));
-
-        // Approximate percentage relative to 100GB visual bar
-        float percent = Math.min(100f, (float) totalSize / (100L * 1024 * 1024 * 1024) * 100f);
-        storageProgressBar.setProgress(Math.max(5, (int) percent));
+        updateFolderChipText();
+        updateSecBadgeChip();
     }
 
     private void syncFromCloud() {
@@ -840,14 +907,34 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                     actualSize = finalFileSize;
                 }
 
+                boolean encrypt = MiogramCloudVaultEngine.isEncryptionEnabled(currentAccount);
+                boolean needsChunking = encrypt || actualSize > 2000L * 1024L * 1024L;
+
+                ArrayList<File> uploadChunks;
+                if (needsChunking) {
+                    AndroidUtilities.runOnUIThread(() -> progressDialog.setMessage(
+                            encrypt ? MiogramLocale.get("Шифрування AES-256-GCM...", "Шифрование AES-256-GCM...", "Encrypting AES-256-GCM...")
+                                    : MiogramLocale.get("Нарізка великого файлу...", "Нарезка большого файла...", "Chunking large file...")
+                    ));
+                    try (InputStream inStream = new FileInputStream(targetFile)) {
+                        uploadChunks = MiogramCloudVaultEngine.splitStream(
+                                context, inStream, finalFileName, actualSize, fileId, encrypt,
+                                (progress, status) -> AndroidUtilities.runOnUIThread(() -> progressDialog.setMessage(status))
+                        );
+                    }
+                } else {
+                    uploadChunks = new ArrayList<>();
+                    uploadChunks.add(targetFile);
+                }
+
                 MiogramCloudVaultFile vaultFile = new MiogramCloudVaultFile();
                 vaultFile.fileId = fileId;
                 vaultFile.name = finalFileName;
                 vaultFile.totalSize = actualSize;
                 vaultFile.mimeType = finalMimeType;
-                vaultFile.chunksCount = 1;
-                vaultFile.chunkSize = actualSize;
-                vaultFile.encrypted = false;
+                vaultFile.chunksCount = uploadChunks.size();
+                vaultFile.chunkSize = needsChunking ? MiogramCloudVaultEngine.DEFAULT_CHUNK_SIZE : actualSize;
+                vaultFile.encrypted = encrypt;
                 vaultFile.topicId = currentSelectedTopicId;
                 vaultFile.topicName = currentSelectedTopicName;
                 vaultFile.date = System.currentTimeMillis() / 1000L;
@@ -879,19 +966,27 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                         }
                     }
 
-                    String caption = MiogramCloudVaultEngine.createManifestCaption(vaultFile);
+                    for (int i = 0; i < uploadChunks.size(); i++) {
+                        File chunk = uploadChunks.get(i);
+                        String caption;
+                        if (i == 0) {
+                            caption = MiogramCloudVaultEngine.createManifestCaption(vaultFile);
+                        } else {
+                            caption = MiogramCloudVaultEngine.createPartCaption(vaultFile.fileId, i, uploadChunks.size());
+                        }
 
-                    SendMessagesHelper.prepareSendingDocument(
-                            getAccountInstance(),
-                            targetFile.getAbsolutePath(),
-                            targetFile.getAbsolutePath(),
-                            null,
-                            caption,
-                            finalMimeType,
-                            targetDialogId,
-                            replyToTopMsg, replyToTopMsg, null, null, null,
-                            true, 0, null, null, false
-                    );
+                        SendMessagesHelper.prepareSendingDocument(
+                                getAccountInstance(),
+                                chunk.getAbsolutePath(),
+                                chunk.getAbsolutePath(),
+                                null,
+                                caption,
+                                encrypt ? "application/octet-stream" : finalMimeType,
+                                targetDialogId,
+                                replyToTopMsg, replyToTopMsg, null, null, null,
+                                true, 0, null, null, false
+                        );
+                    }
 
                     MiogramCloudVaultEngine.registerFile(vaultFile);
                     MiogramCloudVaultEngine.saveCache(currentAccount);
@@ -1062,12 +1157,16 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 });
                 File attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
                 if (attachFile == null || !attachFile.exists()) {
-                    FileLoader.getInstance(currentAccount).loadFile(doc, null, 0, 0);
-                    // Bounded wait: 60s per chunk, щоб не паркувати пул надовго.
+                    FileLoader.getInstance(currentAccount).loadFile(doc, null, FileLoader.PRIORITY_HIGH, 0);
                     int waitedMs = 0;
-                    while ((attachFile == null || !attachFile.exists()) && waitedMs < 60000) {
-                        Thread.sleep(500);
-                        waitedMs += 500;
+                    int maxWaitMs = 300000;
+                    while ((attachFile == null || !attachFile.exists()) && waitedMs < maxWaitMs) {
+                        try {
+                            Thread.sleep(250);
+                        } catch (InterruptedException e) {
+                            break;
+                        }
+                        waitedMs += 250;
                         attachFile = FileLoader.getInstance(currentAccount).getPathToAttach(doc, true);
                     }
                 }
@@ -1076,7 +1175,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 } else {
                     throw new IllegalStateException(MiogramLocale.get("Файл", "Файл", "File")
                             + (total > 1 ? (" (" + (idx + 1) + "/" + total + ")") : "")
-                            + MiogramLocale.get(" не завантажився за 60с", " не загрузился за 60с", " failed to download in 60s"));
+                            + MiogramLocale.get(" не завантажився вчасно", " не загрузился вовремя", " download timed out"));
                 }
             }
 
@@ -1097,7 +1196,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 });
 
                 assembled = MiogramCloudVaultEngine.decryptAndReassembleFile(
-                        context, file, downloadedChunks,
+                        context, file, downloadedChunks, null,
                         (progress, status) -> AndroidUtilities.runOnUIThread(() -> {
                             try {
                                 int pct = Math.max(0, Math.min(100, (int) (progress * 100)));
@@ -1115,7 +1214,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 assembled = downloadedChunks.get(0);
             } else {
                 assembled = MiogramCloudVaultEngine.reassemblePlainFile(
-                        context, file, downloadedChunks,
+                        context, file, downloadedChunks, null,
                         (progress, status) -> AndroidUtilities.runOnUIThread(() -> {
                             try {
                                 int pct = Math.max(0, Math.min(100, (int) (progress * 100)));
@@ -1500,6 +1599,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
         CharSequence[] items = new CharSequence[]{
                 MiogramLocale.get("Переглянути / Відкрити", "Просмотреть / Открыть", "Preview / Open"),
+                MiogramLocale.get("Зберегти в Завантаження", "Сохранить в Загрузки", "Save to Downloads"),
                 MiogramLocale.get("Показати в чаті сховища", "Показать в чате хранилища", "Show in vault chat"),
                 MiogramLocale.get("Поділитися в чат Telegram", "Поделиться в чат Telegram", "Share to Telegram Chat"),
                 MiogramLocale.get("Поділитися через інші додатки", "Поделиться через другие приложения", "Share via Other Apps"),
@@ -1512,20 +1612,22 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             if (which == 0) {
                 downloadOrOpenFile(file);
             } else if (which == 1) {
-                openFileInVaultChat(file);
+                exportFileToDownloads(file);
             } else if (which == 2) {
-                shareToTelegramChat(file);
+                openFileInVaultChat(file);
             } else if (which == 3) {
-                shareFileExternal(file);
+                shareToTelegramChat(file);
             } else if (which == 4) {
-                showMoveFileToTopicDialog(file);
+                shareFileExternal(file);
             } else if (which == 5) {
+                showMoveFileToTopicDialog(file);
+            } else if (which == 6) {
                 ClipboardManager cm = (ClipboardManager) ApplicationLoader.applicationContext.getSystemService(Context.CLIPBOARD_SERVICE);
                 if (cm != null) {
                     cm.setPrimaryClip(ClipData.newPlainText("Filename", file.name));
                     Toast.makeText(getParentActivity(), MiogramLocale.get("Назву скопійовано", "Название скопировано", "Name copied"), Toast.LENGTH_SHORT).show();
                 }
-            } else if (which == 6) {
+            } else if (which == 7) {
                 long vaultChatId = MiogramCloudVaultEngine.getVaultChatId(currentAccount);
                 MiogramCloudVaultEngine.deleteVaultFile(currentAccount, vaultChatId, file, true);
                 filterAndReloadFiles();
@@ -1533,6 +1635,43 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             }
         });
         showDialog(builder.create());
+    }
+
+    private void exportFileToDownloads(MiogramCloudVaultFile file) {
+        ensureFileDownloaded(file, () -> {
+            Context context = getParentActivity() != null ? getParentActivity() : getContext();
+            if (context == null || TextUtils.isEmpty(file.localPath)) return;
+            try {
+                File src = new File(file.localPath);
+                if (!src.exists()) return;
+                File downloadsDir = new File(android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS), "Miogram Vault");
+                if (!downloadsDir.exists()) downloadsDir.mkdirs();
+                String safeFileName = !TextUtils.isEmpty(file.name) ? file.name : src.getName();
+                File destFile = new File(downloadsDir, safeFileName);
+                int counter = 1;
+                while (destFile.exists()) {
+                    int dot = safeFileName.lastIndexOf('.');
+                    if (dot > 0) {
+                        destFile = new File(downloadsDir, safeFileName.substring(0, dot) + " (" + counter + ")" + safeFileName.substring(dot));
+                    } else {
+                        destFile = new File(downloadsDir, safeFileName + " (" + counter + ")");
+                    }
+                    counter++;
+                }
+                try (java.io.FileInputStream in = new java.io.FileInputStream(src);
+                     java.io.FileOutputStream out = new java.io.FileOutputStream(destFile)) {
+                    byte[] buf = new byte[256 * 1024];
+                    int r;
+                    while ((r = in.read(buf)) > 0) out.write(buf, 0, r);
+                    out.flush();
+                }
+                android.media.MediaScannerConnection.scanFile(context, new String[]{destFile.getAbsolutePath()}, null, null);
+                Toast.makeText(context, MiogramLocale.get("Файл збережено в Завантаження!", "Файл сохранён в Загрузки!", "File saved to Downloads!"), Toast.LENGTH_SHORT).show();
+            } catch (Throwable e) {
+                FileLog.e(e);
+                Toast.makeText(context, MiogramLocale.get("Помилка експорту", "Ошибка экспорта", "Export error") + ": " + e.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     /** Jumps straight to the file's chunk messages inside the vault supergroup. */
@@ -1614,6 +1753,15 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         }
     }
 
+    private static int getFileCategoryColor(MiogramCloudVaultFile file) {
+        if (file == null) return YumiMd3.primary();
+        if (file.isMedia()) return YumiMd3.violet();
+        if (file.isDocument()) return YumiMd3.blue();
+        if (file.isAudio()) return YumiMd3.orange();
+        if (file.isArchive()) return YumiMd3.amber();
+        return YumiMd3.cyan();
+    }
+
     // --- Modern Vault Gallery Grid Cell (1:1 Square) ---
 
     private class VaultGridCell extends FrameLayout {
@@ -1622,9 +1770,9 @@ public class MiogramCloudVaultActivity extends BaseFragment {
         private final FrameLayout iconBox;
         private final ImageView iconView;
         private final TextView extBadge;
+        private final FrameLayout textContainer;
         private final TextView nameView;
         private final TextView sizeView;
-        private final View gradientScrim;
         private final LinearLayout videoBadge;
         private final ImageView statusIcon;
         private final ProgressBar progressBar;
@@ -1636,11 +1784,11 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             setOutlineProvider(new ViewOutlineProvider() {
                 @Override
                 public void getOutline(View view, Outline outline) {
-                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), AndroidUtilities.dp(12));
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), AndroidUtilities.dp(14));
                 }
             });
             setClipToOutline(true);
-            setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+            setBackground(YumiMd3.rounded(YumiMd3.surfaceContainer(), 14));
 
             // 1. Thumbnail Image (Covering whole card)
             imageView = new BackupImageView(context);
@@ -1649,104 +1797,82 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
             // 2. Centered Icon Box (For non-images or files without thumbs)
             iconBox = new FrameLayout(context);
-            GradientDrawable circleBg = new GradientDrawable();
-            circleBg.setShape(GradientDrawable.OVAL);
-            circleBg.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
-            iconBox.setBackground(circleBg);
-
             iconView = new ImageView(context);
-            iconView.setColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton));
-            iconBox.addView(iconView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
-            addView(iconBox, LayoutHelper.createFrame(44, 44, Gravity.CENTER));
+            iconBox.addView(iconView, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
+            addView(iconBox, LayoutHelper.createFrame(48, 48, Gravity.CENTER, 0, 0, 0, 16));
 
             // 3. File extension badge (top-left for non-media)
             extBadge = new TextView(context);
             extBadge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
-            extBadge.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            extBadge.setTextColor(Color.WHITE);
+            extBadge.setTypeface(YumiMd3.typeface(YumiMd3.BOLD));
+            extBadge.setTextColor(YumiMd3.onSurfaceVariant());
             extBadge.setGravity(Gravity.CENTER);
-            GradientDrawable extBg = new GradientDrawable();
-            extBg.setColor(0xBB000000);
-            extBg.setCornerRadius(AndroidUtilities.dp(4));
-            extBadge.setBackground(extBg);
-            extBadge.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(2), AndroidUtilities.dp(5), AndroidUtilities.dp(2));
+            extBadge.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHighest(), 6));
+            extBadge.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(2), AndroidUtilities.dp(6), AndroidUtilities.dp(2));
             addView(extBadge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.START, 8, 8, 0, 0));
 
             // 4. Video badge (top-left for videos)
             videoBadge = new LinearLayout(context);
             videoBadge.setOrientation(LinearLayout.HORIZONTAL);
             videoBadge.setGravity(Gravity.CENTER_VERTICAL);
-            GradientDrawable vidBg = new GradientDrawable();
-            vidBg.setColor(0x99000000);
-            vidBg.setCornerRadius(AndroidUtilities.dp(4));
-            videoBadge.setBackground(vidBg);
-            videoBadge.setPadding(AndroidUtilities.dp(5), AndroidUtilities.dp(2), AndroidUtilities.dp(6), AndroidUtilities.dp(2));
+            videoBadge.setBackground(YumiMd3.rounded(0x88000000, 6));
+            videoBadge.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(2), AndroidUtilities.dp(6), AndroidUtilities.dp(2));
 
             ImageView playIco = new ImageView(context);
             playIco.setImageResource(R.drawable.msg_video);
             playIco.setColorFilter(Color.WHITE);
-            videoBadge.addView(playIco, LayoutHelper.createLinear(12, 12, Gravity.CENTER_VERTICAL, 0, 0, 3, 0));
+            videoBadge.addView(playIco, LayoutHelper.createLinear(12, 12, Gravity.CENTER_VERTICAL, 0, 0, 4, 0));
 
             TextView vidLabel = new TextView(context);
             vidLabel.setText("VIDEO");
-            vidLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9);
+            vidLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 9.5f);
             vidLabel.setTextColor(Color.WHITE);
-            vidLabel.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            vidLabel.setTypeface(YumiMd3.typeface(YumiMd3.BOLD));
             videoBadge.addView(vidLabel, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
             addView(videoBadge, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.START, 8, 8, 0, 0));
 
-            // 5. Dark gradient scrim at bottom
-            gradientScrim = new View(context);
-            GradientDrawable scrimDrawable = new GradientDrawable(
-                    GradientDrawable.Orientation.BOTTOM_TOP,
-                    new int[]{0xDD000000, 0x66000000, 0x00000000}
-            );
-            gradientScrim.setBackground(scrimDrawable);
-            addView(gradientScrim, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 58, Gravity.BOTTOM));
-
-            // 6. Text container at bottom
+            // 5. Text container at bottom for non-media files
+            textContainer = new FrameLayout(context);
             LinearLayout textLayout = new LinearLayout(context);
             textLayout.setOrientation(LinearLayout.VERTICAL);
-            textLayout.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(6));
+            textLayout.setPadding(AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8), AndroidUtilities.dp(8));
 
             nameView = new TextView(context);
             nameView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
-            nameView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            nameView.setTextColor(Color.WHITE);
+            nameView.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+            nameView.setTextColor(YumiMd3.onSurface());
             nameView.setSingleLine(true);
             nameView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
             textLayout.addView(nameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 1));
 
             sizeView = new TextView(context);
-            sizeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
-            sizeView.setTextColor(0xCCFFFFFF);
+            sizeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f);
+            sizeView.setTextColor(YumiMd3.onSurfaceVariant());
             sizeView.setSingleLine(true);
             textLayout.addView(sizeView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+            textContainer.addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+            addView(textContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            // 7. Top-right status icon
-            FrameLayout statusContainer = new FrameLayout(context);
-            GradientDrawable statusBg = new GradientDrawable();
-            statusBg.setShape(GradientDrawable.OVAL);
-            statusBg.setColor(0x88000000);
-            statusContainer.setBackground(statusBg);
-
+            // 6. Top-right status icon
             statusIcon = new ImageView(context);
-            statusIcon.setColorFilter(Color.WHITE);
-            statusContainer.addView(statusIcon, LayoutHelper.createFrame(14, 14, Gravity.CENTER));
-            addView(statusContainer, LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.END, 0, 8, 8, 0));
+            statusIcon.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
+            addView(statusIcon, LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.END, 0, 8, 8, 0));
 
             progressBar = new ProgressBar(context);
             progressBar.setVisibility(View.GONE);
-            addView(progressBar, LayoutHelper.createFrame(24, 24, Gravity.TOP | Gravity.END, 0, 8, 8, 0));
+            addView(progressBar, LayoutHelper.createFrame(22, 22, Gravity.TOP | Gravity.END, 0, 8, 8, 0));
 
             setOnClickListener(v -> {
-                if (currentFile != null) downloadOrOpenFile(currentFile);
+                if (currentFile != null) {
+                    MiogramHaptic.tap(v);
+                    downloadOrOpenFile(currentFile);
+                }
             });
 
             setOnLongClickListener(v -> {
                 if (currentFile != null) {
+                    MiogramHaptic.tap(v);
                     showFileOptions(currentFile);
                     return true;
                 }
@@ -1763,7 +1889,6 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             this.currentFile = file;
             nameView.setText(file.name);
             sizeView.setText(file.getFormattedSize());
-            // Блок 13: статус розшифровки прямо в сітці.
             try {
                 String st = previewStatusFor(file);
                 if (file.isDownloading && st != null && !st.isEmpty()) {
@@ -1774,6 +1899,7 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
             boolean hasLocal = !TextUtils.isEmpty(file.localPath) && new File(file.localPath).exists();
             boolean isMedia = file.isMedia();
+            int catColor = getFileCategoryColor(file);
 
             videoBadge.setVisibility(file.isVideo() ? View.VISIBLE : View.GONE);
             extBadge.setVisibility((!isMedia && !TextUtils.isEmpty(file.getFileExtension())) ? View.VISIBLE : View.GONE);
@@ -1799,16 +1925,16 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             if (hasThumb) {
                 imageView.setVisibility(View.VISIBLE);
                 iconBox.setVisibility(View.GONE);
-                gradientScrim.setVisibility(View.VISIBLE);
-                nameView.setTextColor(Color.WHITE);
-                sizeView.setTextColor(0xCCFFFFFF);
+                textContainer.setVisibility(View.GONE); // Pure clean photo preview!
+                statusIcon.setBackground(YumiMd3.rounded(0x66000000, 12));
             } else {
                 imageView.setVisibility(View.GONE);
                 iconBox.setVisibility(View.VISIBLE);
+                iconBox.setBackground(YumiMd3.rounded(YumiMd3.iconTone(catColor, 0.16f), 14));
                 iconView.setImageResource(file.getIconRes());
-                gradientScrim.setVisibility(View.GONE);
-                nameView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                sizeView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+                iconView.setColorFilter(catColor);
+                textContainer.setVisibility(View.VISIBLE);
+                statusIcon.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHighest(), 12));
             }
 
             if (file.isDownloading) {
@@ -1819,8 +1945,10 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 statusIcon.setVisibility(View.VISIBLE);
                 if (hasLocal) {
                     statusIcon.setImageResource(R.drawable.baseline_check_24);
+                    statusIcon.setColorFilter(hasThumb ? Color.WHITE : YumiMd3.green());
                 } else {
                     statusIcon.setImageResource(R.drawable.baseline_cloud_download_24);
+                    statusIcon.setColorFilter(hasThumb ? Color.WHITE : YumiMd3.primary());
                 }
             }
         }
@@ -1830,63 +1958,75 @@ public class MiogramCloudVaultActivity extends BaseFragment {
 
     private class VaultFileCell extends FrameLayout {
 
+        private final FrameLayout iconBox;
         private final ImageView iconView;
+        private final BackupImageView thumbView;
         private final TextView nameView;
         private final TextView infoView;
         private final ImageView actionButton;
         private final ProgressBar progressBar;
+        private final View divider;
         private MiogramCloudVaultFile currentFile;
 
         public VaultFileCell(Context context) {
             super(context);
-            setBackground(Theme.getSelectorDrawable(false));
-            setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(72)));
+            setLayoutParams(new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, AndroidUtilities.dp(68)));
+            setBackground(YumiMd3.transparentRipple(0, YumiMd3.defaultRippleColor()));
 
-            // Left icon container
-            FrameLayout iconBox = new FrameLayout(context);
-            GradientDrawable boxBg = new GradientDrawable();
-            boxBg.setColor(Theme.getColor(Theme.key_windowBackgroundGray));
-            boxBg.setCornerRadius(AndroidUtilities.dp(12));
-            iconBox.setBackground(boxBg);
+            // Left icon / thumb container
+            iconBox = new FrameLayout(context);
+            iconBox.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), AndroidUtilities.dp(12));
+                }
+            });
+            iconBox.setClipToOutline(true);
 
             iconView = new ImageView(context);
-            iconView.setColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton));
-            iconBox.addView(iconView, LayoutHelper.createFrame(26, 26, Gravity.CENTER));
+            iconBox.addView(iconView, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
 
-            addView(iconBox, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | Gravity.START, 14, 0, 0, 0));
+            thumbView = new BackupImageView(context);
+            thumbView.setAspectFit(false);
+            iconBox.addView(thumbView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            // Texts
+            addView(iconBox, LayoutHelper.createFrame(44, 44, Gravity.CENTER_VERTICAL | Gravity.START, 16, 0, 0, 0));
+
+            // Texts Layout
             LinearLayout textLayout = new LinearLayout(context);
             textLayout.setOrientation(LinearLayout.VERTICAL);
 
             nameView = new TextView(context);
             nameView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
-            nameView.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
-            nameView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            nameView.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+            nameView.setTextColor(YumiMd3.onSurface());
             nameView.setSingleLine(true);
             nameView.setEllipsize(TextUtils.TruncateAt.MIDDLE);
-            textLayout.addView(nameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 3));
+            textLayout.addView(nameView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 2));
 
             infoView = new TextView(context);
-            infoView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
-            infoView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+            infoView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12.5f);
+            infoView.setTextColor(YumiMd3.onSurfaceVariant());
             infoView.setSingleLine(true);
             infoView.setEllipsize(TextUtils.TruncateAt.END);
             textLayout.addView(infoView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
-            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 74, 0, 56, 0));
+            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 72, 0, 52, 0));
 
-            // Right action / download button
+            // Right action / download button (48dp touch target)
             actionButton = new ImageView(context);
             actionButton.setScaleType(ImageView.ScaleType.CENTER);
-            actionButton.setColorFilter(Theme.getColor(Theme.key_featuredStickers_addButton));
-            actionButton.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector), Theme.RIPPLE_MASK_CIRCLE_20DP));
-            actionButton.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4), AndroidUtilities.dp(4));
-            addView(actionButton, LayoutHelper.createFrame(40, 40, Gravity.CENTER_VERTICAL | Gravity.END, 0, 0, 10, 0));
+            actionButton.setBackground(YumiMd3.transparentRipple(24, YumiMd3.defaultRippleColor()));
+            addView(actionButton, LayoutHelper.createFrame(48, 48, Gravity.CENTER_VERTICAL | Gravity.END, 0, 0, 4, 0));
 
             progressBar = new ProgressBar(context);
             progressBar.setVisibility(View.GONE);
-            addView(progressBar, LayoutHelper.createFrame(32, 32, Gravity.CENTER_VERTICAL | Gravity.END, 0, 0, 14, 0));
+            addView(progressBar, LayoutHelper.createFrame(26, 26, Gravity.CENTER_VERTICAL | Gravity.END, 0, 0, 15, 0));
+
+            // Inset Divider
+            divider = new View(context);
+            divider.setBackgroundColor(YumiMd3.hairline());
+            addView(divider, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1, Gravity.BOTTOM | Gravity.START, 72, 0, 0, 0));
 
             setOnClickListener(v -> {
                 if (currentFile != null) {
@@ -1917,10 +2057,41 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             nameView.setText(file.name);
             setContentDescription(file.name);
 
-            String chunksInfo = file.chunksCount > 1 ? (" • " + file.chunksCount + " " + MiogramLocale.get("частин", "частей", "parts")) : "";
-            String topicInfo = !TextUtils.isEmpty(file.topicName) ? (" • " + file.topicName) : "";
+            int catColor = getFileCategoryColor(file);
+            boolean hasLocal = !TextUtils.isEmpty(file.localPath) && new File(file.localPath).exists();
+            boolean isMedia = file.isMedia();
+
+            boolean hasThumb = false;
+            if (isMedia) {
+                if (hasLocal) {
+                    thumbView.setImage(ImageLocation.getForPath(file.localPath), "120_120", null, null, null);
+                    hasThumb = true;
+                } else if (!file.chunkDocuments.isEmpty()) {
+                    TLRPC.Document doc = file.chunkDocuments.get(0);
+                    if (doc.thumbs != null && !doc.thumbs.isEmpty()) {
+                        TLRPC.PhotoSize thumb = FileLoader.getClosestPhotoSizeWithSize(doc.thumbs, 120);
+                        thumbView.setImage(ImageLocation.getForDocument(thumb, doc), "120_120", null, null, null);
+                        hasThumb = true;
+                    }
+                }
+            }
+
+            if (hasThumb) {
+                thumbView.setVisibility(View.VISIBLE);
+                iconView.setVisibility(View.GONE);
+                iconBox.setBackground(null);
+            } else {
+                thumbView.setVisibility(View.GONE);
+                iconView.setVisibility(View.VISIBLE);
+                iconBox.setBackground(YumiMd3.rounded(YumiMd3.iconTone(catColor, 0.16f), 12));
+                iconView.setImageResource(file.getIconRes());
+                iconView.setColorFilter(catColor);
+            }
+
+            String chunksInfo = file.chunksCount > 1 ? (" • " + file.chunksCount + " " + MiogramLocale.get("част.", "част.", "parts")) : "";
+            String topicInfo = (!TextUtils.isEmpty(file.topicName) && currentSelectedTopicId == 0) ? (" • 📁 " + file.topicName) : "";
             String cloudState;
-            if (!TextUtils.isEmpty(file.localPath) && new File(file.localPath).exists()) {
+            if (hasLocal) {
                 cloudState = " • " + MiogramLocale.get("на пристрої", "на устройстве", "on device");
             } else if (!file.chunkDocuments.isEmpty() || (!file.chunkMsgIds.isEmpty() && file.chunksCount > 0)) {
                 cloudState = " • " + MiogramLocale.get("в хмарі", "в облаке", "in cloud");
@@ -1928,7 +2099,6 @@ public class MiogramCloudVaultActivity extends BaseFragment {
                 cloudState = " • " + MiogramLocale.get("очікує синхронізації", "ожидает синхронизации", "pending sync");
             }
             infoView.setText(file.getFormattedSize() + chunksInfo + topicInfo + cloudState + " • " + file.getFormattedDate());
-            // Блок 13: живий статус прев'ю в рядку ("Розшифровка N/M чанків… %").
             try {
                 String st = previewStatusFor(file);
                 if (file.isDownloading && st != null && !st.isEmpty()) {
@@ -1937,8 +2107,6 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             } catch (Throwable ignore) {
             }
 
-            iconView.setImageResource(file.getIconRes());
-
             if (file.isDownloading) {
                 progressBar.setVisibility(View.VISIBLE);
                 actionButton.setVisibility(View.GONE);
@@ -1946,11 +2114,13 @@ public class MiogramCloudVaultActivity extends BaseFragment {
             } else {
                 progressBar.setVisibility(View.GONE);
                 actionButton.setVisibility(View.VISIBLE);
-                if (!TextUtils.isEmpty(file.localPath) && new File(file.localPath).exists()) {
+                if (hasLocal) {
                     actionButton.setImageResource(R.drawable.baseline_check_24);
+                    actionButton.setColorFilter(YumiMd3.green());
                     actionButton.setContentDescription(MiogramLocale.get("Файл збережено, відкрити опції", "Файл сохранён, открыть опции", "File saved, open options"));
                 } else {
                     actionButton.setImageResource(R.drawable.baseline_cloud_download_24);
+                    actionButton.setColorFilter(YumiMd3.primary());
                     actionButton.setContentDescription(MiogramLocale.get("Завантажити з хмари", "Скачать из облака", "Download from cloud"));
                 }
             }

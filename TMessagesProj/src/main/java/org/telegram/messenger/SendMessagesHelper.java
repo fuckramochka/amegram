@@ -3091,6 +3091,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                     messageObject.caption = null;
                     if (type == 1) {
                         if (messageObject.editingMessageEntities != null) {
+                            app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, messageObject.getDialogId(), messageObject.editingMessageEntities);
                             newMsg.entities = messageObject.editingMessageEntities;
                             newMsg.flags |= 128;
                         } else if (!TextUtils.equals(oldMessge, newMsg.message)) {
@@ -3101,12 +3102,14 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         }
                     } else {
                         if (messageObject.editingMessageEntities != null) {
+                            app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, messageObject.getDialogId(), messageObject.editingMessageEntities);
                             newMsg.entities = messageObject.editingMessageEntities;
                             newMsg.flags |= 128;
                         } else {
                             CharSequence[] message = new CharSequence[]{messageObject.editingMessage};
                             ArrayList<TLRPC.MessageEntity> entities = getMediaDataController().getEntities(message, supportsSendingNewEntities);
                             if (entities != null && !entities.isEmpty()) {
+                                app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, messageObject.getDialogId(), entities);
                                 newMsg.entities = entities;
                                 newMsg.flags |= 128;
                             } else if (!TextUtils.equals(oldMessge, newMsg.message)) {
@@ -3371,12 +3374,14 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
                         request.flags |= 2048;
                         request.no_webpage = !messageObject.editingMessageSearchWebPage;
                         if (messageObject.editingMessageEntities != null) {
+                            app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, messageObject.getDialogId(), messageObject.editingMessageEntities);
                             request.entities = messageObject.editingMessageEntities;
                             request.flags |= 8;
                         } else {
                             CharSequence[] message = new CharSequence[]{messageObject.editingMessage};
                             ArrayList<TLRPC.MessageEntity> entities = getMediaDataController().getEntities(message, supportsSendingNewEntities);
                             if (entities != null && !entities.isEmpty()) {
+                                app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, messageObject.getDialogId(), entities);
                                 request.entities = entities;
                                 request.flags |= 8;
                             }
@@ -3457,6 +3462,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
             req.flags |= 131072;
         }
         if (entities != null) {
+            app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, messageObject.getDialogId(), entities);
             req.entities = entities;
             req.flags |= 8;
         }
@@ -5185,22 +5191,18 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
 
                 newMsg.message = pair.getFirst();
                 if (entities != null && !entities.isEmpty()) {
-                    if (!UserConfig.getInstance(currentAccount).isPremium()) {
-                        for (int a = 0; a < entities.size(); a++) {
-                            TLRPC.MessageEntity entity = entities.get(a);
-                            if (entity instanceof TLRPC.TL_messageEntityCustomEmoji) {
-                                long docId = ((TLRPC.TL_messageEntityCustomEmoji) entity).document_id;
-                                if (docId == 0) continue;
-                                TLRPC.TL_messageEntityTextUrl urlEntity = new TLRPC.TL_messageEntityTextUrl();
-                                urlEntity.offset = entity.offset;
-                                urlEntity.length = entity.length;
-                                urlEntity.url = "tg://emoji?id=" + docId;
-                                entities.set(a, urlEntity);
-                            }
-                        }
-                    }
                     newMsg.entities = entities;
                 }
+            }
+
+            if (!((params != null && params.containsKey("fwd_id")) || MessageObject.isForwardedMessage(newMsg))) {
+                app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, peer, entities);
+                if (richMessage != null) {
+                    app.exteraless.chats.LinkedCustomEmoji.replaceForSend(currentAccount, peer, richMessage);
+                }
+            }
+            if (entities != null && !entities.isEmpty()) {
+                newMsg.entities = entities;
             }
 
             if (stars > 0) {

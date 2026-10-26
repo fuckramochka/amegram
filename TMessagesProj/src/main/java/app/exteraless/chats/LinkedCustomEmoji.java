@@ -27,7 +27,7 @@ public final class LinkedCustomEmoji {
     }
 
     public static boolean canSend(int account) {
-        return NekoConfig.localPremium.Bool() && !UserConfig.getInstance(account).isPremium();
+        return !UserConfig.getInstance(account).isPremium();
     }
 
     public static boolean isLink(TLRPC.MessageEntity entity) {
@@ -134,7 +134,7 @@ public final class LinkedCustomEmoji {
     }
 
     private static boolean shouldReplace(int account, long dialogId) {
-        return canSend(account) && dialogId != UserConfig.getInstance(account).getClientUserId();
+        return canSend(account);
     }
 
     private static HashSet<Long> groupEmoji(int account, long dialogId) {

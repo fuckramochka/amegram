@@ -2175,14 +2175,27 @@ public class MessageObject {
                 if (TextUtils.isEmpty(emojiAnimatedStickerColor) || EmojiData.emojiColoredMap.contains(emoji.toString())) {
                     emojiAnimatedSticker = MediaDataController.getInstance(currentAccount).getEmojiAnimatedSticker(emoji);
                 }
-            } else if (messageOwner.entities.size() == 1 && messageOwner.entities.get(0) instanceof TLRPC.TL_messageEntityCustomEmoji) {
+            } else if (messageOwner.entities.size() == 1 && (messageOwner.entities.get(0) instanceof TLRPC.TL_messageEntityCustomEmoji || (messageOwner.entities.get(0) instanceof TLRPC.TL_messageEntityTextUrl && ((TLRPC.TL_messageEntityTextUrl) messageOwner.entities.get(0)).url != null && ((TLRPC.TL_messageEntityTextUrl) messageOwner.entities.get(0)).url.startsWith("tg://emoji")))) {
                 try {
-                    emojiAnimatedStickerId = ((TLRPC.TL_messageEntityCustomEmoji) messageOwner.entities.get(0)).document_id;
-                    emojiAnimatedSticker = AnimatedEmojiDrawable.findDocument(currentAccount, emojiAnimatedStickerId);
-                    if (emojiAnimatedSticker == null && messageText instanceof Spanned) {
-                        AnimatedEmojiSpan[] animatedEmojiSpans = ((Spanned) messageText).getSpans(0, messageText.length(), AnimatedEmojiSpan.class);
-                        if (animatedEmojiSpans != null && animatedEmojiSpans.length == 1) {
-                            emojiAnimatedSticker = animatedEmojiSpans[0].document;
+                    if (messageOwner.entities.get(0) instanceof TLRPC.TL_messageEntityCustomEmoji) {
+                        emojiAnimatedStickerId = ((TLRPC.TL_messageEntityCustomEmoji) messageOwner.entities.get(0)).document_id;
+                    } else {
+                        String u = ((TLRPC.TL_messageEntityTextUrl) messageOwner.entities.get(0)).url;
+                        int idIdx = u.indexOf("id=");
+                        if (idIdx != -1) {
+                            String idStr = u.substring(idIdx + 3);
+                            int amp = idStr.indexOf('&');
+                            if (amp != -1) idStr = idStr.substring(0, amp);
+                            emojiAnimatedStickerId = Long.parseLong(idStr.replaceAll("[^0-9]", ""));
+                        }
+                    }
+                    if (emojiAnimatedStickerId != null && emojiAnimatedStickerId != 0) {
+                        emojiAnimatedSticker = AnimatedEmojiDrawable.findDocument(currentAccount, emojiAnimatedStickerId);
+                        if (emojiAnimatedSticker == null && messageText instanceof Spanned) {
+                            AnimatedEmojiSpan[] animatedEmojiSpans = ((Spanned) messageText).getSpans(0, messageText.length(), AnimatedEmojiSpan.class);
+                            if (animatedEmojiSpans != null && animatedEmojiSpans.length == 1) {
+                                emojiAnimatedSticker = animatedEmojiSpans[0].document;
+                            }
                         }
                     }
                 } catch (Exception ignore) {
@@ -6799,9 +6812,11 @@ public class MessageObject {
     private boolean hasNonEmojiEntities() {
         if (messageOwner == null || messageOwner.entities == null)
             return false;
-        for (int i = 0; i < messageOwner.entities.size(); ++i)
-            if (!(messageOwner.entities.get(i) instanceof TLRPC.TL_messageEntityCustomEmoji))
+        for (int i = 0; i < messageOwner.entities.size(); ++i) {
+            TLRPC.MessageEntity entity = messageOwner.entities.get(i);
+            if (!(entity instanceof TLRPC.TL_messageEntityCustomEmoji || (entity instanceof TLRPC.TL_messageEntityTextUrl && ((TLRPC.TL_messageEntityTextUrl) entity).url != null && ((TLRPC.TL_messageEntityTextUrl) entity).url.startsWith("tg://emoji"))))
                 return true;
+        }
         return false;
     }
 

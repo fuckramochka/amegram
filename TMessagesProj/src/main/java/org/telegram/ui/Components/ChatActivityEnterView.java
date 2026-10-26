@@ -8877,6 +8877,9 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     public static boolean checkPremiumAnimatedEmoji(int currentAccount, long dialogId, BaseFragment parentFragment, FrameLayout container, CharSequence message) {
+        if (app.exteraless.chats.LinkedCustomEmoji.canSend(currentAccount)) {
+            return false;
+        }
         if (message == null || parentFragment == null) {
             return false;
         }

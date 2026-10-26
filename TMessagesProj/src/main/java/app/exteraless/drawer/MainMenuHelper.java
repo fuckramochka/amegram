@@ -274,7 +274,7 @@ public final class MainMenuHelper {
                         () -> fragment.presentFragment(new app.miogram.bridge.multichat.MiogramSplitChatActivity(0, 0)), null);
             case BADGE_STUDIO:
                 return new MenuItemInfo(R.drawable.msg_premium_badge, "Відзнаки Miogram",
-                        () -> app.miogram.bridge.badge.MiogramBadgeBottomSheet.show(fragment.getParentActivity(), UserConfig.getInstance(currentAccount).getClientUserId()), null);
+                        () -> app.miogram.bridge.badge.MiogramBadgeManager.showBadgeSheet(fragment.getParentActivity(), UserConfig.getInstance(currentAccount).getClientUserId()), null);
             case GHOST_MODE:
                 return new MenuItemInfo(R.drawable.ayu_ghost, ghostModeTitle(),
                         () -> toggleGhostMode(fragment, currentAccount),

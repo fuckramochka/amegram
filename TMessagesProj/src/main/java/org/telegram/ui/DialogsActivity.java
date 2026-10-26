@@ -3133,7 +3133,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     scrollToTop(true, true);
                     return;
                 }
-                app.miogram.bridge.badge.MiogramBadgeBottomSheet.show(getParentActivity(), user.id);
+                app.miogram.bridge.badge.MiogramBadgeManager.showBadgeSheet(getParentActivity(), user.id);
             });
             boolean isOnDefaultTab = filterTabsView == null || filterTabsView.getCurrentTabId() == filterTabsView.getDefaultTabId();
             if (!NaConfig.INSTANCE.getFolderNameAsTitle().Bool() || isOnDefaultTab) {

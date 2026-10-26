@@ -611,7 +611,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         } else if (id == ROW_GUIDE) {
             presentFragment(new AmegramGuideActivity());
         } else if (id == ROW_BADGES) {
-            presentFragment(new AmegramBadgesActivity());
+            app.miogram.bridge.badge.MiogramBadgeManager.openBadgesSettings(this);
         } else if (id == SEARCH_BADGE_WORKSHOP) {
             presentFragment(new AmegramBadgeWorkshopActivity());
         } else if (id == ROW_UPDATES) {

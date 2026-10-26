@@ -314,7 +314,7 @@ public class DrawerHeaderView extends FrameLayout {
         final int statusColor = Theme.getColor(COLOR_KEY_STATUS);
         if (app.miogram.bridge.badge.MiogramBadgeManager.hasArrow(user.id)) {
             nameView.setRightDrawable(app.miogram.bridge.badge.MiogramBadgeManager.getArrowDrawable(user.id, 20));
-            nameView.setRightDrawableOnClick(v -> new app.miogram.bridge.badge.MiogramBadgeBottomSheet(getContext(), user.id).show());
+            nameView.setRightDrawableOnClick(v -> app.miogram.bridge.badge.MiogramBadgeManager.showBadgeSheet(getContext(), user.id));
         } else if (emojiStatusId != 0) {
             premiumStatusDrawable.set(emojiStatusId, true);
             premiumStatusDrawable.setParticles(DialogObject.isEmojiStatusCollectible(user.emoji_status), true);

@@ -12196,7 +12196,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 if (user != null && app.miogram.bridge.badge.MiogramBadgeManager.hasArrow(user.id)) {
                     nameTextView[a].setRightDrawableOnClick(v -> {
-                        new app.miogram.bridge.badge.MiogramBadgeBottomSheet(ProfileActivity.this, user.id).show();
+                        app.miogram.bridge.badge.MiogramBadgeManager.showBadgeSheet(getParentActivity(), user.id);
                     });
                     if (user.self && getMessagesController().isPremiumUser(user)) {
                         nameTextView[a].setRightDrawable2OnClick(v -> {

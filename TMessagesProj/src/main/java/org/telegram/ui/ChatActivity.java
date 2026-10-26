@@ -43229,7 +43229,7 @@ public class ChatActivity extends BaseFragment implements
                 return;
             }
             if (user != null && app.miogram.bridge.badge.MiogramBadgeManager.hasArrow(user.id)) {
-                new app.miogram.bridge.badge.MiogramBadgeBottomSheet(ChatActivity.this, user.id).show();
+                app.miogram.bridge.badge.MiogramBadgeManager.showBadgeSheet(getParentActivity(), user.id);
                 return;
             }
             if (!TextUtils.isEmpty(giftSlug)) {

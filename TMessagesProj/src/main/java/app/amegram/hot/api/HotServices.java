@@ -58,4 +58,7 @@ public final class HotServices {
 
     /** Кастомізація профілю, бейджі та банери AmeProfile. */
     public static final String PROFILE = "profile";
+
+    /** {@link HotBadges}: системний модуль бейджів та статусів спільноти. */
+    public static final String BADGES = "badges";
 }

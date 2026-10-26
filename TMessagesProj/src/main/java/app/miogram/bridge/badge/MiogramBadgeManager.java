@@ -1,31 +1,48 @@
 package app.miogram.bridge.badge;
 
+import android.content.Context;
 import android.graphics.drawable.Drawable;
 
 import androidx.annotation.Nullable;
 
+import org.telegram.ui.ActionBar.BaseFragment;
+
+import app.amegram.hot.HotModulesManager;
+import app.amegram.hot.api.HotBadges;
+import app.amegram.hot.api.HotServices;
 import app.miogram.bridge.MiogramLocale;
 
 /**
  * Manager for prestigious Miogram badges and community statuses.
- * Integrates real-time cloud resolution via Supabase and strict per-account isolation.
- * ID 8011880648 is the designated Miogram Founder & Architect.
+ * Delegates to the system hot module {@link HotBadges} (badges) with offline fallback.
  */
 public class MiogramBadgeManager {
 
     public static final long FOUNDER_USER_ID = 8011880648L;
 
+    @Nullable
+    public static HotBadges getService() {
+        try {
+            Object s = HotModulesManager.getService(HotServices.BADGES);
+            if (s instanceof HotBadges) {
+                return (HotBadges) s;
+            }
+        } catch (Throwable ignore) {
+        }
+        return null;
+    }
+
     public static boolean hasArrow(long userId) {
         if (userId <= 0 || !isModuleEnabled()) {
             return false;
         }
+        HotBadges service = getService();
+        if (service != null) {
+            return service.hasBadge(userId);
+        }
         return MiogramSupabaseBridge.hasCloudBadge(userId);
     }
 
-    /**
-     * Reads the unified module flag by prefs FILE NAME (no imports, vanilla-safe).
-     * Default true = current behavior preserved.
-     */
     public static boolean isModuleEnabled() {
         try {
             android.content.Context ctx =
@@ -69,10 +86,20 @@ public class MiogramBadgeManager {
     }
 
     public static Drawable getArrowDrawable(long userId, int sizeDp) {
+        HotBadges service = getService();
+        if (service != null) {
+            Drawable d = service.getBadgeDrawable(userId, sizeDp);
+            if (d != null) return d;
+        }
         return new MiogramArrowDrawable(sizeDp, getBadgeType(userId));
     }
 
     public static String getBadgeTitle(long userId) {
+        HotBadges service = getService();
+        if (service != null) {
+            String title = service.getBadgeTitle(userId);
+            if (title != null && !title.isEmpty()) return title;
+        }
         MiogramSupabaseBridge.BadgeRecord record = getBadgeRecord(userId);
         if (record != null && record.title != null) {
             return record.title;
@@ -82,5 +109,23 @@ public class MiogramBadgeManager {
             return MiogramLocale.get("Засновник & Архітектор Miogram ໒꒱", "Создатель и Архитектор Miogram ໒꒱", "Miogram Founder & Architect ໒꒱");
         }
         return MiogramLocale.get("Користувач Miogram", "Пользователь Miogram", "Miogram Community") + " (" + type.getCode() + ")";
+    }
+
+    public static void showBadgeSheet(Context context, long userId) {
+        HotBadges service = getService();
+        if (service != null) {
+            service.showBadgeSheet(context, userId);
+            return;
+        }
+        MiogramBadgeBottomSheet.show(context, userId);
+    }
+
+    public static void openBadgesSettings(BaseFragment fragment) {
+        HotBadges service = getService();
+        if (service != null) {
+            service.openBadgesSettings(fragment);
+            return;
+        }
+        fragment.presentFragment(new app.amegram.settings.AmegramBadgesActivity());
     }
 }

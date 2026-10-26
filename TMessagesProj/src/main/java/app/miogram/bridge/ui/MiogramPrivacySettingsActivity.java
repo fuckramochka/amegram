@@ -28,15 +28,8 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
     private int vaultInfoRow;
 
     private int headerGhostRow;
-    private int ghostReadRow;
-    private int ghostOnlineRow;
-    private int ghostTypingRow;
+    private int ghostManageRow;
     private int ghostInfoRow;
-
-    private int headerHistoryRow;
-    private int saveDeletedMessagesRow;
-    private int saveDeletedMediaRow;
-    private int historyInfoRow;
 
     private int headerGeneralPrivacyRow;
     private int hidePhoneRow;
@@ -61,15 +54,11 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         }
     }
 
-    private void showGhostOffHint() {
-        String text = MiogramLocale.get("Увімкніть Привид в Модулях", "Включите Призрак в Модулях", "Enable Ghost in Modules");
-        try {
-            org.telegram.ui.Components.BulletinFactory.of(this).createSimpleBulletin(R.raw.info, text).show();
-        } catch (Throwable ignored) {
-            try {
-                android.widget.Toast.makeText(getParentActivity(), text, android.widget.Toast.LENGTH_SHORT).show();
-            } catch (Throwable ignored2) {
-            }
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
         }
     }
 
@@ -87,18 +76,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
             vaultInfoRow = -1;
         }
 
-        // Привид + анти-видалення — єдине джерело: секції завжди видимі.
-        // Вимкнений модуль = підказка в info-рядах + гейт у onItemClick, а не зникнення секцій.
+        // Привид + анти-видалення: єдиний вхід у хот-модуль Ghost
         headerGhostRow = addRow();
-        ghostReadRow = addRow();
-        ghostOnlineRow = addRow();
-        ghostTypingRow = addRow();
+        ghostManageRow = addRow();
         ghostInfoRow = addRow();
-
-        headerHistoryRow = addRow();
-        saveDeletedMessagesRow = addRow();
-        saveDeletedMediaRow = addRow();
-        historyInfoRow = addRow();
 
         headerGeneralPrivacyRow = addRow();
         hidePhoneRow = addRow();
@@ -115,70 +96,8 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
     public void onItemClick(View view, int position, float x, float y) {
         if (position == vaultManageRow) {
             presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
-        } else if (position == ghostReadRow) {
-            if (!isGhostOn()) {
-                showGhostOffHint();
-                return;
-            }
-            boolean v = !NekoConfig.sendReadMessagePackets.Bool();
-            NekoConfig.sendReadMessagePackets.setConfigBool(v);
-            try {
-                app.amegram.hot.HotModulesManager.putBool("ghost", "hide_read", !v);
-                app.amegram.module.AmegramConfig.setBool("ghost_hide_read", !v);
-            } catch (Throwable ignore) {
-            }
-            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
-        } else if (position == ghostOnlineRow) {
-            if (!isGhostOn()) {
-                showGhostOffHint();
-                return;
-            }
-            boolean v = !NekoConfig.sendOnlinePackets.Bool();
-            NekoConfig.sendOnlinePackets.setConfigBool(v);
-            try {
-                app.amegram.hot.HotModulesManager.putBool("ghost", "hide_online", !v);
-                app.amegram.module.AmegramConfig.setBool("ghost_hide_online", !v);
-            } catch (Throwable ignore) {
-            }
-            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
-        } else if (position == ghostTypingRow) {
-            if (!isGhostOn()) {
-                showGhostOffHint();
-                return;
-            }
-            boolean v = !NekoConfig.sendUploadProgress.Bool();
-            NekoConfig.sendUploadProgress.setConfigBool(v);
-            try {
-                app.amegram.hot.HotModulesManager.putBool("ghost", "hide_typing", !v);
-                app.amegram.module.AmegramConfig.setBool("ghost_hide_typing", !v);
-            } catch (Throwable ignore) {
-            }
-            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(!v);
-        } else if (position == saveDeletedMessagesRow) {
-            if (!isGhostOn()) {
-                showGhostOffHint();
-                return;
-            }
-            boolean v = !NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool();
-            NaConfig.INSTANCE.getEnableSaveDeletedMessages().setConfigBool(v);
-            try {
-                app.amegram.hot.HotModulesManager.putBool("ghost", "save_deleted_messages", v);
-            } catch (Throwable ignore) {
-            }
-            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
-            listAdapter.notifyItemChanged(saveDeletedMediaRow);
-        } else if (position == saveDeletedMediaRow) {
-            if (!isGhostOn()) {
-                showGhostOffHint();
-                return;
-            }
-            boolean v = !NaConfig.INSTANCE.getMessageSavingSaveMedia().Bool();
-            NaConfig.INSTANCE.getMessageSavingSaveMedia().setConfigBool(v);
-            try {
-                app.amegram.hot.HotModulesManager.putBool("ghost", "save_deleted_media", v);
-            } catch (Throwable ignore) {
-            }
-            if (view instanceof TextCheckCell) ((TextCheckCell) view).setChecked(v);
+        } else if (position == ghostManageRow) {
+            presentFragment(new app.amegram.hot.ui.HotModuleSettingsActivity("ghost"));
         } else if (position == hidePhoneRow) {
             boolean v = !NekoConfig.hidePhone.Bool();
             NekoConfig.hidePhone.setConfigBool(v);
@@ -204,16 +123,12 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
         @Override
         public int getItemViewType(int position) {
             if (position == headerVaultRow || position == headerGhostRow
-                    || position == headerHistoryRow || position == headerGeneralPrivacyRow
-                    || position == headerExtraRow) {
+                    || position == headerGeneralPrivacyRow || position == headerExtraRow) {
                 return TYPE_HEADER;
-            } else if (position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
-                    || position == saveDeletedMessagesRow || position == saveDeletedMediaRow
-                    || position == hidePhoneRow || position == allowScreenshotRow) {
+            } else if (position == hidePhoneRow || position == allowScreenshotRow) {
                 return TYPE_CHECK;
             } else if (position == vaultInfoRow || position == ghostInfoRow
-                    || position == historyInfoRow || position == generalPrivacyInfoRow
-                    || position == extraInfoRow) {
+                    || position == generalPrivacyInfoRow || position == extraInfoRow) {
                 return TYPE_INFO_PRIVACY;
             }
             return TYPE_TEXT;
@@ -228,8 +143,6 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                         cell.setText(MiogramLocale.get("Подвійне сховище (Double Bottom)", "Двойное дно (Double Bottom)", "Double Bottom (Hidden Accounts)"));
                     } else if (position == headerGhostRow) {
                         cell.setText(MiogramLocale.get("Режим невидимки (Ghost Mode)", "Режим невидимки (Ghost Mode)", "Ghost Mode"));
-                    } else if (position == headerHistoryRow) {
-                        cell.setText(MiogramLocale.get("Історія та збереження повідомлень", "История и сохранение сообщений", "Message History & Anti-Delete"));
                     } else if (position == headerGeneralPrivacyRow) {
                         cell.setText(MiogramLocale.get("Загальна конфіденційність", "Общая конфиденциальность", "General Privacy"));
                     } else if (position == headerExtraRow) {
@@ -239,20 +152,10 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_CHECK: {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
-                    if (position == ghostReadRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Не надсилати звіт про прочитання", "Не отправлять отчет о прочтении", "Don't send read receipts"), !NekoConfig.sendReadMessagePackets.Bool(), true);
-                    } else if (position == ghostOnlineRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Приховувати статус «В мережі»", "Скрывать статус «В сети»", "Hide 'Online' status"), !NekoConfig.sendOnlinePackets.Bool(), true);
-                    } else if (position == ghostTypingRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Приховувати статус «Друкує / записує»", "Скрывать статус «Печатает / записывает»", "Hide 'Typing / recording' action"), !NekoConfig.sendUploadProgress.Bool(), false);
-                    } else if (position == saveDeletedMessagesRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Зберігати видалені та відредаговані повідомлення", "Сохранять удаленные и отредактированные сообщения", "Save deleted and edited messages"), NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool(), true);
-                    } else if (position == saveDeletedMediaRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Зберігати медіафайли видалених повідомлень", "Сохранять медиафайлы удаленных сообщений", "Save media from deleted messages"), NaConfig.INSTANCE.getMessageSavingSaveMedia().Bool(), false);
-                    } else if (position == hidePhoneRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Приховати номер телефону в меню та налаштуваннях", "Скрыть номер телефона в меню и настройках", "Hide phone number in menu & settings"), NekoConfig.hidePhone.Bool(), true);
+                    if (position == hidePhoneRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Приховати номер телефону в меню та налаштуваннях", "Скрыть номер телефона в меню и настройках", "Hide phone number in menu & settings"), NekoConfig.hidePhone.Bool(), true, true);
                     } else if (position == allowScreenshotRow) {
-                        cell.setTextAndCheck(MiogramLocale.get("Дозволити знімки екрана та копіювання в обмежених чатах", "Разрешить снимки экрана и копирование в ограниченных чатах", "Allow screenshots in protected content chats"), NekoConfig.ignoreContentRestrictions.Bool(), false);
+                        cell.setTextAndCheck(MiogramLocale.get("Дозволити знімки екрана та копіювання в обмежених чатах", "Разрешить снимки экрана и копирование в ограниченных чатах", "Allow screenshots in protected content chats"), NekoConfig.ignoreContentRestrictions.Bool(), false, true);
                     }
                     break;
                 }
@@ -260,6 +163,11 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                     TextCell cell = (TextCell) holder.itemView;
                     if (position == vaultManageRow) {
                         cell.setTextAndIcon(MiogramLocale.get("Налаштування прихованих акаунтів та кодів", "Настройки скрытых аккаунтов и кодов", "Hidden accounts & Passcodes setup"), R.drawable.msg_permissions, false);
+                    } else if (position == ghostManageRow) {
+                        cell.setTextAndValueAndIcon(
+                                MiogramLocale.get("Налаштування привида та анти-видалення", "Настройки призрака и анти-удаление", "Ghost Mode & Anti-Delete Settings"),
+                                isGhostOn() ? MiogramLocale.get("Увімкнено", "Включено", "Enabled") : MiogramLocale.get("Вимкнено", "Выключено", "Disabled"),
+                                R.drawable.msg_permissions, false);
                     } else if (position == antiblockRow) {
                         cell.setTextAndIcon(MiogramLocale.get("Обхід блокувань (Антиблок)", "Обход блокировок (Антиблок)", "Anti-block bypass"), R.drawable.msg_permissions, true);
                     } else if (position == telegramPrivacyRow) {
@@ -274,25 +182,9 @@ public class MiogramPrivacySettingsActivity extends BaseNekoSettingsActivity {
                                 "Установите разные PIN-коды для каждого аккаунта. Скрытый аккаунт не отображается в интерфейсе и открывается только при вводе его секретного PIN-кода на экране блокировки. Экстренный PIN мгновенно завершает сессии защищённых аккаунтов.",
                                 "Configure separate passcodes for each account. Hidden accounts are completely invisible and unlocked strictly via their secret passcode on the lockscreen. Panic code immediately terminates sessions of protected accounts."));
                     } else if (position == ghostInfoRow) {
-                        if (!isGhostOn()) {
-                            cell.setText(MiogramLocale.get("Увімкніть модуль Привид щоб керувати",
-                                    "Включите модуль Призрак чтобы управлять",
-                                    "Enable the Ghost module to manage"));
-                        } else {
-                            cell.setText(MiogramLocale.get("Дозволяє читати повідомлення непомітно для співрозмовника.",
-                                    "Позволяет читать сообщения незаметно для собеседника.",
-                                    "Enables stealth message viewing without notifying the other party."));
-                        }
-                    } else if (position == historyInfoRow) {
-                        if (!isGhostOn()) {
-                            cell.setText(MiogramLocale.get("Увімкніть модуль Привид щоб керувати",
-                                    "Включите модуль Призрак чтобы управлять",
-                                    "Enable the Ghost module to manage"));
-                        } else {
-                            cell.setText(MiogramLocale.get("Зберігає копію оригінального тексту навіть після того, як співрозмовник його видалив або змінив.",
-                                    "Сохраняет копию оригинального текста даже после того, как собеседник его удалил или изменил.",
-                                    "Preserves original messages and media even if edited or retracted."));
-                        }
+                        cell.setText(MiogramLocale.get("Керування невидимістю читання, онлайну, статусів набору, історій та локальне збереження видалених повідомлень.",
+                                "Управление невидимостью прочтения, онлайна, статусов набора, историй и локальное сохранение удаленных сообщений.",
+                                "Stealth reading receipts, online presence, typing indicators, stories, and local retention of deleted messages."));
                     } else if (position == generalPrivacyInfoRow) {
                         cell.setText(MiogramLocale.get("Додатковий захист персональних даних та екрану.",
                                 "Дополнительная защита персональных данных и экрана.",

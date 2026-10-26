@@ -88,6 +88,7 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
 
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_windowBackgroundGray));
 
         searchView = YumiComponents.searchField(context,
                 MiogramLocale.get("Пошук модулів…", "Поиск модулей…", "Search modules…"));
@@ -177,11 +178,13 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         List<HotCatalog.Entry> visible = new ArrayList<>();
         List<HotCatalog.Entry> featured = new ArrayList<>();
         int installedCount = 0;
+        int totalModules = 0;
         for (HotCatalog.Entry e : lastCatalog.modules) {
             if ("demo".equals(e.id)) continue;
-            if (HotModulesManager.isModuleInstalled(e.id)) {
+            totalModules++;
+            boolean isInstalled = HotModulesManager.isModuleInstalledOnDisk(e.id);
+            if (isInstalled) {
                 installedCount++;
-                continue;
             }
             String cat = e.category != null && !e.category.isEmpty()
                     ? e.category : HotModuleMeta.category(e.id);
@@ -203,8 +206,8 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
                 ? MiogramLocale.get(" • кеш", " • кэш", " • cached")
                 : "asset".equals(lastSrc)
                 ? MiogramLocale.get(" • офлайн", " • офлайн", " • offline") : "";
-        items.add(UItem.asHeader(MiogramLocale.get("Доступно: ", "Доступно: ", "Available: ")
-                + visible.size()
+        items.add(UItem.asHeader(MiogramLocale.get("Каталог: ", "Каталог: ", "Catalog: ")
+                + totalModules
                 + MiogramLocale.get(" • встановлено: ", " • установлено: ", " • installed: ")
                 + installedCount + src));
 
@@ -237,9 +240,9 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
             items.add(UItem.asCustom(buildInstalledFooter(context, installedCount)));
         }
         items.add(UItem.asShadow(MiogramLocale.get(
-                "Встановлені модулі приховані — керуйте ними у списку «Хот-модулі».",
-                "Установленные модули скрыты — управляйте ими в списке «Хот-модули».",
-                "Installed modules are hidden — manage them in “Hot modules”.")));
+                "Торкніться картки для деталей версії або видалення.",
+                "Коснитесь карточки для деталей версии или удаления.",
+                "Tap card for version details or removal.")));
     }
 
     private View skeletonCard(Context context) {
@@ -309,13 +312,25 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         meta.addView(desc);
         card.addView(meta, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
 
+        boolean allPackInstalled = true;
+        for (String mId : pack.modules) {
+            if (!HotModulesManager.isModuleInstalledOnDisk(mId)) {
+                allPackInstalled = false;
+                break;
+            }
+        }
         TextView take = YumiComponents.pillButton(context,
-                MiogramLocale.get("Пак →", "Пак →", "Pack →"));
-        take.setOnClickListener(v -> {
-            take.setEnabled(false);
-            take.setAlpha(0.5f);
-            installPackSequentially(pack, 0, this::refresh);
-        });
+                allPackInstalled ? MiogramLocale.get("Встановлено ✓", "Установлено ✓", "Installed ✓")
+                        : MiogramLocale.get("Пак →", "Пак →", "Pack →"));
+        take.setEnabled(!allPackInstalled);
+        take.setAlpha(allPackInstalled ? 0.6f : 1f);
+        if (!allPackInstalled) {
+            take.setOnClickListener(v -> {
+                take.setEnabled(false);
+                take.setAlpha(0.5f);
+                installPackSequentially(pack, 0, this::refresh);
+            });
+        }
         card.addView(take);
         return cardWrap(context, card);
     }
@@ -363,13 +378,12 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         hv.setHorizontalScrollBarEnabled(false);
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
-        // Лічильники по категоріях (тільки доступні, встановлені приховані як і раніше).
+        // Лічильники по категоріях для всіх модулів каталогу.
         Map<String, Integer> counts = new HashMap<>();
         int total = 0;
         if (lastCatalog != null) {
             for (HotCatalog.Entry e : lastCatalog.modules) {
                 if ("demo".equals(e.id)) continue;
-                if (HotModulesManager.isModuleInstalled(e.id)) continue;
                 String cat = e.category != null && !e.category.isEmpty()
                         ? e.category : HotModuleMeta.category(e.id);
                 counts.put(cat, (counts.containsKey(cat) ? counts.get(cat) : 0) + 1);
@@ -626,13 +640,19 @@ public class HotStoreActivity extends BaseFragment implements HotModulesManager.
         } else {
             progressView.setVisibility(View.GONE);
         }
+        final boolean isInstalled = HotModulesManager.isModuleInstalledOnDisk(entry.id);
         TextView action = YumiComponents.pillButton(context,
                 !compat ? "minApp " + d.minApp
                         : isDownloading ? "…"
+                        : isInstalled ? MiogramLocale.get("Встановлено", "Установлено", "Installed")
                         : MiogramLocale.get("Взяти", "Взять", "Get"));
         action.setAlpha(compat && !isDownloading ? 1f : 0.5f);
         action.setEnabled(compat && !isDownloading);
         action.setOnClickListener(v -> {
+            if (isInstalled) {
+                new HotModuleDetailSheet(context, entry.id, entry, d, this::refresh).show();
+                return;
+            }
             if (d == null || !compat || downloading.contains(entry.id)) {
                 if (d != null && !compat) {
                     try {

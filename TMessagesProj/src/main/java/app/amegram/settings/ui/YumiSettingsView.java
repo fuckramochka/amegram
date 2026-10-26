@@ -1340,13 +1340,6 @@ public class YumiSettingsView extends FrameLayout {
                     setOnLongClickListener(v -> {
                         if (!row.enabled) return false;
                         if (row.moduleId != null || row.id != 0) {
-                            if (!row.checked) {
-                                Toast.makeText(context, MiogramLocale.get(
-                                        "Модуль вимкнено. Увімкніть його для переходу в налаштування.",
-                                        "Модуль выключен. Включите его для перехода в настройки.",
-                                        "Module is disabled. Enable it to configure settings."), Toast.LENGTH_SHORT).show();
-                                return true;
-                            }
                             haptic(v);
                             hideSearchFocus();
                             listener.onRow(row);

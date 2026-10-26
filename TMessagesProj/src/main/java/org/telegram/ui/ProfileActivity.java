@@ -12337,7 +12337,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 if (userInfo != null && userInfo.stars_rating != null && userInfo.stars_rating.stars < 0) {
                     onlineTextView[3].setText(newString2 = getString(R.string.StarRatingLevelNegative).toLowerCase(Locale.ROOT));
                 } else {
-                    onlineTextView[3].setText(LocaleController.getString(R.string.Online));
+                    onlineTextView[3].setText(newString2);
                 }
             } else {
                 if (user.photo != null && user.photo.personal && user.photo.has_video) {
@@ -17971,6 +17971,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private WindowInsetsCompat onApplyWindowInsets(@NonNull View v, @NonNull WindowInsetsCompat insets) {
         navigationBarHeight = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
 
+        additionNavigationBarHeight = hasMainTabs ? dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp()) : 0;
+        additionFloatingButtonOffset = hasMainTabs ? dp(app.exteraless.appearance.MainTabsUiHelper.getTabsFabOffsetDp()) : 0;
+
         ViewGroup.MarginLayoutParams lp;
 
         if (bottomButtonsContainer != null) {
@@ -17991,7 +17994,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
 
-        // listView.setPadding(0, 0, 0, navigationBarHeight + additionNavigationBarHeight);
+        if (listView != null) {
+            listView.setPadding(0, 0, 0, navigationBarHeight + additionNavigationBarHeight);
+            listView.setClipToPadding(false);
+        }
         return WindowInsetsCompat.CONSUMED;
     }
 

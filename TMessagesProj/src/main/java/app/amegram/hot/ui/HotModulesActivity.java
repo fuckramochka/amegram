@@ -649,8 +649,9 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
 
         infoCol.addView(titleRow);
 
-        // Навантаження / статус пам'яті в реальному часі
-        TextView loadView = YumiMd3.text(context, HotModulesManager.getModuleLoadEstimate(info.manifest.id),
+        // Статус модуля
+        TextView loadView = YumiMd3.text(context,
+                info.enabled ? MiogramLocale.get("Активний", "Активен", "Active") : MiogramLocale.get("Вимкнений", "Выключен", "Disabled"),
                 12f, info.enabled ? YumiMd3.success() : YumiMd3.onSurfaceVariant(), YumiMd3.REGULAR);
         infoCol.addView(loadView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 2));
 
@@ -694,7 +695,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
 
         // 3. YumiSwitch увімкнення/вимкнення
         YumiSwitch sw = new YumiSwitch(context);
-        sw.setAccent(modColor);
+        sw.setAccent(YumiTheme.getPrimary());
         sw.setChecked(info.enabled, false);
         sw.setOnCheckedChangeListener((view, checked) -> {
             HotModulesManager.setEnabled(info.manifest.id, checked, (ok, msg, data) -> {
@@ -736,17 +737,9 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             btnSettings.setText(MiogramLocale.get("Налаштування", "Настройки", "Settings"));
             btnSettings.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
             btnSettings.setTypeface(AndroidUtilities.bold());
-            btnSettings.setTextColor(info.enabled ? YumiTheme.getPrimary() : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
-            btnSettings.setAlpha(info.enabled ? 1f : 0.45f);
+            btnSettings.setTextColor(YumiTheme.getPrimary());
             btnSettings.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(4), AndroidUtilities.dp(8), AndroidUtilities.dp(4));
             btnSettings.setOnClickListener(v -> {
-                if (!info.enabled) {
-                    Toast.makeText(context, MiogramLocale.get(
-                            "Увімкніть модуль, щоб налаштувати його",
-                            "Включите модуль, чтобы настроить его",
-                            "Enable module to configure settings"), Toast.LENGTH_SHORT).show();
-                    return;
-                }
                 presentFragment(new HotModuleSettingsActivity(info.manifest.id));
             });
             bottomRow.addView(btnSettings);

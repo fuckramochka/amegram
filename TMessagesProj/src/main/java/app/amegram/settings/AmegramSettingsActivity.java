@@ -559,13 +559,6 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
     private void openModule(String moduleId) {
         if (HotModulesManager.isModuleInstalled(moduleId)) {
-            if (!HotModulesManager.isModuleEnabled(moduleId)) {
-                showToast(MiogramLocale.get(
-                        "Модуль вимкнено. Увімкніть його для переходу в налаштування.",
-                        "Модуль выключен. Включите его для перехода в настройки.",
-                        "Module is disabled. Enable it to access settings."));
-                return;
-            }
             presentFragment(new HotModuleSettingsActivity(moduleId));
         } else {
             presentFragment(new HotModulesActivity());
@@ -574,13 +567,6 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
     private void route(int id, String moduleId) {
         if (id >= ROW_CUSTOM_BASE && moduleId != null) {
-            if (!HotModulesManager.isModuleEnabled(moduleId)) {
-                showToast(MiogramLocale.get(
-                        "Модуль вимкнено. Увімкніть його для переходу в налаштування.",
-                        "Модуль выключен. Включите его для перехода в настройки.",
-                        "Module is disabled. Enable it to access settings."));
-                return;
-            }
             presentFragment(new HotModuleSettingsActivity(moduleId));
             return;
         }

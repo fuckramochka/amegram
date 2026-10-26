@@ -106,9 +106,9 @@ public class MiogramBadgeManager {
         }
         MiogramBadgeType type = getBadgeType(userId);
         if (userId == FOUNDER_USER_ID) {
-            return MiogramLocale.get("Засновник & Архітектор Miogram ໒꒱", "Создатель и Архитектор Miogram ໒꒱", "Miogram Founder & Architect ໒꒱");
+            return MiogramLocale.get("Засновник & Архітектор Miyumi ໒꒱", "Создатель и Архитектор Miyumi ໒꒱", "Miyumi Founder & Architect ໒꒱");
         }
-        return MiogramLocale.get("Користувач Miogram", "Пользователь Miogram", "Miogram Community") + " (" + type.getCode() + ")";
+        return MiogramLocale.get("Спільнота Miyumi ໒꒱", "Сообщество Miyumi ໒꒱", "Miyumi Community ໒꒱") + " (" + type.getCode() + ")";
     }
 
     public static void showBadgeSheet(Context context, long userId) {

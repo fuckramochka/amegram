@@ -172,11 +172,13 @@ public class MiogramSupabaseBridge {
     }
 
     private static BadgeRecord createDefaultFounderRecord() {
+        MiogramBadgeType type = getExplicitSelectedBadge(null, MiogramBadgeManager.FOUNDER_USER_ID);
+        if (type == null) type = MiogramBadgeType.ORIGINAL;
         return new BadgeRecord(
                 MiogramBadgeManager.FOUNDER_USER_ID,
-                MiogramBadgeType.ORIGINAL,
-                "Засновник & Архітектор Miogram ໒꒱",
-                "Особиста відзнака засновника та головного архітектора екосистеми Miogram (@fuckramochka).",
+                type,
+                "Засновник & Архітектор Miyumi ໒꒱",
+                "Особиста відзнака засновника та головного архітектора екосистеми Miyumi (@fuckramochka).",
                 "01.09.2026",
                 true,
                 true,
@@ -248,14 +250,14 @@ public class MiogramSupabaseBridge {
     /** Fallback title/reason shown in UI when cloud has no record yet — always trilingual. */
     public static String fallbackTitle(boolean founder) {
         return founder
-                ? MiogramLocale.get("Засновник & Архітектор Miogram ໒꒱", "Основатель & Архитектор Miogram ໒꒱", "Miogram Founder & Architect ໒꒱")
-                : MiogramLocale.get("Учасник спільноти Miogram", "Участник сообщества Miogram", "Miogram community member");
+                ? MiogramLocale.get("Засновник & Архітектор Miyumi ໒꒱", "Основатель & Архитектор Miyumi ໒꒱", "Miyumi Founder & Architect ໒꒱")
+                : MiogramLocale.get("Спільнота Miyumi ໒꒱", "Сообщество Miyumi ໒꒱", "Miyumi Community ໒꒱");
     }
 
     public static String fallbackReason(boolean founder) {
         return founder
-                ? MiogramLocale.get("Особиста відзнака засновника Miogram", "Личная награда основателя Miogram", "Personal founder badge of Miogram")
-                : MiogramLocale.get("Отримано через хмарну синхронізацію спільноти", "Получено через облачную синхронизацию сообщества", "Granted via community cloud sync");
+                ? MiogramLocale.get("Особиста відзнака засновника Miyumi ໒꒱", "Личная награда основателя Miyumi ໒꒱", "Personal founder badge of Miyumi ໒꒱")
+                : MiogramLocale.get("Отримано через хмарну синхронізацію спільноти Miyumi", "Получено через облачную синхронизацию сообщества Miyumi", "Granted via Miyumi community cloud sync");
     }
 
     /** True when a row claims founder status (title/reason/id) without staff verification. */
@@ -288,9 +290,14 @@ public class MiogramSupabaseBridge {
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
     }
 
+    public static MiogramBadgeType getExplicitSelectedBadge(Context context, long userId) {
+        String id = getPrefs(context).getString(KEY_SELECTED_BADGE + userId, null);
+        return id != null ? MiogramBadgeType.fromId(id) : null;
+    }
+
     public static MiogramBadgeType getSelectedBadgeForAccount(Context context, long userId) {
-        String id = getPrefs(context).getString(KEY_SELECTED_BADGE + userId, "original");
-        return MiogramBadgeType.fromId(id);
+        MiogramBadgeType explicit = getExplicitSelectedBadge(context, userId);
+        return explicit != null ? explicit : MiogramBadgeType.ORIGINAL;
     }
 
     public static void setSelectedBadgeForAccount(Context context, long userId, MiogramBadgeType type) {
@@ -316,6 +323,10 @@ public class MiogramSupabaseBridge {
             }
             syncUserBadgeToCloud(userId, type.getId(), true, null);
         }
+        try {
+            int account = UserConfig.selectedAccount;
+            NotificationCenter.getInstance(account).postNotificationName(NotificationCenter.updateInterfaces, org.telegram.messenger.MessagesController.UPDATE_MASK_ALL);
+        } catch (Throwable ignored) {}
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
     }
 

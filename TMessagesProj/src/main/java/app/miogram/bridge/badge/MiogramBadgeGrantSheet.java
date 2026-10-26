@@ -66,19 +66,19 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
     private TextView deleteBtn;
     private ProgressBar progress;
     private TextView statusView;
-    private final java.util.LinkedHashSet<MiogramBadgeType> selectedBadges = new java.util.LinkedHashSet<>();
+    private MiogramBadgeType selectedBadge = MiogramBadgeType.ORIGINAL;
 
     private MiogramBadgeGrantSheet(Context context, long targetUserId) {
         super(context, true);
         this.targetUserId = targetUserId;
         if (targetUserId > 0) {
             MiogramSupabaseBridge.BadgeRecord existing = MiogramSupabaseBridge.getBadgeRecord(targetUserId);
-            if (existing != null && existing.isActive && existing.badgeTypes != null && !existing.badgeTypes.isEmpty()) {
-                selectedBadges.addAll(existing.badgeTypes);
+            if (existing != null && existing.isActive && existing.badgeType != null) {
+                selectedBadge = existing.badgeType;
             }
         }
-        if (selectedBadges.isEmpty()) {
-            selectedBadges.add(MiogramBadgeType.ORIGINAL);
+        if (selectedBadge == null) {
+            selectedBadge = MiogramBadgeType.ORIGINAL;
         }
         initUi(context);
     }
@@ -126,7 +126,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
         });
 
         styleIcon = new ImageView(ctx);
-        styleIcon.setImageDrawable(new MiogramArrowDrawable(34, selectedBadges.iterator().next()));
+        styleIcon.setImageDrawable(new MiogramArrowDrawable(34, selectedBadge));
         styleCard.addView(styleIcon, LayoutHelper.createLinear(34, 34, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
 
         LinearLayout styleTextLayout = new LinearLayout(ctx);
@@ -221,31 +221,17 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
     }
 
     private void refreshStyleBtn() {
-        if (selectedBadges.isEmpty()) {
-            selectedBadges.add(MiogramBadgeType.ORIGINAL);
+        if (selectedBadge == null) {
+            selectedBadge = MiogramBadgeType.ORIGINAL;
         }
-        MiogramBadgeType first = selectedBadges.iterator().next();
         if (styleIcon != null) {
-            styleIcon.setImageDrawable(new MiogramArrowDrawable(34, first));
+            styleIcon.setImageDrawable(new MiogramArrowDrawable(34, selectedBadge));
         }
         if (styleTitle != null) {
-            if (selectedBadges.size() == 1) {
-                styleTitle.setText(first.getCode());
-            } else {
-                styleTitle.setText(MiogramLocale.get("Обрано бейджів: ", "Выбрано бейджей: ", "Selected badges: ") + selectedBadges.size());
-            }
+            styleTitle.setText(selectedBadge.getCode());
         }
         if (styleSubtitle != null) {
-            if (selectedBadges.size() == 1) {
-                styleSubtitle.setText(first.getTitle());
-            } else {
-                StringBuilder sb = new StringBuilder();
-                for (MiogramBadgeType b : selectedBadges) {
-                    if (sb.length() > 0) sb.append(", ");
-                    sb.append(b.getCode());
-                }
-                styleSubtitle.setText(sb.toString());
-            }
+            styleSubtitle.setText(selectedBadge.getTitle());
         }
     }
 
@@ -266,7 +252,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
         sheetContent.addView(handle, LayoutHelper.createLinear(36, 4, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 12));
 
         TextView pickerTitle = new TextView(ctx);
-        pickerTitle.setText(MiogramLocale.get("Оберіть стилі стрілочок ໒꒱", "Выберите стили стрелочек ໒꒱", "Choose badge styles ໒꒱"));
+        pickerTitle.setText(MiogramLocale.get("Оберіть стиль стрілочки ໒꒱", "Выберите стиль стрелочки ໒꒱", "Choose badge style ໒꒱"));
         pickerTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         pickerTitle.setTypeface(AndroidUtilities.bold());
         pickerTitle.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -282,7 +268,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
 
         MiogramBadgeType[] allTypes = MiogramBadgeType.values();
         for (MiogramBadgeType type : allTypes) {
-            boolean isSelected = selectedBadges.contains(type);
+            boolean isSelected = (type == selectedBadge);
 
             LinearLayout row = new LinearLayout(ctx);
             row.setOrientation(LinearLayout.HORIZONTAL);
@@ -302,7 +288,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
             codeView.setText(type.getCode());
             codeView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
             codeView.setTypeface(AndroidUtilities.bold());
-            codeView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            codeView.setTextColor(isSelected ? Theme.getColor(Theme.key_featuredStickers_addButton) : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
             textCol.addView(codeView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             TextView descView = new TextView(ctx);
@@ -323,28 +309,16 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
 
             row.setOnClickListener(v -> {
                 MiogramHaptic.tap(v);
-                if (selectedBadges.contains(type)) {
-                    if (selectedBadges.size() > 1) {
-                        selectedBadges.remove(type);
-                    } else {
-                        Toast.makeText(ctx, MiogramLocale.get("Мінімум один бейдж має бути обраний", "Минимум один бейдж должен быть выбран", "At least one badge must be selected"), Toast.LENGTH_SHORT).show();
-                        return;
-                    }
-                } else {
-                    selectedBadges.add(type);
-                }
-                boolean checkedNow = selectedBadges.contains(type);
-                row.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10),
-                        checkedNow ? (Theme.getColor(Theme.key_featuredStickers_addButton) & 0x22FFFFFF) : 0));
-                check.setVisibility(checkedNow ? View.VISIBLE : View.GONE);
+                selectedBadge = type;
                 refreshStyleBtn();
+                pickerSheet.dismiss();
             });
 
             itemsList.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 2));
         }
 
         TextView doneBtn = new TextView(ctx);
-        doneBtn.setText(MiogramLocale.get("Готово", "Готово", "Done"));
+        doneBtn.setText(MiogramLocale.get("Закрити", "Закрыть", "Close"));
         doneBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
         doneBtn.setTypeface(AndroidUtilities.bold());
         doneBtn.setGravity(Gravity.CENTER);
@@ -410,7 +384,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
         }
         String reason = reasonInput.getText().toString().trim();
         if (reason.isEmpty()) {
-            reason = MiogramLocale.get("Відзнака засновника Miogram", "Отличие основателя Miogram", "Miogram founder award");
+            reason = MiogramLocale.get("Відзнака засновника Miyumi ໒꒱", "Отличие основателя Miyumi ໒꒱", "Miyumi founder award ໒꒱");
         }
         progress.setVisibility(View.VISIBLE);
         grantBtn.setAlpha(0.5f);
@@ -423,18 +397,11 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
         final long t = target;
         final String r = reason;
 
-        StringBuilder idsBuilder = new StringBuilder();
-        StringBuilder titlesBuilder = new StringBuilder();
-        for (MiogramBadgeType b : selectedBadges) {
-            if (idsBuilder.length() > 0) idsBuilder.append(",");
-            idsBuilder.append(b.getId());
-            if (titlesBuilder.length() > 0) titlesBuilder.append(" & ");
-            titlesBuilder.append(b.getTitle());
-        }
-        final String fBadgeIds = idsBuilder.toString();
-        final String fTitle = selectedBadges.size() == 1 ? selectedBadges.iterator().next().getTitle() : MiogramLocale.get("Спільнота Miogram ໒꒱", "Сообщество Miogram ໒꒱", "Miogram Community ໒꒱");
+        final MiogramBadgeType chosen = selectedBadge != null ? selectedBadge : MiogramBadgeType.ORIGINAL;
+        final String fBadgeId = chosen.getId();
+        final String fTitle = chosen.getTitle();
 
-        MiogramSupabaseBridge.grantBadgeToUser(t, fBadgeIds, fTitle, r, () -> {
+        MiogramSupabaseBridge.grantBadgeToUser(t, fBadgeId, fTitle, r, () -> {
             progress.setVisibility(View.GONE);
             grantBtn.setAlpha(1f);
             grantBtn.setClickable(true);

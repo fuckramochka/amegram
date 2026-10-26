@@ -106,10 +106,10 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             record = new MiogramSupabaseBridge.BadgeRecord(
                     targetUserId,
                     selectedBadge != null ? selectedBadge : MiogramBadgeType.ORIGINAL,
-                    MiogramLocale.get("Засновник Miogram ໒꒱", "Создатель Miogram ໒꒱", "Miogram Founder ໒꒱"),
-                    MiogramLocale.get("Особиста відзнака засновника та головного архітектора екосистеми Miogram (@fuckramochka).",
-                            "Личное отличие создателя и главного архитектора экосистемы Miogram (@fuckramochka).",
-                            "Personal distinction of the Founder & Chief Architect of Miogram (@fuckramochka)."),
+                    MiogramLocale.get("Засновник Miyumi ໒꒱", "Создатель Miyumi ໒꒱", "Miyumi Founder ໒꒱"),
+                    MiogramLocale.get("Особиста відзнака засновника та головного архітектора спільноти Miyumi (@fuckramochka).",
+                            "Личное отличие создателя и главного архитектора сообщества Miyumi (@fuckramochka).",
+                            "Personal distinction of the Founder & Chief Architect of Miyumi (@fuckramochka)."),
                     "01.09.2026",
                     true,
                     true,
@@ -169,9 +169,9 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
         badgeNameView.setTextColor(Theme.getColor(Theme.key_dialogTextBlack, resourcesProvider));
         badgeNameView.setGravity(Gravity.CENTER);
         if (isSelf) {
-            badgeNameView.setText(MiogramLocale.get("Стрілочка Miogram ໒꒱", "Стрелочка Miogram ໒꒱", "Miogram Badge ໒꒱"));
+            badgeNameView.setText(MiogramLocale.get("Стрілочка Miyumi ໒꒱", "Стрелочка Miyumi ໒꒱", "Miyumi Badge ໒꒱"));
         } else if (isFounder) {
-            badgeNameView.setText(MiogramLocale.get("Засновник Miogram ໒꒱", "Создатель Miogram ໒꒱", "Miogram Founder ໒꒱"));
+            badgeNameView.setText(MiogramLocale.get("Засновник Miyumi ໒꒱", "Создатель Miyumi ໒꒱", "Miyumi Founder ໒꒱"));
         } else {
             String customTitle = (record != null && !TextUtils.isEmpty(record.title)) ? record.title : MiogramLocale.get("Відзнака Спільноти ໒꒱", "Отличие Сообщества ໒꒱", "Community Badge ໒꒱");
             badgeNameView.setText(customTitle);
@@ -206,9 +206,9 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             infoBody.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
             infoBody.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             infoBody.setText(MiogramLocale.get(
-                    "У вас наразі немає активної відзнаки Miogram. Канонічні відзнаки (крила/стрілочки) видаються виключно вручну адміністрацією через хмарну базу даних Supabase за особливий внесок у розвиток спільноти.",
-                    "У вас пока нет активного отличия Miogram. Канонические отличия (крылья/стрелочки) выдаются исключительно вручную администрацией через базу данных Supabase за особый вклад в развитие сообщества.",
-                    "You currently do not have an active Miogram badge. Canonical badges are granted exclusively and manually by Miogram administration via Supabase database for community contributions."
+                    "У вас наразі немає активної відзнаки Miyumi. Канонічні відзнаки (крила/стрілочки) видаються виключно вручну адміністрацією через хмарну базу даних Supabase за особливий внесок у розвиток спільноти.",
+                    "У вас пока нет активного отличия Miyumi. Канонические отличия (крылья/стрелочки) выдаются исключительно вручную администрацией через базу данных Supabase за особый вклад в развитие сообщества.",
+                    "You currently do not have an active Miyumi badge. Canonical badges are granted exclusively and manually by Miyumi administration via Supabase database for community contributions."
             ));
             infoCard.addView(infoBody, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
             root.addView(infoCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 18));
@@ -265,13 +265,13 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             String reason = (record != null && !TextUtils.isEmpty(record.obtainedReason)) ? record.obtainedReason :
                     (isFounder
                             ? MiogramLocale.get(
-                                    "Особиста відзнака засновника та головного архітектора екосистеми Miogram (@fuckramochka). Надана при заснуванні проекту як символ найвищого статусу розробника та підтвердження офіційної автентичності білду.",
-                                    "Личное отличие создателя и главного архитектора экосистемы Miogram (@fuckramochka). Предоставлено при основании проекта как символ высшего статуса разработчика и подтверждения официальной подлинности клиента.",
-                                    "Personal distinction of the Founder & Chief Architect of Miogram (@fuckramochka). Granted upon project genesis as a symbol of supreme developer status and official client authenticity.")
+                                    "Особиста відзнака засновника та головного архітектора спільноти Miyumi (@fuckramochka). Надана при заснуванні проекту як символ найвищого статусу розробника та підтвердження офіційної автентичності білду.",
+                                    "Личное отличие создателя и главного архитектора сообщества Miyumi (@fuckramochka). Предоставлено при основании проекта как символ высшего статуса разработчика и подтверждения официальной подлинности клиента.",
+                                    "Personal distinction of the Founder & Chief Architect of Miyumi (@fuckramochka). Granted upon project genesis as a symbol of supreme developer status and official client authenticity.")
                             : MiogramLocale.get(
-                                    "Офіційно верифікований учасник хмарної екосистеми Miogram. Відзнаку надано за вагомий внесок у тестування, підтримку спільноти та активний розвиток клієнта.",
-                                    "Официально верифицированный участник облачной экосистемы Miogram. Отличие предоставлено за весомый вклад в тестирование, поддержку сообщества и активное развитие клиента.",
-                                    "Officially verified member of the Miogram Cloud ecosystem. Awarded for meaningful contributions to testing, community support, and client development."));
+                                    "Офіційно верифікований учасник хмарної спільноти Miyumi. Відзнаку надано за вагомий внесок у тестування, підтримку спільноти та активний розвиток клієнта.",
+                                    "Официально верифицированный участник облачного сообщества Miyumi. Отличие предоставлено за весомый вклад в тестирование, поддержку сообщества и активное развитие клиента.",
+                                    "Officially verified member of the Miyumi Cloud community. Awarded for meaningful contributions to testing, community support, and client development."));
 
             reasonBody.setText(reason);
             reasonCard.addView(reasonBody, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
@@ -305,7 +305,7 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
             if (record != null && record.grantorId == MiogramBadgeManager.FOUNDER_USER_ID) {
                 metaCard.addView(createTgMetaRow(context,
                         MiogramLocale.get("Видав:", "Выдал:", "Granted by:"),
-                        MiogramLocale.get("★ Засновник Miogram", "★ Основатель Miogram", "★ Miogram Founder")));
+                        MiogramLocale.get("★ Засновник Miyumi ໒꒱", "★ Основатель Miyumi ໒꒱", "★ Miyumi Founder ໒꒱")));
             }
             metaCard.addView(createTgMetaRow(context,
                     MiogramLocale.get("Ідентифікатор користувача:", "Идентификатор пользователя:", "User ID:"),

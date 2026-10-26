@@ -474,6 +474,33 @@
       "author": "Yumi Core Team",
       "category": "custom",
       "featured": true
+    },
+    {
+      "id": "badges",
+      "name": "Бейджики спільноти",
+      "description": "Системний модуль відзнак та статусів користувачів. Автономна синхронізація з GitHub репозиторієм (badges.json), неоновий піксель-арт рендеринг та підтримка SVG.",
+      "entry": "com.amegram.mods.badges.BadgesModule",
+      "type": "system",
+      "system": true,
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/badges-1.0.0.hmod",
+          "sha256": "2e1ab830ca2f84488f49243bc22423ce013c926a46b0891a93eaea3295f988b2",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.0: реліз системного модуля бейджів на базі GitHub GitOps замість Supabase.",
+          "permissions": [
+            "hook_ui",
+            "network",
+            "storage"
+          ],
+          "sizeBytes": 7341
+        }
+      },
+      "history": [],
+      "author": "Yumi Core Team",
+      "category": "power",
+      "featured": true
     }
   ]
 }

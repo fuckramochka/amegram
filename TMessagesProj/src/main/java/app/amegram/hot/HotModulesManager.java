@@ -197,7 +197,7 @@ public final class HotModulesManager {
             for (String f : list) {
                 if (!f.endsWith(".hmod")) continue;
                 String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
-                if ("settings_ui".equals(modId) || "badges".equals(modId) || "ui".equals(modId) || isSystem(modId) || f.contains("system")) {
+                if ("settings_ui".equals(modId) || "badges".equals(modId) || "kpm".equals(modId) || "ui".equals(modId) || isSystem(modId) || f.contains("system")) {
                     if (shouldSeedSystemModule(modId, f)) {
                         try {
                             installBundledModuleDirect(modId, true);
@@ -320,6 +320,11 @@ public final class HotModulesManager {
     }
 
     public static boolean isModuleInstalled(String moduleId) {
+        if (isModuleInstalledOnDisk(moduleId)) return true;
+        return hasBundledSeed(moduleId);
+    }
+
+    public static boolean isModuleInstalledOnDisk(String moduleId) {
         if (moduleId == null) return false;
         if (appContext == null) init(ApplicationLoader.applicationContext);
         if (appContext == null) return false;
@@ -338,7 +343,7 @@ public final class HotModulesManager {
                 }
             }
         }
-        return hasBundledSeed(moduleId);
+        return false;
     }
 
     public static boolean isSystem(String moduleId) {
@@ -634,7 +639,7 @@ public final class HotModulesManager {
                     throw new IllegalStateException("bad manifest");
                 }
                 String type = o.optString("type", "addon");
-                boolean isSystem = o.optBoolean("system", false) || "system".equalsIgnoreCase(type) || "settings_ui".equals(id) || "badges".equals(id);
+                boolean isSystem = o.optBoolean("system", false) || "system".equalsIgnoreCase(type) || "settings_ui".equals(id) || "badges".equals(id) || "kpm".equals(id);
                 return new Manifest(id, version, o.optString("branch", "stable"),
                         entry, o.optString("name", id), o.optInt("minApp", 0), type, isSystem);
             }

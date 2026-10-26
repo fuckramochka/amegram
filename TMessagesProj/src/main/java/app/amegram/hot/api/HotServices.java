@@ -61,4 +61,7 @@ public final class HotServices {
 
     /** {@link HotBadges}: системний модуль бейджів та статусів спільноти. */
     public static final String BADGES = "badges";
+
+    /** {@link HotKpm}: менеджер плагінів Kangel Plugins Manager (KPM). */
+    public static final String KPM = "kpm";
 }

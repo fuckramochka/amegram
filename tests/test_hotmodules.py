@@ -95,7 +95,8 @@ def test_java_gates():
         "HotTranscribeGate.java",
         "HotPlayerGate.java",
         "HotExperimentalGate.java",
-        "HotVaultGate.java"
+        "HotVaultGate.java",
+        "HotKpmGate.java"
     ]
     for gate in gates:
         p = os.path.join(JAVA_HOT_DIR, gate)
@@ -105,7 +106,7 @@ def test_java_gates():
     assert os.path.isfile(services_path), "Відсутній HotServices.java"
     with open(services_path, "r", encoding="utf-8") as f:
         content = f.read()
-        for s in ["PLAYER", "GHOST", "TRANSCRIBE", "TIKTOK", "VAULT", "EXPERIMENTAL", "AUTOMATION"]:
+        for s in ["PLAYER", "GHOST", "TRANSCRIBE", "TIKTOK", "VAULT", "EXPERIMENTAL", "AUTOMATION", "KPM"]:
             assert s in content, f"HotServices не містить константи {s}"
     print("    -> Усі шлюзи та сервісні інтерфейси присутні в ядрі")
 

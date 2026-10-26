@@ -1973,6 +1973,19 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     } catch (Throwable e) {
                         FileLog.e(e);
                     }
+                } else if (intent.getData() != null && ("kpm".equalsIgnoreCase(intent.getData().getScheme()) || ("tg".equalsIgnoreCase(intent.getData().getScheme()) && "kpm".equalsIgnoreCase(intent.getData().getHost())) || intent.getData().toString().contains("kpm?install="))) {
+                    try {
+                        final String kpmUrl = intent.getData().toString();
+                        AndroidUtilities.runOnUIThread(() -> {
+                            try {
+                                app.amegram.hot.HotKpmGate.handleDeepLink(LaunchActivity.this.getActionBarLayout() != null ? LaunchActivity.this.getActionBarLayout().getLastFragment() : null, kpmUrl);
+                            } catch (Throwable e) {
+                                FileLog.e(e);
+                            }
+                        }, 400);
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
                 } else if ("amegram".equals(intent.getData() != null ? intent.getData().getScheme() : "")
                         && ("module".equals(intent.getData().getHost()) || "modules".equals(intent.getData().getHost()))) {
                     try {

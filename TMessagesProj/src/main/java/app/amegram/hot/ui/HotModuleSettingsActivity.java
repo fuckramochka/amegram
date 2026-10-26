@@ -109,6 +109,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
             }
         });
         fragmentView = listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, null);
+        fragmentView.setBackgroundColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_windowBackgroundGray));
         listView.setSections();
         return fragmentView;
     }

@@ -80,12 +80,17 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
                 }
             }
         });
-        actionBar.createMenu().addItem(MENU_UPDATES, R.drawable.baseline_system_update_24);
-        actionBar.createMenu().addItem(MENU_BACKUP, R.drawable.baseline_share_24);
-        actionBar.createMenu().addItem(MENU_ADD, R.drawable.filled_new_contact_24);
+        org.telegram.ui.ActionBar.ActionBarMenu menu = actionBar.createMenu();
+        menu.addItem(MENU_ADD, R.drawable.msg_download);
+        org.telegram.ui.ActionBar.ActionBarMenuItem other = menu.addItem(0, R.drawable.ic_ab_other);
+        other.addSubItem(MENU_UPDATES, R.drawable.baseline_system_update_24,
+                MiogramLocale.get("Перевірити оновлення", "Проверить обновления", "Check for updates"));
+        other.addSubItem(MENU_BACKUP, R.drawable.baseline_share_24,
+                MiogramLocale.get("Резервна копія", "Резервная копия", "Backup"));
 
         LinearLayout root = new LinearLayout(context);
         root.setOrientation(LinearLayout.VERTICAL);
+        root.setBackgroundColor(org.telegram.ui.ActionBar.Theme.getColor(org.telegram.ui.ActionBar.Theme.key_windowBackgroundGray));
         searchView = YumiComponents.searchField(context,
                 MiogramLocale.get("Пошук встановлених…", "Поиск установленных…", "Search installed…"));
         searchView.addTextChangedListener(new TextWatcher() {

@@ -1,0 +1,19 @@
+{
+  "id": "kpm",
+  "version": "1.0.0",
+  "branch": "stable",
+  "type": "system",
+  "entry": "com.amegram.mods.kpm.KpmModule",
+  "name": "Kangel Plugins Manager",
+  "minApp": 7112,
+  "description": "Офіційний менеджер плагінів Kangel Plugins Store: каталог, 1-тап встановлення з 4 дзеркал (Kangel, GitHub, Codeberg, GitVerse), перевірка оновлень та обробка посилань tg://kpm.",
+  "changelog": "Версія 1.0.0: нативна інтеграція KPM як хот-модуля Yumigram у стилі Material Design 3.",
+  "author": "Kangel & Yumigram Team",
+  "category": "power",
+  "featured": true,
+  "permissions": [
+    "network",
+    "storage",
+    "hook_ui"
+  ]
+}

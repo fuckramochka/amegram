@@ -501,6 +501,33 @@
       "author": "Yumi Core Team",
       "category": "power",
       "featured": true
+    },
+    {
+      "id": "kpm",
+      "name": "Kangel Plugins Manager",
+      "description": "Офіційний менеджер плагінів Kangel Plugins Store: каталог, 1-тап встановлення з 4 дзеркал (Kangel, GitHub, Codeberg, GitVerse), перевірка оновлень та обробка посилань tg://kpm.",
+      "entry": "com.amegram.mods.kpm.KpmModule",
+      "type": "system",
+      "system": true,
+      "branches": {
+        "stable": {
+          "version": "1.0.0",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/kpm-1.0.0.hmod",
+          "sha256": "8ef857ba685b0dff493ba0c2cb5ddfac141938b7876b24d0cdd5aa5065f6eb08",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.0: нативна інтеграція KPM як хот-модуля Yumigram у стилі Material Design 3.",
+          "permissions": [
+            "network",
+            "storage",
+            "hook_ui"
+          ],
+          "sizeBytes": 15234
+        }
+      },
+      "history": [],
+      "author": "Kangel & Yumigram Team",
+      "category": "power",
+      "featured": true
     }
   ]
 }

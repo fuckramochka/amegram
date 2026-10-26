@@ -184,13 +184,21 @@ public class PluginsActivity extends BaseFragment {
         if (tabsBar == null) return;
         tabsBar.removeAllViews();
 
-        String[] titles = {
+        boolean hasKpm = app.amegram.hot.HotKpmGate.isAvailable();
+        String[] titles = hasKpm ? new String[]{
+            app.miogram.bridge.MiogramLocale.get("Всі", "Все", "All"),
+            "⚡ Lua",
+            "Python (ETG)",
+            app.miogram.bridge.MiogramLocale.get("Каталог ໒꒱", "Каталог ໒꒱", "Catalog ໒꒱"),
+            "KPM Store ໒꒱"
+        } : new String[]{
             app.miogram.bridge.MiogramLocale.get("Всі", "Все", "All"),
             "⚡ Lua",
             "Python (ETG)",
             app.miogram.bridge.MiogramLocale.get("Каталог ໒꒱", "Каталог ໒꒱", "Catalog ໒꒱")
         };
-        int[] filters = {FILTER_ALL, FILTER_MIOGRAM, FILTER_EXTERA, FILTER_CATALOG};
+        int[] filters = hasKpm ? new int[]{FILTER_ALL, FILTER_MIOGRAM, FILTER_EXTERA, FILTER_CATALOG, 999}
+                               : new int[]{FILTER_ALL, FILTER_MIOGRAM, FILTER_EXTERA, FILTER_CATALOG};
 
         for (int i = 0; i < titles.length; i++) {
             final int filter = filters[i];
@@ -222,6 +230,9 @@ public class PluginsActivity extends BaseFragment {
                     if (getParentActivity() != null) {
                         new MiogramPluginCatalogAlert(getParentActivity()).show();
                     }
+                    return;
+                } else if (filter == 999) {
+                    app.amegram.hot.HotKpmGate.openStore(this, getParentActivity());
                     return;
                 }
                 currentFilter = filter;

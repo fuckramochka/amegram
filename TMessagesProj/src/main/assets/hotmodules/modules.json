@@ -176,18 +176,31 @@
       "entry": "com.amegram.mods.ai.AiModule",
       "branches": {
         "stable": {
+          "version": "1.0.2",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.2.hmod",
+          "sha256": "d3ce73551e00914f71aad3388a42d951dd205d84215698a1ede24d00c5a2165f",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.2: чистий інтерфейс провайдера без фейкових перемикачів, синхронізація ключа з ядром.",
+          "permissions": [
+            "network"
+          ],
+          "sizeBytes": 9705
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.1",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.1.hmod",
           "sha256": "95d1c017d2d0d3fa0c8797d665177daa3e61868ee3303a3c2051a4f17bcbf8a3",
+          "sizeBytes": 10245,
           "minApp": 7112,
           "changelog": "Тільки Nano vs Gemini API (3.5-flash-lite); кнопка Get Key в AI Studio.",
           "permissions": [
             "network"
-          ],
-          "sizeBytes": 10245
+          ]
         }
-      },
-      "history": [],
+      ],
       "author": "AmeGram Team",
       "category": "power",
       "featured": true

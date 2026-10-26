@@ -121,30 +121,30 @@ class LocalSttEngine(
     enum class ErrorCode { MODEL_NOT_DOWNLOADED, BACKEND_NOT_READY, AUDIO_INVALID, BUSY }
 
     private object ModelCatalog {
-        const val DEFAULT_ID = "whisper-small-int8"
-        val DEFAULT = ModelInfo(
-            id = DEFAULT_ID,
-            displayName = "Whisper Small (int8, ~250 МБ)",
-            // Pinned release asset; mirrored into the app's own CDN later.
-            downloadUrl = "https://github.com/miogram-ai/models/releases/whisper-small-int8.onnx",
-            sizeBytes = 262_144_000L,
-            sha256 = null,
-        )
+        const val DEFAULT_ID = "whisper-tiny-int8"
         val TINY = ModelInfo(
             id = "whisper-tiny-int8",
             displayName = "Whisper Tiny Quantized (INT8, ~39 MB)",
-            downloadUrl = "https://github.com/miogram-ai/models/releases/whisper-tiny-int8.onnx",
+            downloadUrl = "https://huggingface.co/onnx-community/whisper-tiny/resolve/main/onnx/model_int8.onnx",
             sizeBytes = 40_894_464L,
             sha256 = null,
         )
         val BASE = ModelInfo(
             id = "whisper-base-int8",
             displayName = "Whisper Base Quantized (INT8, ~74 MB)",
-            downloadUrl = "https://github.com/miogram-ai/models/releases/whisper-base-int8.onnx",
+            downloadUrl = "https://huggingface.co/onnx-community/whisper-base/resolve/main/onnx/model_int8.onnx",
             sizeBytes = 77_594_624L,
             sha256 = null,
         )
-        val ALL = listOf(TINY, BASE, DEFAULT)
+        val SMALL = ModelInfo(
+            id = "whisper-small-int8",
+            displayName = "Whisper Small (int8, ~250 МБ)",
+            downloadUrl = "https://huggingface.co/onnx-community/whisper-small/resolve/main/onnx/model_int8.onnx",
+            sizeBytes = 262_144_000L,
+            sha256 = null,
+        )
+        val DEFAULT = TINY
+        val ALL = listOf(TINY, BASE, SMALL)
     }
 
     companion object {

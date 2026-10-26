@@ -3947,7 +3947,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             avatarStart = 11;
             messagePaddingStart = 72;
         }
-        if (avatarImage != null && (forumTopic == null || forumTopic.icon == 0)) {
+        if (avatarImage != null && !isTopic) {
             avatarImage.setRoundRadius(app.exteraless.appearance.AppearanceConfig.getAvatarCorners(dp(56)));
         }
     }

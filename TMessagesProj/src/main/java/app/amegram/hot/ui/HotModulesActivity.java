@@ -725,7 +725,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             bottomRow.addView(btnUpdate);
         }
 
-        if (info.installed && HotModulesManager.hasSettings(info.manifest.id)) {
+        if (HotModulesManager.hasSettings(info.manifest.id)) {
             TextView btnSettings = new TextView(context);
             btnSettings.setText(MiogramLocale.get("Налаштування", "Настройки", "Settings"));
             btnSettings.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);

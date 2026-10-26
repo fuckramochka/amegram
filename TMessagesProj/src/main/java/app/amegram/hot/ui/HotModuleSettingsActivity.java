@@ -680,8 +680,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
             if (r.options == null || r.options.length == 0) return;
             org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
             builder.setTitle(r.title);
-            int selected = host.getInt(r.id, r.intValue);
-            builder.setSingleChoiceItems(r.options, selected, (dialog, which) -> {
+            builder.setItems(r.options, (dialog, which) -> {
                 host.putInt(r.id, which);
                 try {
                     mod.onSettingsChoice(r.id, which);

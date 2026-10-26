@@ -196,8 +196,8 @@ public final class HotModulesManager {
             if (list == null) return;
             for (String f : list) {
                 if (!f.endsWith(".hmod")) continue;
-                if (f.startsWith("settings_ui") || f.startsWith("ui-") || f.equals("ui.hmod") || f.contains("system")) {
-                    String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
+                String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
+                if (isSystem(modId) || f.contains("system")) {
                     if (shouldSeedSystemModule(modId, f)) {
                         try {
                             installBundledModuleDirect(modId, true);
@@ -340,7 +340,9 @@ public final class HotModulesManager {
 
     public static boolean isSystem(String moduleId) {
         if (moduleId == null) return false;
-        if ("settings_ui".equals(moduleId)) return true;
+        if ("settings_ui".equals(moduleId) || "ui".equals(moduleId)
+                || "gaming".equals(moduleId) || "feed".equals(moduleId)
+                || "kanban".equals(moduleId) || "profile".equals(moduleId)) return true;
         for (InstalledInfo info : listInstalled()) {
             if (moduleId.equals(info.manifest.id) && info.active) {
                 return info.manifest.isSystem;
@@ -1556,12 +1558,21 @@ public final class HotModulesManager {
         AndroidUtilities.runOnUIThread(() -> {
             try {
                 Handle h = getHandle(moduleId);
-                if (h == null || h.instance == null) return;
-                Object screen;
-                try {
-                    screen = h.instance.createScreen(screenId);
-                } catch (Throwable e) {
-                    return;
+                Object screen = null;
+                if (h != null && h.instance != null) {
+                    try {
+                        screen = h.instance.createScreen(screenId);
+                    } catch (Throwable ignore) {
+                    }
+                }
+                if (screen == null) {
+                    HotModule mod = getModuleForSettings(moduleId);
+                    if (mod != null) {
+                        try {
+                            screen = mod.createScreen(screenId);
+                        } catch (Throwable ignore) {
+                        }
+                    }
                 }
                 if (!(screen instanceof org.telegram.ui.ActionBar.BaseFragment)) return;
                 org.telegram.ui.ActionBar.BaseFragment last;

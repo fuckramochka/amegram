@@ -47,6 +47,18 @@ public interface HotModule {
     default void onSettingsInput(String key, String value) {
     }
 
+    /** SLIDER змінено (значення збережено хостом). */
+    default void onSettingsSlider(String key, int value) {
+    }
+
+    /** CHOICE обрано (індекс збережено хостом). */
+    default void onSettingsChoice(String key, int index) {
+    }
+
+    /** COLOR обрано (колір збережено хостом). */
+    default void onSettingsColor(String key, int color) {
+    }
+
     /** Екрани модуля (чат компаньйона, браузер сховища…). Хост показує через openModuleScreen. */
     default Object createScreen(String screenId) {
         return null;

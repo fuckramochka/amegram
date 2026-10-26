@@ -46,4 +46,16 @@ public final class HotServices {
 
     /** {@link HotSettingsUi}: інтерфейс налаштувань Yumigram (Внутрішній світ). */
     public static final String SETTINGS_UI = "settings_ui";
+
+    /** Ігрові статуси та Rich Presence (Steam, Discord, Roblox). */
+    public static final String GAMING = "gaming";
+
+    /** Стрічка новин і каналів у стилі соцмереж. */
+    public static final String FEED = "feed";
+
+    /** Канбан-дошка та менеджер задач. */
+    public static final String KANBAN = "kanban";
+
+    /** Кастомізація профілю, бейджі та банери AmeProfile. */
+    public static final String PROFILE = "profile";
 }

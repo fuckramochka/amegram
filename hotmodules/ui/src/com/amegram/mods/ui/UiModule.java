@@ -901,10 +901,20 @@ public class UiModule implements HotModule, HotUi {
                 readBool("theme_tonal_adaptation", true)));
 
         rows.add(HotRow.header("Список чатів"));
-        rows.add(HotRow.switchRow("chat_card_style",
-                "Картковий стиль чатів",
-                "Візуально виділяти діалоги в м'які плитки (вимкнено — чистий плаский MD3)",
-                chatListStyle() == CHAT_STYLE_CARDS));
+        rows.add(HotRow.choice("chat_card_style_choice",
+                "Стиль списку чатів",
+                "Оберіть форму діалогів",
+                new String[]{"Картки (Cards)", "Острівці (Islands)", "Плаский чистий MD3"},
+                chatListStyle()));
+        rows.add(HotRow.switchRow(KEY_CHAT_CARD_OUTLINE,
+                "Контур карток чатів",
+                "Тонкий мікро-контур Material Elevation",
+                isChatCardOutline()));
+        rows.add(HotRow.slider("avatar_corners_slider",
+                "Закруглення аватарок",
+                0, 28,
+                readInt("OEAppearanceAvatarCorners", 28),
+                "dp"));
         rows.add(HotRow.switchRow(KEY_CHAT_PINNED_ACCENT,
                 "Підсвічування закріплених чатів",
                 "Тональний колірний акорд для важливих діалогів",
@@ -970,6 +980,30 @@ public class UiModule implements HotModule, HotUi {
         if (key != null && (key.startsWith("chat_") || key.startsWith("theme_") || key.startsWith("OEAppearanceChat"))) {
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
         }
+    }
+
+    @Override
+    public void onSettingsChoice(String key, int index) {
+        if ("chat_card_style_choice".equals(key)) {
+            writeInt(KEY_CHAT_STYLE, index);
+            markTouched();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            return;
+        }
+        writeInt(key, index);
+        markTouched();
+    }
+
+    @Override
+    public void onSettingsSlider(String key, int value) {
+        if ("avatar_corners_slider".equals(key)) {
+            writeInt("OEAppearanceAvatarCorners", value);
+            markTouched();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            return;
+        }
+        writeInt(key, value);
+        markTouched();
     }
 
     @Override

@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -204,6 +205,12 @@ public class HotModuleSettingsActivity extends BaseFragment {
                 items.add(UItem.asCustom(buildButtonCard(context, mod, r, i)));
             } else if (r.type == HotRow.INPUT) {
                 items.add(UItem.asCustom(buildInputCard(context, host, mod, r, i)));
+            } else if (r.type == HotRow.SLIDER) {
+                items.add(UItem.asCustom(buildSliderCard(context, host, mod, r, i)));
+            } else if (r.type == HotRow.CHOICE) {
+                items.add(UItem.asCustom(buildChoiceCard(context, host, mod, r, i)));
+            } else if (r.type == HotRow.COLOR) {
+                items.add(UItem.asCustom(buildColorCard(context, host, mod, r, i)));
             }
         }
     }
@@ -519,6 +526,271 @@ public class HotModuleSettingsActivity extends BaseFragment {
             showInputDialog(host, mod, r);
         });
         ScaleStateListAnimator.apply(card, 0.025f, 1.4f);
+
+        return card;
+    }
+
+    private View buildSliderCard(Context context, HotHost host, HotModule mod, HotRow r, int index) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.VERTICAL);
+        card.setBackground(YumiTheme.cardBackground(18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(4), AndroidUtilities.dp(14), AndroidUtilities.dp(4));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+
+        LinearLayout topRow = new LinearLayout(context);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        topRow.setGravity(Gravity.CENTER_VERTICAL);
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        GradientDrawable iconBg = new GradientDrawable();
+        iconBg.setCornerRadius(AndroidUtilities.dp(12));
+        iconBg.setColor(Theme.multAlpha(YumiTheme.getPrimary(), 0.12f));
+        iconFrame.setBackground(iconBg);
+
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(resolveRowIcon(r));
+        iconView.setColorFilter(YumiTheme.getPrimary());
+        iconFrame.addView(iconView, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
+        topRow.addView(iconFrame, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        TextView titleView = new TextView(context);
+        titleView.setText(r.title);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        topRow.addView(titleView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+        final int initialVal;
+        int readVal = r.intValue;
+        try {
+            readVal = host.getInt(r.id, r.intValue);
+        } catch (Throwable ignore) {
+        }
+        initialVal = readVal;
+
+        final TextView valView = new TextView(context);
+        final String unit = r.subtitle != null ? r.subtitle : "";
+        valView.setText(initialVal + (unit.isEmpty() ? "" : " " + unit));
+        valView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
+        valView.setTypeface(AndroidUtilities.bold());
+        valView.setTextColor(YumiTheme.getPrimary());
+        topRow.addView(valView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        card.addView(topRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        SeekBar seekBar = new SeekBar(context);
+        final int min = r.minValue;
+        final int max = Math.max(r.maxValue, min + 1);
+        seekBar.setMax(max - min);
+        seekBar.setProgress(Math.max(0, initialVal - min));
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser) {
+                    int val = min + progress;
+                    valView.setText(val + (unit.isEmpty() ? "" : " " + unit));
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                int val = min + seekBar.getProgress();
+                host.putInt(r.id, val);
+                try {
+                    mod.onSettingsSlider(r.id, val);
+                } catch (Throwable ignore) {
+                }
+            }
+        });
+        card.addView(seekBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 8, 0, 0));
+
+        return card;
+    }
+
+    private View buildChoiceCard(Context context, HotHost host, HotModule mod, HotRow r, int index) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setMinimumHeight(AndroidUtilities.dp(62));
+        card.setBackground(YumiTheme.buttonRipple(YumiTheme.getSurfaceContainer(), 18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(4), AndroidUtilities.dp(14), AndroidUtilities.dp(4));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        GradientDrawable iconBg = new GradientDrawable();
+        iconBg.setCornerRadius(AndroidUtilities.dp(12));
+        iconBg.setColor(Theme.multAlpha(YumiTheme.getPrimary(), 0.12f));
+        iconFrame.setBackground(iconBg);
+
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(resolveRowIcon(r));
+        iconView.setColorFilter(YumiTheme.getPrimary());
+        iconFrame.addView(iconView, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
+        card.addView(iconFrame, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        LinearLayout textCol = new LinearLayout(context);
+        textCol.setOrientation(LinearLayout.VERTICAL);
+
+        TextView titleView = new TextView(context);
+        titleView.setText(r.title);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        textCol.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        int curIdx;
+        try {
+            curIdx = host.getInt(r.id, r.intValue);
+        } catch (Throwable ignore) {
+            curIdx = r.intValue;
+        }
+        if (r.options != null && curIdx >= 0 && curIdx < r.options.length) {
+            TextView valView = new TextView(context);
+            valView.setText(r.options[curIdx]);
+            valView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
+            valView.setTextColor(YumiTheme.getPrimary());
+            textCol.addView(valView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        } else if (r.subtitle != null && !r.subtitle.isEmpty()) {
+            TextView subView = new TextView(context);
+            subView.setText(r.subtitle);
+            subView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+            subView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+            textCol.addView(subView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+        }
+
+        card.addView(textCol, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 10, 0));
+
+        ImageView arrowView = new ImageView(context);
+        arrowView.setImageResource(R.drawable.arrow_more);
+        arrowView.setColorFilter(YumiTheme.getPrimary());
+        card.addView(arrowView, LayoutHelper.createLinear(16, 16, Gravity.CENTER_VERTICAL));
+
+        card.setOnClickListener(v -> {
+            card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            if (r.options == null || r.options.length == 0) return;
+            org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
+            builder.setTitle(r.title);
+            int selected = host.getInt(r.id, r.intValue);
+            builder.setSingleChoiceItems(r.options, selected, (dialog, which) -> {
+                host.putInt(r.id, which);
+                try {
+                    mod.onSettingsChoice(r.id, which);
+                } catch (Throwable ignore) {
+                }
+                dialog.dismiss();
+                if (listView != null && listView.adapter != null) {
+                    listView.adapter.update(true);
+                }
+            });
+            builder.setNegativeButton(MiogramLocale.get("Скасувати", "Отмена", "Cancel"), null);
+            showDialog(builder.create());
+        });
+
+        return card;
+    }
+
+    private View buildColorCard(Context context, HotHost host, HotModule mod, HotRow r, int index) {
+        LinearLayout card = new LinearLayout(context);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setGravity(Gravity.CENTER_VERTICAL);
+        card.setMinimumHeight(AndroidUtilities.dp(60));
+        card.setBackground(YumiTheme.buttonRipple(YumiTheme.getSurfaceContainer(), 18));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(4), AndroidUtilities.dp(14), AndroidUtilities.dp(4));
+        card.setLayoutParams(lp);
+        card.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+
+        FrameLayout iconFrame = new FrameLayout(context);
+        GradientDrawable iconBg = new GradientDrawable();
+        iconBg.setCornerRadius(AndroidUtilities.dp(12));
+        iconBg.setColor(Theme.multAlpha(YumiTheme.getPrimary(), 0.12f));
+        iconFrame.setBackground(iconBg);
+
+        ImageView iconView = new ImageView(context);
+        iconView.setImageResource(R.drawable.baseline_brush_24);
+        iconView.setColorFilter(YumiTheme.getPrimary());
+        iconFrame.addView(iconView, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
+        card.addView(iconFrame, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
+
+        TextView titleView = new TextView(context);
+        titleView.setText(r.title);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15.5f);
+        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        card.addView(titleView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 10, 0));
+
+        final int currentColor;
+        int cVal = r.intValue;
+        try {
+            cVal = host.getInt(r.id, r.intValue);
+        } catch (Throwable ignore) {
+        }
+        currentColor = cVal;
+
+        View colorPreview = new View(context);
+        GradientDrawable previewBg = new GradientDrawable();
+        previewBg.setShape(GradientDrawable.OVAL);
+        previewBg.setColor(currentColor != 0 ? currentColor : YumiTheme.getPrimary());
+        previewBg.setStroke(AndroidUtilities.dp(2), 0x33000000);
+        colorPreview.setBackground(previewBg);
+        card.addView(colorPreview, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL));
+
+        card.setOnClickListener(v -> {
+            card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+            final int[] palette = new int[]{
+                    0xFFE5486B, 0xFF4355B9, 0xFF006C50, 0xFF8F4C38,
+                    0xFF6750A4, 0xFF006874, 0xFF386A20, 0xFF9C4146,
+                    0xFF2196F3, 0xFFFF9800, 0xFF9C27B0, 0xFF607D8B
+            };
+            org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
+            builder.setTitle(r.title);
+            LinearLayout layout = new LinearLayout(context);
+            layout.setOrientation(LinearLayout.VERTICAL);
+            layout.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(16), AndroidUtilities.dp(20), AndroidUtilities.dp(16));
+
+            int rowsCount = (palette.length + 3) / 4;
+            for (int rowIdx = 0; rowIdx < rowsCount; rowIdx++) {
+                LinearLayout rowLayout = new LinearLayout(context);
+                rowLayout.setOrientation(LinearLayout.HORIZONTAL);
+                rowLayout.setGravity(Gravity.CENTER);
+                for (int colIdx = 0; colIdx < 4; colIdx++) {
+                    int pIdx = rowIdx * 4 + colIdx;
+                    if (pIdx >= palette.length) break;
+                    int color = palette[pIdx];
+                    View swatch = new View(context);
+                    GradientDrawable sBg = new GradientDrawable();
+                    sBg.setShape(GradientDrawable.OVAL);
+                    sBg.setColor(color);
+                    swatch.setBackground(sBg);
+                    swatch.setOnClickListener(sv -> {
+                        host.putInt(r.id, color);
+                        try {
+                            mod.onSettingsColor(r.id, color);
+                        } catch (Throwable ignore) {
+                        }
+                        if (listView != null && listView.adapter != null) {
+                            listView.adapter.update(true);
+                        }
+                    });
+                    rowLayout.addView(swatch, LayoutHelper.createLinear(44, 44, 0, 8, 8, 8, 8));
+                }
+                layout.addView(rowLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            }
+            builder.setView(layout);
+            builder.setNegativeButton(MiogramLocale.get("Закрити", "Закрыть", "Close"), null);
+            showDialog(builder.create());
+        });
 
         return card;
     }

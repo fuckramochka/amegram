@@ -197,7 +197,7 @@ public final class HotModulesManager {
             for (String f : list) {
                 if (!f.endsWith(".hmod")) continue;
                 String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
-                if (isSystem(modId) || f.contains("system")) {
+                if ("settings_ui".equals(modId) || "ui".equals(modId) || isSystem(modId) || f.contains("system")) {
                     if (shouldSeedSystemModule(modId, f)) {
                         try {
                             installBundledModuleDirect(modId, true);
@@ -218,6 +218,9 @@ public final class HotModulesManager {
      * файлів різних версій — старі пропускаємо).
      */
     private static boolean shouldSeedSystemModule(String modId, String assetFile) {
+        if (prefs().getBoolean("uninstalled_" + modId, false)) {
+            return false;
+        }
         String installed = prefs().getString("installed_" + modId, "");
         if (!isModuleInstalled(modId)) {
             return installed.isEmpty(); // уже сіяли, потім видалили/вимкнули руками
@@ -340,9 +343,7 @@ public final class HotModulesManager {
 
     public static boolean isSystem(String moduleId) {
         if (moduleId == null) return false;
-        if ("settings_ui".equals(moduleId) || "ui".equals(moduleId)
-                || "gaming".equals(moduleId) || "feed".equals(moduleId)
-                || "kanban".equals(moduleId) || "profile".equals(moduleId)) return true;
+        if ("settings_ui".equals(moduleId)) return true;
         for (InstalledInfo info : listInstalled()) {
             if (moduleId.equals(info.manifest.id) && info.active) {
                 return info.manifest.isSystem;
@@ -773,7 +774,9 @@ public final class HotModulesManager {
             throw new IllegalStateException("rename failed");
         }
         makeReadOnly(dest);
-        boolean shouldEnable = enable || m.isSystem;
+        boolean shouldEnable = prefs().contains("enabled_" + m.id)
+                ? prefs().getBoolean("enabled_" + m.id, false)
+                : (enable || m.isSystem);
         prefs().edit().putString("installed_" + m.id, m.version)
                 .putBoolean("enabled_" + m.id, shouldEnable).apply();
         if (shouldEnable) {

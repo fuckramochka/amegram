@@ -178,8 +178,8 @@ public class MiogramSupabaseBridge {
                 MiogramBadgeManager.FOUNDER_USER_ID,
                 type,
                 "Засновник & Архітектор Miyumi ໒꒱",
-                "Особиста відзнака засновника та головного архітектора спільноти Miyumi (@fuckramochka).",
-                "01.09.2026",
+                "Офіційна відзнака засновника спільноти Miyumi (@fuckramochka).",
+                new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()),
                 true,
                 true,
                 MiogramBadgeManager.FOUNDER_USER_ID
@@ -348,16 +348,21 @@ public class MiogramSupabaseBridge {
                         }
                         reader.close();
 
-                        String resultJson = sb.toString();
-                        parseAndApplyBadgesJson(resultJson);
-
-                        getPrefs(null).edit().putString(KEY_CACHE_JSON, resultJson).apply();
-
-                        AndroidUtilities.runOnUIThread(() -> {
-                            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-                            if (onComplete != null) onComplete.run();
-                        });
-                        return;
+                        String resultJson = sb.toString().trim();
+                        try {
+                            JSONArray check = new JSONArray(resultJson);
+                            if (check.length() > 0) {
+                                parseAndApplyBadgesJson(resultJson);
+                                getPrefs(null).edit().putString(KEY_CACHE_JSON, resultJson).apply();
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                                    if (onComplete != null) onComplete.run();
+                                });
+                                return;
+                            }
+                        } catch (Throwable t) {
+                            FileLog.e(t);
+                        }
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
@@ -376,8 +381,8 @@ public class MiogramSupabaseBridge {
     private static void parseAndApplyBadgesJson(String jsonStr) {
         try {
             JSONArray arr = new JSONArray(jsonStr);
+            if (arr.length() == 0) return;
             synchronized (badgeCache) {
-                badgeCache.clear();
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject obj = arr.getJSONObject(i);
                     long uid = obj.optLong("user_id");
@@ -412,6 +417,31 @@ public class MiogramSupabaseBridge {
             }
         } catch (Exception e) {
             FileLog.e(e);
+        }
+    }
+
+    public static void saveCacheLocked() {
+        try {
+            JSONArray arr = new JSONArray();
+            synchronized (badgeCache) {
+                for (int i = 0; i < badgeCache.size(); i++) {
+                    BadgeRecord r = badgeCache.valueAt(i);
+                    if (r == null || !r.isActive) continue;
+                    JSONObject o = new JSONObject();
+                    o.put("user_id", r.userId);
+                    o.put("badge_id", r.badgeIdString);
+                    o.put("title", r.title);
+                    o.put("obtained_reason", r.obtainedReason);
+                    o.put("obtained_at", r.obtainedAt);
+                    o.put("is_active", r.isActive);
+                    o.put("verified", r.verified);
+                    o.put("grantor_id", r.grantorId);
+                    arr.put(o);
+                }
+            }
+            getPrefs(null).edit().putString(KEY_CACHE_JSON, arr.toString()).apply();
+        } catch (Throwable t) {
+            FileLog.e(t);
         }
     }
 
@@ -1013,12 +1043,14 @@ public class MiogramSupabaseBridge {
             badgeCache.put(targetUserId, new BadgeRecord(targetUserId,
                     MiogramBadgeType.fromId(fBadge), fTitle, fReason,
                     new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()), true, true, fGranter));
+            saveCacheLocked();
         }
         AndroidUtilities.runOnUIThread(() -> {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME | MessagesController.UPDATE_MASK_AVATAR);
         });
         Utilities.globalQueue.postRunnable(() -> {
+            boolean success = false;
             for (String rpc : RPC_GRANT) {
                 HttpURLConnection connection = null;
                 try {
@@ -1048,29 +1080,68 @@ public class MiogramSupabaseBridge {
 
                     int code = connection.getResponseCode();
                     FileLog.d("MiogramSupabaseBridge grant badge status (" + rpc + "): " + code);
-                    if (code == 404) {
-                        continue;
-                    }
                     if (code >= 200 && code < 300) {
                         synchronized (badgeCache) {
                             badgeCache.put(targetUserId, new BadgeRecord(targetUserId,
                                     fBadge, fTitle, fReason,
                                     new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()), true, true, fGranter));
+                            saveCacheLocked();
                         }
-                        break;
-                    } else {
-                        showSyncErrorDialog(null, "Grant badge HTTP " + code);
+                        success = true;
                         break;
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
-                    String msg = e.getMessage();
-                    showSyncErrorDialog(null, (msg != null && !msg.isEmpty()) ? (e.getClass().getSimpleName() + ": " + msg) : e.toString());
-                    break;
                 } finally {
                     if (connection != null) connection.disconnect();
                 }
             }
+
+            if (!success) {
+                // Direct REST table upsert fallback
+                for (String table : BADGES_TABLES) {
+                    HttpURLConnection connection = null;
+                    try {
+                        URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/" + table);
+                        connection = (HttpURLConnection) url.openConnection();
+                        connection.setRequestMethod("POST");
+                        connection.setDoOutput(true);
+                        connection.setConnectTimeout(8000);
+                        connection.setReadTimeout(8000);
+                        connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
+                        connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                        connection.setRequestProperty("Content-Type", "application/json");
+                        connection.setRequestProperty("Prefer", "resolution=merge-duplicates");
+
+                        JSONObject body = new JSONObject();
+                        body.put("user_id", targetUserId);
+                        body.put("badge_id", fBadge);
+                        body.put("title", fTitle);
+                        body.put("obtained_reason", fReason);
+                        body.put("is_active", true);
+                        body.put("verified", true);
+                        body.put("grantor_id", fGranter);
+
+                        byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                        connection.setFixedLengthStreamingMode(outBytes.length);
+                        OutputStream os = connection.getOutputStream();
+                        os.write(outBytes);
+                        os.flush();
+                        os.close();
+
+                        int code = connection.getResponseCode();
+                        if (code >= 200 && code < 300) {
+                            success = true;
+                            break;
+                        }
+                    } catch (Exception e) {
+                        FileLog.e(e);
+                    } finally {
+                        if (connection != null) connection.disconnect();
+                    }
+                }
+            }
+
             if (onComplete != null) {
                 AndroidUtilities.runOnUIThread(onComplete);
             }
@@ -1081,6 +1152,7 @@ public class MiogramSupabaseBridge {
         if (targetUserId <= 0) return;
         synchronized (badgeCache) {
             badgeCache.remove(targetUserId);
+            saveCacheLocked();
         }
         AndroidUtilities.runOnUIThread(() -> {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
@@ -1113,21 +1185,11 @@ public class MiogramSupabaseBridge {
                     os.close();
 
                     int code = connection.getResponseCode();
-                    FileLog.d("MiogramSupabaseBridge revoke badge status (" + rpc + "): " + code);
-                    if (code == 404) {
-                        continue;
-                    }
                     if (code >= 200 && code < 300) {
-                        break;
-                    } else {
-                        showSyncErrorDialog(null, "Revoke badge HTTP " + code);
                         break;
                     }
                 } catch (Exception e) {
                     FileLog.e(e);
-                    String msg = e.getMessage();
-                    showSyncErrorDialog(null, (msg != null && !msg.isEmpty()) ? (e.getClass().getSimpleName() + ": " + msg) : e.toString());
-                    break;
                 } finally {
                     if (connection != null) connection.disconnect();
                 }

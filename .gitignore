@@ -58,3 +58,12 @@ CustomProfile_java_src/
 !TMessagesProj/src/main/assets/plugins/**
 !assets/musordrop.mp4
 
+# Інструкції
+YUMIGRAM_INSTRUCTIONS.md
+yumigram_instructions.md
+
+# Video concepts
+*.mov
+*.MOV
+*.MP4
+

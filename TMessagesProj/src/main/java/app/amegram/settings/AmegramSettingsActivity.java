@@ -364,42 +364,42 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Як встановлювати плагіни та модулі", "Как устанавливать плагины и модули", "How to install plugins and modules")));
         model.sections.add(extensions);
 
-        // --- Швидкі модулі (перемикачі встановлених) -----------------
+        // --- Активні модулі та функції -----------------
         YumiSettingsModel.Section modules = section(
-                MiogramLocale.get("Швидкі модулі", "Быстрые модули", "Quick modules"),
-                MiogramLocale.get("Швидке вмикання та вимкнення", "Быстрое включение и выключение", "Toggle installed modules"));
+                MiogramLocale.get("Модулі та функції", "Модули и функции", "Active modules & features"),
+                MiogramLocale.get("Налаштування увімкнених модулів", "Настройки включенных модулей", "Settings for active modules"));
 
-        addModuleRow(modules, "ghost", ROW_GHOST, R.drawable.yumi_ic_ghost, YumiMd3.primary(),
+        addActiveModuleRow(modules, "ghost", ROW_GHOST, R.drawable.yumi_ic_ghost, YumiMd3.primary(),
                 MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode"),
                 MiogramLocale.get("Скритність онлайну та прочитання", "Скрытность онлайна и прочтения", "Hide online, read receipts & typing"));
-        addModuleRow(modules, "ui", ROW_UI, R.drawable.yumi_ic_palette, YumiMd3.primary(),
+        addActiveModuleRow(modules, "ui", ROW_UI, R.drawable.yumi_ic_palette, YumiMd3.primary(),
                 MiogramLocale.get("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi interface"),
                 MiogramLocale.get("Material Design 3 та навігація", "Material Design 3 и навигация", "Material Design 3 & navigation"));
-        addModuleRow(modules, "ai", ROW_AI, R.drawable.yumi_ic_auto_awesome, YumiMd3.primary(),
+        addActiveModuleRow(modules, "ai", ROW_AI, R.drawable.yumi_ic_auto_awesome, YumiMd3.primary(),
                 MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial intelligence (AI)"),
                 MiogramLocale.get("Асистент Ame / KAngel, чат і генерація", "Ассистент Ame / KAngel, чат и генерация", "Ame / KAngel companion, chat & generation"));
-        addModuleRow(modules, "player", ROW_PLAYER, R.drawable.yumi_ic_music, YumiMd3.primary(),
+        addActiveModuleRow(modules, "player", ROW_PLAYER, R.drawable.yumi_ic_music, YumiMd3.primary(),
                 MiogramLocale.get("Пошук музики та тексти", "Поиск музыки и тексты", "Music search & lyrics"),
                 MiogramLocale.get("Пошук у сервісах, відтворення, LRC", "Поиск в сервисах, воспроизведение, LRC", "Music service search, playback & LRC"));
-        addModuleRow(modules, "vault", ROW_VAULT, R.drawable.yumi_ic_storage, YumiMd3.primary(),
+        addActiveModuleRow(modules, "vault", ROW_VAULT, R.drawable.yumi_ic_storage, YumiMd3.primary(),
                 MiogramLocale.get("Хмарне сховище", "Облачное хранилище", "Cloud vault"),
                 MiogramLocale.get("AES-256 диск, шифрування", "AES-256 диск, шифрование", "AES-256 virtual disk, encryption"));
-        addModuleRow(modules, "experimental", ROW_EXPERIMENTAL, R.drawable.yumi_ic_science, YumiMd3.primary(),
+        addActiveModuleRow(modules, "experimental", ROW_EXPERIMENTAL, R.drawable.yumi_ic_science, YumiMd3.primary(),
                 MiogramLocale.get("Експерименти та видалені", "Эксперименты и удалённые", "Experiments & deleted"),
                 MiogramLocale.get("Збереження повідомлень, безліміти", "Сохранение сообщений, безлимиты", "Save deleted messages, unlimited pins"));
-        addModuleRow(modules, "tiktok", ROW_TIKTOK, R.drawable.yumi_ic_movie, YumiMd3.primary(),
+        addActiveModuleRow(modules, "tiktok", ROW_TIKTOK, R.drawable.yumi_ic_movie, YumiMd3.primary(),
                 "TikTok MI",
                 MiogramLocale.get("Відео без водяних знаків, прямі посилання", "Видео без водяных знаков, прямые ссылки", "Watermark-free videos, direct links"));
-        addModuleRow(modules, "ame", ROW_AME, R.drawable.yumi_ic_customize, YumiMd3.primary(),
+        addActiveModuleRow(modules, "ame", ROW_AME, R.drawable.yumi_ic_customize, YumiMd3.primary(),
                 MiogramLocale.get("Кастомізація UI", "Кастомизация UI", "Customization"),
                 MiogramLocale.get("Картки профілю, діалоги, ефекти", "Карточки профиля, диалоги, эффекты", "Profile cards, dialogs, visual effects"));
-        addModuleRow(modules, "stt", ROW_STT, R.drawable.yumi_ic_voice, YumiMd3.primary(),
+        addActiveModuleRow(modules, "stt", ROW_STT, R.drawable.yumi_ic_voice, YumiMd3.primary(),
                 MiogramLocale.get("Розпізнавання мовлення", "Распознавание речи", "Speech recognition"),
                 MiogramLocale.get("Розшифровка голосових і відео", "Расшифровка голосовых и видео", "Transcribe voice and video messages"));
-        addModuleRow(modules, "automation", ROW_AUTOMATION, R.drawable.yumi_ic_bolt, YumiMd3.primary(),
+        addActiveModuleRow(modules, "automation", ROW_AUTOMATION, R.drawable.yumi_ic_bolt, YumiMd3.primary(),
                 MiogramLocale.get("Автоматизація", "Автоматизация", "Automation"),
                 MiogramLocale.get("Синхронізація, резервні копії, очищення", "Синхронизация, резервные копии, очистка", "Sync, backups and cleanup"));
-        addModuleRow(modules, "fileorganization", ROW_FILEORG, R.drawable.yumi_ic_folder, YumiMd3.primary(),
+        addActiveModuleRow(modules, "fileorganization", ROW_FILEORG, R.drawable.yumi_ic_folder, YumiMd3.primary(),
                 MiogramLocale.get("Організація файлів", "Организация файлов", "File organization"),
                 MiogramLocale.get("Збереження завантажень у папки чатів", "Сохранение загрузок в папки чатов", "Save downloads into chat folders"));
 
@@ -407,10 +407,15 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             if (info == null || info.manifest == null || BUILTIN_IDS.contains(info.manifest.id) || HotModulesManager.isSystem(info.manifest.id)) {
                 continue;
             }
-            YumiSettingsModel.Row row = moduleRow(info.manifest.id, ROW_CUSTOM_BASE + customInstalledModules.size(),
+            if (!HotModulesManager.isModuleActive(info.manifest.id)) {
+                continue;
+            }
+            YumiSettingsModel.Row row = row(ROW_CUSTOM_BASE + customInstalledModules.size(),
                     R.drawable.yumi_ic_extension, YumiMd3.primary(),
                     info.manifest.name,
                     MiogramLocale.get("Стороннє розширення", "Стороннее расширение", "Third-party extension"));
+            row.moduleId = info.manifest.id;
+            row.kind = YumiSettingsModel.KIND_NAV;
             customInstalledModules.add(info);
             modules.rows.add(row);
         }
@@ -506,28 +511,14 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         return action;
     }
 
-    private void addModuleRow(YumiSettingsModel.Section section, String moduleId, int id,
-                              int icon, int accent, CharSequence title, CharSequence description) {
-        if (HotModulesManager.isModuleInstalled(moduleId)) {
-            section.rows.add(moduleRow(moduleId, id, icon, accent, title, description));
+    private void addActiveModuleRow(YumiSettingsModel.Section section, String moduleId, int id,
+                                       int icon, int accent, CharSequence title, CharSequence description) {
+        if (HotModulesManager.isModuleActive(moduleId)) {
+            YumiSettingsModel.Row row = row(id, icon, accent, title, description);
+            row.moduleId = moduleId;
+            row.kind = YumiSettingsModel.KIND_NAV;
+            section.rows.add(row);
         }
-    }
-
-    private YumiSettingsModel.Row moduleRow(String moduleId, int id, int icon, int accent,
-                                            CharSequence title, CharSequence description) {
-        boolean enabled = HotModulesManager.isModuleEnabled(moduleId);
-        YumiSettingsModel.Row row = row(id, icon, accent, title, moduleSubtitle(enabled, description));
-        row.moduleId = moduleId;
-        row.kind = YumiSettingsModel.KIND_SWITCH;
-        row.checked = enabled;
-        return row;
-    }
-
-    private String moduleSubtitle(boolean enabled, CharSequence description) {
-        String state = enabled
-                ? MiogramLocale.get("Увімкнено", "Включено", "Enabled")
-                : MiogramLocale.get("Вимкнено", "Выключено", "Disabled");
-        return state + " · " + description;
     }
 
     // ------------------------------------------------------------------
@@ -571,7 +562,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             return;
         }
         if (id == ROW_PERSONALIZATION) {
-            presentFragment(new MiogramVisualsActivity());
+            presentFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
         } else if (id == ROW_CHATS_MEDIA) {
             presentFragment(new app.exteraless.settings.OpenExteraChatsActivity());
         } else if (id == ROW_NOTIFICATIONS) {

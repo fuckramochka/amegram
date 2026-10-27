@@ -11,6 +11,7 @@ import android.util.AttributeSet;
 import android.view.View;
 
 import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
@@ -121,8 +122,9 @@ public class YumiUpdateBannerView extends View {
         final float radius = AndroidUtilities.dp(26);
         bannerRect.set(0, 0, w, h);
 
-        // Dark background matching screenshot 15 (#1B1B1E)
-        int bgColor = Theme.isCurrentThemeDark() ? 0xFF1D1D21 : 0xFF2A2A2E;
+        int accent = Theme.getColor(Theme.key_featuredStickers_addButton);
+        int baseBg = Theme.isCurrentThemeDark() ? 0xFF18181C : 0xFF222226;
+        int bgColor = ColorUtils.blendARGB(baseBg, accent, 0.10f);
         bannerPaint.setColor(bgColor);
 
         clipPath.rewind();
@@ -132,25 +134,27 @@ public class YumiUpdateBannerView extends View {
         canvas.clipPath(clipPath);
         canvas.drawRect(bannerRect, bannerPaint);
 
+        boolean animEnabled = org.telegram.messenger.SharedConfig.animationsEnabled();
         final long now = SystemClock.uptimeMillis();
-        final long elapsed = now - startTime;
+        final long elapsed = animEnabled ? (now - startTime) : 0L;
 
-        final float animSpeedMult = (isChecking || isDownloading) ? 3.5f : 1.0f;
-        final float driftAmp = (isChecking || isDownloading) ? AndroidUtilities.dp(12) : AndroidUtilities.dp(4);
+        final float animSpeedMult = animEnabled ? ((isChecking || isDownloading) ? 3.5f : 1.0f) : 0f;
+        final float driftAmp = animEnabled ? ((isChecking || isDownloading) ? AndroidUtilities.dp(12) : AndroidUtilities.dp(4)) : 0f;
 
         // 1. Draw floating surrounding shapes
         for (FloatingShape shape : shapes) {
             float basePxX = w * shape.relX;
             float basePxY = h * shape.relY;
 
-            float offsetX = (float) Math.sin((elapsed * shape.speedX * animSpeedMult) + shape.phase) * driftAmp;
-            float offsetY = (float) Math.cos((elapsed * shape.speedY * animSpeedMult) + shape.phase) * driftAmp;
+            float offsetX = animEnabled ? ((float) Math.sin((elapsed * shape.speedX * animSpeedMult) + shape.phase) * driftAmp) : 0f;
+            float offsetY = animEnabled ? ((float) Math.cos((elapsed * shape.speedY * animSpeedMult) + shape.phase) * driftAmp) : 0f;
 
             float curX = basePxX + offsetX;
             float curY = basePxY + offsetY;
-            float curRot = (elapsed * shape.rotSpeed * animSpeedMult) % 360f;
+            float curRot = animEnabled ? ((elapsed * shape.rotSpeed * animSpeedMult) % 360f) : 0f;
 
-            shapePaint.setColor(shape.color);
+            int shapeColor = ColorUtils.blendARGB(shape.color, accent, 0.22f);
+            shapePaint.setColor(shapeColor);
             float sizePx = AndroidUtilities.dp(shape.sizeDp);
 
             canvas.save();
@@ -180,12 +184,16 @@ public class YumiUpdateBannerView extends View {
         final float badgeLobeDepth = AndroidUtilities.dp(5.5f);
 
         // Center badge rotation & subtle breathing
-        float badgeRot = (isChecking || isDownloading)
-                ? (elapsed * 0.04f) % 360f
-                : (float) Math.sin(elapsed * 0.001f) * 4f;
+        float badgeRot = animEnabled
+                ? ((isChecking || isDownloading)
+                    ? (elapsed * 0.04f) % 360f
+                    : (float) Math.sin(elapsed * 0.001f) * 4f)
+                : 0f;
 
-        float badgeScale = (isChecking || isDownloading)
-                ? 1.0f + (float) Math.sin(elapsed * 0.006f) * 0.06f
+        float badgeScale = animEnabled
+                ? ((isChecking || isDownloading)
+                    ? 1.0f + (float) Math.sin(elapsed * 0.006f) * 0.06f
+                    : 1.0f)
                 : 1.0f;
 
         // Rotating accent ring during active checking / downloading
@@ -194,16 +202,18 @@ public class YumiUpdateBannerView extends View {
             ringPaint.setStyle(Paint.Style.STROKE);
             ringPaint.setStrokeCap(Paint.Cap.ROUND);
             ringPaint.setStrokeWidth(AndroidUtilities.dp(2.5f));
-            ringPaint.setColor(0x77FFFFFF);
+            ringPaint.setColor(ColorUtils.setAlphaComponent(accent, 0xBB));
             float ringR = badgeBaseR * badgeScale + AndroidUtilities.dp(9);
             RectF arcRect = new RectF(cx - ringR, cy - ringR, cx + ringR, cy + ringR);
-            float startAngle = (elapsed * 0.18f) % 360f;
+            float startAngle = animEnabled ? ((elapsed * 0.18f) % 360f) : 45f;
             canvas.drawArc(arcRect, startAngle, 85f, false, ringPaint);
             canvas.drawArc(arcRect, (startAngle + 180f) % 360f, 85f, false, ringPaint);
         }
 
         Path centerBadgePath = createScallopedPath(cx, cy, badgeBaseR * badgeScale, badgeLobeDepth * badgeScale, 12, badgeRot);
-        badgePaint.setColor(0xFF55555C);
+        int badgeBase = Theme.isCurrentThemeDark() ? 0xFF35353C : 0xFF3D3D45;
+        int badgeColor = ColorUtils.blendARGB(badgeBase, accent, 0.28f);
+        badgePaint.setColor(badgeColor);
         canvas.drawPath(centerBadgePath, badgePaint);
 
         // 3. Central Telegram Plane Icon in pure white with lively motion
@@ -211,7 +221,7 @@ public class YumiUpdateBannerView extends View {
             final int iconSize = AndroidUtilities.dp(42);
             canvas.save();
             canvas.translate(cx, cy);
-            if (isChecking || isDownloading) {
+            if (animEnabled && (isChecking || isDownloading)) {
                 float tilt = (float) Math.sin(elapsed * 0.005f) * 7f;
                 float planeScale = 1.0f + (float) Math.sin(elapsed * 0.006f) * 0.07f;
                 canvas.rotate(tilt);
@@ -225,8 +235,8 @@ public class YumiUpdateBannerView extends View {
 
         canvas.restore();
 
-        // Keep continuous animation running smoothly when visible
-        if (getVisibility() == VISIBLE) {
+        // Keep continuous animation running smoothly when visible and enabled
+        if (animEnabled && getVisibility() == VISIBLE) {
             postInvalidateOnAnimation();
         }
     }

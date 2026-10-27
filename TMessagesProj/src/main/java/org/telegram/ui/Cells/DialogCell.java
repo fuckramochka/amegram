@@ -4821,7 +4821,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     } else {
                         emojiStatusVisible = true;
                     }
-                    emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+                    if (user != null && app.miogram.bridge.badge.MiogramBadgeManager.hasArrow(user.id)) {
+                        emojiStatus.setColor(null);
+                    } else {
+                        emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+                    }
                 } else {
                     Drawable premiumDrawable = PremiumGradient.getInstance().premiumStarDrawableMini;
                     setDrawableBounds(premiumDrawable, nameMuteLeft - dp(1), dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f));

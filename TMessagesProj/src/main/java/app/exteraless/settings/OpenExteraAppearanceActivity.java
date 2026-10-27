@@ -7,11 +7,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
@@ -34,6 +38,9 @@ import app.exteraless.appearance.FabShapeCell;
 import app.exteraless.appearance.FoldersPreviewCell;
 import app.exteraless.icons.IconPacksActivity;
 import app.exteraless.pillstack.PillStackSettingsActivity;
+import app.miogram.bridge.MiogramFlags;
+import app.miogram.bridge.MiogramLocale;
+import app.miogram.bridge.ui.MiogramVisualsPrefs;
 import tw.nekomimi.nekogram.NekoConfig;
 import tw.nekomimi.nekogram.config.ConfigItem;
 import tw.nekomimi.nekogram.helpers.AppRestartHelper;
@@ -82,6 +89,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     // Blur
     private int blurHeaderRow;
+    private int liquidGlassRow;
+    private int liquidGlassIntensityRow;
     private int glassOutlineRow;
     private int glassMessageMenuRow;
     private int forceBlurRow;
@@ -136,6 +145,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     // Links
     private int linksHeaderRow;
+    private int customUiRow;
+    private int ameProfileXmlRow;
     private int appNavigationRow;
     private int iconPacksRow;
     private int pillStackRow;
@@ -188,9 +199,19 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         hideAllChatsRow = addRow("hideAllChats");
         foldersDividerRow = addRow();
 
-        // Порядок как в 12.9.0: строки-переходы идут сразу после «Chat Folders»,
-        // до секции общего вида.
+        // Порядок як в 12.9.0: строки-переходи йдуть одразу після «Chat Folders»,
+        // до секції загального вигляду.
         linksHeaderRow = addRow("linksHeader");
+        if (app.amegram.hot.HotModulesManager.isModuleActive("ui")) {
+            customUiRow = addRow("customUi");
+        } else {
+            customUiRow = -1;
+        }
+        if (app.amegram.hot.HotModulesManager.isModuleActive("ame")) {
+            ameProfileXmlRow = addRow("ameProfileXml");
+        } else {
+            ameProfileXmlRow = -1;
+        }
         appNavigationRow = addRow("appNavigation");
         iconPacksRow = addRow("iconPacks");
         pillStackRow = addRow("pillStack");
@@ -248,6 +269,12 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         sectionsDividerRow = addRow();
 
         blurHeaderRow = addRow("blurHeader");
+        liquidGlassRow = addRow("liquidGlass");
+        if (decorationEnabled()) {
+            liquidGlassIntensityRow = addRow("liquidGlassIntensity");
+        } else {
+            liquidGlassIntensityRow = -1;
+        }
         glassOutlineRow = addRow("glassOutline");
         glassMessageMenuRow = addRow("glassMessageMenu");
         forceBlurRow = addRow("forceBlur");
@@ -256,9 +283,69 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     }
 
+    private boolean decorationEnabled() {
+        Context ctx = getParentActivity() != null ? getParentActivity() : ApplicationLoader.applicationContext;
+        return MiogramFlags.isSpatialDecoration()
+                || MiogramVisualsPrefs.loadBool(ctx, "agsl_enabled", false);
+    }
+
+    private int intensityPercent() {
+        Context ctx = getParentActivity() != null ? getParentActivity() : ApplicationLoader.applicationContext;
+        return MiogramVisualsPrefs.loadInt(ctx, "liquid_glass_intensity", 60);
+    }
+
+    private void showIntensityDialog() {
+        Context ctx = getParentActivity();
+        if (ctx == null) return;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
+        builder.setTitle(MiogramLocale.get("Інтенсивність рідкого скла", "Интенсивность жидкого стекла", "Liquid Glass Intensity"));
+
+        LinearLayout container = new LinearLayout(ctx);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(AndroidUtilities.dp(24), AndroidUtilities.dp(12), AndroidUtilities.dp(24), AndroidUtilities.dp(12));
+
+        int current = intensityPercent();
+        TextView valueLabel = new TextView(ctx);
+        valueLabel.setText(current + "%");
+        valueLabel.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        valueLabel.setTextSize(16);
+        valueLabel.setPadding(0, 0, 0, AndroidUtilities.dp(8));
+
+        SeekBar seekBar = new SeekBar(ctx);
+        seekBar.setMax(100);
+        seekBar.setProgress(current);
+        final Context safeCtx = ctx;
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar sb, int progress, boolean fromUser) {
+                valueLabel.setText(progress + "%");
+                MiogramVisualsPrefs.saveInt(safeCtx, "liquid_glass_intensity", progress);
+            }
+            @Override public void onStartTrackingTouch(SeekBar sb) {}
+            @Override public void onStopTrackingTouch(SeekBar sb) {}
+        });
+
+        container.addView(valueLabel);
+        container.addView(seekBar);
+        builder.setView(container);
+        builder.setPositiveButton(LocaleController.getString(R.string.OK), (dialog, which) -> {
+            if (liquidGlassIntensityRow >= 0 && listAdapter != null) {
+                listAdapter.notifyItemChanged(liquidGlassIntensityRow);
+            }
+            AndroidUtilities.runOnUIThread(() -> {
+                if (LaunchActivity.instance != null && !LaunchActivity.instance.isFinishing()) {
+                    LaunchActivity.instance.rebuildAllFragments(false);
+                }
+            });
+            rebuildAll();
+        });
+        showDialog(builder.create());
+    }
+
     @Override
     protected String getActionBarTitle() {
-        return app.miogram.bridge.MiogramLocale.get("Розширене оформлення", "Расширенное оформление", "Advanced appearance");
+        return MiogramLocale.get("Персоналізація", "Персонализация", "Personalization");
     }
 
     @Override
@@ -451,7 +538,13 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
-        if (position == iconPacksRow) {
+        if (position == customUiRow) {
+            presentFragment(new app.miogram.bridge.customui.MiogramCustomUiActivity());
+            return;
+        } else if (position == ameProfileXmlRow) {
+            new app.amegram.bridge.ameprofile.AmeProfileSheet(getParentActivity() != null ? getParentActivity() : getContext()).show();
+            return;
+        } else if (position == iconPacksRow) {
             presentFragment(new IconPacksActivity());
             return;
         } else if (position == pillStackRow) {
@@ -646,6 +739,22 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             }
             rebuildAll();
             return;
+        } else if (position == liquidGlassRow) {
+            Context ctx = getParentActivity() != null ? getParentActivity() : ApplicationLoader.applicationContext;
+            boolean enabled = !decorationEnabled();
+            MiogramFlags.setSpatialDecoration(enabled);
+            MiogramVisualsPrefs.saveBool(ctx, "agsl_enabled", enabled);
+            rebuildRowsAndNotify();
+            AndroidUtilities.runOnUIThread(() -> {
+                if (LaunchActivity.instance != null && !LaunchActivity.instance.isFinishing()) {
+                    LaunchActivity.instance.rebuildAllFragments(false);
+                }
+            });
+            rebuildAll();
+            return;
+        } else if (position == liquidGlassIntensityRow) {
+            showIntensityDialog();
+            return;
         } else if (position == forceBlurRow) {
             SharedConfig.toggleChatBlur();
             if (view instanceof TextCheckCell) {
@@ -829,7 +938,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     } else if (position == sectionsHeaderRow) {
                         cell.setText(getString(R.string.OEAppearanceSections));
                     } else if (position == blurHeaderRow) {
-                        cell.setText(getString(R.string.OEAppearanceBlur));
+                        cell.setText(MiogramLocale.get("Розмиття та рідке скло", "Размытие и жидкое стекло", "Blur & Liquid Glass"));
                     } else if (position == chatListHeaderRow) {
                         cell.setText(getString(R.string.OEAppearanceChatList));
                     } else if (position == foldersHeaderRow) {
@@ -860,6 +969,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(getString(R.string.OEAppearanceSeparateHeaders), AppearanceConfig.separateHeaders.Bool(), true);
                     } else if (position == glassMessageMenuRow) {
                         cell.setTextAndValueAndCheck(getString(R.string.OEAppearanceGlassMessageMenu), getString(R.string.OEAppearanceGlassMessageMenuInfo), AppearanceConfig.glassMessageMenu.Bool(), true, true);
+                    } else if (position == liquidGlassRow) {
+                        cell.setTextAndCheck(MiogramLocale.get("Ефект рідкого скла на AGSL", "Эффект жидкого стекла на AGSL", "Liquid glass effect via AGSL"), decorationEnabled(), true);
                     } else if (position == forceBlurRow) {
                         cell.setTextAndCheck(getString(R.string.OEAppearanceForceBlur), SharedConfig.chatBlurEnabled(), true);
                     } else if (position == disableAvatarBlurRow) {
@@ -979,13 +1090,19 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     } else if (position == titleTextRow) {
                         String[] v = {getString(R.string.OEAppearanceTitleTextApp), getString(R.string.OEAppearanceTitleTextUsername), getString(R.string.OEAppearanceTitleTextName), getString(R.string.FilterChats)};
                         cell.setTextAndValue(getString(R.string.OEAppearanceTitleText), v[clamp(AppearanceConfig.titleText.Int(), v.length)], false);
+                    } else if (position == liquidGlassIntensityRow) {
+                        cell.setTextAndValue(MiogramLocale.get("Інтенсивність скла", "Интенсивность стекла", "Glass Intensity"), intensityPercent() + "%", false);
                     }
                     break;
                 }
                 case TYPE_DETAIL_SETTINGS: {
                     // Иконка слева, подпись под заголовком.
                     TextDetailSettingsCell cell = (TextDetailSettingsCell) holder.itemView;
-                    if (position == appNavigationRow) {
+                    if (position == customUiRow) {
+                        cell.setTextAndValueAndIcon(MiogramLocale.get("Аме профіль (Кастомізація)", "Аме профиль (Кастомизация)", "Ame Profile Studio"), MiogramLocale.get("Відкрити студію", "Открыть студию", "Open Studio"), R.drawable.msg_customize, true);
+                    } else if (position == ameProfileXmlRow) {
+                        cell.setTextAndValueAndIcon(MiogramLocale.get("Аме профіль (XML-код)", "Аме профиль (XML-код)", "Ame Profile (XML code)"), MiogramLocale.get("Експорт та вітка", "Экспорт и ветка", "Export & topic"), R.drawable.msg_theme, true);
+                    } else if (position == appNavigationRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.OEAppearanceNavigation), getString(R.string.OEAppearanceNavigationSub), R.drawable.msg_newphone, true);
                     } else if (position == iconPacksRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.OEAppearanceIconPacks), getString(R.string.OEAppearanceIconPacksInfo), R.drawable.msg_sticker, true);
@@ -1059,7 +1176,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             } else if (position == fabShapeRow) {
                 return TYPE_FAB_SHAPE;
             } else if (position == appNavigationRow || position == iconPacksRow
-                    || position == pillStackRow) {
+                    || position == pillStackRow || position == customUiRow
+                    || position == ameProfileXmlRow) {
                 return TYPE_DETAIL_SETTINGS;
             } else if (position == md3GroupRow || position == hideAiGroupRow
                     || position == iosGroupRow) {
@@ -1072,7 +1190,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 return TYPE_ROUND_CHECK;
             } else if (position == uiStyleModeRow || position == dividerStyleRow || position == glassOutlineRow
                     || position == tabTitleStyleRow
-                    || position == tabCounterRow || position == titleTextRow) {
+                    || position == tabCounterRow || position == titleTextRow
+                    || position == liquidGlassIntensityRow) {
                 return TYPE_SETTINGS;
             }
             return TYPE_CHECK;

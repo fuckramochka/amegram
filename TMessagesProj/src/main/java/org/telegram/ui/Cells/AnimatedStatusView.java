@@ -166,10 +166,10 @@ public class AnimatedStatusView extends View {
 
     private Integer color;
 
-    public void setColor(int color) {
+    public void setColor(Integer color) {
         this.color = color;
-        final ColorFilter colorFilter = new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY);
-        final ColorFilter colorFilterEmoji = new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
+        final ColorFilter colorFilter = color == null ? null : new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY);
+        final ColorFilter colorFilterEmoji = color == null ? null : new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN);
         for (int i = 0; i < animations.size(); ++i) {
             Object animation = animations.get(i);
             if (animation instanceof ImageReceiver) {

@@ -90,14 +90,13 @@ public class MiogramBadgeBottomSheet extends BottomSheet {
 
         MiogramSupabaseBridge.BadgeRecord record = MiogramBadgeManager.getBadgeRecord(targetUserId);
         if (record == null && isFounder) {
+            MiogramBadgeType selectedType = MiogramSupabaseBridge.getSelectedBadgeForAccount(context, targetUserId);
             record = new MiogramSupabaseBridge.BadgeRecord(
                     targetUserId,
-                    MiogramBadgeType.DEVIL,
+                    selectedType != null ? selectedType : MiogramBadgeType.DEVIL,
                     MiogramLocale.get("Засновник & Архітектор Miyumi ໒꒱", "Создатель & Архитектор Miyumi ໒꒱", "Miyumi Founder & Architect ໒꒱"),
-                    MiogramLocale.get("Особиста відзнака засновника та головного архітектора спільноти Miyumi (@fuckramochka).",
-                            "Личное отличие создателя и главного архитектора сообщества Miyumi (@fuckramochka).",
-                            "Personal distinction of the Founder & Chief Architect of Miyumi (@fuckramochka)."),
-                    "01.09.2026",
+                    "",
+                    "",
                     true,
                     true,
                     MiogramBadgeManager.FOUNDER_USER_ID

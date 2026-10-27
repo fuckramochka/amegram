@@ -1334,19 +1334,11 @@ public class YumiSettingsView extends FrameLayout {
                     setOnClickListener(v -> {
                         if (!row.enabled) return;
                         haptic(v);
-                        toggle.performClick();
+                        hideSearchFocus();
+                        listener.onRow(row);
                     });
 
-                    setOnLongClickListener(v -> {
-                        if (!row.enabled) return false;
-                        if (row.moduleId != null || row.id != 0) {
-                            haptic(v);
-                            hideSearchFocus();
-                            listener.onRow(row);
-                            return true;
-                        }
-                        return false;
-                    });
+                    setOnLongClickListener(null);
                 } else {
                     toggle.setVisibility(View.GONE);
                     if (!TextUtils.isEmpty(row.value)) {

@@ -3118,9 +3118,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     statusDrawable.setParentView(titleTextView);
                 }
             }
-            statusDrawable.setColor(Theme.getColor(Theme.key_profile_verifiedBackground));
+            statusDrawable.setColor(null);
             if (animatedStatusView != null) {
-                animatedStatusView.setColor(Theme.getColor(Theme.key_profile_verifiedBackground));
+                animatedStatusView.setColor(null);
             }
             return;
         }
@@ -3143,9 +3143,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     statusDrawable.setParentView(titleTextView);
                 }
             }
-            statusDrawable.setColor(Theme.getColor(Theme.key_profile_verifiedBackground));
+            statusDrawable.setColor(null);
             if (animatedStatusView != null) {
-                animatedStatusView.setColor(Theme.getColor(Theme.key_profile_verifiedBackground));
+                animatedStatusView.setColor(null);
             }
             return;
         }
@@ -15082,6 +15082,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float actionModeVisible = Math.max(progressToActionMode, animatorActionModeVisible.getFloatValue());
         final float searchFieldVisible = animatorSearchVisible.getFloatValue();
 
+        if (searchFieldVisible <= 0f && (app.exteraless.appearance.YougramExpressive.enabled() || !shouldShowIdleSearchField())) {
+            fragmentSearchField.setAlpha(0f);
+            fragmentSearchField.setVisibility(View.GONE);
+            animatorSearchButtonVisible.setValue(true, true);
+            return;
+        }
+
         final float factor0 = isSupportSearch() ? 1 : 0;
         final float factor1 = (1f - actionModeVisible) * (1f - animatorDoneButtonVisible.getFloatValue());
         final float factor2 = Math.max(searchFieldVisible, alphaByScrollOffset * (1f - getRightSlidingProgress()));
@@ -15342,10 +15349,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (communityId != 0) {
             return navigationBarHeight + dp(12 + 48 + 12);
         } else {
-            // Amegram: bottom tabs are a floating glass pill in every mode — the chat
-            // list runs full height underneath it (like before bottom tabs existed).
-            // UndoView/hints/FAB keep their own offsets above the pill.
-            return navigationBarHeight;
+            // Amegram: floating glass bottom tabs overlay the content, but with clipToPadding(false),
+            // the list must have bottom padding equal to the tabs height + system insets so the
+            // last chat item is never obscured behind the bottom bar when scrolled to end.
+            int tabsH = (hasMainTabs && MainTabsLayout.isBottomNavigationVisible())
+                    ? dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp() + 16)
+                    : 0;
+            return navigationBarHeight + tabsH;
         }
     }
 

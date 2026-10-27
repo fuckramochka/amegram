@@ -1,0 +1,189 @@
+{
+  "providers": [
+    {
+      "id": "mistral",
+      "title": "Mistral AI",
+      "subtitle": "api.mistral.ai",
+      "url": "https://api.mistral.ai/v1/chat/completions",
+      "default_model": "mistral-small-latest",
+      "default_key": "4mzZIYiHMXMiYYcunF7OVuLmYS2F5n5w",
+      "key_url": "https://console.mistral.ai/api-keys",
+      "icon": "mistral.svg",
+      "extra_payload": {
+        "response_format": { "type": "json_object" },
+        "max_tokens": 200000
+      },
+      "models": [
+        {
+          "id": "mistral-small-latest",
+          "name": "Mistral Small",
+          "subtitle": "По умолчанию · Быстрая",
+          "sub_key": "mistral_sub_small",
+          "icon": "mistral.svg"
+        },
+        {
+          "id": "mistral-medium-latest",
+          "name": "Mistral Medium",
+          "subtitle": "Сбалансированная",
+          "sub_key": "mistral_sub_medium",
+          "icon": "mistral.svg"
+        },
+        {
+          "id": "codestral-latest",
+          "name": "Codestral",
+          "subtitle": "Для кода и плагинов",
+          "sub_key": "mistral_sub_codestral",
+          "icon": "mistral.svg"
+        },
+        {
+          "id": "ministral-8b-latest",
+          "name": "Ministral 8B",
+          "subtitle": "Сверхбыстрая",
+          "sub_key": "mistral_sub_ministral_8b",
+          "icon": "mistral.svg"
+        },
+        {
+          "id": "ministral-3b-latest",
+          "name": "Ministral 3B",
+          "subtitle": "Компактная",
+          "sub_key": "mistral_sub_ministral_3b",
+          "icon": "mistral.svg"
+        },
+        {
+          "id": "magistral-medium-latest",
+          "name": "Magistral Medium",
+          "subtitle": "Рассуждения",
+          "sub_key": "mistral_sub_magistral",
+          "icon": "mistral.svg"
+        },
+        {
+          "id": "custom",
+          "name": "Custom",
+          "subtitle": "Своя модель (ввести вручную)",
+          "sub_key": "model_sub_custom",
+          "icon": "msg_settings"
+        }
+      ]
+    },
+    {
+      "id": "openrouter",
+      "title": "OpenRouter",
+      "subtitle": "openrouter.ai",
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "default_model": "openrouter/free",
+      "default_key": "",
+      "key_url": "https://openrouter.ai/keys",
+      "icon": "openrouter.svg",
+      "extra_headers": {
+        "HTTP-Referer": "https://github.com/Kangel-Plugins/PluginManager",
+        "X-Title": "KPM"
+      },
+      "models": [
+        {
+          "id": "openrouter/free",
+          "name": "Auto (Free Router)",
+          "subtitle": "Автовыбор лучшей фри-модели",
+          "sub_key": "openrouter_sub_auto",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "google/gemma-4-31b-it:free",
+          "name": "Gemma 4 31B",
+          "subtitle": "Google · 262K · Бесплатно",
+          "icon": "gemini.svg"
+        },
+        {
+          "id": "google/gemma-4-26b-a4b-it:free",
+          "name": "Gemma 4 26B A4B",
+          "subtitle": "Google · 262K · Бесплатно",
+          "icon": "gemini.svg"
+        },
+        {
+          "id": "nvidia/nemotron-3-super-120b-a12b:free",
+          "name": "Nemotron 3 Super 120B",
+          "subtitle": "NVIDIA · 262K · Бесплатно",
+          "icon": "nvidia.svg"
+        },
+        {
+          "id": "nvidia/nemotron-3-ultra-550b-a55b:free",
+          "name": "Nemotron 3 Ultra 550B",
+          "subtitle": "NVIDIA · 1M · Бесплатно",
+          "icon": "nvidia.svg"
+        },
+        {
+          "id": "nvidia/nemotron-3.5-lightning:free",
+          "name": "Nemotron 3.5 Lightning",
+          "subtitle": "NVIDIA · Быстрая · 1M · Бесплатно",
+          "icon": "nvidia.svg"
+        },
+        {
+          "id": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free",
+          "name": "Nemotron 3 Nano Omni",
+          "subtitle": "NVIDIA · Рассуждения · 256K · Бесплатно",
+          "icon": "nvidia.svg"
+        },
+        {
+          "id": "z-ai/glm-5.2:free",
+          "name": "GLM 5.2",
+          "subtitle": "Z.ai · 256K · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "minimax/minimax-m3:free",
+          "name": "MiniMax M3",
+          "subtitle": "MiniMax · 1M · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "minimax/minimax-m2.7:free",
+          "name": "MiniMax M2.7",
+          "subtitle": "MiniMax · 196K · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "liquid/lfm-2.5-2.6b:free",
+          "name": "LFM 2.5 2.6B",
+          "subtitle": "LiquidAI · 65K · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "cohere/north-mini-code:free",
+          "name": "North Mini Code",
+          "subtitle": "Cohere · Кодинг · 256K · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "thinkingmachines/inkling:free",
+          "name": "Inkling",
+          "subtitle": "Thinking Machines · 1M · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "poolside/laguna-s-2.1:free",
+          "name": "Laguna S 2.1",
+          "subtitle": "Poolside · 262K · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "dots-studio/dots-3-note-preview:free",
+          "name": "Dots3-Note",
+          "subtitle": "Dots Studio · 512K · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "inclusionai/ling-3.0-flash-fin:free",
+          "name": "Ling 3.0 Flash Fin",
+          "subtitle": "InclusionAI · 262K · Бесплатно",
+          "icon": "openrouter.svg"
+        },
+        {
+          "id": "custom",
+          "name": "Custom",
+          "subtitle": "Своя модель (ввести вручную)",
+          "sub_key": "model_sub_custom",
+          "icon": "msg_settings"
+        }
+      ]
+    }
+  ]
+}

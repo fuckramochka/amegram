@@ -21,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
 import androidx.core.widget.NestedScrollView;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -85,7 +86,12 @@ public class MiogramUpdateBottomSheet extends BottomSheet implements MiogramDown
         root.setOrientation(LinearLayout.VERTICAL);
         root.setClickable(true);
         root.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
-        root.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(16), AndroidUtilities.dp(20), AndroidUtilities.dp(16));
+        root.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(16));
+
+        // 0. Drag Handle
+        View handle = new View(ctx);
+        handle.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(2), Theme.getColor(Theme.key_sheet_scrollUp)));
+        root.addView(handle, LayoutHelper.createLinear(36, 4, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 14));
 
         // 1. Title
         SimpleTextView title = new SimpleTextView(ctx);
@@ -145,27 +151,24 @@ public class MiogramUpdateBottomSheet extends BottomSheet implements MiogramDown
 
         root.addView(badgesRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 10));
 
-        // 3. Illustration Preview (Smooth rounded corners 12dp)
+        // 3. Illustration Preview (Smooth rounded corners 14dp)
         ImageView illustrationView = new ImageView(ctx);
         illustrationView.setScaleType(ImageView.ScaleType.CENTER_CROP);
         int imageRes = hasUpdate ? R.drawable.img_update_available : R.drawable.img_update_none;
         try {
-            Bitmap raw = BitmapFactory.decodeResource(ctx.getResources(), imageRes);
-            if (raw != null) {
-                illustrationView.setImageBitmap(getSmoothRounded16by9Bitmap(raw, AndroidUtilities.dp(12)));
-            } else {
-                illustrationView.setImageResource(imageRes);
-            }
+            illustrationView.setImageResource(imageRes);
+            illustrationView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(14), Theme.getColor(Theme.key_windowBackgroundGray)));
+            illustrationView.setClipToOutline(true);
         } catch (Throwable t) {
             illustrationView.setImageResource(imageRes);
         }
-        root.addView(illustrationView, LayoutHelper.createLinear(220, 115, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 10));
+        root.addView(illustrationView, LayoutHelper.createLinear(220, 115, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 12));
 
         // 4. Soft Card Container for Changelog
         LinearLayout cardLayout = new LinearLayout(ctx);
         cardLayout.setOrientation(LinearLayout.VERTICAL);
-        cardLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10), Theme.multAlpha(Theme.getColor(Theme.key_windowBackgroundGray), 0.85f)));
-        cardLayout.setPadding(AndroidUtilities.dp(14), AndroidUtilities.dp(12), AndroidUtilities.dp(14), AndroidUtilities.dp(12));
+        cardLayout.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_windowBackgroundGray)));
+        cardLayout.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(14));
 
         TextView changelogTitle = new TextView(ctx);
         changelogTitle.setText(MiogramLocale.get("Що нового:", "Что нового:", "What's new:"));
@@ -179,9 +182,9 @@ public class MiogramUpdateBottomSheet extends BottomSheet implements MiogramDown
         if (hasUpdate) {
             descriptionView.setText(formatChangelog(changelog));
         } else {
-            descriptionView.setText(MiogramLocale.get("У вас встановлено найновішу збірку Amegram.",
-                    "У вас установлена самая новая сборка Amegram.",
-                    "You have the latest build of Amegram."));
+            descriptionView.setText(MiogramLocale.get("У вас встановлено найновішу збірку Yumigram.",
+                    "У вас установлена самая новая сборка Yumigram.",
+                    "You have the latest build of Yumigram."));
         }
         descriptionView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
         descriptionView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
@@ -238,20 +241,22 @@ public class MiogramUpdateBottomSheet extends BottomSheet implements MiogramDown
             installButton.setText(MiogramLocale.get("Зрозуміло", "Понятно", "Got it"));
             installButton.setOnClickListener(v -> dismiss());
         }
-        installButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
+        installButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15f);
         installButton.setTypeface(AndroidUtilities.bold());
         installButton.setGravity(Gravity.CENTER);
-        installButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(10), Theme.getColor(Theme.key_featuredStickers_addButton), Theme.getColor(Theme.key_featuredStickers_addButton)));
-        installButton.setTextColor(0xFFFFFFFF);
-        root.addView(installButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, Gravity.TOP, 0, 0, 0, hasUpdate ? 6 : 0));
+        int accent = Theme.getColor(Theme.key_featuredStickers_addButton);
+        int accentText = Theme.getColor(Theme.key_featuredStickers_buttonText);
+        installButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(14), accent, ColorUtils.blendARGB(accent, 0xFFFFFFFF, 0.2f)));
+        installButton.setTextColor(accentText);
+        root.addView(installButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, Gravity.TOP, 0, 0, 0, hasUpdate ? 8 : 0));
 
         if (hasUpdate) {
             cancelButton = new TextView(ctx);
             cancelButton.setText(MiogramLocale.get("Нагадати пізніше", "Напомнить позже", "Remind me later"));
-            cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
+            cancelButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14f);
             cancelButton.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
             cancelButton.setGravity(Gravity.CENTER);
-            cancelButton.setPadding(0, AndroidUtilities.dp(6), 0, AndroidUtilities.dp(6));
+            cancelButton.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
             cancelButton.setOnClickListener(v -> {
                 MiogramUpdater.snoozeUpdate(versionName);
                 dismiss();

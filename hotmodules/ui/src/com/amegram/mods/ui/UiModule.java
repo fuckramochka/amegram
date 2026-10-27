@@ -235,29 +235,11 @@ public class UiModule implements HotModule, HotUi {
         try {
             ClassLoader cl = host != null && host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
             Class<?> ncClass = Class.forName("org.telegram.messenger.NotificationCenter", true, cl);
+            Method mGetGlobal = ncClass.getMethod("getGlobalInstance");
+            Object nc = mGetGlobal.invoke(null);
             int updateInterfaces = ncClass.getField("updateInterfaces").getInt(null);
             Method mPost = ncClass.getMethod("postNotificationName", int.class, Object[].class);
-
-            try {
-                Method mGetGlobal = ncClass.getMethod("getGlobalInstance");
-                Object nc = mGetGlobal.invoke(null);
-                mPost.invoke(nc, updateInterfaces, new Object[]{127});
-            } catch (Throwable ignore) {
-            }
-
-            try {
-                Method mGetInstance = ncClass.getMethod("getInstance", int.class);
-                for (int a = 0; a < 4; a++) {
-                    try {
-                        Object nc = mGetInstance.invoke(null, a);
-                        if (nc != null) {
-                            mPost.invoke(nc, updateInterfaces, new Object[]{127});
-                        }
-                    } catch (Throwable ignore) {
-                    }
-                }
-            } catch (Throwable ignore) {
-            }
+            mPost.invoke(nc, updateInterfaces, new Object[]{127});
         } catch (Throwable ignore) {
         }
     }
@@ -269,7 +251,12 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public int chatListStyle() {
-        return readInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
+        int val = readInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
+        if (val == CHAT_STYLE_CARDS) {
+            writeInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
+            return CHAT_STYLE_FLAT;
+        }
+        return val;
     }
 
     public boolean isChatPinnedAccent() {
@@ -791,32 +778,6 @@ public class UiModule implements HotModule, HotUi {
             });
             if (u != null) activeHooks.add(u);
 
-            final Method onLayout = tabClass.getDeclaredMethod("onLayout",
-                    boolean.class, int.class, int.class, int.class, int.class);
-            u = host.hook(onLayout, new HotHook.Callback() {
-                @Override
-                public void after(HotHook.Call call) throws Throwable {
-                    if (navController == null) return;
-                    Object target = call.getThis();
-                    if (target instanceof View) {
-                        navController.onLayout((View) target);
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
-
-            final Method updateColors = tabClass.getDeclaredMethod("updateColorsLottie");
-            u = host.hook(updateColors, new HotHook.Callback() {
-                @Override
-                public void after(HotHook.Call call) throws Throwable {
-                    if (!isExpressive() || navController == null) return;
-                    Object target = call.getThis();
-                    if (target instanceof View) {
-                        navController.onColors((View) target);
-                    }
-                }
-            });
-            if (u != null) activeHooks.add(u);
             host.log("ui: hooked GlassTabView visual state for module navigation");
         } catch (Throwable t) {
             host.log("ui: hook GlassTabView visual state failed: " + t.getMessage());
@@ -904,8 +865,8 @@ public class UiModule implements HotModule, HotUi {
         rows.add(HotRow.choice("chat_card_style_choice",
                 "Стиль списку чатів",
                 "Оберіть форму діалогів",
-                new String[]{"Картки (Cards)", "Острівці (Islands)", "Плаский чистий MD3"},
-                chatListStyle()));
+                new String[]{"Плаский чистий MD3 (Стандарт)", "Сегментовані острівці", "Виразні картки"},
+                chatListStyle() == CHAT_STYLE_FLAT ? 0 : (chatListStyle() == CHAT_STYLE_ISLANDS ? 1 : 2)));
         rows.add(HotRow.switchRow(KEY_CHAT_CARD_OUTLINE,
                 "Контур карток чатів",
                 "Тонкий мікро-контур Material Elevation",
@@ -985,7 +946,8 @@ public class UiModule implements HotModule, HotUi {
     @Override
     public void onSettingsChoice(String key, int index) {
         if ("chat_card_style_choice".equals(key)) {
-            writeInt(KEY_CHAT_STYLE, index);
+            int style = (index == 0) ? CHAT_STYLE_FLAT : (index == 1 ? CHAT_STYLE_ISLANDS : CHAT_STYLE_CARDS);
+            writeInt(KEY_CHAT_STYLE, style);
             markTouched();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             return;

@@ -154,18 +154,33 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
             File pluginsDir = getPluginsDir();
             if (!pluginsDir.exists()) {
                 pluginsDir.mkdirs();
-                // Brand new installation: do NOT download/copy plugins by default.
-                // The user will be prompted via MiogramPluginsOnboardingSheet to select which plugins they want.
-                preferences.edit().putString("builtin_plugins_version", org.telegram.messenger.BuildVars.BUILD_VERSION_STRING).apply();
-                return;
             }
+
+            // Always ensure the official KPM plugin is deployed to pluginsDir
+            File kpmFile = new File(pluginsDir, "kangel_plugins_manager.eaf");
+            boolean kpmNeedsCopy = !kpmFile.exists() || kpmFile.length() == 0;
             String lastCopiedVersion = preferences.getString("builtin_plugins_version", "");
             boolean isAppUpdate = !org.telegram.messenger.BuildVars.BUILD_VERSION_STRING.equals(lastCopiedVersion);
+
+            if (kpmNeedsCopy || isAppUpdate) {
+                try (java.io.InputStream is = appContext.getAssets().open("plugins/kangel_plugins_manager.eaf");
+                     java.io.FileOutputStream fos = new java.io.FileOutputStream(kpmFile)) {
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = is.read(buf)) != -1) {
+                        fos.write(buf, 0, len);
+                    }
+                } catch (Throwable t) {
+                    FileLog.e("PluginsController: failed to copy kangel_plugins_manager.eaf", t);
+                }
+            }
+
             if (isAppUpdate) {
                 // On app update, only refresh plugins that the user already chose to have installed
                 String[] assets = appContext.getAssets().list("plugins");
                 if (assets != null) {
                     for (String name : assets) {
+                        if ("kangel_plugins_manager.eaf".equals(name)) continue;
                         File target = new File(pluginsDir, name);
                         if (target.exists() && target.length() > 0) {
                             try (java.io.InputStream is = appContext.getAssets().open("plugins/" + name);

@@ -139,7 +139,16 @@ object AppearanceConfig {
     @JvmStatic
     fun chatListStyle(): Int {
         ensureLoaded()
-        return chatListStyle.Int()
+        val s = chatListStyle.Int()
+        if (s == CHAT_LIST_STYLE_CARDS) {
+            chatListStyle.value = CHAT_LIST_STYLE_FLAT
+            try {
+                getPreferences().edit().putInt("OEAppearanceChatListStyle", CHAT_LIST_STYLE_FLAT).apply()
+            } catch (t: Throwable) {
+            }
+            return CHAT_LIST_STYLE_FLAT
+        }
+        return s
     }
 
     /** Тональне підсвічування закріплених чатів (колірний акорд з акценту теми: рожевий, Monet, AMOLED тощо). */
@@ -719,6 +728,12 @@ object AppearanceConfig {
                 try {
                     preferences.registerOnSharedPreferenceChangeListener(prefListener)
                     listenerRegistered = true
+                } catch (t: Throwable) {
+                }
+            }
+            if (preferences.contains("OEAppearanceChatListStyle") && preferences.getInt("OEAppearanceChatListStyle", -1) == CHAT_LIST_STYLE_CARDS) {
+                try {
+                    preferences.edit().putInt("OEAppearanceChatListStyle", CHAT_LIST_STYLE_FLAT).apply()
                 } catch (t: Throwable) {
                 }
             }

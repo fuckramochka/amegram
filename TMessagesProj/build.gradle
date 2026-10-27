@@ -26,9 +26,12 @@ def buildTimestamp = System.getenv('BUILD_TIMESTAMP') ?: '0'
 def commitId = System.getenv('COMMIT_ID') ?: ''
 def shortCommit = commitId ? commitId.take(7) : ''
 def runNumber = System.getenv('RUN_NUMBER')
-def versionParts = APP_VERSION_NAME.split('\\.')
-def majorMinor = versionParts.length >= 2 ? "${versionParts[0]}.${versionParts[1]}" : "12.11"
-def verName = runNumber ? "${majorMinor}.${runNumber}" : (!commitId.isEmpty() ? "${majorMinor}.0-${shortCommit}" : APP_VERSION_NAME)
+
+// Channel logic: default to beta unless IS_BETA is explicitly 'false'
+def isBeta = System.getenv('IS_BETA') != null ? (System.getenv('IS_BETA') == 'true') : true
+
+def verName = isBeta ? "${APP_VERSION_NAME}-beta" : APP_VERSION_NAME
+def buildCommitId = isBeta ? shortCommit : ""
 def verCode = runNumber ? (126100 + runNumber.toInteger()) : 1261
 
 def officialVer = APP_VERSION_NAME
@@ -189,7 +192,8 @@ android {
         manifestPlaceholders += [MAPS_API_KEY: mapsKey, GLYPH_API_KEY: glyphKey]
 
         buildConfigField 'String', 'BUILD_VERSION_STRING', '"' + verName + '"'
-        buildConfigField 'String', 'BUILD_COMMIT_ID', '"' + shortCommit + '"'
+        buildConfigField 'String', 'BUILD_COMMIT_ID', '"' + buildCommitId + '"'
+        buildConfigField 'boolean', 'IS_BETA', String.valueOf(isBeta)
         buildConfigField 'String', 'OFFICIAL_VERSION', '"' + officialVer + '"'
         buildConfigField 'int', 'OFFICIAL_VERSION_CODE', officialCode + ''
         buildConfigField 'int', 'APP_ID', appId

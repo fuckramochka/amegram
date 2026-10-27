@@ -1,9 +1,9 @@
 package app.amegram.settings;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
-import android.content.res.ColorStateList;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -12,6 +12,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
+
+import androidx.core.graphics.ColorUtils;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
@@ -50,7 +52,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(MiogramLocale.get("Оновлення застосунку", "Обновление приложения", "App updates"));
+        actionBar.setTitle(MiogramLocale.get("Оновлення Yumigram", "Обновление Yumigram", "Yumigram updates"));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -58,10 +60,11 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
             }
         });
 
-        int bgColor = Theme.isCurrentThemeDark() ? 0xFF0E0E10 : 0xFFF5F5F7;
-        int cardBgColor = Theme.isCurrentThemeDark() ? 0xFF1C1C1F : 0xFFFFFFFF;
-        int textPrimary = Theme.isCurrentThemeDark() ? 0xFFFFFFFF : 0xFF1C1C1F;
-        int textSecondary = 0xFF8E8E93;
+        int bgColor = Theme.getColor(Theme.key_windowBackgroundGray);
+        int cardBgColor = Theme.getColor(Theme.key_windowBackgroundWhite);
+        int textPrimary = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
+        int textSecondary = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2);
+        int accentColor = Theme.getColor(Theme.key_featuredStickers_addButton);
 
         FrameLayout root = new FrameLayout(context);
         root.setBackgroundColor(bgColor);
@@ -100,13 +103,13 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         // Left Icon in squircle/circle container
         FrameLayout statusIconBox = new FrameLayout(context);
         GradientDrawable statusIconBg = new GradientDrawable();
-        statusIconBg.setColor(Theme.isCurrentThemeDark() ? 0xFF2A2A2E : 0xFFE5E5EA);
+        statusIconBg.setColor(ColorUtils.setAlphaComponent(accentColor, Theme.isCurrentThemeDark() ? 0x2A : 0x18));
         statusIconBg.setCornerRadius(AndroidUtilities.dp(14));
         statusIconBox.setBackground(statusIconBg);
 
         ImageView statusIcon = new ImageView(context);
         statusIcon.setImageResource(R.drawable.msg_download_solar);
-        statusIcon.setColorFilter(textPrimary);
+        statusIcon.setColorFilter(accentColor);
         statusIconBox.addView(statusIcon, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
         statusCard.addView(statusIconBox, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
 
@@ -120,7 +123,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         statusActionBtn = new TextView(context);
         statusActionBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         statusActionBtn.setTypeface(AndroidUtilities.bold());
-        statusActionBtn.setTextColor(0xFF3B82F6);
+        statusActionBtn.setTextColor(accentColor);
         statusActionBtn.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(6), AndroidUtilities.dp(10), AndroidUtilities.dp(6));
         statusActionBtn.setVisibility(View.GONE);
         statusCard.addView(statusActionBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -252,13 +255,15 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         checkButton.setText(MiogramLocale.get("Перевірити", "Проверить", "Check"));
         checkButton.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         checkButton.setTypeface(AndroidUtilities.bold());
-        checkButton.setTextColor(0xFF000000);
+        int btnBg = accentColor;
+        int btnText = Theme.getColor(Theme.key_featuredStickers_buttonText);
+        checkButton.setTextColor(btnText);
         checkButton.setGravity(Gravity.CENTER);
 
         GradientDrawable pillBg = new GradientDrawable();
-        pillBg.setColor(0xFFFFFFFF);
+        pillBg.setColor(btnBg);
         pillBg.setCornerRadius(AndroidUtilities.dp(28));
-        RippleDrawable pillRipple = new RippleDrawable(ColorStateList.valueOf(0x33000000), pillBg, null);
+        RippleDrawable pillRipple = new RippleDrawable(ColorStateList.valueOf(ColorUtils.setAlphaComponent(btnText, 0x33)), pillBg, null);
         checkButton.setBackground(pillRipple);
 
         checkButton.setOnClickListener(v -> onCheckClicked());
@@ -280,16 +285,16 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(0, AndroidUtilities.dp(8), 0, AndroidUtilities.dp(8));
 
-        // Circular white container (40dp) with dark icon
+        int accentColor = Theme.getColor(Theme.key_featuredStickers_addButton);
         FrameLayout iconBox = new FrameLayout(context);
         GradientDrawable iconBoxBg = new GradientDrawable();
-        iconBoxBg.setColor(0xFFFFFFFF);
+        iconBoxBg.setColor(ColorUtils.setAlphaComponent(accentColor, Theme.isCurrentThemeDark() ? 0x24 : 0x14));
         iconBoxBg.setCornerRadius(AndroidUtilities.dp(20));
         iconBox.setBackground(iconBoxBg);
 
         ImageView icon = new ImageView(context);
         icon.setImageResource(iconRes);
-        icon.setColorFilter(0xFF000000);
+        icon.setColorFilter(accentColor);
         iconBox.addView(icon, LayoutHelper.createFrame(20, 20, Gravity.CENTER));
         row.addView(iconBox, LayoutHelper.createLinear(40, 40, Gravity.CENTER_VERTICAL, 0, 0, 14, 0));
 

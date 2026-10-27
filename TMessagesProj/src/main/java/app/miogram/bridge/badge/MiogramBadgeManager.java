@@ -36,11 +36,14 @@ public class MiogramBadgeManager {
         if (userId <= 0 || !isModuleEnabled()) {
             return false;
         }
-        HotBadges service = getService();
-        if (service != null) {
-            return service.hasBadge(userId);
+        if (MiogramSupabaseBridge.hasCloudBadge(userId)) {
+            return true;
         }
-        return MiogramSupabaseBridge.hasCloudBadge(userId);
+        HotBadges service = getService();
+        if (service != null && service.hasBadge(userId)) {
+            return true;
+        }
+        return false;
     }
 
     public static boolean isModuleEnabled() {
@@ -86,6 +89,10 @@ public class MiogramBadgeManager {
     }
 
     public static Drawable getArrowDrawable(long userId, int sizeDp) {
+        MiogramSupabaseBridge.BadgeRecord r = getBadgeRecord(userId);
+        if (r != null && r.badgeType != null) {
+            return new MiogramArrowDrawable(sizeDp, r.badgeType);
+        }
         HotBadges service = getService();
         if (service != null) {
             Drawable d = service.getBadgeDrawable(userId, sizeDp);
@@ -95,14 +102,14 @@ public class MiogramBadgeManager {
     }
 
     public static String getBadgeTitle(long userId) {
+        MiogramSupabaseBridge.BadgeRecord record = getBadgeRecord(userId);
+        if (record != null && record.title != null && !record.title.isEmpty()) {
+            return record.title;
+        }
         HotBadges service = getService();
         if (service != null) {
             String title = service.getBadgeTitle(userId);
             if (title != null && !title.isEmpty()) return title;
-        }
-        MiogramSupabaseBridge.BadgeRecord record = getBadgeRecord(userId);
-        if (record != null && record.title != null) {
-            return record.title;
         }
         MiogramBadgeType type = getBadgeType(userId);
         if (userId == FOUNDER_USER_ID) {
@@ -112,29 +119,21 @@ public class MiogramBadgeManager {
     }
 
     public static void showBadgeSheet(Context context, long userId) {
-        HotBadges service = getService();
-        if (service != null) {
-            service.showBadgeSheet(context, userId);
-            return;
-        }
         MiogramBadgeBottomSheet.show(context, userId);
     }
 
     public static void openBadgesSettings(BaseFragment fragment) {
-        HotBadges service = getService();
-        if (service != null) {
-            service.openBadgesSettings(fragment);
-            return;
-        }
         fragment.presentFragment(new app.amegram.settings.AmegramBadgesActivity());
     }
 
     public static void refreshBadges(Runnable onComplete) {
-        HotBadges service = getService();
-        if (service != null) {
-            service.refreshBadges(onComplete);
-        } else {
-            MiogramSupabaseBridge.fetchBadgesFromCloud(onComplete);
-        }
+        MiogramSupabaseBridge.fetchBadgesFromCloud(() -> {
+            HotBadges service = getService();
+            if (service != null) {
+                service.refreshBadges(onComplete);
+            } else if (onComplete != null) {
+                onComplete.run();
+            }
+        });
     }
 }

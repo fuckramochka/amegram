@@ -57,6 +57,17 @@ public class MiogramPluginsMarket {
 
     static {
         CATALOG.add(new MarketPluginEntry(
+                "kangel_plugins_manager",
+                "kangel_plugins_manager.eaf",
+                "Kangel Plugins Manager",
+                "Офіційний менеджер плагінів KPM Store з пошуком, оновленнями та каталогом.",
+                "Официальный менеджер плагинов KPM Store с поиском, обновлениями и каталогом.",
+                "Official KPM Store plugin manager with search, updates and catalog.",
+                "Інструменти & Текст",
+                R.drawable.msg_bot
+        ));
+
+        CATALOG.add(new MarketPluginEntry(
                 "petpet",
                 "petpet.py",
                 "PetPet Generator",

@@ -198,4 +198,18 @@ public final class YumiTheme {
         int rippleColor = isDark() ? 0x22FFFFFF : 0x1A000000;
         return new RippleDrawable(ColorStateList.valueOf(rippleColor), content, mask);
     }
+
+    /** Сегментований або згрупований елемент з рипплом та масивом радіусів кутів */
+    public static RippleDrawable buttonRipple(int backgroundColor, float[] cornerRadii) {
+        GradientDrawable mask = new GradientDrawable();
+        mask.setCornerRadii(cornerRadii);
+        mask.setColor(0xFFFFFFFF);
+
+        GradientDrawable content = new GradientDrawable();
+        content.setCornerRadii(cornerRadii);
+        content.setColor(backgroundColor);
+
+        int rippleColor = isDark() ? 0x22FFFFFF : 0x1A000000;
+        return new RippleDrawable(ColorStateList.valueOf(rippleColor), content, mask);
+    }
 }

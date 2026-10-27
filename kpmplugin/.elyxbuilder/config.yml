@@ -1,0 +1,21 @@
+zipFormat: eaf
+source: kpmplugin/src
+buildNameUncompiled: KangelPluginsManager
+buildNameCompiled: KangelPluginsManager
+ignoreAll:
+- .elyxbuilder/cache/*
+compilationIgnore:
+- kpmplugin/src/main.py
+obfuscationConfig:
+  stripDocstrings: true
+  removeLogs: true
+  renameLocals: true
+  encodeStrings: true
+  encodeNumbers: true
+  zlibCompression: false
+  saveMapping: true
+  junkCode: true
+  stringSplitting: true
+  loaderStub: false
+  loaderStubDynamic: false
+  loaderStubDynamicKey: null

@@ -132,21 +132,23 @@ final class YumiNavItem extends FrameLayout {
     }
 
     void setLabel(CharSequence text) {
+        if (TextUtils.equals(labelView.getText(), text)) return;
         labelView.setText(text);
         setContentDescription(text);
         requestLayout();
     }
 
     void setSelectedState(boolean selected) {
+        if (this.selected == selected) return;
         this.selected = selected;
         labelView.setVisibility(selected ? VISIBLE : GONE);
         iconView.setColorFilter(new PorterDuffColorFilter(
                 selected ? palette.navActive : palette.navInactive, PorterDuff.Mode.SRC_IN));
         invalidate();
-        requestLayout();
     }
 
     void setCounter(String text, boolean error) {
+        if (TextUtils.equals(counterText, text)) return;
         counterText = text;
         if (TextUtils.isEmpty(text)) {
             counterView.setVisibility(GONE);

@@ -493,6 +493,28 @@ public class UItem extends AdapterWithDiffUtils.Item implements Cloneable {
         return item;
     }
 
+    public static UItem asPlugin(int id, com.exteragram.messenger.plugins.Plugin plugin, Object delegate) {
+        UItem item = asPlugin(plugin, delegate);
+        if (item != null) {
+            item.id = id;
+        }
+        return item;
+    }
+
+    public static UItem asPlugin(com.exteragram.messenger.plugins.Plugin plugin, Object delegate) {
+        app.exteraless.plugins.Plugin p = plugin instanceof app.exteraless.plugins.Plugin ? (app.exteraless.plugins.Plugin) plugin : null;
+        if (p == null && plugin != null) {
+            p = new app.exteraless.plugins.Plugin(plugin.getId(), plugin.getName());
+            p.description = plugin.getDescription();
+            p.author = plugin.getAuthor();
+            p.version = plugin.getVersion();
+            p.icon = plugin.getIcon();
+            p.enabled = plugin.isEnabled();
+        }
+        app.exteraless.plugins.ui.components.PluginCellDelegate d = delegate instanceof app.exteraless.plugins.ui.components.PluginCellDelegate ? (app.exteraless.plugins.ui.components.PluginCellDelegate) delegate : null;
+        return app.exteraless.plugins.ui.components.PluginCell.Factory.asPlugin(p, d);
+    }
+
     public static UItem asSpace(int height) {
         UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SPACE, false);
         item.intValue = height;

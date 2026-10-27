@@ -21896,7 +21896,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     (int) (Math.abs(nx) + (viaNameWidth > 0 ? viaNameWidth - dp(4 + 28) : nameLayoutWidth) + dp(22)),
                     (int) (ny + nameLayout.getHeight() / 2 + dp(10))
                 );
-                currentNameStatusDrawable.setColor(ColorUtils.setAlphaComponent(color, 115));
+                boolean isMiogramBadge = currentNameStatus instanceof app.miogram.bridge.badge.MiogramArrowDrawable
+                        || (currentNameStatusDrawable.getDrawable() instanceof app.miogram.bridge.badge.MiogramArrowDrawable);
+                if (isMiogramBadge) {
+                    currentNameStatusDrawable.setColor(null);
+                } else {
+                    currentNameStatusDrawable.setColor(ColorUtils.setAlphaComponent(color, 115));
+                }
                 currentNameStatusDrawable.draw(canvas);
             }
 

@@ -137,6 +137,12 @@ public class KpmModule implements HotModule, HotKpm {
 
     @Override
     public void openStore(BaseFragment fragment, Context context) {
+        try {
+            if (app.amegram.hot.HotKpmGate.openStoreDirect(fragment, context)) {
+                return;
+            }
+        } catch (Throwable ignore) {
+        }
         Context ctx = context;
         if (ctx == null && fragment != null) {
             try {
@@ -161,6 +167,12 @@ public class KpmModule implements HotModule, HotKpm {
     @Override
     public boolean handleDeepLink(BaseFragment fragment, String url) {
         if (url == null || url.isEmpty()) return false;
+        try {
+            if (app.amegram.hot.HotKpmGate.handleDeepLink(fragment, url)) {
+                return true;
+            }
+        } catch (Throwable ignore) {
+        }
         try {
             Uri uri = Uri.parse(url);
             String pluginId = null;

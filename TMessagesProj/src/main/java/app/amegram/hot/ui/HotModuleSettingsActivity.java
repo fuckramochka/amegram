@@ -153,47 +153,61 @@ public class HotModuleSettingsActivity extends BaseFragment {
         // AI_WORD шлях існує (MiogramLyricsEngine.SOURCE_AI_WORD + MiogramLyricsView.transcribeWithAiWordTimed) — не чіпаємо, тільки вхід.
         if ("player".equals(moduleId)) {
             try {
-                rows.add(HotRow.button("player_lyrics_open",
-                        MiogramLocale.get("Тексти пісень (LRC + ШІ)", "Тексты песен (LRC + ИИ)", "Lyrics (LRC + AI)"),
-                        MiogramLocale.get("LRCLib • NetEase • ШІ-розшифровка через MiogramLyricsView", "LRCLib • NetEase • ИИ-расшифровка через MiogramLyricsView", "LRCLib • NetEase • AI transcription via MiogramLyricsView")));
-                rows.add(HotRow.button("player_lyrics_ai",
-                        MiogramLocale.get("Розшифрувати через ШІ", "Расшифровать через ИИ", "Transcribe with AI"),
-                        MiogramLocale.get("Gemini AI → слова з таймінгами (AI_WORD)", "Gemini AI → слова с таймингами (AI_WORD)", "Gemini AI → lyrics with timestamps (AI_WORD)")));
+                if (!hasRowId("player_lyrics_open")) {
+                    rows.add(HotRow.button("player_lyrics_open",
+                            MiogramLocale.get("Тексти пісень (LRC + ШІ)", "Тексты песен (LRC + ИИ)", "Lyrics (LRC + AI)"),
+                            MiogramLocale.get("LRCLib • NetEase • ШІ-розшифровка через MiogramLyricsView", "LRCLib • NetEase • ИИ-расшифровка через MiogramLyricsView", "LRCLib • NetEase • AI transcription via MiogramLyricsView")));
+                }
+                if (!hasRowId("player_lyrics_ai")) {
+                    rows.add(HotRow.button("player_lyrics_ai",
+                            MiogramLocale.get("Розшифрувати через ШІ", "Расшифровать через ИИ", "Transcribe with AI"),
+                            MiogramLocale.get("Gemini AI → слова з таймінгами (AI_WORD)", "Gemini AI → слова с таймингами (AI_WORD)", "Gemini AI → lyrics with timestamps (AI_WORD)")));
+                }
             } catch (Throwable ignore) {
             }
         }
         if ("ai".equals(moduleId)) {
             try {
-                rows.add(HotRow.button("ai_providers_open",
-                        MiogramLocale.get("Провайдери та моделі ШІ", "Провайдеры и модели ИИ", "AI Providers & Models"),
-                        MiogramLocale.get("Ключі API Gemini, вибір моделі та розпізнавання", "Ключи API Gemini, выбор модели и распознавание", "Gemini API keys, model selection & transcription")));
-                rows.add(HotRow.button("ai_companion_open",
-                        MiogramLocale.get("ШІ-компаньйон (Ame / KAngel)", "ИИ-компаньон (Ame / KAngel)", "AI Companion (Ame / KAngel)"),
-                        MiogramLocale.get("Персона, стиль відповідей та пам'ять", "Персона, стиль ответов и память", "Persona, tone and memory")));
+                if (!hasRowId("ai_providers_open")) {
+                    rows.add(HotRow.button("ai_providers_open",
+                            MiogramLocale.get("Провайдери та моделі ШІ", "Провайдеры и модели ИИ", "AI Providers & Models"),
+                            MiogramLocale.get("Ключі API Gemini, вибір моделі та розпізнавання", "Ключи API Gemini, выбор модели и распознавание", "Gemini API keys, model selection & transcription")));
+                }
+                if (!hasRowId("ai_companion_open")) {
+                    rows.add(HotRow.button("ai_companion_open",
+                            MiogramLocale.get("ШІ-компаньйон (Ame / KAngel)", "ИИ-компаньон (Ame / KAngel)", "AI Companion (Ame / KAngel)"),
+                            MiogramLocale.get("Персона, стиль відповідей та пам'ять", "Персона, стиль ответов и память", "Persona, tone and memory")));
+                }
             } catch (Throwable ignore) {
             }
         }
         if ("vault".equals(moduleId)) {
             try {
-                rows.add(HotRow.button("vault_manager_open",
-                        MiogramLocale.get("Відкрити хмарне сховище", "Открыть облачное хранилище", "Open Cloud Vault"),
-                        MiogramLocale.get("Файловий менеджер, захищене сховище", "Файловый менеджер, защищённое хранилище", "File manager, secure storage")));
+                if (!hasRowId("vault_manager_open")) {
+                    rows.add(HotRow.button("vault_manager_open",
+                            MiogramLocale.get("Відкрити хмарне сховище", "Открыть облачное хранилище", "Open Cloud Vault"),
+                            MiogramLocale.get("Файловий менеджер, захищене сховище", "Файловый менеджер, защищённое хранилище", "File manager, secure storage")));
+                }
             } catch (Throwable ignore) {
             }
         }
         if ("automation".equals(moduleId)) {
             try {
-                rows.add(HotRow.button("automation_account_open",
-                        MiogramLocale.get("Автоматизація акаунта", "Автоматизация аккаунта", "Account Automation"),
-                        MiogramLocale.get("Юзербот, Heroku, авто-дії", "Юзербот, Heroku, авто-действия", "Userbot, Heroku, auto-actions")));
+                if (!hasRowId("automation_account_open")) {
+                    rows.add(HotRow.button("automation_account_open",
+                            MiogramLocale.get("Автоматизація акаунта", "Автоматизация аккаунта", "Account Automation"),
+                            MiogramLocale.get("Юзербот, Heroku, авто-дії", "Юзербот, Heroku, авто-действия", "Userbot, Heroku, auto-actions")));
+                }
             } catch (Throwable ignore) {
             }
         }
         if ("tiktok".equals(moduleId)) {
             try {
-                rows.add(HotRow.button("tiktok_ecosystem_open",
-                        MiogramLocale.get("Екосистема TikTok MI", "Экосистема TikTok MI", "TikTok MI ecosystem"),
-                        MiogramLocale.get("Підключення акаунта та інтеграція", "Подключение аккаунта и интеграция", "Account linking and integration")));
+                if (!hasRowId("tiktok_ecosystem_open")) {
+                    rows.add(HotRow.button("tiktok_ecosystem_open",
+                            MiogramLocale.get("Екосистема TikTok MI", "Экосистема TikTok MI", "TikTok MI ecosystem"),
+                            MiogramLocale.get("Підключення акаунта та інтеграція", "Подключение аккаунта и интеграция", "Account linking and integration")));
+                }
             } catch (Throwable ignore) {
             }
         }
@@ -209,18 +223,67 @@ public class HotModuleSettingsActivity extends BaseFragment {
             } else if (r.type == HotRow.INFO) {
                 items.add(UItem.asCustom(buildInfoCard(context, r.title)));
             } else if (r.type == HotRow.SWITCH) {
-                items.add(UItem.asCustom(buildSwitchCard(context, host, mod, r, i)));
+                View v = buildSwitchCard(context, host, mod, r, i);
+                applySegmentedShape(v, i);
+                items.add(UItem.asCustom(v));
             } else if (r.type == HotRow.BUTTON) {
-                items.add(UItem.asCustom(buildButtonCard(context, mod, r, i)));
+                View v = buildButtonCard(context, mod, r, i);
+                applySegmentedShape(v, i);
+                items.add(UItem.asCustom(v));
             } else if (r.type == HotRow.INPUT) {
-                items.add(UItem.asCustom(buildInputCard(context, host, mod, r, i)));
+                View v = buildInputCard(context, host, mod, r, i);
+                applySegmentedShape(v, i);
+                items.add(UItem.asCustom(v));
             } else if (r.type == HotRow.SLIDER) {
-                items.add(UItem.asCustom(buildSliderCard(context, host, mod, r, i)));
+                View v = buildSliderCard(context, host, mod, r, i);
+                applySegmentedShape(v, i);
+                items.add(UItem.asCustom(v));
             } else if (r.type == HotRow.CHOICE) {
-                items.add(UItem.asCustom(buildChoiceCard(context, host, mod, r, i)));
+                View v = buildChoiceCard(context, host, mod, r, i);
+                applySegmentedShape(v, i);
+                items.add(UItem.asCustom(v));
             } else if (r.type == HotRow.COLOR) {
-                items.add(UItem.asCustom(buildColorCard(context, host, mod, r, i)));
+                View v = buildColorCard(context, host, mod, r, i);
+                applySegmentedShape(v, i);
+                items.add(UItem.asCustom(v));
             }
+        }
+    }
+
+    private boolean hasRowId(String id) {
+        for (HotRow r : rows) {
+            if (r != null && id.equals(r.id)) return true;
+        }
+        return false;
+    }
+
+    private boolean isSettingRow(int index) {
+        if (index < 0 || index >= rows.size()) return false;
+        HotRow r = rows.get(index);
+        return r != null && r.type != HotRow.HEADER && r.type != HotRow.INFO;
+    }
+
+    private void applySegmentedShape(View card, int index) {
+        boolean first = !isSettingRow(index - 1);
+        boolean last = !isSettingRow(index + 1);
+        float r = AndroidUtilities.dp(16);
+        float[] radii;
+        int topM = first ? AndroidUtilities.dp(4) : 0;
+        int botM = last ? AndroidUtilities.dp(6) : 0;
+        if (first && last) {
+            radii = new float[]{r, r, r, r, r, r, r, r};
+        } else if (first) {
+            radii = new float[]{r, r, r, r, 0, 0, 0, 0};
+        } else if (last) {
+            radii = new float[]{0, 0, 0, 0, r, r, r, r};
+        } else {
+            radii = new float[]{0, 0, 0, 0, 0, 0, 0, 0};
+        }
+        card.setBackground(YumiTheme.buttonRipple(YumiTheme.getSurfaceContainer(), radii));
+        LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) card.getLayoutParams();
+        if (lp != null) {
+            lp.setMargins(AndroidUtilities.dp(14), topM, AndroidUtilities.dp(14), botM);
+            card.setLayoutParams(lp);
         }
     }
 
@@ -275,6 +338,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
         Switch sw = new Switch(context);
         sw.setChecked(isEnabled, false);
+        sw.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
         topRow.addView(sw, LayoutHelper.createLinear(42, 28, Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
 
         card.addView(topRow);
@@ -373,6 +437,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
         }
         Switch sw = new Switch(context);
         sw.setChecked(checked, false);
+        sw.setColors(Theme.key_switchTrack, Theme.key_switchTrackChecked, Theme.key_windowBackgroundWhite, Theme.key_windowBackgroundWhite);
         card.addView(sw, LayoutHelper.createLinear(40, 26, Gravity.CENTER_VERTICAL));
 
         View.OnClickListener clickAction = v -> {
@@ -804,32 +869,16 @@ public class HotModuleSettingsActivity extends BaseFragment {
     }
 
     private View buildInfoCard(Context context, String text) {
-        LinearLayout card = new LinearLayout(context);
-        card.setOrientation(LinearLayout.HORIZONTAL);
-        card.setGravity(Gravity.CENTER_VERTICAL);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setCornerRadius(AndroidUtilities.dp(16));
-        bg.setColor(Theme.multAlpha(YumiTheme.getPrimary(), 0.08f));
-        card.setBackground(bg);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(AndroidUtilities.dp(14), AndroidUtilities.dp(6), AndroidUtilities.dp(14), AndroidUtilities.dp(6));
-        card.setLayoutParams(lp);
-        card.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
-
-        ImageView iconView = new ImageView(context);
-        iconView.setImageResource(R.drawable.msg_info);
-        iconView.setColorFilter(YumiTheme.getPrimary());
-        card.addView(iconView, LayoutHelper.createLinear(22, 22, Gravity.CENTER_VERTICAL, 0, 0, 12, 0));
-
         TextView tv = new TextView(context);
         tv.setText(text);
         tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13f);
-        tv.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        tv.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         tv.setLineSpacing(AndroidUtilities.dp(2), 1f);
-        card.addView(tv, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
-
-        return card;
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(AndroidUtilities.dp(18), AndroidUtilities.dp(4), AndroidUtilities.dp(18), AndroidUtilities.dp(10));
+        tv.setLayoutParams(lp);
+        return tv;
     }
 
     private int resolveRowIcon(HotRow r) {

@@ -283,7 +283,8 @@ public class MiogramUpdater {
                     LaunchActivity currentAct = LaunchActivity.instance;
                     if (currentAct != null && !currentAct.isFinishing()) {
                         BaseFragment currentFrag = currentAct.getSafeLastFragment();
-                        if (currentFrag != null) {
+                        // Only auto-show if user is on the main dialogs list, not interrupted in chat or call
+                        if (currentFrag instanceof org.telegram.ui.DialogsActivity) {
                             MiogramUpdateBottomSheet sheet = new MiogramUpdateBottomSheet(currentFrag, true, version, changelog, apkUrl, apkSize);
                             sheet.show();
                         }
@@ -297,7 +298,7 @@ public class MiogramUpdater {
         if (fragment == null || fragment.getParentActivity() == null) return;
 
         if (manualCheck) {
-            Toast.makeText(fragment.getParentActivity(), MiogramLocale.get("Перевірка оновлень Amegram...", "Проверка обновлений Amegram...", "Checking for Amegram updates..."), Toast.LENGTH_SHORT).show();
+            Toast.makeText(fragment.getParentActivity(), MiogramLocale.get("Перевірка оновлень Yumigram...", "Проверка обновлений Yumigram...", "Checking for Yumigram updates..."), Toast.LENGTH_SHORT).show();
         } else {
             if (!isAutoCheckEnabled()) return;
             if (isWifiOnlyEnabled() && !isWifiConnected(fragment.getParentActivity())) return;
@@ -474,7 +475,7 @@ public class MiogramUpdater {
                             String tag = mTag.group(1).trim();
                             String ver = tag.replace("v", "").replace("V", "").trim();
 
-                            String body = "Amegram " + tag;
+                            String body = "Yumigram " + tag;
                             java.util.regex.Pattern pTitle = java.util.regex.Pattern.compile("<title>([^<]+)</title>");
                             java.util.regex.Matcher mTitle = pTitle.matcher(content);
                             if (mTitle.find() && mTitle.find()) {
@@ -529,7 +530,7 @@ public class MiogramUpdater {
                                     apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk";
                                 }
                             }
-                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, "Останнє оновлення Amegram на GitHub: " + tag, apkUrl, 0L);
+                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, "Останнє оновлення Yumigram на GitHub: " + tag, apkUrl, 0L);
                         }
                     }
                 } catch (Throwable t) {

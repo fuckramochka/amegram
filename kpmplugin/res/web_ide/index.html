@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>__TITLE__</title>
+  <style>
+__CSS__
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-left">
+      <button class="btn-icon" id="btn-toggle-tree" onclick="toggleDrawer()">
+        <span class="svg-icon" style="width:16px;height:16px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </span>
+        <span>__TXT_FILES__</span>
+        <span class="badge" id="files-badge">__FILES_COUNT__</span>
+      </button>
+      <div class="breadcrumb" id="breadcrumb-bar">
+        <span id="cur-icon" class="svg-icon" style="width:16px;height:16px;"></span>
+        <span id="cur-path">...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-body">
+    <!-- BACKDROP -->
+    <div class="drawer-backdrop" id="backdrop" onclick="toggleDrawer(false)"></div>
+
+    <!-- SIDEBAR DRAWER -->
+    <div class="drawer" id="drawer">
+      <div class="drawer-header">
+        <div class="drawer-title-row">
+          <div class="drawer-title">
+            <span class="svg-icon" style="width:18px;height:18px;color:var(--accent);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+              </svg>
+            </span>
+            <span>__TITLE__</span>
+          </div>
+        </div>
+        <div class="drawer-sub">__FILES_COUNT__ __TXT_FILES_LOWER__ • __TOTAL_SIZE__</div>
+        <div class="search-box-wrapper">
+          <span class="svg-icon search-icon-pos" style="width:14px;height:14px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </span>
+          <input type="text" class="search-input" id="search-input" placeholder="__TXT_SEARCH_PLACEHOLDER__" oninput="filterTree(this.value)">
+        </div>
+      </div>
+      <div class="tree-container" id="tree-root"></div>
+    </div>
+
+    <!-- EDITOR WORKSPACE -->
+    <div class="editor-wrapper" id="editor-wrap">
+      <div class="editor-container" id="code-container">
+        <div class="gutter" id="gutter"></div>
+        <div class="code-view" id="code-view"></div>
+      </div>
+      <div class="asset-center" id="asset-container" style="display: none;"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">__TXT_CODE_COPIED__</div>
+
+  <script>
+__JS__
+  </script>
+</body>
+</html>

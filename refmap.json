@@ -1,0 +1,7 @@
+{
+  "metainfo": "kpmplugin/metainfo.json",
+  "main": "kpmplugin/src/main.py",
+  "strings": "kpmplugin/locales",
+  "assets": "kpmplugin/res",
+  "elyxbuilder": "kpmplugin/.elyxbuilder"
+}

@@ -1301,6 +1301,88 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             setIconTint(iconTint);
         }
 
+        /** Compatibility drawable for legacy settings cells that still use this API. */
+        public static class Background extends Drawable implements GlassOutlineStyle.Listener {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final Matrix matrix = new Matrix();
+            private LinearGradient gradient;
+            private boolean monet;
+            private boolean border;
+
+            public Background() {
+                strokePaint.setStyle(Paint.Style.STROKE);
+                strokePaint.setShader(new LinearGradient(0, 0, 0, dp(28),
+                        new int[]{0x4dffffff, 0, 0x1affffff}, new float[]{0, 0.5f, 1},
+                        Shader.TileMode.CLAMP));
+                GlassOutlineStyle.addListener(this);
+            }
+
+            public void setColor(int topColor, int bottomColor) {
+                monet = false;
+                gradient = new LinearGradient(0, 0, 0, dp(28),
+                        new int[]{topColor, bottomColor}, new float[]{0, 1}, Shader.TileMode.CLAMP);
+                paint.setShader(gradient);
+            }
+
+            public void setMonetColor(int color) {
+                monet = true;
+                gradient = null;
+                paint.setShader(null);
+                paint.setColor(color);
+            }
+
+            public void setDrawBorder(boolean drawBorder) {
+                border = drawBorder;
+                invalidateSelf();
+            }
+
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                final float radius = dp(10);
+                AndroidUtilities.rectTmp.set(getBounds());
+                matrix.reset();
+                matrix.postTranslate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
+                canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, paint);
+                if (!monet && GlassOutlineStyle.current() == GlassOutlineStyle.GLARE && border) {
+                    final float stroke = dp(1);
+                    strokePaint.setStrokeWidth(stroke);
+                    AndroidUtilities.rectTmp.inset(stroke / 2f, stroke / 2f);
+                    canvas.drawRoundRect(AndroidUtilities.rectTmp, radius, radius, strokePaint);
+                }
+            }
+
+            @Override
+            public void onGlassOutlineStyleChanged() {
+                invalidateSelf();
+            }
+
+            @Override public void setAlpha(int alpha) { paint.setAlpha(alpha); invalidateSelf(); }
+            @Override public void setColorFilter(@Nullable ColorFilter colorFilter) { paint.setColorFilter(colorFilter); invalidateSelf(); }
+            @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
+        }
+
+        public static void applyIconColors(ImageView iconView, Background iconBackground,
+                                           int iconColorTop, int iconColorBottom,
+                                           Theme.ResourcesProvider resourcesProvider) {
+            final boolean dark = resourcesProvider != null
+                    ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                iconBackground.setMonetColor(dark ? 0xFFFFFFFF : 0xFF2A2A2E);
+                iconView.setColorFilter(dark ? 0xFF121212 : 0xFFFFFFFF, PorterDuff.Mode.SRC_IN);
+                iconBackground.setDrawBorder(false);
+                return;
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && Theme.getActiveTheme().isMonet()) {
+                iconBackground.setMonetColor(MonetHelper.getColor(dark ? "a1_200" : "a1_600"));
+                iconView.setColorFilter(MonetHelper.getColor(dark ? "a1_800" : "a1_100"), PorterDuff.Mode.SRC_IN);
+            } else {
+                iconBackground.setColor(iconColorTop, iconColorBottom);
+                iconView.clearColorFilter();
+            }
+            iconBackground.setDrawBorder(dark);
+        }
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);

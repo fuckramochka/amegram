@@ -157,6 +157,16 @@ public class YumiCell extends LinearLayout {
         updateContentDescription();
     }
 
+    /** Exposes subtitle spans for phone numbers, usernames, and other links. */
+    public TextView getSubtitleView() {
+        return subtitleView;
+    }
+
+    public void setSubtitleMovementMethod(android.text.method.MovementMethod method) {
+        subtitleView.setMovementMethod(method);
+        subtitleView.setFocusable(method != null);
+    }
+
     public void setValue(CharSequence value) {
         valueView.setText(value);
         valueView.setVisibility(TextUtils.isEmpty(value) ? GONE : VISIBLE);

@@ -1240,11 +1240,11 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
                             app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.primary(), 0.08f),
                             app.miogram.ui.yumi.YumiUi.rounded(
                                     app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                                    app.amegram.theme.YumiMd3.RADIUS_LG_DP,
+                                    app.amegram.theme.YumiMd3.RADIUS_L_DP,
                                     app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.12f), 0.6f)));
                     RecyclerView.LayoutParams rowParams = new RecyclerView.LayoutParams(
                             RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
-                    rowParams.setMargins(dp(12), dp(3), dp(12), dp(3));
+                    rowParams.setMargins(AndroidUtilities.dp(12), AndroidUtilities.dp(3), AndroidUtilities.dp(12), AndroidUtilities.dp(3));
                     view.setLayoutParams(rowParams);
                     break;
                 case 2:

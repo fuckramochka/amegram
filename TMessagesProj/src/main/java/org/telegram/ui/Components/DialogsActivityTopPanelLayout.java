@@ -116,6 +116,7 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
         if (getMetadata().getTotalVisibility() == 0) return;
+        final float r = Math.min(dp(defaultRadiusDp), Math.min(clipRectF.width(), clipRectF.height()) / 2f);
 
         if (yumiStyle) {
             final float alpha = getMetadata().getTotalVisibility();

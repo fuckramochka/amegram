@@ -245,9 +245,7 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
                             ? YumiMd3.surfaceContainerLow() : Theme.getColor(Theme.key_windowBackgroundWhite));
                     if (app.exteraless.appearance.YougramExpressive.enabled()) {
                         FeaturedStickerSetCell cell = (FeaturedStickerSetCell) view;
-                        cell.addButton.setTextColor(YumiMd3.onPrimary());
-                        cell.addButton.setBackground(YumiMd3.ripple(YumiMd3.primary(), YumiMd3.RADIUS_M_DP,
-                                YumiMd3.accentRippleColor(YumiMd3.primary())));
+                        cell.setYumiAddButtonStyle();
                     }
                     ((FeaturedStickerSetCell) view).setAddOnClickListener(v -> {
                         FeaturedStickerSetCell parent1 = (FeaturedStickerSetCell) v.getParent();

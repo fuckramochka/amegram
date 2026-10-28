@@ -43,6 +43,7 @@ import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.ProgressButton;
+import app.amegram.theme.YumiMd3;
 
 public class FeaturedStickerSetCell extends FrameLayout {
 
@@ -307,6 +308,12 @@ public class FeaturedStickerSetCell extends FrameLayout {
 
     public void setAddOnClickListener(OnClickListener onClickListener) {
         addButton.setOnClickListener(onClickListener);
+    }
+
+    public void setYumiAddButtonStyle() {
+        addButton.setTextColor(YumiMd3.onPrimary());
+        addButton.setBackground(YumiMd3.ripple(
+                YumiMd3.primary(), YumiMd3.RADIUS_M_DP, YumiMd3.accentRippleColor(YumiMd3.primary())));
     }
 
     public void setDrawProgress(boolean value, boolean animated) {

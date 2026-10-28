@@ -24,114 +24,48 @@ public final class YumiChatPalette {
         final int onSurface = dark ? 0xFFF8EDF3 : 0xFF291A24;
         final int onSurfaceVariant = dark ? 0xFFD0BAC7 : 0xFF705966;
         final int white = 0xFFFFFFFF;
-        switch (key) {
-            case Theme.key_chat_inBubble:
-                return incoming;
-            case Theme.key_chat_inBubbleSelected:
-                return blend(incoming, primary, 0.16f);
-            case Theme.key_chat_inBubbleSelectedOverlay:
-                return withAlpha(primary, 0.12f);
-            case Theme.key_chat_inBubbleShadow:
-                return withAlpha(0xFF21141D, dark ? 0.26f : 0.10f);
-            case Theme.key_chat_outBubble:
-                return outgoingStart;
-            case Theme.key_chat_outBubbleGradient1:
-                return outgoingMiddle;
-            case Theme.key_chat_outBubbleGradient2:
-                return outgoingEnd;
-            case Theme.key_chat_outBubbleGradient3:
-                return outgoingStart;
-            case Theme.key_chat_outBubbleGradientAnimated:
-                return 0;
-            case Theme.key_chat_outBubbleSelected:
-                return blend(outgoingMiddle, white, 0.13f);
-            case Theme.key_chat_outBubbleSelectedOverlay:
-            case Theme.key_chat_outBubbleGradientSelectedOverlay:
-                return withAlpha(white, 0.14f);
-            case Theme.key_chat_outBubbleShadow:
-                return withAlpha(0xFF21141D, dark ? 0.22f : 0.10f);
-            case Theme.key_chat_messageTextIn:
-            case Theme.key_chat_inReplyMessageText:
-            case Theme.key_chat_inReplyMediaMessageText:
-            case Theme.key_chat_inReplyMediaMessageSelectedText:
-                return onSurface;
-            case Theme.key_chat_messageTextOut:
-            case Theme.key_chat_outReplyMessageText:
-            case Theme.key_chat_outReplyMediaMessageText:
-            case Theme.key_chat_outReplyMediaMessageSelectedText:
-            case Theme.key_chat_outTimeText:
-            case Theme.key_chat_outSentCheck:
-            case Theme.key_chat_outSentCheckSelected:
-            case Theme.key_chat_outSentCheckRead:
-            case Theme.key_chat_outSentCheckReadSelected:
-                return withAlpha(white, 0.92f);
-            case Theme.key_chat_inTimeText:
-                return withAlpha(onSurfaceVariant, 0.82f);
-            case Theme.key_chat_inReplyLine:
-            case Theme.key_chat_inReplyNameText:
-            case Theme.key_chat_stickerReplyLine:
-            case Theme.key_chat_messageLinkIn:
-                return primary;
-            case Theme.key_chat_outReplyLine:
-            case Theme.key_chat_outReplyLine2:
-            case Theme.key_chat_outReplyNameText:
-                return withAlpha(white, 0.90f);
-            case Theme.key_chat_messageLinkOut:
-                return dark ? 0xFFFFC3D8 : 0xFF8B315E;
-            case Theme.key_actionBarDefault:
-                return dark ? 0xE51D1720 : 0xEFFFFFFB;
-            case Theme.key_actionBarDefaultTitle:
-            case Theme.key_actionBarDefaultIcon:
-                return onSurface;
-            case Theme.key_actionBarDefaultSubtitle:
-                return onSurfaceVariant;
-            case Theme.key_actionBarDefaultSelector:
-                return withAlpha(primary, 0.14f);
-            case Theme.key_actionBarDefaultSubmenuBackground:
-                return dark ? 0xFF29212B : 0xFFFFF8FB;
-            case Theme.key_actionBarDefaultSubmenuItem:
-                return onSurface;
-            case Theme.key_actionBarDefaultSubmenuItemIcon:
-                return primary;
-            case Theme.key_actionBarDefaultSubmenuSeparator:
-                return withAlpha(primary, 0.16f);
-            case Theme.key_chat_inReactionButtonBackground:
-                return incomingReaction;
-            case Theme.key_chat_outReactionButtonBackground:
-                return outgoingReaction;
-            case Theme.key_chat_inReactionButtonText:
-                return primary;
-            case Theme.key_chat_outReactionButtonText:
-                return dark ? 0xFFFFC3D8 : 0xFF8B315E;
-            case Theme.key_chat_inReactionButtonTextSelected:
-                return dark ? 0xFFFFD7E5 : 0xFF702544;
-            case Theme.key_chat_outReactionButtonTextSelected:
-                return dark ? 0xFFFFD7E5 : 0xFF702544;
-            case Theme.key_chat_messagePanelBackground:
-                return dark ? 0xF5281F2B : 0xFDFBF5F8;
-            case Theme.key_chat_messagePanelShadow:
-                return withAlpha(0xFF2C1420, dark ? 0.42f : 0.12f);
-            case Theme.key_chat_messagePanelText:
-                return onSurface;
-            case Theme.key_chat_messagePanelHint:
-                return onSurfaceVariant;
-            case Theme.key_chat_messagePanelCursor:
-            case Theme.key_chat_messagePanelIcons:
-                return primary;
-            case Theme.key_chat_messagePanelSend:
-                return outgoingMiddle;
-            case Theme.key_chat_outVoiceSeekbar:
-            case Theme.key_chat_outVoiceSeekbarSelected:
-            case Theme.key_chat_outVoiceSeekbarFill:
-                return withAlpha(white, 0.90f);
-            case Theme.key_chat_inVoiceSeekbarSelected:
-            case Theme.key_chat_inVoiceSeekbarFill:
-                return primary;
-            case Theme.key_chat_inVoiceSeekbar:
-                return withAlpha(primary, 0.24f);
-            default:
-                return 0;
-        }
+        if (key == Theme.key_chat_inBubble) return incoming;
+        if (key == Theme.key_chat_inBubbleSelected) return blend(incoming, primary, 0.16f);
+        if (key == Theme.key_chat_inBubbleSelectedOverlay) return withAlpha(primary, 0.12f);
+        if (key == Theme.key_chat_inBubbleShadow) return withAlpha(0xFF21141D, dark ? 0.26f : 0.10f);
+        if (key == Theme.key_chat_outBubble) return outgoingStart;
+        if (key == Theme.key_chat_outBubbleGradient1) return outgoingMiddle;
+        if (key == Theme.key_chat_outBubbleGradient2) return outgoingEnd;
+        if (key == Theme.key_chat_outBubbleGradient3) return outgoingStart;
+        if (key == Theme.key_chat_outBubbleGradientAnimated) return 0;
+        if (key == Theme.key_chat_outBubbleSelected) return blend(outgoingMiddle, white, 0.13f);
+        if (key == Theme.key_chat_outBubbleSelectedOverlay || key == Theme.key_chat_outBubbleGradientSelectedOverlay) return withAlpha(white, 0.14f);
+        if (key == Theme.key_chat_outBubbleShadow) return withAlpha(0xFF21141D, dark ? 0.22f : 0.10f);
+        if (key == Theme.key_chat_messageTextIn || key == Theme.key_chat_inReplyMessageText || key == Theme.key_chat_inReplyMediaMessageText || key == Theme.key_chat_inReplyMediaMessageSelectedText) return onSurface;
+        if (key == Theme.key_chat_messageTextOut || key == Theme.key_chat_outReplyMessageText || key == Theme.key_chat_outReplyMediaMessageText || key == Theme.key_chat_outReplyMediaMessageSelectedText || key == Theme.key_chat_outTimeText || key == Theme.key_chat_outSentCheck || key == Theme.key_chat_outSentCheckSelected || key == Theme.key_chat_outSentCheckRead || key == Theme.key_chat_outSentCheckReadSelected) return withAlpha(white, 0.92f);
+        if (key == Theme.key_chat_inTimeText) return withAlpha(onSurfaceVariant, 0.82f);
+        if (key == Theme.key_chat_inReplyLine || key == Theme.key_chat_inReplyNameText || key == Theme.key_chat_stickerReplyLine || key == Theme.key_chat_messageLinkIn) return primary;
+        if (key == Theme.key_chat_outReplyLine || key == Theme.key_chat_outReplyLine2 || key == Theme.key_chat_outReplyNameText) return withAlpha(white, 0.90f);
+        if (key == Theme.key_chat_messageLinkOut) return dark ? 0xFFFFC3D8 : 0xFF8B315E;
+        if (key == Theme.key_actionBarDefault) return dark ? 0xE51D1720 : 0xEFFFFFFB;
+        if (key == Theme.key_actionBarDefaultTitle || key == Theme.key_actionBarDefaultIcon) return onSurface;
+        if (key == Theme.key_actionBarDefaultSubtitle) return onSurfaceVariant;
+        if (key == Theme.key_actionBarDefaultSelector) return withAlpha(primary, 0.14f);
+        if (key == Theme.key_actionBarDefaultSubmenuBackground) return dark ? 0xFF29212B : 0xFFFFF8FB;
+        if (key == Theme.key_actionBarDefaultSubmenuItem) return onSurface;
+        if (key == Theme.key_actionBarDefaultSubmenuItemIcon) return primary;
+        if (key == Theme.key_actionBarDefaultSubmenuSeparator) return withAlpha(primary, 0.16f);
+        if (key == Theme.key_chat_inReactionButtonBackground) return incomingReaction;
+        if (key == Theme.key_chat_outReactionButtonBackground) return outgoingReaction;
+        if (key == Theme.key_chat_inReactionButtonText) return primary;
+        if (key == Theme.key_chat_outReactionButtonText) return dark ? 0xFFFFC3D8 : 0xFF8B315E;
+        if (key == Theme.key_chat_inReactionButtonTextSelected) return dark ? 0xFFFFD7E5 : 0xFF702544;
+        if (key == Theme.key_chat_outReactionButtonTextSelected) return dark ? 0xFFFFD7E5 : 0xFF702544;
+        if (key == Theme.key_chat_messagePanelBackground) return dark ? 0xF5281F2B : 0xFDFBF5F8;
+        if (key == Theme.key_chat_messagePanelShadow) return withAlpha(0xFF2C1420, dark ? 0.42f : 0.12f);
+        if (key == Theme.key_chat_messagePanelText) return onSurface;
+        if (key == Theme.key_chat_messagePanelHint) return onSurfaceVariant;
+        if (key == Theme.key_chat_messagePanelCursor || key == Theme.key_chat_messagePanelIcons) return primary;
+        if (key == Theme.key_chat_messagePanelSend) return outgoingMiddle;
+        if (key == Theme.key_chat_outVoiceSeekbar || key == Theme.key_chat_outVoiceSeekbarSelected || key == Theme.key_chat_outVoiceSeekbarFill) return withAlpha(white, 0.90f);
+        if (key == Theme.key_chat_inVoiceSeekbarSelected || key == Theme.key_chat_inVoiceSeekbarFill) return primary;
+        if (key == Theme.key_chat_inVoiceSeekbar) return withAlpha(primary, 0.24f);
+        return 0;
     }
 
     public static BlurredBackgroundColorProvider inputSurfaceProvider() {

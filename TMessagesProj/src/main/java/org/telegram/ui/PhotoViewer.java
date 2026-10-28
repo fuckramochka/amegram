@@ -16129,7 +16129,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         return app.exteraless.appearance.YougramExpressive.enabled() ? 0xFF1C1722 : 0xFF222222;
     }
 
-    private int getPhotoViewerMenuDivider() {
+    private static int getPhotoViewerMenuDivider() {
         return app.exteraless.appearance.YougramExpressive.enabled() ? 0xFF302434 : 0xFF181818;
     }
 
@@ -16137,7 +16137,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         return app.exteraless.appearance.YougramExpressive.enabled() ? 0xF21A1520 : 0xF9222222;
     }
 
-    private int getPhotoViewerMenuSelectorColor(boolean active) {
+    private static int getPhotoViewerMenuSelectorColor(boolean active) {
         if (app.exteraless.appearance.YougramExpressive.enabled()) {
             return active ? YumiMd3.withAlpha(YumiMd3.primary(), 0.28f) : 0x1AFFFFFF;
         }

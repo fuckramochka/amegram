@@ -1105,8 +1105,9 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
             } else {
                 buttonsLayout.setPadding(dp(8), dp(8), dp(8), dp(8));
             }
+            final int actionButtonHeight = app.miogram.ui.yumi.YumiUi.enabled() ? 48 : 40;
             containerView.addView(buttonsLayout, LayoutHelper.createLinear(
-                LayoutHelper.MATCH_PARENT, buttonsInTwoRows ? 96 : 52));
+                LayoutHelper.MATCH_PARENT, buttonsInTwoRows ? actionButtonHeight * 2 + dp(8) : actionButtonHeight + dp(12)));
             if (topAnimationIsNew) {
                 buttonsLayout.setTranslationY(-dp(8));
             }
@@ -1134,10 +1135,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 textView.setText(positiveButtonText);
                 textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
+                applyYumiActionStyle(textView, Dialog.BUTTON_POSITIVE);
                 if (verticalButtons) {
-                    buttonsLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
+                    buttonsLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, actionButtonHeight, Gravity.FILL_HORIZONTAL));
                 } else {
-                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
+                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, actionButtonHeight, Gravity.TOP | Gravity.RIGHT));
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1175,10 +1177,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 textView.setText(negativeButtonText.toString());
                 textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
+                applyYumiActionStyle(textView, Dialog.BUTTON_NEGATIVE);
                 if (verticalButtons) {
-                    buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
+                    buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, actionButtonHeight, Gravity.FILL_HORIZONTAL));
                 } else {
-                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
+                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, actionButtonHeight, Gravity.TOP | Gravity.RIGHT));
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1216,10 +1219,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 textView.setText(neutralButtonText.toString());
                 textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
+                applyYumiActionStyle(textView, Dialog.BUTTON_NEUTRAL);
                 if (verticalButtons) {
-                    buttonsLayout.addView(textView, 1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
+                    buttonsLayout.addView(textView, 1, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, actionButtonHeight, Gravity.FILL_HORIZONTAL));
                 } else {
-                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.LEFT));
+                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, actionButtonHeight, Gravity.TOP | Gravity.LEFT));
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1257,10 +1261,11 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 textView.setText(negative2ButtonText.toString());
                 textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
+                applyYumiActionStyle(textView, Dialog.BUTTON_NEGATIVE);
                 if (verticalButtons) {
-                    buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));
+                    buttonsLayout.addView(textView, 0, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, actionButtonHeight, Gravity.FILL_HORIZONTAL));
                 } else {
-                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 40, Gravity.TOP | Gravity.RIGHT));
+                    buttonsLayout.addView(textView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, actionButtonHeight, Gravity.TOP | Gravity.RIGHT));
                 }
                 textView.setOnClickListener(v -> {
                     if (textView.isLoading()) return;
@@ -1393,6 +1398,36 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         super.onCreate(savedInstanceState);
         inflateContent(true);
         NotificationCenter.getGlobalInstance().addObserver(this, NotificationCenter.emojiLoaded);
+    }
+
+    private void applyYumiActionStyle(TextView button, int which) {
+        if (!app.miogram.ui.yumi.YumiUi.enabled()) return;
+        final String label = button.getText() == null ? "" : button.getText().toString().toLowerCase(java.util.Locale.ROOT);
+        final boolean danger = label.contains("delete") || label.contains("remove")
+                || label.contains("удал") || label.contains("видал");
+        final boolean primary = which == Dialog.BUTTON_POSITIVE && !danger;
+        final int bg = danger ? app.amegram.theme.YumiMd3.errorContainer()
+                : primary ? app.amegram.theme.YumiMd3.actionGradientEnd()
+                : app.amegram.theme.YumiMd3.secondaryContainer();
+        final int fg = danger ? app.amegram.theme.YumiMd3.onErrorContainer()
+                : primary ? app.amegram.theme.YumiMd3.onActionGradient()
+                : app.amegram.theme.YumiMd3.onSecondaryContainer();
+        final android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+        shape.setCornerRadius(dp(18));
+        shape.setColor(bg);
+        if (primary) {
+            shape.setOrientation(android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT);
+            shape.setColors(new int[]{app.amegram.theme.YumiMd3.actionGradientStart(),
+                    app.amegram.theme.YumiMd3.actionGradientEnd()});
+        }
+        final android.graphics.drawable.GradientDrawable mask = new android.graphics.drawable.GradientDrawable();
+        mask.setColor(0xFFFFFFFF);
+        mask.setCornerRadius(dp(18));
+        button.setTextColor(fg);
+        button.setTypeface(app.amegram.theme.YumiMd3.typeface(app.amegram.theme.YumiMd3.MEDIUM));
+        button.setMinHeight(dp(48));
+        button.setBackground(new android.graphics.drawable.RippleDrawable(
+                android.content.res.ColorStateList.valueOf(app.amegram.theme.YumiMd3.withAlpha(fg, 0.18f)), shape, mask));
     }
 
     @Override

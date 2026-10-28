@@ -77,6 +77,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.Business.QuickRepliesController;
 import org.telegram.ui.Cells.FeaturedStickerSetCell2;
 import org.telegram.ui.Cells.HeaderCell;
@@ -255,6 +256,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public View createView(Context context) {
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
         actionBar.setBackButtonDrawable(new BackDrawable(false));
         actionBar.setAllowOverlayTitle(true);
         if (currentType == TYPE_IMAGE) {
@@ -263,6 +265,12 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
             actionBar.setTitle(getString(R.string.Masks));
         } else if (currentType == TYPE_EMOJIPACKS) {
             actionBar.setTitle(getString(R.string.Emoji));
+        }
+        if (yumi) {
+            actionBar.setBackgroundColor(YumiMd3.surfaceContainer());
+            actionBar.setTitleColor(YumiMd3.onSurface());
+            actionBar.setItemsColor(YumiMd3.onSurface(), false);
+            actionBar.setItemsBackgroundColor(YumiMd3.withAlpha(YumiMd3.primary(), 0.14f), false);
         }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
@@ -288,7 +296,7 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
         selectedCountTextView = new NumberTextView(actionMode.getContext());
         selectedCountTextView.setTextSize(18);
         selectedCountTextView.setTypeface(AndroidUtilities.bold());
-        selectedCountTextView.setTextColor(Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
+        selectedCountTextView.setTextColor(yumi ? YumiMd3.onSurface() : Theme.getColor(Theme.key_actionBarActionModeDefaultIcon));
         actionMode.addView(selectedCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 72, 0, 0, 0));
         selectedCountTextView.setOnTouchListener((v, event) -> true);
 
@@ -306,10 +314,11 @@ public class StickersActivity extends BaseFragment implements NotificationCenter
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        frameLayout.setBackgroundColor(yumi ? YumiMd3.surfaceContainerLow() : Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
         listView.setSections();
+        if (yumi) listView.setGlowColor(YumiMd3.primary());
         actionBar.setAdaptiveBackground(listView);
         listView.setFocusable(true);
         listView.setTag(7);

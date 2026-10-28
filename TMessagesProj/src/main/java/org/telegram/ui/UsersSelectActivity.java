@@ -131,30 +131,6 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
 
     private static class ItemDecoration extends RecyclerView.ItemDecoration {
 
-        private boolean single;
-        private int skipRows;
-
-        public void setSingle(boolean value) {
-            single = value;
-        }
-
-        @Override
-        public void onDraw(@NonNull Canvas canvas, RecyclerView parent, @NonNull RecyclerView.State state) {
-            int width = parent.getWidth();
-            int top;
-            int childCount = parent.getChildCount() - (single ? 0 : 1);
-            for (int i = 0; i < childCount; i++) {
-                View child = parent.getChildAt(i);
-                View nextChild = i < childCount - 1 ? parent.getChildAt(i + 1) : null;
-                int position = parent.getChildAdapterPosition(child);
-                if (position < skipRows || child instanceof GraySectionCell || nextChild instanceof GraySectionCell) {
-                    continue;
-                }
-                top = child.getBottom();
-                canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(72), top, width - (LocaleController.isRTL ? AndroidUtilities.dp(72) : 0), top, Theme.dividerPaint);
-            }
-        }
-
         @Override
         public void getItemOffsets(@NonNull android.graphics.Rect outRect, @NonNull View view, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
             super.getItemOffsets(outRect, view, parent, state);
@@ -162,7 +138,7 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             if (position == 0 || !searching && position == 1) {
                 return;
             }*/
-            outRect.top = 1;
+            outRect.top = 3;
         }
     }
 
@@ -554,6 +530,10 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         frameLayout.addView(scrollView);
 
         spansContainer = new SpansContainer(context);
+        spansContainer.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                app.amegram.theme.YumiMd3.RADIUS_XL_DP,
+                app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.16f), 0.7f));
         scrollView.addView(spansContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         spansContainer.setOnClickListener(v -> {
             editText.clearFocus();
@@ -1256,6 +1236,16 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             switch (viewType) {
                 case 1:
                     view = new GroupCreateUserCell(context, 1, 0, true);
+                    view.setBackground(app.miogram.ui.yumi.YumiUi.ripple(
+                            app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.primary(), 0.08f),
+                            app.miogram.ui.yumi.YumiUi.rounded(
+                                    app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                                    app.amegram.theme.YumiMd3.RADIUS_LG_DP,
+                                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.12f), 0.6f)));
+                    RecyclerView.LayoutParams rowParams = new RecyclerView.LayoutParams(
+                            RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                    rowParams.setMargins(dp(12), dp(3), dp(12), dp(3));
+                    view.setLayoutParams(rowParams);
                     break;
                 case 2:
                 default:

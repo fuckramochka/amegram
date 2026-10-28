@@ -176,6 +176,7 @@ import org.telegram.ui.iv.ChatAttachAlertRichLayout;
 import org.telegram.ui.web.BotWebViewContainer;
 import org.telegram.ui.bots.BotWebViewMenuContainer;
 import org.telegram.ui.bots.ChatAttachAlertBotWebViewLayout;
+import app.amegram.theme.YumiMd3;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -1205,6 +1206,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         void updateCheckedState(boolean animate) {
             final boolean checked = currentId == selectedId;
             glassTabView.setSelected(checked, animate);
+            applyYumiAttachButtonStyle(this, glassTabView, checked);
         }
 
         @Override
@@ -1257,6 +1259,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
         void updateCheckedState(boolean animate) {
             final boolean checked = attachMenuBot != null && -currentUser.id == selectedId;
             glassTabView.setSelected(checked, animate);
+            applyYumiAttachButtonStyle(this, glassTabView, checked);
 
             RLottieDrawable drawable = glassTabView.getBackupImageView().getImageReceiver().getLottieAnimation();
             if (animate) {
@@ -1282,6 +1285,7 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             currentUser = user;
             attachMenuBot = null;
             glassTabView.setSelected(false, false);
+            applyYumiAttachButtonStyle(this, glassTabView, false);
             invalidate();
         }
 
@@ -1293,7 +1297,41 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
             currentUser = user;
             attachMenuBot = bot;
             glassTabView.setSelected(false, false);
+            applyYumiAttachButtonStyle(this, glassTabView, false);
             invalidate();
+        }
+    }
+
+    private void applyYumiAttachButtonStyle(View button, GlassTabView tab, boolean selected) {
+        if (!app.exteraless.appearance.YougramExpressive.enabled()) {
+            tab.setSkipDrawSelector(false);
+            button.setBackground(null);
+            return;
+        }
+        tab.setSkipDrawSelector(true);
+        int fill = selected ? YumiMd3.primaryContainer() : YumiMd3.surfaceContainerHigh();
+        int stroke = selected ? YumiMd3.withAlpha(YumiMd3.primary(), 0.38f)
+                : YumiMd3.withAlpha(YumiMd3.outlineVariant(), 0.34f);
+        button.setBackground(YumiMd3.rounded(fill, stroke, YumiMd3.RADIUS_L_DP, 1f));
+        applyYumiAttachTextStyle(tab, selected);
+        button.invalidate();
+    }
+
+    private void applyYumiAttachTextStyle(View view, boolean selected) {
+        if (view instanceof ImageView) {
+            ((ImageView) view).setColorFilter(new PorterDuffColorFilter(
+                    selected ? YumiMd3.onPrimaryContainer() : YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+        }
+        if (view instanceof TextView) {
+            TextView text = (TextView) view;
+            text.setTextColor(selected ? YumiMd3.onPrimaryContainer() : YumiMd3.onSurfaceVariant());
+            text.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+        }
+        if (view instanceof ViewGroup) {
+            ViewGroup group = (ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) {
+                applyYumiAttachTextStyle(group.getChildAt(i), selected);
+            }
         }
     }
 
@@ -2777,11 +2815,17 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
         containerView.addView(bottomFadeView, LayoutHelper.createFrameMatchParent());
 
-        BlurredBackgroundDrawable tabsViewBackground = iBlur3FactoryLiquidGlass.create(buttonsRecyclerViewWrapper, BlurredBackgroundProviderImpl.mainTabs(resourcesProvider));
-        tabsViewBackground.setRadius(dp(56 / 2f));
-        tabsViewBackground.setPadding(dp(7));
-        buttonsRecyclerViewWrapper.setBackground(tabsViewBackground);
-        buttonsRecyclerView.setPadding(dp(11), dp(11), dp(11), dp(11));
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            buttonsRecyclerViewWrapper.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainer(),
+                    YumiMd3.withAlpha(YumiMd3.outlineVariant(), 0.44f), YumiMd3.RADIUS_XXL_DP, 1f));
+            buttonsRecyclerView.setPadding(dp(9), dp(9), dp(9), dp(9));
+        } else {
+            BlurredBackgroundDrawable tabsViewBackground = iBlur3FactoryLiquidGlass.create(buttonsRecyclerViewWrapper, BlurredBackgroundProviderImpl.mainTabs(resourcesProvider));
+            tabsViewBackground.setRadius(dp(56 / 2f));
+            tabsViewBackground.setPadding(dp(7));
+            buttonsRecyclerViewWrapper.setBackground(tabsViewBackground);
+            buttonsRecyclerView.setPadding(dp(11), dp(11), dp(11), dp(11));
+        }
         buttonsRecyclerView.setClipToOutline(true);
         buttonsRecyclerView.setOutlineProvider(ViewOutlineProviderImpl.boundsWithPaddingRoundRect(dp(11), dp(56 / 2f)));
 
@@ -3636,7 +3680,8 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
 
             @Override
             public int getFillColor() {
-                return getThemedColor(Theme.key_dialogFloatingButton);
+                return app.exteraless.appearance.YougramExpressive.enabled()
+                        ? YumiMd3.primary() : getThemedColor(Theme.key_dialogFloatingButton);
             }
         };
         writeButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -4188,9 +4233,11 @@ public class ChatAttachAlert extends BottomSheet implements NotificationCenter.N
                 int size = Math.max(dp(16) + textSize, dp(24));
                 int cx = getMeasuredWidth() / 2;
 
-                int color = getThemedColor(Theme.key_dialogRoundCheckBoxCheck);
+                int color = app.exteraless.appearance.YougramExpressive.enabled()
+                        ? YumiMd3.onPrimary() : getThemedColor(Theme.key_dialogRoundCheckBoxCheck);
                 textPaint.setColor(ColorUtils.setAlphaComponent(color, (int) (Color.alpha(color) * (0.58 + 0.42 * sendButtonEnabledProgress))));
-                paint.setColor(getThemedColor(Theme.key_dialogBackground));
+                paint.setColor(app.exteraless.appearance.YougramExpressive.enabled()
+                        ? YumiMd3.primary() : getThemedColor(Theme.key_dialogBackground));
                 rect.set(cx - size / 2, 0, cx + size / 2, getMeasuredHeight());
                 canvas.drawRoundRect(rect, dp(12), dp(12), paint);
 

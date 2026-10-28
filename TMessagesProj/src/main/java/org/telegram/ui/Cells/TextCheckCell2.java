@@ -148,6 +148,10 @@ public class TextCheckCell2 extends FrameLayout {
         checkBox = new Switch(context);
         checkBox.setDrawIconType(1);
         addView(checkBox, LayoutHelper.createFrame(37, 40, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 22, 0, 22, 0));
+
+        YumiSettingsRowStyle.title(textView);
+        YumiSettingsRowStyle.detail(valueTextView);
+        YumiSettingsRowStyle.applySurface(this, resourcesProvider, app.amegram.theme.YumiMd3.RADIUS_L_DP);
     }
 
     /**
@@ -304,7 +308,7 @@ public class TextCheckCell2 extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? dp(20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            canvas.drawLine(dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - dp(20), getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

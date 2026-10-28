@@ -110,6 +110,7 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.ActionBarMenuSubItem;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.BasePermissionsActivity;
 import org.telegram.ui.Cells.PhotoAttachCameraCell;
 import org.telegram.ui.Cells.PhotoAttachPermissionCell;
@@ -3749,6 +3750,13 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
         RecyclerView.ViewHolder holder = gridView.findViewHolderForAdapterPosition(0);
 
         dropDown.setTextColor(getThemedColor(textColor));
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            dropDown.setTextColor(YumiMd3.onSurface());
+            dropDown.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
+            dropDownContainer.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHigh(),
+                    YumiMd3.withAlpha(YumiMd3.outlineVariant(), 0.34f), YumiMd3.RADIUS_FULL_DP, 1f));
+            dropDownDrawable.setColorFilter(new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+        }
         dropDownContainer.setPopupItemsColor(getThemedColor(forceDarkTheme ? Theme.key_voipgroup_actionBarItems : Theme.key_actionBarDefaultSubmenuItem), false);
         dropDownContainer.setPopupItemsColor(getThemedColor(forceDarkTheme ? Theme.key_voipgroup_actionBarItems :Theme.key_actionBarDefaultSubmenuItem), true);
         dropDownContainer.redrawPopup(getThemedColor(forceDarkTheme ? Theme.key_voipgroup_actionBarUnscrolled : Theme.key_actionBarDefaultSubmenuBackground));

@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Comparator;
 
 import app.exteraless.appearance.AppearanceConfig;
+import app.amegram.theme.YumiMd3;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ContactsController;
@@ -118,7 +119,7 @@ public class DrawerAccountPickerView extends FrameLayout {
         clipWrapper = new FrameLayout(context) {
             @Override
             protected void dispatchDraw(Canvas canvas) {
-                bgPaint.setColor(Theme.getColor(COLOR_KEY_BACKGROUND));
+                bgPaint.setColor(getAccountPickerBackgroundColor());
                 bgRect.set(0.0f, 0.0f, getWidth(), getHeight());
                 canvas.drawRoundRect(bgRect, cornerRadius, cornerRadius, bgPaint);
 
@@ -343,7 +344,7 @@ public class DrawerAccountPickerView extends FrameLayout {
     }
 
     public void updateColors() {
-        bgPaint.setColor(Theme.getColor(COLOR_KEY_BACKGROUND));
+        bgPaint.setColor(getAccountPickerBackgroundColor());
         invalidate();
         adapter.notifyDataSetChanged();
     }
@@ -500,7 +501,14 @@ public class DrawerAccountPickerView extends FrameLayout {
 
     private static Drawable createSelectedAccountBackgroundDrawable() {
         return Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(12.0f),
-                Theme.getColor(COLOR_KEY_SURFACE), Theme.getColor(COLOR_KEY_SELECTOR));
+                app.exteraless.appearance.YougramExpressive.enabled() ? YumiMd3.surfaceContainerHigh() : Theme.getColor(COLOR_KEY_SURFACE),
+                Theme.getColor(COLOR_KEY_SELECTOR));
+    }
+
+    private static int getAccountPickerBackgroundColor() {
+        return app.exteraless.appearance.YougramExpressive.enabled()
+                ? YumiMd3.surfaceContainer()
+                : Theme.getColor(COLOR_KEY_BACKGROUND);
     }
 
     // ---- строка аккаунта ----

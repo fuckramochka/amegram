@@ -89,6 +89,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
 import org.telegram.ui.Cells.StickerEmojiCell;
@@ -2171,7 +2172,10 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
 
     private void setButton(View.OnClickListener onClickListener, String title, int colorKey, int backgroundColorKey, int backgroundSelectorColorKey, boolean enableMonetScale) {
         if (colorKey >= 0) {
-            pickerBottomLayout.setTextColor(getThemedColor(buttonTextColorKey = colorKey));
+            buttonTextColorKey = colorKey;
+            pickerBottomLayout.setTextColor(app.exteraless.appearance.YougramExpressive.enabled()
+                    ? (backgroundColorKey >= 0 ? YumiMd3.onPrimary() : YumiMd3.primary())
+                    : getThemedColor(colorKey));
         }
         pickerBottomLayout.setText(title, false);
         pickerBottomLayout.setOnClickListener(onClickListener);
@@ -2186,16 +2190,28 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         if (onClickListener == null) {
             pickerBottomLayout.setAlpha(0f);
         } else if (backgroundColorKey >= 0 && backgroundSelectorColorKey >= 0) {
-            pickerBottomLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(backgroundColorKey), getThemedColor(backgroundSelectorColorKey)));
-            pickerBottomFrameLayout.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                pickerBottomLayout.setBackground(YumiMd3.ripple(YumiMd3.primary(), YumiMd3.RADIUS_FULL_DP,
+                        YumiMd3.accentRippleColor(YumiMd3.primary())));
+                pickerBottomFrameLayout.setBackgroundColor(YumiMd3.surfaceContainerLow());
+            } else {
+                pickerBottomLayout.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(24), getThemedColor(backgroundColorKey), getThemedColor(backgroundSelectorColorKey)));
+                pickerBottomFrameLayout.setBackgroundColor(getThemedColor(Theme.key_dialogBackground));
+            }
             params.leftMargin = params.topMargin = params.rightMargin = params.bottomMargin = dp(8);
             emptyParams.bottomMargin = gridParams.bottomMargin = shadowParams.bottomMargin = dp(64);
             if (pickerBottomLayout.getAlpha() < 1f) {
                 pickerBottomLayout.animate().alpha(1f).setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT).setDuration(240).start();
             }
         } else {
-            pickerBottomLayout.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_dialogBackground), Theme.multAlpha(getThemedColor(Theme.key_text_RedBold), .1f)));
-            pickerBottomFrameLayout.setBackgroundColor(Color.TRANSPARENT);
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                pickerBottomLayout.setBackground(YumiMd3.transparentRipple(YumiMd3.RADIUS_L_DP,
+                        YumiMd3.withAlpha(YumiMd3.primary(), 0.14f)));
+                pickerBottomFrameLayout.setBackgroundColor(Color.TRANSPARENT);
+            } else {
+                pickerBottomLayout.setBackground(Theme.createSelectorWithBackgroundDrawable(getThemedColor(Theme.key_dialogBackground), Theme.multAlpha(getThemedColor(Theme.key_text_RedBold), .1f)));
+                pickerBottomFrameLayout.setBackgroundColor(Color.TRANSPARENT);
+            }
             params.leftMargin = params.topMargin = params.rightMargin = params.bottomMargin = 0;
             emptyParams.bottomMargin = gridParams.bottomMargin = shadowParams.bottomMargin = dp(48);
             if (pickerBottomLayout.getAlpha() < 1f) {
@@ -2223,13 +2239,16 @@ public class StickersAlert extends BottomSheet implements NotificationCenter.Not
         adapter.updateColors();
 
         titleTextView.setHighlightColor(getThemedColor(Theme.key_dialogLinkSelection));
-        stickerPreviewLayout.setBackgroundColor(getThemedColor(Theme.key_dialogBackground) & 0xdfffffff);
+        stickerPreviewLayout.setBackgroundColor(app.exteraless.appearance.YougramExpressive.enabled()
+                ? YumiMd3.surfaceContainer() : getThemedColor(Theme.key_dialogBackground) & 0xdfffffff);
 
-        optionsButton.setIconColor(getThemedColor(Theme.key_sheet_other));
+        optionsButton.setIconColor(app.exteraless.appearance.YougramExpressive.enabled()
+                ? YumiMd3.onSurface() : getThemedColor(Theme.key_sheet_other));
         optionsButton.setPopupItemsColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItem), false);
         optionsButton.setPopupItemsColor(getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon), true);
         optionsButton.setPopupItemsSelectorColor(getThemedColor(Theme.key_dialogButtonSelector));
-        optionsButton.redrawPopup(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+        optionsButton.redrawPopup(app.exteraless.appearance.YougramExpressive.enabled()
+                ? YumiMd3.surfaceContainerHigh() : getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
 
         if (deleteItem != null) {
             int redColor = getThemedColor(Theme.key_text_RedBold);

@@ -91,7 +91,15 @@ public final class YumiChatRowRenderer {
         }
         final int listStyle = owner.chatListStyle();
         if (listStyle == UiModule.CHAT_STYLE_FLAT) {
-            // Сучасний плаский стиль — лишаємо стандартне малювання осередку
+            // Apple Flat: чистий стиль із фірмовим волосковим роздільником
+            final boolean rtl = cell.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
+            final Context context = cell.getContext();
+            final int sepStart = rtl ? dp(context, 16) : dp(context, 78);
+            final int sepEnd = rtl ? cell.getWidth() - dp(context, 78) : cell.getWidth() - dp(context, 16);
+            strokePaint.setColor(palette.separator);
+            strokePaint.setStrokeWidth(Math.max(1, dp(context, 0.5f)));
+            canvas.drawLine(sepStart, cell.getHeight() - strokePaint.getStrokeWidth(),
+                    sepEnd, cell.getHeight() - strokePaint.getStrokeWidth(), strokePaint);
             return;
         }
         if (cell.getTranslationX() != 0f || cell.getTranslationY() != 0f) {
@@ -107,19 +115,19 @@ public final class YumiChatRowRenderer {
         final boolean rtl = cell.getLayoutDirection() == View.LAYOUT_DIRECTION_RTL;
         final Context context = cell.getContext();
         final boolean islands = listStyle == UiModule.CHAT_STYLE_ISLANDS;
-        final int side = islands ? dp(context, 2) : dp(context, 6);
-        final int vertical = islands ? dp(context, 1) : dp(context, 3);
-        final float radius = islands ? dp(context, 12) : dp(context, 19);
+        final int side = islands ? dp(context, 8) : dp(context, 12);
+        final int vertical = islands ? dp(context, 3) : dp(context, 5);
+        final float radius = islands ? dp(context, 16) : dp(context, 21);
         final float holeX = rtl ? width - dp(context, 39) : dp(context, 39);
         final float holeY = height / 2f;
-        final float holeR = dp(context, 31);
+        final float holeR = dp(context, 28);
 
         cardRect.set(side, vertical, width - side, height - vertical);
         cardPath.rewind();
         cardPath.setFillType(Path.FillType.EVEN_ODD);
         cardPath.addRoundRect(cardRect, radius, radius, Path.Direction.CW);
         if (owner.isChatSquircleAvatars()) {
-            final float sqRadius = dp(context, 18);
+            final float sqRadius = dp(context, 16);
             holeRect.set(holeX - holeR, holeY - holeR, holeX + holeR, holeY + holeR);
             cardPath.addRoundRect(holeRect, sqRadius, sqRadius, Path.Direction.CW);
         } else {
@@ -128,12 +136,23 @@ public final class YumiChatRowRenderer {
 
         final boolean pinnedAccent = row.pinned && owner.isChatPinnedAccent();
         cardPaint.setColor(pinnedAccent
-                ? blend(palette.surfaceContainerLow, palette.primaryContainer, 0.38f)
-                : palette.surfaceContainerLow);
+                ? blend(palette.cardSurface, palette.primaryContainer, 0.24f)
+                : palette.cardSurface);
         canvas.drawPath(cardPath, cardPaint);
-        if (owner.isChatCardOutline()) {
-            strokePaint.setColor(YumiPalette.alpha(palette.outline, 0.22f));
-            canvas.drawPath(cardPath, strokePaint);
+        strokePaint.setColor(palette.cardRim);
+        strokePaint.setStrokeWidth(Math.max(1, dp(context, 0.75f)));
+        canvas.drawPath(cardPath, strokePaint);
+
+        // A small Yumi color mark gives each card a clear leading edge while
+        // leaving the official avatar, gestures and text layouts untouched.
+        if (row.pinned && owner.isChatPinnedAccent()) {
+            final float markW = dp(context, 3);
+            final float markTop = cardRect.top + dp(context, 12);
+            final float markBottom = cardRect.bottom - dp(context, 12);
+            final float markX = rtl ? cardRect.right - markW : cardRect.left;
+            badgePaint.setColor(palette.primary);
+            canvas.drawRoundRect(markX, markTop, markX + markW, markBottom,
+                    markW, markW, badgePaint);
         }
 
         final int start = rtl ? dp(context, 16) : dp(context, 78);
@@ -180,22 +199,26 @@ public final class YumiChatRowRenderer {
         }
 
         if (row.hasBadge()) {
-            final int badgeSize = dp(context, 20);
-            final int bx = rtl ? dp(context, 16) : width - dp(context, 16) - badgeSize;
-            final int by = height - dp(context, 7) - badgeSize;
-            badgePaint.setColor(row.muted ? palette.surfaceContainerLow : palette.primary);
-            canvas.drawRoundRect(bx, by, bx + badgeSize, by + badgeSize,
-                    badgeSize / 2f, badgeSize / 2f, badgePaint);
+            final float badgeH = dp(context, 20);
+            final float padH = dp(context, 6);
+            badgeTextPaint.setTextSize(dp(context, 11));
+            final float textW = !TextUtils.isEmpty(row.badgeText) ? badgeTextPaint.measureText(row.badgeText) : 0f;
+            final float badgeW = Math.max(badgeH, textW + padH * 2);
+            final float badgeR = badgeH / 2f;
+            final float bx = rtl ? dp(context, 16) : width - dp(context, 16) - badgeW;
+            final float by = height - dp(context, 9) - badgeH;
+
+            // Apple dynamic capsule badge
+            badgePaint.setColor(row.muted ? palette.secondaryFill : palette.primary);
+            canvas.drawRoundRect(bx, by, bx + badgeW, by + badgeH, badgeR, badgeR, badgePaint);
             if (!TextUtils.isEmpty(row.badgeText)) {
-                badgeTextPaint.setTextSize(dp(context, 10));
-                badgeTextPaint.setColor(row.muted ? palette.navInactive : palette.onPrimary);
-                final float baseline = by + badgeSize / 2f
+                badgeTextPaint.setColor(row.muted ? palette.textSecondary : palette.onPrimary);
+                final float baseline = by + badgeH / 2f
                         - (badgeTextPaint.descent() + badgeTextPaint.ascent()) / 2f;
-                canvas.drawText(row.badgeText, bx + badgeSize / 2f, baseline, badgeTextPaint);
+                canvas.drawText(row.badgeText, bx + badgeW / 2f, baseline, badgeTextPaint);
             } else {
                 dotPaint.setColor(palette.onPrimary);
-                canvas.drawCircle(bx + badgeSize / 2f, by + badgeSize / 2f,
-                        dp(context, 3), dotPaint);
+                canvas.drawCircle(bx + badgeW / 2f, by + badgeH / 2f, dp(context, 3.5f), dotPaint);
             }
         }
 

@@ -166,8 +166,17 @@ public class ActionBarPopupWindow extends PopupWindow {
                 setPadding(dp(8), dp(8), dp(8), dp(8));
             }
             if (backgroundDrawable != null) {
-                backgroundDrawable.getPadding(bgPaddings);
-                setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+                if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                    backgroundDrawable = app.miogram.ui.yumi.YumiUi.rounded(
+                            app.amegram.theme.YumiMd3.popupSurface(), app.amegram.theme.YumiMd3.RADIUS_L_DP,
+                            app.amegram.theme.YumiMd3.outline(), 1f);
+                    backgroundDrawable.getPadding(bgPaddings);
+                    bgPaddings.set(dp(8), dp(8), dp(8), dp(8));
+                    backgroundColor = app.amegram.theme.YumiMd3.popupSurface();
+                } else {
+                    backgroundDrawable.getPadding(bgPaddings);
+                    setBackgroundColor(getThemedColor(Theme.key_actionBarDefaultSubmenuBackground));
+                }
             }
 
 
@@ -293,7 +302,14 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         public void setBackgroundColor(int color) {
             if (backgroundColor != color && backgroundDrawable != null) {
-                backgroundDrawable.setColorFilter(new PorterDuffColorFilter(backgroundColor = color, PorterDuff.Mode.MULTIPLY));
+                backgroundColor = color;
+                if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                    backgroundDrawable = app.miogram.ui.yumi.YumiUi.rounded(
+                            app.amegram.theme.YumiMd3.popupSurface(), app.amegram.theme.YumiMd3.RADIUS_L_DP,
+                            app.amegram.theme.YumiMd3.outline(), 1f);
+                } else {
+                    backgroundDrawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.MULTIPLY));
+                }
             }
         }
 

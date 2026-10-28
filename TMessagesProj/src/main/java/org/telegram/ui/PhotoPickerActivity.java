@@ -86,6 +86,7 @@ import org.telegram.ui.ActionBar.ActionBarPopupWindow;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Cells.DividerCell;
 import org.telegram.ui.Cells.PhotoAttachPhotoCell;
@@ -501,10 +502,11 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
     public View createView(Context context) {
         listSort = false;
 
-        actionBar.setBackgroundColor(Theme.getColor(dialogBackgroundKey));
-        actionBar.setTitleColor(Theme.getColor(textKey));
-        actionBar.setItemsColor(Theme.getColor(textKey), false);
-        actionBar.setItemsBackgroundColor(Theme.getColor(selectorKey), false);
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
+        actionBar.setBackgroundColor(yumi ? YumiMd3.surfaceContainer() : Theme.getColor(dialogBackgroundKey));
+        actionBar.setTitleColor(yumi ? YumiMd3.onSurface() : Theme.getColor(textKey));
+        actionBar.setItemsColor(yumi ? YumiMd3.onSurface() : Theme.getColor(textKey), false);
+        actionBar.setItemsBackgroundColor(yumi ? YumiMd3.withAlpha(YumiMd3.primary(), 0.14f) : Theme.getColor(selectorKey), false);
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         if (selectedAlbum != null) {
             actionBar.setTitle(selectedAlbum.bucketName);
@@ -598,9 +600,13 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 }
             });
             EditTextBoldCursor editText = searchItem.getSearchField();
-            editText.setTextColor(Theme.getColor(textKey));
-            editText.setCursorColor(Theme.getColor(textKey));
-            editText.setHintTextColor(Theme.getColor(Theme.key_chat_messagePanelHint));
+            editText.setTextColor(yumi ? YumiMd3.onSurface() : Theme.getColor(textKey));
+            editText.setCursorColor(yumi ? YumiMd3.primary() : Theme.getColor(textKey));
+            editText.setHintTextColor(yumi ? YumiMd3.onSurfaceVariant() : Theme.getColor(Theme.key_chat_messagePanelHint));
+            if (yumi) {
+                editText.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHigh(),
+                        YumiMd3.withAlpha(YumiMd3.primary(), 0.22f), YumiMd3.RADIUS_M_DP, 1f));
+            }
         }
 
         if (selectedAlbum == null) {
@@ -780,7 +786,7 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
                 super.requestLayout();
             }
         };
-        sizeNotifierFrameLayout.setBackgroundColor(Theme.getColor(dialogBackgroundKey));
+        sizeNotifierFrameLayout.setBackgroundColor(yumi ? YumiMd3.surfaceContainerLow() : Theme.getColor(dialogBackgroundKey));
         fragmentView = sizeNotifierFrameLayout;
 
         listView = new RecyclerListView(context);
@@ -1001,7 +1007,8 @@ public class PhotoPickerActivity extends BaseFragment implements NotificationCen
             sizeNotifierFrameLayout.addView(shadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 3, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 0, 48));
 
             frameLayout2 = new FrameLayout(context);
-            frameLayout2.setBackgroundColor(Theme.getColor(dialogBackgroundKey));
+            frameLayout2.setBackgroundColor(app.exteraless.appearance.YougramExpressive.enabled()
+                    ? YumiMd3.surfaceContainerLow() : Theme.getColor(dialogBackgroundKey));
             frameLayout2.setVisibility(View.INVISIBLE);
             frameLayout2.setTranslationY(AndroidUtilities.dp(48));
             sizeNotifierFrameLayout.addView(frameLayout2, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.LEFT | Gravity.BOTTOM));

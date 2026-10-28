@@ -127,6 +127,7 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.EmptyCell;
 import org.telegram.ui.Cells.FeaturedStickerSetInfoCell;
@@ -5841,24 +5842,29 @@ public class EmojiView extends FrameLayout implements
     }
 
     public void updateColors() {
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
+        final int yumiPanel = YumiMd3.surfaceContainer();
+        final int yumiIcon = YumiMd3.onSurfaceVariant();
         if (!shouldDrawBackground) {
             setBackground(null);
             bottomTabContainerBackground.setBackground(null);
         } else if (AndroidUtilities.isInMultiwindow || forseMultiwindowLayout) {
             Drawable background = getBackground();
             if (background != null) {
-                background.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiPanelBackground), PorterDuff.Mode.MULTIPLY));
+                background.setColorFilter(new PorterDuffColorFilter(yumi ? yumiPanel : getThemedColor(Theme.key_chat_emojiPanelBackground), PorterDuff.Mode.MULTIPLY));
             }
         } else {
-            setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+            setBackgroundColor(yumi ? yumiPanel : getThemedColor(Theme.key_chat_emojiPanelBackground));
             if (needEmojiSearch) {
-                bottomTabContainerBackground.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+                bottomTabContainerBackground.setBackground(yumi
+                        ? YumiMd3.rounded(YumiMd3.surfaceContainerLow(), YumiMd3.withAlpha(YumiMd3.outlineVariant(), 0.32f), YumiMd3.RADIUS_L_DP, 1f)
+                        : new android.graphics.drawable.ColorDrawable(getThemedColor(Theme.key_chat_emojiPanelBackground)));
             }
         }
         if (emojiTabs != null) {
             if (shouldDrawBackground) {
-                emojiTabs.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
-                emojiTabsShadow.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelShadowLine));
+                emojiTabs.setBackgroundColor(yumi ? yumiPanel : getThemedColor(Theme.key_chat_emojiPanelBackground));
+                emojiTabsShadow.setBackgroundColor(yumi ? YumiMd3.hairline() : getThemedColor(Theme.key_chat_emojiPanelShadowLine));
             } else {
                 emojiTabs.setBackground(null);
             }
@@ -5879,19 +5885,24 @@ public class EmojiView extends FrameLayout implements
                 continue;
             }
             if (shouldDrawBackground) {
-                searchField.backgroundView.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+                searchField.backgroundView.setBackgroundColor(yumi ? yumiPanel : getThemedColor(Theme.key_chat_emojiPanelBackground));
             } else {
                 searchField.backgroundView.setBackground(null);
             }
-            searchField.shadowView.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelShadowLine));
-            searchField.searchStateDrawable.setColor(glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiSearchIcon));
-            Theme.setDrawableColor(searchField.box.getBackground(), glassDesign ? getGlassIconColor(0.06f) : getThemedColor(Theme.key_chat_emojiSearchBackground));
+            searchField.shadowView.setBackgroundColor(yumi ? YumiMd3.hairline() : getThemedColor(Theme.key_chat_emojiPanelShadowLine));
+            searchField.searchStateDrawable.setColor(yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiSearchIcon));
+            if (yumi) {
+                searchField.box.setBackground(YumiMd3.rounded(YumiMd3.surfaceContainerHigh(),
+                        YumiMd3.withAlpha(YumiMd3.primary(), 0.22f), YumiMd3.RADIUS_M_DP, 1f));
+            } else {
+                Theme.setDrawableColor(searchField.box.getBackground(), glassDesign ? getGlassIconColor(0.06f) : getThemedColor(Theme.key_chat_emojiSearchBackground));
+            }
             searchField.box.invalidate();
-            searchField.searchEditText.setHintTextColor(glassDesign ? getGlassIconColor(0.45f) : getThemedColor(Theme.key_chat_emojiSearchIcon));
-            searchField.searchEditText.setTextColor(glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            searchField.searchEditText.setHintTextColor(yumi ? yumiIcon : glassDesign ? getGlassIconColor(0.45f) : getThemedColor(Theme.key_chat_emojiSearchIcon));
+            searchField.searchEditText.setTextColor(yumi ? YumiMd3.onSurface() : glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         }
         if (dotPaint != null) {
-            dotPaint.setColor(getThemedColor(Theme.key_chat_emojiPanelNewTrending));
+            dotPaint.setColor(yumi ? YumiMd3.primary() : getThemedColor(Theme.key_chat_emojiPanelNewTrending));
         }
         if (emojiGridView != null) {
             emojiGridView.setGlowColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
@@ -5900,76 +5911,76 @@ public class EmojiView extends FrameLayout implements
             stickersGridView.setGlowColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
         }
         if (stickersTab != null) {
-            stickersTab.setIndicatorColor(getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine));
-            stickersTab.setUnderlineColor(getThemedColor(Theme.key_chat_emojiPanelShadowLine));
+            stickersTab.setIndicatorColor(yumi ? YumiMd3.primary() : getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine));
+            stickersTab.setUnderlineColor(yumi ? YumiMd3.hairline() : getThemedColor(Theme.key_chat_emojiPanelShadowLine));
             if (shouldDrawBackground) {
-                stickersTab.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+                stickersTab.setBackgroundColor(yumi ? yumiPanel : getThemedColor(Theme.key_chat_emojiPanelBackground));
             } else {
                 stickersTab.setBackground(null);
             }
         }
         if (gifTabs != null) {
-            gifTabs.setIndicatorColor(getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine));
-            gifTabs.setUnderlineColor(getThemedColor(Theme.key_chat_emojiPanelShadowLine));
+            gifTabs.setIndicatorColor(yumi ? YumiMd3.primary() : getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine));
+            gifTabs.setUnderlineColor(yumi ? YumiMd3.hairline() : getThemedColor(Theme.key_chat_emojiPanelShadowLine));
             if (shouldDrawBackground) {
-                gifTabs.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+                gifTabs.setBackgroundColor(yumi ? yumiPanel : getThemedColor(Theme.key_chat_emojiPanelBackground));
             } else {
                 gifTabs.setBackground(null);
             }
         }
         if (backspaceButton != null) {
-            backspaceButton.setColorFilter(new PorterDuffColorFilter(glassDesign ? getGlassIconColor(0.6f) : getThemedColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
+            backspaceButton.setColorFilter(new PorterDuffColorFilter(yumi ? yumiIcon : glassDesign ? getGlassIconColor(0.6f) : getThemedColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
             if (emojiSearchField == null) {
                 Theme.setSelectorDrawableColor(backspaceButton.getBackground(), getThemedColor(Theme.key_chat_emojiPanelBackground), false);
                 Theme.setSelectorDrawableColor(backspaceButton.getBackground(), getThemedColor(Theme.key_chat_emojiPanelBackground), true);
             }
         }
         if (stickerSettingsButton != null) {
-            stickerSettingsButton.setColorFilter(new PorterDuffColorFilter(glassDesign ? getGlassIconColor(0.6f) : getThemedColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
+            stickerSettingsButton.setColorFilter(new PorterDuffColorFilter(yumi ? yumiIcon : glassDesign ? getGlassIconColor(0.6f) : getThemedColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
         }
         if (searchButton != null) {
-            searchButton.setColorFilter(new PorterDuffColorFilter(glassDesign ? getGlassIconColor(0.6f) : getThemedColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
+            searchButton.setColorFilter(new PorterDuffColorFilter(yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.6f) : getThemedColor(Theme.key_chat_emojiPanelBackspace), PorterDuff.Mode.MULTIPLY));
         }
         if (mediaBanTooltip != null) {
             ((ShapeDrawable) mediaBanTooltip.getBackground()).getPaint().setColor(getThemedColor(Theme.key_chat_gifSaveHintBackground));
             mediaBanTooltip.setTextColor(getThemedColor(Theme.key_chat_gifSaveHintText));
         }
         if (gifSearchAdapter != null) {
-            gifSearchAdapter.progressEmptyView.imageView.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiPanelEmptyText), PorterDuff.Mode.MULTIPLY));
-            gifSearchAdapter.progressEmptyView.textView.setTextColor(getThemedColor(Theme.key_chat_emojiPanelEmptyText));
+            gifSearchAdapter.progressEmptyView.imageView.setColorFilter(new PorterDuffColorFilter(yumi ? yumiIcon : getThemedColor(Theme.key_chat_emojiPanelEmptyText), PorterDuff.Mode.MULTIPLY));
+            gifSearchAdapter.progressEmptyView.textView.setTextColor(yumi ? yumiIcon : getThemedColor(Theme.key_chat_emojiPanelEmptyText));
             gifSearchAdapter.progressEmptyView.progressView.setProgressColor(getThemedColor(Theme.key_progressCircle));
         }
-        animatedEmojiTextColorFilter = new PorterDuffColorFilter(getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN);
+        animatedEmojiTextColorFilter = new PorterDuffColorFilter(yumi ? YumiMd3.primary() : getThemedColor(Theme.key_featuredStickers_addButton), PorterDuff.Mode.SRC_IN);
 
         for (int a = 0; a < tabIcons.length; a++) {
-            Theme.setEmojiDrawableColor(tabIcons[a], glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiBottomPanelIcon), false);
-            Theme.setEmojiDrawableColor(tabIcons[a], glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
+            Theme.setEmojiDrawableColor(tabIcons[a], yumi ? yumiIcon : glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiBottomPanelIcon), false);
+            Theme.setEmojiDrawableColor(tabIcons[a], yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
         }
         if (emojiTabs != null) {
             emojiTabs.updateColors();
         }
         for (int a = 0; a < stickerIcons.length; a++) {
-            Theme.setEmojiDrawableColor(stickerIcons[a], glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiPanelIcon), false);
-            Theme.setEmojiDrawableColor(stickerIcons[a], glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
+            Theme.setEmojiDrawableColor(stickerIcons[a], yumi ? yumiIcon : glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiPanelIcon), false);
+            Theme.setEmojiDrawableColor(stickerIcons[a], yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
         }
         for (int a = 0; a < gifIcons.length; a++) {
-            Theme.setEmojiDrawableColor(gifIcons[a], glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiPanelIcon), false);
-            Theme.setEmojiDrawableColor(gifIcons[a], glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
+            Theme.setEmojiDrawableColor(gifIcons[a], yumi ? yumiIcon : glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiPanelIcon), false);
+            Theme.setEmojiDrawableColor(gifIcons[a], yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
         }
         if (searchIconDrawable != null) {
-            Theme.setEmojiDrawableColor(searchIconDrawable, glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiBottomPanelIcon), false);
-            Theme.setEmojiDrawableColor(searchIconDrawable, glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
+            Theme.setEmojiDrawableColor(searchIconDrawable, yumi ? yumiIcon : glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiBottomPanelIcon), false);
+            Theme.setEmojiDrawableColor(searchIconDrawable, yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelIconSelected), true);
         }
         if (searchIconDotDrawable != null) {
-            Theme.setEmojiDrawableColor(searchIconDotDrawable, glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine), false);
-            Theme.setEmojiDrawableColor(searchIconDotDrawable, glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine), true);
+            Theme.setEmojiDrawableColor(searchIconDotDrawable, yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.4f) : getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine), false);
+            Theme.setEmojiDrawableColor(searchIconDotDrawable, yumi ? YumiMd3.primary() : glassDesign ? getGlassIconColor(0.8f) : getThemedColor(Theme.key_chat_emojiPanelStickerPackSelectorLine), true);
         }
         if (emojiLockPaint != null) {
-            emojiLockPaint.setColor(getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
+            emojiLockPaint.setColor(yumi ? YumiMd3.primary() : getThemedColor(Theme.key_chat_emojiPanelStickerSetName));
             emojiLockPaint.setAlpha((int) (emojiLockPaint.getAlpha() * .5f));
         }
         if (emojiLockDrawable != null) {
-            emojiLockDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiPanelStickerSetName), PorterDuff.Mode.MULTIPLY));
+            emojiLockDrawable.setColorFilter(new PorterDuffColorFilter(yumi ? YumiMd3.primary() : getThemedColor(Theme.key_chat_emojiPanelStickerSetName), PorterDuff.Mode.MULTIPLY));
         }
     }
 
@@ -5977,6 +5988,7 @@ public class EmojiView extends FrameLayout implements
 
     @Override
     public void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
         isLayout = true;
         if (AndroidUtilities.isInMultiwindow || forseMultiwindowLayout) {
             if (currentBackgroundType != 1) {
@@ -5986,9 +5998,9 @@ public class EmojiView extends FrameLayout implements
                     setElevation(AndroidUtilities.dp(2));
                 }
                 setBackgroundResource(R.drawable.smiles_popup);
-                getBackground().setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_emojiPanelBackground), PorterDuff.Mode.MULTIPLY));
+                getBackground().setColorFilter(new PorterDuffColorFilter(yumi ? YumiMd3.surfaceContainer() : getThemedColor(Theme.key_chat_emojiPanelBackground), PorterDuff.Mode.MULTIPLY));
                 if (needEmojiSearch && shouldDrawBackground) {
-                    bottomTabContainerBackground.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+                    bottomTabContainerBackground.setBackgroundColor(yumi ? YumiMd3.surfaceContainer() : getThemedColor(Theme.key_chat_emojiPanelBackground));
                 }
                 currentBackgroundType = 1;
             }
@@ -6000,9 +6012,9 @@ public class EmojiView extends FrameLayout implements
                     setElevation(0);
                 }
                 if (shouldDrawBackground) {
-                    setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+                    setBackgroundColor(yumi ? YumiMd3.surfaceContainer() : getThemedColor(Theme.key_chat_emojiPanelBackground));
                     if (needEmojiSearch) {
-                        bottomTabContainerBackground.setBackgroundColor(getThemedColor(Theme.key_chat_emojiPanelBackground));
+                        bottomTabContainerBackground.setBackgroundColor(yumi ? YumiMd3.surfaceContainer() : getThemedColor(Theme.key_chat_emojiPanelBackground));
                     }
                 }
                 currentBackgroundType = 0;

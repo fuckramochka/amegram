@@ -79,6 +79,12 @@ public class ActionBarMenuSubItem extends FrameLayout {
         iconColor = getThemedColor(Theme.key_actionBarDefaultSubmenuItemIcon);
         iconColorMode = PorterDuff.Mode.MULTIPLY;
         selectorColor = getThemedColor(Theme.key_dialogButtonSelector);
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            textColor = app.amegram.theme.YumiMd3.onSurface();
+            iconColor = app.amegram.theme.YumiMd3.onSurfaceVariant();
+            iconColorMode = PorterDuff.Mode.SRC_IN;
+            selectorColor = app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.primary(), 0.13f);
+        }
 
         updateBackground();
         setPadding(dp(18), 0, dp(18), 0);
@@ -425,7 +431,18 @@ public class ActionBarMenuSubItem extends FrameLayout {
     }
 
     public void updateBackground() {
-        setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            final float topRadius = top ? dp(selectorRad) : dp(5);
+            final float bottomRadius = bottom ? dp(selectorRad) : dp(5);
+            final android.graphics.drawable.GradientDrawable shape = new android.graphics.drawable.GradientDrawable();
+            shape.setColor(android.graphics.Color.TRANSPARENT);
+            shape.setCornerRadii(new float[]{topRadius, topRadius, topRadius, topRadius,
+                    bottomRadius, bottomRadius, bottomRadius, bottomRadius});
+            setBackground(app.miogram.ui.yumi.YumiUi.ripple(
+                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.primary(), 0.13f), shape));
+        } else {
+            setBackground(Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
+        }
         // exteraGram: «вдавливание» пункта меню при нажатии (exteraGram — UIUtil.applyScaleStateListAnimator(this, ..., 0.04f, 1.5f))
         app.exteraless.utils.UIUtil.applyScaleStateListAnimator(this, 0.04f, 1.5f);
     }

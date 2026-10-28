@@ -59,6 +59,8 @@ public class TextColorCell extends FrameLayout {
         textView.setSingleLine(true);
         textView.setGravity((LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.CENTER_VERTICAL);
         addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 21, 0, 21, 0));
+        YumiSettingsRowStyle.title(textView);
+        YumiSettingsRowStyle.applySurface(this, resourcesProvider, app.amegram.theme.YumiMd3.RADIUS_L_DP);
     }
 
     @Override

@@ -433,6 +433,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         imageUpdater.setDelegate(this);
 
         topView = new FrameLayout(context);
+        topView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                app.amegram.theme.YumiMd3.RADIUS_XXL_DP));
 
         avatarContainer = new FrameLayout(context);
         topView.addView(avatarContainer, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 23 - 12, 0, 0));
@@ -454,7 +457,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         avatarDrawable = new AvatarDrawable();
         avatarView = new BackupImageView(context);
-        avatarView.setRoundRadius(dp(90));
+        avatarView.setRoundRadius(dp(30));
         avatarContainer.addView(avatarView, LayoutHelper.createFrame(90, 90, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 15, 0, 0));
 
         avatarProgressView = new RadialProgressView(context) {
@@ -493,8 +496,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         ScaleStateListAnimator.apply(cameraButton);
 
         titleView = new TextView(context);
-        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 22);
-        titleView.setTypeface(AndroidUtilities.bold());
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 24);
+        titleView.setTypeface(app.amegram.theme.YumiMd3.typeface(app.amegram.theme.YumiMd3.BOLD));
         titleView.setGravity(Gravity.CENTER);
         titleView.setSingleLine();
         titleView.setEllipsize(TextUtils.TruncateAt.END);
@@ -597,10 +600,19 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     public void updateColors() {
         actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
-        titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
-        subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        contentView.setBackgroundColor(app.amegram.theme.YumiMd3.surface());
+        topView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                app.amegram.theme.YumiMd3.surfaceContainerLow(), app.amegram.theme.YumiMd3.RADIUS_XXL_DP));
+        titleView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
+        subtitleView.setTextColor(app.amegram.theme.YumiMd3.onSurfaceVariant());
         searchItem.updateColor();
+
+        if (listView != null) {
+            AndroidUtilities.forEachViews(listView, view -> {
+                if (view instanceof SettingCell) ((SettingCell) view).updateColors();
+                else if (view instanceof AccountCell) ((AccountCell) view).updateColors();
+            });
+        }
 
         final int navigationBarColor = getThemedColor(Theme.key_windowBackgroundWhite);
         navigationBar.setBackground(new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { Theme.multAlpha(navigationBarColor, 0.0f), navigationBarColor }));
@@ -1074,10 +1086,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             this.resourcesProvider = resourcesProvider;
 
             setOrientation(HORIZONTAL);
+            setGravity(Gravity.CENTER_VERTICAL);
+            setMinimumHeight(dp(68));
+            setPadding(dp(12), dp(6), dp(12), dp(6));
+            setBackground(app.miogram.ui.yumi.YumiUi.ripple(
+                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
+                    app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                            app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
 
             avatarDrawable = new AvatarDrawable();
             avatarView = new BackupImageView(context);
-            avatarView.setRoundRadius(dp(14));
+            avatarView.setRoundRadius(dp(12));
 
             textView = new SimpleTextView(context);
             textView.setTextSize(15);
@@ -1134,10 +1153,13 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public void updateColors() {
-            textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            counterView.setBackground(Theme.createRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
-            arrowView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
-            emojiStatusDrawable.setColor(Theme.getColor(Theme.key_profile_verifiedBackground, resourcesProvider));
+            textView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
+            counterView.setTextColor(app.amegram.theme.YumiMd3.onPrimary());
+            counterView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                    app.amegram.theme.YumiMd3.primary(), app.amegram.theme.YumiMd3.RADIUS_FULL_DP));
+            arrowView.setColorFilter(new PorterDuffColorFilter(
+                    app.amegram.theme.YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            emojiStatusDrawable.setColor(app.amegram.theme.YumiMd3.primary());
         }
 
         public void set(int account) {
@@ -1151,14 +1173,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             botDrawable.setCurrentAccount(account);
             emojiStatusDrawable.setCurrentAccount(account);
 
-            botDrawable.setColor(Theme.getColor(Theme.key_profile_verifiedBackground, resourcesProvider));
+            botDrawable.setColor(app.amegram.theme.YumiMd3.primary());
             if (user != null && user.bot_verification_icon != 0) {
                 botDrawable.set(user.bot_verification_icon, false);
             } else {
                 botDrawable.set((Drawable) null, false);
             }
             final Long emojiStatusId = UserObject.getEmojiStatusDocumentId(user);
-            emojiStatusDrawable.setColor(Theme.getColor(Theme.key_profile_verifiedBackground, resourcesProvider));
+            emojiStatusDrawable.setColor(app.amegram.theme.YumiMd3.primary());
             if (emojiStatusId != null) {
                 emojiStatusDrawable.set(emojiStatusId, false);
             } else if (user != null && user.premium) {
@@ -1178,7 +1200,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(48), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(dp(68), MeasureSpec.EXACTLY)
             );
         }
 
@@ -1187,7 +1209,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public AccountCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                return new AccountCell(context, resourcesProvider);
+                AccountCell cell = new AccountCell(context, resourcesProvider);
+                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
+                        RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
+                cell.setLayoutParams(lp);
+                return cell;
             }
 
             @Override
@@ -1223,16 +1250,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return super.onBackPressed(invoked);
     }
 
-    public static class SettingCell extends LinearLayout implements Theme.Colorable {
+    public static class SettingCell extends app.miogram.ui.yumi.YumiCell implements Theme.Colorable {
 
-        private final Theme.ResourcesProvider resourcesProvider;
-        private final Background iconBackground;
-        private final FrameLayout iconLayout;
-        private final ImageView iconView;
-        private final LinearLayout textLayout;
-        private final TextView titleView;
-        private final TextView subtitleView;
-        private final TextView valueView;
+        private int sourceIconTone;
+        private int iconTone;
+        private int iconTint;
         private final boolean mini;
 
         public SettingCell(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -1241,52 +1263,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         public SettingCell(Context context, Theme.ResourcesProvider resourcesProvider, boolean mini) {
             super(context);
-
-            this.resourcesProvider = resourcesProvider;
             this.mini = mini;
-            setOrientation(HORIZONTAL);
-
-            iconLayout = new FrameLayout(context);
-            iconLayout.setBackground(iconBackground = new Background());
-
-            iconView = new ImageView(context);
-            iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            iconLayout.addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
-
-            textLayout = new LinearLayout(context);
-            textLayout.setOrientation(VERTICAL);
-
-            titleView = new TextView(context);
-            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
-
-            subtitleView = new TextView(context);
-            subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
-            textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
-
-            valueView = new TextView(context);
-            valueView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-            if (LocaleController.isRTL) {
-                addView(valueView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
-                addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 20, 0, mini ? 12 : 18, 0));
-                addView(iconLayout, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, mini ? 9 : 18, 0));
-            } else {
-                addView(iconLayout, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.LEFT, mini ? 9 : 18, 0, 0, 0));
-                addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL,  mini ? 12 : 18, 0, 20, 0));
-                addView(valueView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 20, 0));
-            }
-            updateColors();
+            setShowDivider(false);
+            setChevronVisible(true);
         }
 
         @Override
         public void updateColors() {
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
-            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
-            valueView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
-            iconBackground.setDrawBorder(resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark());
+            super.updateColors();
+            updateIconTone();
         }
-
-        private boolean twoLines;
 
         public void set(
             int iconColorTop, int iconColorBottom, int icon,
@@ -1294,117 +1280,32 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             CharSequence subtitle,
             CharSequence value
         ) {
-            iconLayout.setVisibility(icon != 0 ? View.VISIBLE : View.GONE);
-            titleView.setTranslationX(icon == 0 ? dp(2) : 0);
-            subtitleView.setTranslationX(icon == 0 ? dp(2) : 0);
-
-            iconView.setImageResource(icon);
-            applyIconColors(iconView, iconBackground, iconColorTop, iconColorBottom, resourcesProvider);
-            titleView.setText(title);
-            subtitleView.setVisibility((twoLines = !TextUtils.isEmpty(subtitle)) ? View.VISIBLE : View.GONE);
-            subtitleView.setText(subtitle);
+            setTitle(title);
+            setSubtitle(subtitle);
             setValue(value);
+            setIcon(icon);
+            sourceIconTone = icon == 0 ? 0 : (iconColorBottom != 0 ? iconColorBottom : iconColorTop);
+            updateIconTone();
+            setChevronVisible(true);
+            setContentDescription(TextUtils.concat(title == null ? "" : title,
+                    TextUtils.isEmpty(subtitle) ? "" : ", " + subtitle,
+                    TextUtils.isEmpty(value) ? "" : ", " + value));
         }
 
-        public static void applyIconColors(
-                ImageView iconView,
-                Background iconBackground,
-                int iconColorTop,
-                int iconColorBottom,
-                Theme.ResourcesProvider resourcesProvider
-        ) {
-            final boolean dark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
-            if (app.exteraless.appearance.YougramExpressive.enabled()) {
-                iconBackground.setMonetColor(dark ? 0xFFFFFFFF : 0xFF2A2A2E);
-                iconView.setColorFilter(dark ? 0xFF121212 : 0xFFFFFFFF, PorterDuff.Mode.SRC_IN);
-                iconBackground.setDrawBorder(false);
-                return;
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && Theme.getActiveTheme().isMonet()) {
-                iconBackground.setMonetColor(MonetHelper.getColor(dark ? "a1_200" : "a1_600"));
-                iconView.setColorFilter(MonetHelper.getColor(dark ? "a1_800" : "a1_100"), PorterDuff.Mode.SRC_IN);
-            } else {
-                iconBackground.setColor(iconColorTop, iconColorBottom);
-                iconView.clearColorFilter();
-            }
-            iconBackground.setDrawBorder(dark);
-        }
-
-        public void setValue(CharSequence value) {
-            valueView.setVisibility(!TextUtils.isEmpty(value) ? View.VISIBLE : View.GONE);
-            valueView.setText(value);
+        private void updateIconTone() {
+            if (sourceIconTone == 0) return;
+            iconTint = app.amegram.theme.YumiMd3.blend(
+                    app.amegram.theme.YumiMd3.primary(), sourceIconTone, 0.28f);
+            iconTone = app.amegram.theme.YumiMd3.iconTone(iconTint, 0.18f);
+            setIconBackground(iconTone);
+            setIconTint(iconTint);
         }
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(
-                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(mini ? 44 : twoLines ? 60 : 50), MeasureSpec.EXACTLY)
-            );
-        }
-
-        public static class Background extends Drawable implements GlassOutlineStyle.Listener {
-            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            private final Paint strokePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            private LinearGradient gradient, strokeGradient;
-            private final Matrix matrix = new Matrix();
-
-            public Background() {
-                strokePaint.setStyle(Paint.Style.STROKE);
-                strokeGradient = new LinearGradient(0, 0, 0, dp(28), new int[] { 0x4dffffff, 0, 0x1affffff }, new float[] { 0, 0.5f, 1 }, Shader.TileMode.CLAMP);
-                strokePaint.setShader(strokeGradient);
-                GlassOutlineStyle.addListener(this);
-            }
-
-            public void setColor(int topColor, int bottomColor) {
-                monet = false;
-                gradient = new LinearGradient(0, 0, 0, dp(28), new int[] { topColor, bottomColor }, new float[] { 0, 1 }, Shader.TileMode.CLAMP);
-                paint.setShader(gradient);
-            }
-
-            private boolean monet;
-            public void setMonetColor(int color) {
-                monet = true;
-                gradient = null;
-                paint.setShader(null);
-                paint.setColor(color);
-            }
-
-            private boolean border;
-            public void setDrawBorder(boolean drawBorder) {
-                this.border = drawBorder;
-            }
-
-            @Override
-            public void draw(@NonNull Canvas canvas) {
-                final float r = dp(10);
-                AndroidUtilities.rectTmp.set(getBounds());
-                matrix.reset();
-                matrix.postTranslate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
-                canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, paint);
-
-                if (!monet && GlassOutlineStyle.current() == GlassOutlineStyle.GLARE && border) {
-                    final float sw = dp(1);
-                    strokePaint.setStrokeWidth(sw);
-                    matrix.reset();
-                    matrix.postTranslate(AndroidUtilities.rectTmp.left, AndroidUtilities.rectTmp.top);
-                    AndroidUtilities.rectTmp.inset(sw / 2.0f, sw / 2.0f);
-                    canvas.drawRoundRect(AndroidUtilities.rectTmp, r, r, strokePaint);
-                }
-            }
-
-            @Override
-            public void onGlassOutlineStyleChanged() {
-                invalidateSelf();
-            }
-
-            @Override
-            public void setAlpha(int alpha) {}
-            @Override
-            public void setColorFilter(@Nullable ColorFilter colorFilter) {}
-            @Override
-            public int getOpacity() {
-                return PixelFormat.TRANSPARENT;
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+            if (mini && getMeasuredHeight() > dp(52)) {
+                setMeasuredDimension(getMeasuredWidth(), dp(52));
             }
         }
 
@@ -1413,18 +1314,21 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public SettingCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                return new SettingCell(context, resourcesProvider);
+                SettingCell cell = new SettingCell(context, resourcesProvider);
+                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
+                        RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
+                cell.setLayoutParams(lp);
+                return cell;
             }
 
             @Override
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
-                int iconColorTop    = (int) item.longValue;
+                int iconColorTop = (int) item.longValue;
                 int iconColorBottom = (int) (item.longValue >>> 32);
                 ((SettingCell) view).set(
                     iconColorTop, iconColorBottom, item.iconResId,
-                    item.text,
-                    item.subtext,
-                    item.textValue
+                    item.text, item.subtext, item.textValue
                 );
             }
 
@@ -1439,10 +1343,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 item.id = id;
                 item.iconResId = icon;
                 item.text = title;
-                // Подпись намеренно отбрасывается — так же, как в exteraGram 12.9.0
-                // (SettingsActivity.java:539-560: subtext не присваивается вовсе).
-                // Из-за этого twoLines остаётся false и строка меряется в dp(50), а не dp(60).
-                // Параметр оставлен в сигнатуре, чтобы не трогать 11 мест вызова.
+                item.subtext = subtitle;
                 item.textValue = value;
                 item.longValue = ((long) iconColorBottom << 32) | (iconColorTop & 0xFFFFFFFFL);
                 return item;

@@ -100,6 +100,11 @@ public class TextRadioCell extends FrameLayout {
         isRTL = LocaleController.isRTL;
 
         setClipChildren(false);
+        if (!dialog) {
+            YumiSettingsRowStyle.title(textView);
+            YumiSettingsRowStyle.detail(valueTextView);
+            YumiSettingsRowStyle.applySurface(this, null, app.amegram.theme.YumiMd3.RADIUS_L_DP);
+        }
     }
 
     public void updateRTL() {

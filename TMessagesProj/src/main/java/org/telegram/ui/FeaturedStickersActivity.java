@@ -23,6 +23,7 @@ import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.ActionBar.ThemeDescription;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.Cells.FeaturedStickerSetCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
 import org.telegram.ui.Components.LayoutHelper;
@@ -71,9 +72,16 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
 
     @Override
     public View createView(Context context) {
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
         actionBar.setAllowOverlayTitle(true);
         actionBar.setTitle(LocaleController.getString(R.string.FeaturedStickers));
+        if (yumi) {
+            actionBar.setBackgroundColor(YumiMd3.surfaceContainer());
+            actionBar.setTitleColor(YumiMd3.onSurface());
+            actionBar.setItemsColor(YumiMd3.onSurface(), false);
+            actionBar.setItemsBackgroundColor(YumiMd3.withAlpha(YumiMd3.primary(), 0.14f), false);
+        }
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -87,10 +95,11 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
 
         fragmentView = new FrameLayout(context);
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        frameLayout.setBackgroundColor(yumi ? YumiMd3.surfaceContainerLow() : Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context);
         listView.setItemAnimator(null);
+        if (yumi) listView.setGlowColor(YumiMd3.primary());
         listView.setLayoutAnimation(null);
         listView.setFocusable(true);
         listView.setTag(14);
@@ -232,7 +241,14 @@ public class FeaturedStickersActivity extends BaseFragment implements Notificati
             switch (viewType) {
                 case 0:
                     view = new FeaturedStickerSetCell(mContext);
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view.setBackgroundColor(app.exteraless.appearance.YougramExpressive.enabled()
+                            ? YumiMd3.surfaceContainerLow() : Theme.getColor(Theme.key_windowBackgroundWhite));
+                    if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                        FeaturedStickerSetCell cell = (FeaturedStickerSetCell) view;
+                        cell.addButton.setTextColor(YumiMd3.onPrimary());
+                        cell.addButton.setBackground(YumiMd3.ripple(YumiMd3.primary(), YumiMd3.RADIUS_M_DP,
+                                YumiMd3.accentRippleColor(YumiMd3.primary())));
+                    }
                     ((FeaturedStickerSetCell) view).setAddOnClickListener(v -> {
                         FeaturedStickerSetCell parent1 = (FeaturedStickerSetCell) v.getParent();
                         TLRPC.StickerSetCovered pack = parent1.getStickerSet();

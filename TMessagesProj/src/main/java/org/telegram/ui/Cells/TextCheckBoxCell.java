@@ -58,6 +58,10 @@ public class TextCheckBoxCell extends FrameLayout {
         checkBox.setFocusableInTouchMode(false);
         checkBox.setClickable(false);
         addView(checkBox, LayoutHelper.createFrame(18, 18, (isRtl ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, 21, 0, 21, 0));
+        if (!dialog) {
+            YumiSettingsRowStyle.title(textView);
+            YumiSettingsRowStyle.applySurface(this, null, app.amegram.theme.YumiMd3.RADIUS_L_DP);
+        }
     }
 
     @Override
@@ -89,7 +93,8 @@ public class TextCheckBoxCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int inset = AndroidUtilities.dp(10);
+            canvas.drawLine(inset, getMeasuredHeight() - 1, getMeasuredWidth() - inset, getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

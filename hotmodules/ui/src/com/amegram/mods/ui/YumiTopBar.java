@@ -61,9 +61,10 @@ public final class YumiTopBar extends FrameLayout {
         row.addView(backView, new LinearLayout.LayoutParams(dp(48), dp(48)));
 
         titleView = new TextView(context);
-        titleView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 22f);
+        titleView.setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 20f);
         titleView.setTypeface(android.graphics.Typeface.create("sans-serif-medium",
                 android.graphics.Typeface.NORMAL));
+        titleView.setLetterSpacing(-0.02f);
         titleView.setTextColor(palette.onSurface);
         titleView.setSingleLine(true);
         titleView.setEllipsize(android.text.TextUtils.TruncateAt.END);
@@ -73,8 +74,8 @@ public final class YumiTopBar extends FrameLayout {
         row.addView(titleView, new LinearLayout.LayoutParams(
                 0, LayoutParams.MATCH_PARENT, 1f));
 
-        dividerPaint.setStrokeWidth(Math.max(1, dp(0.75f)));
-        dividerPaint.setColor(YumiPalette.alpha(palette.navBorder, dividerAlpha));
+        dividerPaint.setStrokeWidth(Math.max(1, dp(0.5f)));
+        dividerPaint.setColor(palette.separator != 0 ? palette.separator : YumiPalette.alpha(palette.navBorder, dividerAlpha));
     }
 
     public void setTitle(CharSequence title) {

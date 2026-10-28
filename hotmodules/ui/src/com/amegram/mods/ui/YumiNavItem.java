@@ -55,8 +55,8 @@ final class YumiNavItem extends FrameLayout {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.HORIZONTAL);
-        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setOrientation(LinearLayout.VERTICAL);
+        row.setGravity(Gravity.CENTER);
         row.setClipChildren(false);
         row.setClipToPadding(false);
         row.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
@@ -68,12 +68,12 @@ final class YumiNavItem extends FrameLayout {
         iconBox.setClipChildren(false);
         iconBox.setClipToPadding(false);
         iconBox.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        row.addView(iconBox, new LinearLayout.LayoutParams(dp(24), dp(24)));
+        row.addView(iconBox, new LinearLayout.LayoutParams(dp(32), dp(32)));
 
         iconView = new ImageView(context);
         iconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
         iconView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        iconBox.addView(iconView, new LayoutParams(dp(24), dp(24), Gravity.CENTER));
+        iconBox.addView(iconView, new LayoutParams(dp(22), dp(22), Gravity.CENTER));
 
         avatarView = new ImageView(context);
         avatarView.setScaleType(ImageView.ScaleType.CENTER_CROP);
@@ -84,7 +84,7 @@ final class YumiNavItem extends FrameLayout {
         avatarBg.setColor(palette.primaryContainer);
         avatarView.setBackground(avatarBg);
         avatarView.setClipToOutline(true);
-        iconBox.addView(avatarView, new LayoutParams(dp(24), dp(24), Gravity.CENTER));
+        iconBox.addView(avatarView, new LayoutParams(dp(22), dp(22), Gravity.CENTER));
 
         final int iconRes = context.getResources().getIdentifier(
                 iconName, "drawable", context.getPackageName());
@@ -94,16 +94,17 @@ final class YumiNavItem extends FrameLayout {
         iconView.setColorFilter(new PorterDuffColorFilter(palette.navInactive, PorterDuff.Mode.SRC_IN));
 
         labelView = new TextView(context);
-        labelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f);
+        labelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f);
         labelView.setSingleLine(true);
         labelView.setEllipsize(TextUtils.TruncateAt.END);
         labelView.setGravity(Gravity.CENTER);
         labelView.setIncludeFontPadding(false);
         labelView.setTypeface(android.graphics.Typeface.create("sans-serif-medium",
                 android.graphics.Typeface.NORMAL));
-        labelView.setTextColor(palette.navActive);
-        labelView.setPaddingRelative(dp(6), 0, 0, 0);
-        labelView.setVisibility(GONE);
+        labelView.setTextColor(palette.navInactive);
+        labelView.setAlpha(0.85f);
+        labelView.setPaddingRelative(0, dp(2), 0, 0);
+        labelView.setVisibility(VISIBLE);
         labelView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         row.addView(labelView, new LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -120,8 +121,8 @@ final class YumiNavItem extends FrameLayout {
         counterView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
         final LayoutParams counterLp = new LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(16), Gravity.TOP | Gravity.END);
-        counterLp.topMargin = -dp(5);
-        counterLp.setMarginEnd(-dp(9));
+        counterLp.topMargin = -dp(4);
+        counterLp.setMarginEnd(-dp(8));
         iconBox.addView(counterView, counterLp);
 
         if (avatarMode) {
@@ -141,9 +142,13 @@ final class YumiNavItem extends FrameLayout {
     void setSelectedState(boolean selected) {
         if (this.selected == selected) return;
         this.selected = selected;
-        labelView.setVisibility(selected ? VISIBLE : GONE);
+        labelView.setTextColor(selected ? palette.navActive : palette.navInactive);
+        labelView.setAlpha(selected ? 1.0f : 0.85f);
         iconView.setColorFilter(new PorterDuffColorFilter(
                 selected ? palette.navActive : palette.navInactive, PorterDuff.Mode.SRC_IN));
+        updateIconBackground();
+        row.animate().scaleX(selected ? 1.04f : 1.0f).scaleY(selected ? 1.04f : 1.0f)
+                .setDuration(200L).start();
         invalidate();
     }
 
@@ -178,7 +183,9 @@ final class YumiNavItem extends FrameLayout {
         pillPaint.setColor(updated.navIndicator);
         iconView.setColorFilter(new PorterDuffColorFilter(
                 selected ? updated.navActive : updated.navInactive, PorterDuff.Mode.SRC_IN));
-        labelView.setTextColor(updated.navActive);
+        labelView.setTextColor(selected ? updated.navActive : updated.navInactive);
+        labelView.setAlpha(selected ? 1.0f : 0.85f);
+        updateIconBackground();
         counterView.setTextColor(updated.onPrimary);
         GradientDrawable bg = (GradientDrawable) avatarView.getBackground();
         if (bg != null) {
@@ -197,9 +204,30 @@ final class YumiNavItem extends FrameLayout {
         counterView.setBackground(bg);
     }
 
+    private void updateIconBackground() {
+        if (!selected || avatarMode) {
+            iconBox.setBackground(null);
+            return;
+        }
+        GradientDrawable bg = new GradientDrawable();
+        bg.setShape(GradientDrawable.RECTANGLE);
+        bg.setCornerRadius(dp(10));
+        bg.setColor(palette.navIndicator);
+        iconBox.setBackground(bg);
+    }
+
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (selected) {
+            final float pillW = dp(28);
+            final float pillH = dp(3);
+            final float left = (getWidth() - pillW) / 2f;
+            final float top = getHeight() - dp(3);
+            pillRect.set(left, top, left + pillW, top + pillH);
+            pillPaint.setColor(palette.navActive);
+            canvas.drawRoundRect(pillRect, dp(2), dp(2), pillPaint);
+        }
     }
 
     private int dp(float value) {

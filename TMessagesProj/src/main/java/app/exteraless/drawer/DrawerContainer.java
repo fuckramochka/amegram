@@ -32,6 +32,7 @@ import androidx.dynamicanimation.animation.SpringAnimation;
 import androidx.dynamicanimation.animation.SpringForce;
 
 import app.exteraless.appearance.AppearanceConfig;
+import app.amegram.theme.YumiMd3;
 import app.exteraless.utils.AppUtils;
 
 import org.telegram.messenger.AndroidUtilities;
@@ -141,7 +142,7 @@ public class DrawerContainer extends FrameLayout implements NotificationCenter.N
         drawerWidth = calculateDrawerWidth();
 
         drawerPanel = new FrameLayout(context);
-        drawerPanel.setBackgroundColor(Theme.getColor(COLOR_KEY_DRAWER_BACKGROUND));
+        drawerPanel.setBackgroundColor(getDrawerBackgroundColor());
         drawerPanel.setTranslationX(-drawerWidth);
         addView(drawerPanel, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT));
         final FrameLayout.LayoutParams panelParams = (FrameLayout.LayoutParams) drawerPanel.getLayoutParams();
@@ -463,7 +464,7 @@ public class DrawerContainer extends FrameLayout implements NotificationCenter.N
             blue = 0;
         } else {
             alpha = (int) (clamped * 160.0f);
-            final int color = Theme.getColor(COLOR_KEY_DRAWER_BACKGROUND);
+            final int color = getDrawerBackgroundColor();
             red = Color.red(color);
             green = Color.green(color);
             blue = Color.blue(color);
@@ -972,11 +973,17 @@ public class DrawerContainer extends FrameLayout implements NotificationCenter.N
     }
 
     private void updateColors() {
-        drawerPanel.setBackgroundColor(Theme.getColor(COLOR_KEY_DRAWER_BACKGROUND));
+        drawerPanel.setBackgroundColor(getDrawerBackgroundColor());
         headerView.updateColors();
         accountPickerView.updateColors();
         menuView.updateColors();
         invalidate();
+    }
+
+    private int getDrawerBackgroundColor() {
+        return app.exteraless.appearance.YougramExpressive.enabled()
+                ? YumiMd3.surfaceContainerLow()
+                : Theme.getColor(COLOR_KEY_DRAWER_BACKGROUND);
     }
 
     private void setupCallbacks() {

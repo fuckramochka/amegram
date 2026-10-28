@@ -7,15 +7,14 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.ui.ActionBar.Theme;
 
 /**
- * Yougram Expressive — перенос дизайн-языка Yougram (Material 3 Expressive glass)
- * на View-интерфейс форка.
+ * Yumi Expressive — the independent visual language for the Android client.
  *
  * Tonal Theme Engine:
  * - Повністю адаптується до поточної теми користувача (темно-рожева, Monet, темна, світла тощо).
  * - Якщо тема має власний насичений відтінок (наприклад, темно-рожевий) — поверхні, фон чату,
  *   бульбашки та скляна панель насичуються тональними відтінками теми, а не перетворюються на сірий.
  * - Чисті скруглені бульбашки (радіус 24dp, без хвостиків).
- * - Скляна пігулка нижніх вкладок та верхньої панелі з адаптивним тонуванням.
+ * - A stable Yumi rose/plum accent across Telegram theme roles.
  */
 public final class YougramExpressive {
 
@@ -118,7 +117,7 @@ public final class YougramExpressive {
         if (!enabled() || colors == null) {
             return;
         }
-        final int accent = accentColor(colors);
+        final int accent = accentColor(dark);
 
         int origBg = colors.get(Theme.key_windowBackgroundGray, 0);
         int origSurface = colors.get(Theme.key_windowBackgroundWhite, 0);
@@ -223,6 +222,20 @@ public final class YougramExpressive {
         put(colors, Theme.key_windowBackgroundWhiteGrayText6, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
         put(colors, Theme.key_windowBackgroundWhiteGrayText7, dark ? DARK_MUTED : LIGHT_MUTED);
         put(colors, Theme.key_windowBackgroundWhiteGrayText8, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
+        put(colors, Theme.key_windowBackgroundWhiteBlueText, accent);
+        put(colors, Theme.key_windowBackgroundWhiteBlueText2, accent);
+        put(colors, Theme.key_windowBackgroundWhiteBlueText3, accent);
+        put(colors, Theme.key_windowBackgroundWhiteBlueText4, accent);
+        put(colors, Theme.key_windowBackgroundWhiteBlueText5, accent);
+        put(colors, Theme.key_windowBackgroundWhiteBlueText6, accent);
+        put(colors, Theme.key_windowBackgroundWhiteBlueText7, accent);
+        put(colors, Theme.key_dialogButtonSelector, Theme.multAlpha(accent, dark ? 0.24f : 0.13f));
+        put(colors, Theme.key_listSelector, Theme.multAlpha(accent, dark ? 0.20f : 0.10f));
+        put(colors, Theme.key_actionBarDefaultSubmenuBackground, surface);
+        put(colors, Theme.key_actionBarDefaultSubmenuItem, dark ? DARK_TEXT : LIGHT_TEXT);
+        put(colors, Theme.key_actionBarDefaultSubmenuItemIcon, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
+        put(colors, Theme.key_featuredStickers_addButton, dark ? 0xFF9C315F : 0xFF9C2858);
+        put(colors, Theme.key_featuredStickers_buttonText, 0xFFFFFFFF);
         put(colors, Theme.key_dialogTextGray, dark ? DARK_MUTED : LIGHT_MUTED);
         put(colors, Theme.key_dialogTextGray2, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
         put(colors, Theme.key_dialogTextGray3, dark ? DARK_MUTED : LIGHT_MUTED);
@@ -287,23 +300,8 @@ public final class YougramExpressive {
         colors.put(key, value);
     }
 
-    private static int accentColor(SparseIntArray colors) {
-        int accent = colors.get(Theme.key_chats_actionBackground, 0);
-        if (isValidAccent(accent)) return accent;
-        accent = colors.get(Theme.key_featuredStickers_addButton, 0);
-        if (isValidAccent(accent)) return accent;
-        accent = colors.get(Theme.key_switchTrackChecked, 0);
-        if (isValidAccent(accent)) return accent;
-        accent = colors.get(Theme.key_windowBackgroundWhiteBlueText, 0);
-        if (isValidAccent(accent)) return accent;
-        return 0xFFE5486B; // Yumi rose default
-    }
-
-    private static boolean isValidAccent(int color) {
-        if (color == 0 || (color & 0xff000000) == 0) return false;
-        float[] hsl = new float[3];
-        ColorUtils.colorToHSL(color, hsl);
-        return hsl[1] >= 0.08f && hsl[2] >= 0.10f && hsl[2] <= 0.90f;
+    private static int accentColor(boolean dark) {
+        return dark ? 0xFFFF8FB7 : 0xFFB83268;
     }
 
     private static int lerp(int from, int to, float amount) {

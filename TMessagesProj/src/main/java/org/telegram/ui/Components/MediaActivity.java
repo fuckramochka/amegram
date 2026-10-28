@@ -52,6 +52,7 @@ import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.ActionBar.ThemeDescription;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugController;
 import org.telegram.ui.Components.FloatingDebug.FloatingDebugProvider;
@@ -1070,19 +1071,24 @@ public class MediaActivity extends BaseFragment implements SharedMediaLayout.Sha
 
 
     private void updateColors() {
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
+        final int primaryText = yumi ? YumiMd3.onSurface() : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
         if (sharedMediaLayout.getSearchOptionsItem() != null) {
-            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+            sharedMediaLayout.getSearchOptionsItem().setColorFilter(new PorterDuffColorFilter(primaryText, PorterDuff.Mode.SRC_IN));
         }
-        actionBar.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
-        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        actionBar.setItemsColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), true);
-        actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
-        actionBar.setTitleColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        actionBar.setBackgroundColor(yumi ? YumiMd3.surfaceContainer() : Theme.getColor(Theme.key_windowBackgroundGray));
+        actionBar.setItemsColor(primaryText, false);
+        actionBar.setItemsColor(primaryText, true);
+        actionBar.setItemsBackgroundColor(yumi ? YumiMd3.withAlpha(YumiMd3.primary(), 0.14f) : Theme.getColor(Theme.key_actionBarActionModeDefaultSelector), false);
+        actionBar.setTitleColor(primaryText);
+        fragmentView.setBackgroundColor(yumi ? YumiMd3.surfaceContainerLow() : getThemedColor(Theme.key_windowBackgroundGray));
         if (nameTextView[0] != null) {
-            nameTextView[0].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            nameTextView[0].setTextColor(primaryText);
+            if (yumi) nameTextView[0].setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
         }
         if (nameTextView[1] != null) {
-            nameTextView[1].setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            nameTextView[1].setTextColor(primaryText);
+            if (yumi) nameTextView[1].setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
         }
     }
 

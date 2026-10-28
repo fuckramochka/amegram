@@ -280,7 +280,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         }
         backButtonImageView = new UnreadImageView(getContext());
         backButtonImageView.setScaleType(ImageView.ScaleType.CENTER);
-        backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+        backButtonImageView.setBackground(app.miogram.ui.yumi.YumiUi.enabled()
+                ? app.miogram.ui.yumi.YumiUi.selectable(0, app.amegram.theme.YumiMd3.RADIUS_FULL_DP)
+                : Theme.createSelectorDrawable(itemsBackgroundColor));
         backButtonImageView.setPadding(dp(1), 0, 0, 0);
         addView(backButtonImageView, LayoutHelper.createFrame(54, 54, Gravity.LEFT | Gravity.TOP));
 
@@ -503,6 +505,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         subtitleTextView.setGravity(isCentered() ? Gravity.CENTER : Gravity.LEFT);
         subtitleTextView.setVisibility(GONE);
         subtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            subtitleTextView.setTypeface(app.amegram.theme.YumiMd3.typeface(app.amegram.theme.YumiMd3.REGULAR));
+        }
         addView(subtitleTextView, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
     }
 
@@ -514,6 +519,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         additionalSubtitleTextView.setGravity(isCentered() ? Gravity.CENTER : Gravity.LEFT);
         additionalSubtitleTextView.setVisibility(GONE);
         additionalSubtitleTextView.setTextColor(getThemedColor(Theme.key_actionBarDefaultSubtitle));
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            additionalSubtitleTextView.setTypeface(app.amegram.theme.YumiMd3.typeface(app.amegram.theme.YumiMd3.REGULAR));
+        }
         addView(additionalSubtitleTextView, 0, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT | Gravity.TOP));
     }
 
@@ -560,7 +568,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             titleTextView[i].setTextColor(getThemedColor(Theme.key_actionBarDefaultTitle));
         }
         titleTextView[i].setEmojiColor(titleTextView[i].getTextColor());
-        titleTextView[i].setTypeface(AndroidUtilities.bold());
+        titleTextView[i].setTypeface(app.miogram.ui.yumi.YumiUi.enabled()
+                ? app.amegram.theme.YumiMd3.typeface(app.amegram.theme.YumiMd3.MEDIUM)
+                : AndroidUtilities.bold());
         titleTextView[i].setDrawablePadding(dp(4));
         titleTextView[i].setPadding(0, dp(8), 0, dp(8));
         titleTextView[i].setRightDrawableTopPadding(-dp(1));
@@ -1146,7 +1156,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
             if (drawable instanceof BackDrawable) {
                 ((BackDrawable) drawable).setRotation(0, true);
             }
-            backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+            backButtonImageView.setBackground(app.miogram.ui.yumi.YumiUi.enabled()
+                    ? app.miogram.ui.yumi.YumiUi.selectable(0, app.amegram.theme.YumiMd3.RADIUS_FULL_DP)
+                    : Theme.createSelectorDrawable(itemsBackgroundColor));
         }
     }
 
@@ -1856,7 +1868,9 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         } else {
             itemsBackgroundColor = color;
             if (backButtonImageView != null) {
-                backButtonImageView.setBackgroundDrawable(Theme.createSelectorDrawable(itemsBackgroundColor));
+                backButtonImageView.setBackground(app.miogram.ui.yumi.YumiUi.enabled()
+                        ? app.miogram.ui.yumi.YumiUi.selectable(0, app.amegram.theme.YumiMd3.RADIUS_FULL_DP)
+                        : Theme.createSelectorDrawable(itemsBackgroundColor));
             }
             if (menu != null) {
                 menu.updateItemsBackgroundColor();

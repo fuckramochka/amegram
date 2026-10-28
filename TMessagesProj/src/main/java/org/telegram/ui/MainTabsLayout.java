@@ -29,6 +29,7 @@ import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.glass.GlassTabView;
 
 import app.exteraless.appearance.MainTabsUiHelper;
+import app.amegram.theme.YumiMd3;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -372,6 +373,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     @Override
     protected void onItemsChanged() {
         super.onItemsChanged();
+        applyYumiChildSelectors();
         checkVisualWidth();
     }
 
@@ -391,10 +393,22 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
 
     public void setTabSelected(View tab, boolean animated) {
+        applyYumiChildSelectors();
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
             if (child instanceof GlassTabView) {
                 ((GlassTabView) child).setSelected(child == tab, animated);
+            }
+        }
+        invalidate();
+    }
+
+    private void applyYumiChildSelectors() {
+        if (!app.exteraless.appearance.YougramExpressive.enabled()) return;
+        for (int a = 0, N = getChildCount(); a < N; a++) {
+            final View child = getChildAt(a);
+            if (child instanceof GlassTabView) {
+                ((GlassTabView) child).setSkipDrawSelector(true);
             }
         }
     }
@@ -421,13 +435,17 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     private void setSkipDrawSelector(boolean skipDrawSelector) {
         drawCustomSelector = skipDrawSelector;
         if (drawCustomSelector) {
-            int selectedColor = Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider);
+            int selectedColor = app.exteraless.appearance.YougramExpressive.enabled()
+                    ? YumiMd3.withAlpha(YumiMd3.primary(), 0.15f)
+                    : Theme.getColor(Theme.key_glass_tabSelected, resourcesProvider);
             if (selectedColor == 0 || (selectedColor & 0xFF000000) == 0) {
                 selectedColor = Theme.multAlpha(Theme.getColor(Theme.key_chats_actionBackground, resourcesProvider), 0.22f);
             }
             selectorPaint.setColor(selectedColor);
-            dividerPaint.setColor(Theme.getDividerColor(resourcesProvider));
+            dividerPaint.setColor(app.exteraless.appearance.YougramExpressive.enabled()
+                    ? YumiMd3.hairline() : Theme.getDividerColor(resourcesProvider));
         }
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
             if (child.getVisibility() != View.VISIBLE) {
@@ -435,7 +453,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
 
             if (child instanceof GlassTabView) {
-                ((GlassTabView) child).setSkipDrawSelector(skipDrawSelector);
+                ((GlassTabView) child).setSkipDrawSelector(skipDrawSelector || yumi);
             }
         }
         invalidate();
@@ -449,21 +467,30 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
-        if (drawCustomSelector) {
-            final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
-            final float sWidth = getInterpolatedWidthByX(x, this);
-            if (MainTabsUiHelper.isMaterial3NavigationBar() || MainTabsUiHelper.isFloatingPill()) {
-                MainTabsUiHelper.setMainTabSelectedIndicatorBounds(selectorRect, sWidth,
-                        getHeight() - getPaddingTop() - getPaddingBottom());
-                selectorRect.offset(x - sWidth / 2f, getPaddingTop());
-                final float r = selectorRect.height() / 2f;
-                canvas.drawRoundRect(selectorRect, r, r, selectorPaint);
-            } else {
-                final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
-                canvas.drawRoundRect(
-                        x - sWidth / 2f, (getHeight() - sHeight) / 2f,
-                        x + sWidth / 2f, (getHeight() + sHeight) / 2f,
-                        sHeight / 2f, sHeight / 2f, selectorPaint);
+        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
+        if (drawCustomSelector || yumi) {
+            final View selected = !drawCustomSelector && yumi ? findSelectedTab() : null;
+            final float x = selected != null
+                    ? selected.getX() + selected.getWidth() / 2f
+                    : animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
+            final float sWidth = selected != null ? selected.getWidth() : getInterpolatedWidthByX(x, this);
+            if (yumi) {
+                selectorPaint.setColor(YumiMd3.withAlpha(YumiMd3.primary(), 0.14f));
+            }
+            if (selected != null || drawCustomSelector) {
+                if (MainTabsUiHelper.isMaterial3NavigationBar() || MainTabsUiHelper.isFloatingPill()) {
+                    MainTabsUiHelper.setMainTabSelectedIndicatorBounds(selectorRect, sWidth,
+                            getHeight() - getPaddingTop() - getPaddingBottom());
+                    selectorRect.offset(x - sWidth / 2f, getPaddingTop());
+                    final float r = selectorRect.height() / 2f;
+                    canvas.drawRoundRect(selectorRect, r, r, selectorPaint);
+                } else {
+                    final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
+                    canvas.drawRoundRect(
+                            x - sWidth / 2f, (getHeight() - sHeight) / 2f,
+                            x + sWidth / 2f, (getHeight() + sHeight) / 2f,
+                            sHeight / 2f, sHeight / 2f, selectorPaint);
+                }
             }
         }
 

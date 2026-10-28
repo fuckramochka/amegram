@@ -39,7 +39,7 @@ object AppearanceConfig {
     /** Прежний набор Monet, пришедший вместе с базой форка (токены вида `a1_100`). */
     const val MONET_STYLE_CLASSIC = 1
 
-    /** Режими інтерфейсу: 0 — Класичний (Classic Yumi), 1 — Експериментальний Yougram Expressive (Рідке скло + M3 сегменти). */
+    /** Режими інтерфейсу: 0 — класичний, 1 — системний стиль Yumi Expressive. */
     const val UI_STYLE_CLASSIC = 0
     const val UI_STYLE_YOUGRAM_EXPRESSIVE = 1
 
@@ -82,12 +82,8 @@ object AppearanceConfig {
         val cached = expressiveCache
         if (cached != null) return cached
         val value = try {
-            if (!app.amegram.hot.HotModulesManager.isModuleActive("ui")) {
-                false
-            } else {
-                ensureLoaded()
-                uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE
-            }
+            ensureLoaded()
+            uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE
         } catch (t: Throwable) {
             false
         }
@@ -122,32 +118,19 @@ object AppearanceConfig {
     val hideActionBarStatus =
         addConfig("OEAppearanceHideActionBarStatus", ConfigItem.configTypeBool, false)
 
-    /**
-     * Стиль відображення списку чатів Yumi:
-     * 0 — Виразні картки (Floating Expressive Cards: плаваючі M3 плитки з відступами та скругленням 18dp),
-     * 1 — Сегментовані острівці (Segmented Islands: безперервні округлі секції з тонкими мікро-розділювачами),
-     * 2 — Сучасний плаский (Modern Flat: на всю ширину з відступами Yumi).
-     */
+    /** Режим списку чатів: Yumi-картки, групи-острівці або плоский список. */
     const val CHAT_LIST_STYLE_CARDS = 0
     const val CHAT_LIST_STYLE_ISLANDS = 1
     const val CHAT_LIST_STYLE_FLAT = 2
 
     @JvmField
     val chatListStyle =
-        addConfig("OEAppearanceChatListStyle", ConfigItem.configTypeInt, CHAT_LIST_STYLE_FLAT)
+        addConfig("OEAppearanceChatListStyle", ConfigItem.configTypeInt, CHAT_LIST_STYLE_CARDS)
 
     @JvmStatic
     fun chatListStyle(): Int {
         ensureLoaded()
         val s = chatListStyle.Int()
-        if (s == CHAT_LIST_STYLE_CARDS) {
-            chatListStyle.value = CHAT_LIST_STYLE_FLAT
-            try {
-                getPreferences().edit().putInt("OEAppearanceChatListStyle", CHAT_LIST_STYLE_FLAT).apply()
-            } catch (t: Throwable) {
-            }
-            return CHAT_LIST_STYLE_FLAT
-        }
         return s
     }
 

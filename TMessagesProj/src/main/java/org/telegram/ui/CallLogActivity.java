@@ -12,6 +12,7 @@ import android.animation.ObjectAnimator;
 import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.graphics.Canvas;
@@ -21,6 +22,9 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -126,8 +130,20 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import xyz.nextalone.nagram.NaConfig;
+import app.amegram.theme.YumiMd3;
 
 public class CallLogActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, MainTabsActivity.TabFragmentDelegate {
+	private boolean useYumiCallSurfaces() {
+		return app.exteraless.appearance.YougramExpressive.enabled();
+	}
+
+	private Drawable createYumiCallRowSurface() {
+		GradientDrawable surface = new GradientDrawable();
+		surface.setColor(YumiMd3.surfaceContainerHigh());
+		surface.setCornerRadius(dp(18));
+		RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(Theme.multAlpha(YumiMd3.primary(), 0.12f)), surface, null);
+		return new InsetDrawable(ripple, dp(10), dp(3), dp(10), dp(3));
+	}
 	private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
 
 	private EmptyTextProgressView emptyView;
@@ -188,7 +204,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		super(args);
 
 		iBlur3SourceColor = new BlurredBackgroundSourceColor();
-		iBlur3SourceColor.setColor(getThemedColor(Theme.key_windowBackgroundGray));
+		iBlur3SourceColor.setColor(useYumiCallSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundGray));
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
 			scrollableViewNoiseSuppressor = new DownscaleScrollableNoiseSuppressor();
 			iBlur3SourceGlassFrosted = new BlurredBackgroundSourceRenderNode(null);
@@ -759,7 +775,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		otherItem.setOnClickListener(v -> showItemOptions());
 
 		listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
-		listView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));
+		listView.setBackgroundColor(useYumiCallSurfaces() ? YumiMd3.surface() : Theme.getColor(Theme.key_windowBackgroundGray, resourceProvider));
 		listView.setSections();
 		listView.adapter.setApplyBackground(false);
 		contentView = new SizeNotifierFrameLayout(context) {
@@ -790,7 +806,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					if (iBlur3SourceGlassFrosted != null && !iBlur3SourceGlassFrosted.inRecording()) {
 						//if (iBlur3SourceGlassFrosted.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
 						final Canvas c = iBlur3SourceGlassFrosted.beginRecording(width, height);
-						c.drawColor(getThemedColor(Theme.key_windowBackgroundGray));
+						c.drawColor(useYumiCallSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundGray));
 						if (SharedConfig.chatBlurEnabled()) {
 							scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
 						}
@@ -800,7 +816,7 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 					if (iBlur3SourceGlass != null && !iBlur3SourceGlass.inRecording()) {
 						//if (iBlur3SourceGlass.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
 						final Canvas c = iBlur3SourceGlass.beginRecording(width, height);
-						c.drawColor(getThemedColor(Theme.key_windowBackgroundGray));
+						c.drawColor(useYumiCallSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundGray));
 						if (SharedConfig.chatBlurEnabled()) {
 							scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
 						}
@@ -842,11 +858,11 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		}));
 
 		fragmentView = contentView;
-		fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+		fragmentView.setBackgroundColor(useYumiCallSurfaces() ? YumiMd3.surface() : Theme.getColor(Theme.key_windowBackgroundGray));
 
 		flickerLoadingView = new FlickerLoadingView(context);
 		flickerLoadingView.setViewType(FlickerLoadingView.CALL_LOG_TYPE);
-		flickerLoadingView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+		flickerLoadingView.setBackgroundColor(useYumiCallSurfaces() ? YumiMd3.surface() : Theme.getColor(Theme.key_windowBackgroundGray));
 		flickerLoadingView.showDate(false);
 		emptyView = new EmptyTextProgressView(context, flickerLoadingView);
 		contentView.addView(emptyView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
@@ -854,6 +870,18 @@ public class CallLogActivity extends BaseFragment implements NotificationCenter.
 		listView.setClipToPadding(false);
 		listView.setEmptyView(emptyView);
 		listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
+		listView.addOnChildAttachStateChangeListener(new RecyclerView.OnChildAttachStateChangeListener() {
+			@Override
+			public void onChildViewAttachedToWindow(@NonNull View view) {
+				if (useYumiCallSurfaces() && (view instanceof CallCell || view instanceof GroupCallCell)) {
+					view.setBackground(createYumiCallRowSurface());
+				}
+			}
+
+			@Override
+			public void onChildViewDetachedFromWindow(@NonNull View view) {
+			}
+		});
 		listView.setVerticalScrollbarPosition(LocaleController.isRTL ? RecyclerListView.SCROLLBAR_POSITION_LEFT : RecyclerListView.SCROLLBAR_POSITION_RIGHT);
 		scrollHelper = new RecyclerAnimationScrollHelper(listView, layoutManager);
 		scrollHelper.setScrollListener(this::blur3_InvalidateBlur);

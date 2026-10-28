@@ -18,6 +18,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.content.Intent;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -27,6 +28,8 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.text.Editable;
@@ -59,6 +62,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.Utilities;
+import app.amegram.theme.YumiMd3;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.BackDrawable;
 import org.telegram.ui.ActionBar.BaseFragment;
@@ -94,6 +98,18 @@ import java.util.TimerTask;
 import me.vkryl.android.animator.FactorAnimator;
 
 public class InviteContactsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, View.OnClickListener, FactorAnimator.Target, WindowAnimatedInsetsProvider.Listener {
+
+    private boolean useYumiInviteSurfaces() {
+        return app.exteraless.appearance.YougramExpressive.enabled();
+    }
+
+    private Drawable createYumiInviteRowSurface() {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(YumiMd3.surfaceContainerHigh());
+        surface.setCornerRadius(dp(16));
+        RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(Theme.multAlpha(YumiMd3.primary(), 0.12f)), surface, null);
+        return new InsetDrawable(ripple, dp(8), dp(2), dp(8), dp(2));
+    }
     private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
 
     private static final int ANIMATOR_ID_SELECTED_CONTAINER_HEIGHT = 3;
@@ -460,7 +476,7 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         emptyView.subtitle.setText("");
         emptyView.showProgress(ContactsController.getInstance(currentAccount).isLoadingContacts());
 
-        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        contentView.setBackgroundColor(useYumiInviteSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundGray));
         contentView.addView(emptyView);
 
         layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false);
@@ -472,6 +488,18 @@ public class InviteContactsActivity extends BaseFragment implements Notification
         listView.setEmptyView(emptyView);
         listView.setAdapter(adapter);
         listView.setLayoutManager(layoutManager);
+        listView.addOnChildAttachStateChangeListener(new RecyclerView.OnChildAttachStateChangeListener() {
+            @Override
+            public void onChildViewAttachedToWindow(@NonNull View view) {
+                if (useYumiInviteSurfaces() && view instanceof InviteUserCell) {
+                    view.setBackground(createYumiInviteRowSurface());
+                }
+            }
+
+            @Override
+            public void onChildViewDetachedFromWindow(@NonNull View view) {
+            }
+        });
         listView.setVerticalScrollBarEnabled(true);
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? View.SCROLLBAR_POSITION_LEFT : View.SCROLLBAR_POSITION_RIGHT);
         listView.setClipToPadding(false);
@@ -737,14 +765,14 @@ public class InviteContactsActivity extends BaseFragment implements Notification
 
         @Override
         public void updateColors() {
-            final int bg = getThemedColor(Theme.key_windowBackgroundGray);
+            final int bg = useYumiInviteSurfaces() ? YumiMd3.surfaceContainerHigh() : getThemedColor(Theme.key_windowBackgroundGray);
             gradient = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[] { Theme.multAlpha(bg, 1), Theme.multAlpha(bg, 0) });
         }
 
         @Override
         protected void dispatchDraw(@NonNull Canvas canvas) {
             paint.setShadowLayer(dpf2(2), 0, dpf2(0.33f), 0x11000000);
-            paint.setColor(getThemedColor(Theme.key_windowBackgroundWhite));
+            paint.setColor(useYumiInviteSurfaces() ? YumiMd3.surfaceContainerHigh() : getThemedColor(Theme.key_windowBackgroundWhite));
 
             AndroidUtilities.rectTmp.set(dp(12), dp(3), getWidth() - dp(12), dp(3) + animatorSelectorContainerHeight.getFactor() + dp(3));
             path.rewind();
@@ -845,6 +873,9 @@ public class InviteContactsActivity extends BaseFragment implements Notification
                 final TextCell textCell = new TextCell(context);
                 textCell.setColors(Theme.key_windowBackgroundWhiteBlackText, Theme.key_windowBackgroundWhiteBlackText);
                 textCell.setTextAndValueAndIcon(LocaleController.getString(R.string.ShareTelegram2), "", R.drawable.msg_shareout, false);
+                if (useYumiInviteSurfaces()) {
+                    textCell.setBackground(createYumiInviteRowSurface());
+                }
                 view = textCell;
             } else if (viewType == 2) {
                 view = new ShadowSectionCell(context, 12);

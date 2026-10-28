@@ -1086,7 +1086,12 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
 
             currentType = type;
             if (type != Builder.CELL_TYPE_CALL) {
-                setBackgroundDrawable(Theme.getSelectorDrawable(false, resourcesProvider));
+                if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                    setBackground(app.miogram.ui.yumi.YumiUi.selectable(0,
+                            app.amegram.theme.YumiMd3.RADIUS_M_DP));
+                } else {
+                    setBackgroundDrawable(Theme.getSelectorDrawable(false, resourcesProvider));
+                }
             }
             //setPadding(AndroidUtilities.dp(16), 0, AndroidUtilities.dp(16), 0);
 
@@ -1120,7 +1125,21 @@ public class BottomSheet extends Dialog implements BaseFragment.AttachedSheet {
                 textView.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
                 textView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
                 textView.setTypeface(AndroidUtilities.bold());
-                textView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
+                if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                    final android.graphics.drawable.GradientDrawable fill = new android.graphics.drawable.GradientDrawable(
+                            android.graphics.drawable.GradientDrawable.Orientation.LEFT_RIGHT,
+                            new int[]{app.amegram.theme.YumiMd3.actionGradientStart(),
+                                    app.amegram.theme.YumiMd3.actionGradientEnd()});
+                    fill.setCornerRadius(dp(app.amegram.theme.YumiMd3.RADIUS_L_DP));
+                    final android.graphics.drawable.GradientDrawable mask = new android.graphics.drawable.GradientDrawable();
+                    mask.setColor(0xFFFFFFFF);
+                    mask.setCornerRadius(dp(app.amegram.theme.YumiMd3.RADIUS_L_DP));
+                    textView.setTextColor(app.amegram.theme.YumiMd3.onActionGradient());
+                    textView.setBackground(new android.graphics.drawable.RippleDrawable(
+                            android.content.res.ColorStateList.valueOf(0x44FFFFFF), fill, mask));
+                } else {
+                    textView.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_featuredStickers_addButton), 6));
+                }
                 addView(textView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, 0, 16, 16, 16, 16));
             }
         }

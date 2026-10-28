@@ -64,6 +64,9 @@ public class TextDetailSettingsCell extends FrameLayout {
         imageView.setVisibility(GONE);
         addView(imageView, LayoutHelper.createFrame(52, 52, (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) | Gravity.TOP, 8, 6, 8, 0));
 
+        YumiSettingsRowStyle.title(textView);
+        YumiSettingsRowStyle.detail(valueTextView);
+        YumiSettingsRowStyle.applySurface(this, null, app.amegram.theme.YumiMd3.RADIUS_L_DP);
         setMultilineDetail(true);
 
     }
@@ -140,7 +143,8 @@ public class TextDetailSettingsCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider && Theme.dividerPaint != null) {
-            canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : 20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : 20) : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int inset = AndroidUtilities.dp(imageView.getVisibility() == VISIBLE ? 71 : 20);
+            canvas.drawLine(inset, getMeasuredHeight() - 1, getMeasuredWidth() - inset, getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 }

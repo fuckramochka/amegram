@@ -58,6 +58,7 @@ import androidx.collection.LongSparseArray;
 import androidx.core.content.ContextCompat;
 import androidx.core.graphics.ColorUtils;
 import androidx.core.math.MathUtils;
+import app.amegram.theme.YumiMd3;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -3934,6 +3935,8 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private static Paint yougramPlatePaint;
     private static Paint yougramStrokePaint;
     private static Paint yougramDividerPaint;
+    private static Paint yougramAccentPaint;
+    private static Paint yougramSelectedPaint;
     private Path yougramPath;
     private RectF yougramRectF;
     private float[] yougramRadii;
@@ -3958,19 +3961,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         final int style = app.exteraless.appearance.AppearanceConfig.chatListStyle();
         final boolean isPinned = getIsPinned() && !drawArchive;
-        final int baseColor = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-        int accent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider);
-        if (accent == 0 || (accent & 0xff000000) == 0) {
-            accent = Theme.getColor(Theme.key_chats_actionBackground, resourcesProvider);
-        }
-        if (accent == 0 || (accent & 0xff000000) == 0) {
-            accent = 0xFFE5486B;
-        }
-        final boolean dark = Theme.isCurrentThemeDark();
+        final int baseColor = YumiMd3.surfaceContainerLow();
+        final int accent = YumiMd3.primary();
+        final boolean dark = YumiMd3.isDark();
 
         if (style == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT) {
             if (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent()) {
-                int pinnedFlatColor = ColorUtils.blendARGB(baseColor, accent, dark ? 0.12f : 0.07f);
+                int pinnedFlatColor = ColorUtils.blendARGB(baseColor, YumiMd3.primaryContainer(), dark ? 0.58f : 0.70f);
                 canvas.drawColor(pinnedFlatColor);
             }
             return;
@@ -3992,7 +3989,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         final int plateColor;
         if (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent()) {
-            plateColor = ColorUtils.blendARGB(baseColor, accent, dark ? 0.13f : 0.08f);
+            plateColor = ColorUtils.blendARGB(baseColor, YumiMd3.primaryContainer(), dark ? 0.58f : 0.70f);
         } else {
             plateColor = baseColor;
         }
@@ -4007,9 +4004,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         final boolean drawOutline = app.exteraless.appearance.AppearanceConfig.chatCardOutline();
 
         if (style == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_CARDS) {
-            final float sideMargin = dp(10);
-            final float vMargin = dp(2.5f);
-            final float r = dp(18);
+            final float sideMargin = dp(12);
+            final float vMargin = dp(3.5f);
+            final float r = dp(22);
 
             yougramRectF.set(sideMargin, vMargin, w - sideMargin, h - vMargin);
             yougramPath.rewind();
@@ -4019,10 +4016,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             yougramPath.addRoundRect(yougramRectF, yougramRadii, Path.Direction.CW);
             canvas.drawPath(yougramPath, yougramPlatePaint);
 
-            if (drawOutline || (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent())) {
-                int strokeAlpha = isPinned ? (dark ? 0x30 : 0x22) : (dark ? 0x1E : 0x16);
-                yougramStrokePaint.setColor(ColorUtils.setAlphaComponent(accent, strokeAlpha));
-                canvas.drawPath(yougramPath, yougramStrokePaint);
+            final int strokeColor = isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent()
+                    ? YumiMd3.withAlpha(accent, dark ? 0.42f : 0.30f)
+                    : YumiMd3.withAlpha(YumiMd3.outlineVariant(), drawOutline ? 0.64f : 0.28f);
+            yougramStrokePaint.setColor(strokeColor);
+            canvas.drawPath(yougramPath, yougramStrokePaint);
+            if (isPinned && app.exteraless.appearance.AppearanceConfig.chatPinnedAccent()) {
+                if (yougramAccentPaint == null) yougramAccentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                yougramAccentPaint.setColor(accent);
+                final float markX = LocaleController.isRTL ? w - sideMargin - dp(3) : sideMargin;
+                canvas.drawRoundRect(markX, dp(15), markX + dp(3), h - dp(15), dp(2), dp(2), yougramAccentPaint);
             }
         } else if (style == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_ISLANDS) {
             boolean isTop = true;
@@ -4066,8 +4069,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     yougramDividerPaint.setStrokeWidth(dp(0.75f));
                 }
                 int divAlpha = dark ? 0x1C : 0x14;
-                yougramDividerPaint.setColor(ColorUtils.setAlphaComponent(
-                        Theme.getColor(Theme.key_divider, resourcesProvider), divAlpha));
+                yougramDividerPaint.setColor(YumiMd3.withAlpha(YumiMd3.hairline(), divAlpha / 255f));
                 float divY = h - 1;
                 float divStart = LocaleController.isRTL ? sideMargin + dp(12) : dp(messagePaddingStart);
                 float divEnd = LocaleController.isRTL ? w - dp(messagePaddingStart) : w - sideMargin - dp(12);
@@ -4320,9 +4322,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         float cornersRadius = dp(8) * cornerProgress;
         if (isSelected) {
+            final boolean yumiCards = app.exteraless.appearance.YougramExpressive.enabled()
+                    && app.exteraless.appearance.AppearanceConfig.chatListStyle() != app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT;
             rect.set(0, 0, getMeasuredWidth(), AndroidUtilities.lerp(getMeasuredHeight(), getCollapsedHeight(), rightFragmentOpenedProgress));
-            rect.offset(0, -translateY + collapseOffset);
-            canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+            if (yumiCards) {
+                final float inset = dp(app.exteraless.appearance.AppearanceConfig.chatListStyle()
+                        == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_CARDS ? 12 : 11);
+                rect.inset(inset, dp(3));
+                rect.offset(0, -translateY + collapseOffset);
+                if (yougramSelectedPaint == null) yougramSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                yougramSelectedPaint.setColor(YumiMd3.withAlpha(YumiMd3.primary(), YumiMd3.isDark() ? 0.28f : 0.14f));
+                canvas.drawRoundRect(rect, dp(22), dp(22), yougramSelectedPaint);
+            } else {
+                rect.offset(0, -translateY + collapseOffset);
+                canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+            }
         }
 
         canvas.save();
@@ -4363,13 +4377,21 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (translationX != 0 || cornerProgress != 0.0f) {
                 canvas.save();
 
-                Theme.dialogs_pinnedPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                Theme.dialogs_pinnedPaint.setColor(app.exteraless.appearance.YougramExpressive.enabled()
+                        ? YumiMd3.surfaceContainerLow() : Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                 rect.set(getMeasuredWidth() - dp(64), 0, getMeasuredWidth(), getMeasuredHeight());
                 rect.offset(0, -translateY);
                 canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_pinnedPaint);
 
                 if (isSelected) {
-                    canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+                    if (app.exteraless.appearance.YougramExpressive.enabled()
+                            && app.exteraless.appearance.AppearanceConfig.chatListStyle() != app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT) {
+                        if (yougramSelectedPaint == null) yougramSelectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+                        yougramSelectedPaint.setColor(YumiMd3.withAlpha(YumiMd3.primary(), YumiMd3.isDark() ? 0.28f : 0.14f));
+                        canvas.drawRoundRect(rect, dp(18), dp(18), yougramSelectedPaint);
+                    } else {
+                        canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_tabletSeletedPaint);
+                    }
                 }
 
                 if (currentDialogFolderId != 0 && (!SharedConfig.archiveHidden || archiveBackgroundProgress != 0)) {
@@ -5109,10 +5131,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
         if (useSeparator && !app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()
                 && (!app.exteraless.appearance.YougramExpressive.enabled() || app.exteraless.appearance.AppearanceConfig.chatListStyle() == app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT)) {
+            final boolean isIos = app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext());
             int left;
             if (fullSeparator || currentDialogFolderId != 0 && archiveHidden && !fullSeparator2 || fullSeparator2 && !archiveHidden) {
                 left = 0;
-            } else if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext())) {
+            } else if (isIos) {
                 left = dp(76);
             } else {
                 left = dp(messagePaddingStart);
@@ -5124,10 +5147,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     Theme.dividerPaint.setAlpha((int) (alpha * (1f - rightFragmentOpenedProgress)));
                 }
                 float y = getMeasuredHeight() - 1 - rightFragmentOffset * rightFragmentOpenedProgress;
+                int iosInset = isIos ? dp(16) : 0;
                 if (LocaleController.isRTL) {
-                    canvas.drawLine(app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext()) ? dp(16) : 0, y, getMeasuredWidth() - left, y, Theme.dividerPaint);
+                    canvas.drawLine(iosInset, y, getMeasuredWidth() - left, y, Theme.dividerPaint);
                 } else {
-                    canvas.drawLine(left, y, getMeasuredWidth() - (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(getContext()) ? dp(16) : 0), y, Theme.dividerPaint);
+                    canvas.drawLine(left, y, getMeasuredWidth() - iosInset, y, Theme.dividerPaint);
                 }
                 if (rightFragmentOpenedProgress != 0) {
                     Theme.dividerPaint.setAlpha(alpha);
@@ -5574,6 +5598,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             Paint paint;
             int fillPaintAlpha = 255;
             boolean restoreCountTextPaint = false;
+            boolean useYumiCounterPalette = false;
+            int previousCounterPaintColor = 0;
+            int previousCounterTextColor = 0;
             if (outline) {
                 if (counterPaintOutline == null) {
                     counterPaintOutline = new Paint();
@@ -5601,6 +5628,15 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 restoreCountTextPaint = true;
             } else {
                 paint = drawCounterMuted || currentDialogFolderId != 0 ? Theme.dialogs_countGrayPaint : Theme.dialogs_countPaint;
+            }
+            if (app.exteraless.appearance.YougramExpressive.enabled() && !isTopic) {
+                useYumiCounterPalette = true;
+                previousCounterPaintColor = paint.getColor();
+                previousCounterTextColor = Theme.dialogs_countTextPaint2.getColor();
+                paint.setColor(drawCounterMuted || currentDialogFolderId != 0
+                        ? YumiMd3.surfaceContainerHighest() : YumiMd3.primary());
+                Theme.dialogs_countTextPaint2.setColor(drawCounterMuted || currentDialogFolderId != 0
+                        ? YumiMd3.onSurfaceVariant() : YumiMd3.onPrimary());
             }
 
             if (countOldLayout == null || unreadCount == 0) {
@@ -5727,6 +5763,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (restoreCountTextPaint) {
                 if (paint != null) paint.clearShadowLayer();
                 Theme.dialogs_countTextPaint2.setColor(Theme.getColor(Theme.key_chats_unreadCounterText));
+            }
+            if (useYumiCounterPalette) {
+                paint.setColor(previousCounterPaintColor);
+                Theme.dialogs_countTextPaint2.setColor(previousCounterTextColor);
             }
         }
     }

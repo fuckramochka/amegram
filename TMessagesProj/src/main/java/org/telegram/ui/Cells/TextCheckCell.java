@@ -139,6 +139,11 @@ public class TextCheckCell extends FrameLayout {
 
         setClipChildren(false);
         isRTL = LocaleController.isRTL;
+        if (!dialog) {
+            YumiSettingsRowStyle.title(textView);
+            YumiSettingsRowStyle.detail(valueTextView);
+            YumiSettingsRowStyle.applySurface(this, resourcesProvider, app.amegram.theme.YumiMd3.RADIUS_L_DP);
+        }
     }
 
     @Override
@@ -520,7 +525,8 @@ public class TextCheckCell extends FrameLayout {
                 if (imageView != null) {
                     canvas.drawLine(LocaleController.isRTL ? 0 : padding, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? padding : 0), getMeasuredHeight() - 1, dividerPaint);
                 } else {
-                    canvas.drawLine(LocaleController.isRTL ? 0 : AndroidUtilities.dp(20), getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? AndroidUtilities.dp(20) : 0), getMeasuredHeight() - 1, dividerPaint);
+                    int inset = AndroidUtilities.dp(20);
+                    canvas.drawLine(inset, getMeasuredHeight() - 1, getMeasuredWidth() - inset, getMeasuredHeight() - 1, dividerPaint);
                 }
             }
         }

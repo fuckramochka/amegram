@@ -9,6 +9,7 @@
 package org.telegram.ui;
 
 import app.exteraless.appearance.AppearanceConfig;
+import app.amegram.theme.YumiMd3;
 import app.exteraless.components.TranslateBeforeSendWrapper;
 import app.exteraless.drawer.DrawerContainer;
 import app.exteraless.drawer.MainMenuHelper;
@@ -201,6 +202,7 @@ import org.telegram.ui.Components.DialogsActivityTopBubblesFadeView;
 import org.telegram.ui.Components.DialogsActivityTopPanelLayout;
 import org.telegram.ui.Components.FragmentFloatingButton;
 import org.telegram.ui.Components.FragmentSearchField;
+import app.miogram.ui.yumi.YumiUi;
 import org.telegram.ui.Components.IconBackgroundColors;
 import org.telegram.ui.Components.ImageUpdater;
 import org.telegram.ui.Components.PermissionRequest;
@@ -1807,6 +1809,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         @Override
         public void addView(View child, int index, ViewGroup.LayoutParams params) {
             super.addView(child, index, params);
+            if (child instanceof DialogsEmptyCell) {
+                applyYumiEmptyState(child);
+            }
             child.setTranslationY(viewOffset);
             child.setTranslationX(0);
             child.setAlpha(1f);
@@ -3436,6 +3441,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         // openExtera: полоса пилюль в строке поиска, вся логика — в PillStackController
         app.exteraless.pillstack.PillStackController.attach(fragmentSearchField, fragmentSearchField.editText);
         fragmentSearchField.setPadding(dp(4), dp(4), dp(4), dp(4));
+        applyYumiSearchStyle();
         fragmentSearchField.setPivotX(0);
         fragmentSearchField.setPivotY(0);
         if (initialDialogsType == DIALOGS_TYPE_DEFAULT) {
@@ -5039,6 +5045,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         if (!onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT) {
             topPanelLayout = new DialogsActivityTopPanelLayout(context);
+            topPanelLayout.setYumiStyle(app.exteraless.appearance.YougramExpressive.enabled());
             topPanelLayout.setOnAnimatedHeightChangedListener(() -> {
                 viewPages[0].listView.requestLayout();
 
@@ -5416,7 +5423,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             contentView.addView(subfolderBar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36, Gravity.TOP, 0, 0, 0, 0));
         }
 
-        if (fragmentSearchField != null) {
+        if (fragmentSearchField != null && !app.exteraless.appearance.YougramExpressive.enabled()) {
             fragmentSearchField.setupBlurredBackground(iBlur3FactoryLiquidGlass.create(fragmentSearchField, BlurredBackgroundProviderImpl.topPanel(resourceProvider)));
         }
 
@@ -12715,6 +12722,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             if (fragmentSearchField != null) {
                 fragmentSearchField.updateColors();
+                applyYumiSearchStyle();
             }
         };
 
@@ -15102,6 +15110,48 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
     private void checkUi_searchFieldStyle() {
         fragmentSearchField.setBlurredBackgroundVisibility(animatorSearchVisible.getFloatValue());
+    }
+
+    private void applyYumiSearchStyle() {
+        if (fragmentSearchField == null || !app.exteraless.appearance.YougramExpressive.enabled()) {
+            return;
+        }
+        fragmentSearchField.setBackground(YumiUi.rounded(YumiMd3.surfaceContainerHigh(),
+                23f, YumiMd3.withAlpha(YumiMd3.primary(), 0.24f), 1f));
+        fragmentSearchField.setElevation(dp(2));
+        fragmentSearchField.editText.setTextColor(YumiMd3.onSurface());
+        fragmentSearchField.editText.setHintTextColor(YumiMd3.onSurfaceVariant());
+        fragmentSearchField.editText.setCursorColor(YumiMd3.primary());
+    }
+
+    private void applyYumiEmptyState(View root) {
+        if (!app.exteraless.appearance.YougramExpressive.enabled() || !(root instanceof ViewGroup)) {
+            return;
+        }
+        styleYumiEmptyStateChildren((ViewGroup) root, false);
+    }
+
+    private boolean styleYumiEmptyStateChildren(ViewGroup parent, boolean imageStyled) {
+        for (int i = 0; i < parent.getChildCount(); i++) {
+            final View child = parent.getChildAt(i);
+            if (!imageStyled && child instanceof ImageView) {
+                child.setBackground(YumiUi.rounded(YumiMd3.secondaryContainer(),
+                        24f, YumiMd3.withAlpha(YumiMd3.primary(), 0.22f), 1f));
+                child.setPadding(dp(12), dp(12), dp(12), dp(12));
+                imageStyled = true;
+            } else if (child instanceof TextView) {
+                final TextView text = (TextView) child;
+                if (text.getText() != null && text.getText().length() > 0) {
+                    final boolean title = text.getTextSize() / getContext().getResources().getDisplayMetrics().density >= 18f;
+                    text.setTextColor(title ? YumiMd3.onSurface() : YumiMd3.onSurfaceVariant());
+                    text.setTypeface(YumiMd3.typeface(title ? YumiMd3.BOLD : YumiMd3.REGULAR));
+                }
+            }
+            if (child instanceof ViewGroup) {
+                imageStyled = styleYumiEmptyStateChildren((ViewGroup) child, imageStyled);
+            }
+        }
+        return imageStyled;
     }
 
     private void checkUi_searchFieldHint() {

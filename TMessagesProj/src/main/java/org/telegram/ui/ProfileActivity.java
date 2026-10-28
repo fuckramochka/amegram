@@ -14278,32 +14278,41 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         public void setBackground(View view, int viewType) {
-//            switch (viewType) {
-//                case VIEW_TYPE_BOT_APP:
-//                case VIEW_TYPE_CHANNEL:
-//                case VIEW_TYPE_STARS_TEXT_CELL:
-//                case VIEW_TYPE_PREMIUM_TEXT_CELL:
-//                case VIEW_TYPE_LOCATION:
-//                case VIEW_TYPE_HOURS:
-//                case VIEW_TYPE_ADDTOGROUP_INFO:
-//                case VIEW_TYPE_HEADER_EMPTY:
-//                case VIEW_TYPE_USER:
-//                case VIEW_TYPE_COLORFUL_TEXT:
-//                case VIEW_TYPE_NOTIFICATIONS_CHECK_SIMPLE:
-//                case VIEW_TYPE_NOTIFICATIONS_CHECK:
-//                case VIEW_TYPE_DIVIDER:
-//                case VIEW_TYPE_TEXT:
-//                case VIEW_TYPE_ABOUT_LINK:
-//                case VIEW_TYPE_HEADER:
-//                case VIEW_TYPE_TEXT_DETAIL_MULTILINE:
-//                case VIEW_TYPE_TEXT_DETAIL_MULTILINE_2:
-//                case VIEW_TYPE_TEXT_DETAIL:
-//                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
-//                    break;
-//                case VIEW_TYPE_VERSION:
-//                    view.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
-//                    break;
-//            }
+            if (!isYumiCardRow(viewType)) return;
+            final int radius = app.amegram.theme.YumiMd3.RADIUS_XL_DP;
+            final android.graphics.drawable.Drawable surface = app.miogram.ui.yumi.YumiUi.rounded(
+                    app.amegram.theme.YumiMd3.surfaceContainerLow(), radius,
+                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.14f),
+                    0.7f);
+            view.setBackground(app.miogram.ui.yumi.YumiUi.ripple(
+                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.primary(), 0.08f), surface));
+            if (view instanceof TextDetailCell) {
+                // The Yumi card separation replaces the legacy full-width hairline.
+                view.setWillNotDraw(true);
+            }
+            if (view.getLayoutParams() instanceof RecyclerView.LayoutParams) {
+                RecyclerView.LayoutParams lp = (RecyclerView.LayoutParams) view.getLayoutParams();
+                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
+                view.setLayoutParams(lp);
+            }
+        }
+
+        private boolean isYumiCardRow(int viewType) {
+            switch (viewType) {
+                case VIEW_TYPE_TEXT_DETAIL:
+                case VIEW_TYPE_TEXT_DETAIL_MULTILINE:
+                case VIEW_TYPE_TEXT_DETAIL_MULTILINE_2:
+                case VIEW_TYPE_TEXT:
+                case VIEW_TYPE_ABOUT_LINK:
+                case VIEW_TYPE_NOTIFICATIONS_CHECK:
+                case VIEW_TYPE_NOTIFICATIONS_CHECK_SIMPLE:
+                case VIEW_TYPE_LOCATION:
+                case VIEW_TYPE_HOURS:
+                case VIEW_TYPE_CHANNEL:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         @Override

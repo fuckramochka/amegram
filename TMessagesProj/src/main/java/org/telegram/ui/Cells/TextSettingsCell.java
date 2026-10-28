@@ -107,6 +107,9 @@ public class TextSettingsCell extends FrameLayout {
         valueImageView.setVisibility(INVISIBLE);
         valueImageView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.MULTIPLY));
         addView(valueImageView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.CENTER_VERTICAL, padding, 0, padding, 0));
+
+        YumiSettingsRowStyle.title(textView);
+        YumiSettingsRowStyle.applySurface(this, resourcesProvider, app.amegram.theme.YumiMd3.RADIUS_L_DP);
     }
 
     public ImageView getValueImageView() {
@@ -412,8 +415,8 @@ public class TextSettingsCell extends FrameLayout {
         super.dispatchDraw(canvas);
 
         if (needDivider) {
-            int offset = AndroidUtilities.dp(imageView.getVisibility() == View.VISIBLE ? 58 : 20);
-            canvas.drawLine(LocaleController.isRTL ? 0 : offset, getMeasuredHeight() - 1, getMeasuredWidth() - (LocaleController.isRTL ? offset : 0), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int offset = AndroidUtilities.dp(Math.max(10, imageView.getVisibility() == View.VISIBLE ? 58 : 20));
+            canvas.drawLine(LocaleController.isRTL ? offset : offset, getMeasuredHeight() - 1, getMeasuredWidth() - offset, getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

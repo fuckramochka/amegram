@@ -302,6 +302,7 @@ import org.telegram.ui.Components.Reactions.ReactionsLayoutInBubble;
 import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 import org.telegram.ui.Components.blur3.DownscaleScrollableNoiseSuppressor;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import org.telegram.ui.Components.chat.YumiChatPalette;
 import org.telegram.ui.Components.blur3.drawable.color.BlurredBackgroundColorProviderThemed;
 import org.telegram.ui.Components.blur3.drawable.color.impl.BlurredBackgroundProviderImpl;
 import org.telegram.ui.Components.blur3.source.BlurredBackgroundSource;
@@ -5487,8 +5488,11 @@ public class ChatActivity extends BaseFragment implements
         chatInputViewsContainer.setClipChildren(false);
         chatInputViewsContainer.drawInputBackground = !isFeedSearch();
         chatInputViewsContainer.setWindowInsetsProvider(windowInsetsStateHolder);
-        chatInputViewsContainer.setInputIslandBubbleDrawable(
-            glassBackgroundDrawableFactory.create(chatInputViewsContainer, blurredBackgroundColorProvider));
+        BlurredBackgroundDrawable composerIsland = glassBackgroundDrawableFactory.create(chatInputViewsContainer, blurredBackgroundColorProvider);
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            composerIsland.setColorProvider(YumiChatPalette.inputSurfaceProvider());
+        }
+        chatInputViewsContainer.setInputIslandBubbleDrawable(composerIsland);
         chatInputViewsContainer.setUnderKeyboardBackgroundDrawable(
             glassBackgroundDrawableFactoryFrosted.create(chatInputViewsContainer, blurredBackgroundColorProvider));
 
@@ -47318,6 +47322,12 @@ public class ChatActivity extends BaseFragment implements
 
         @Override
         public int getColor(int key) {
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                int yumiColor = YumiChatPalette.color(key, isDark);
+                if (yumiColor != 0) {
+                    return yumiColor;
+                }
+            }
             if (animatingColors != null) {
                 int index = animatingColors.indexOfKey(key);
                 if (index >= 0) {
@@ -47348,6 +47358,12 @@ public class ChatActivity extends BaseFragment implements
         }
 
         public int getCurrentColor(int key, boolean ignoreAnimation) {
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                int yumiColor = YumiChatPalette.color(key, isDark);
+                if (yumiColor != 0) {
+                    return yumiColor;
+                }
+            }
             if (chatTheme == null && backgroundDrawable == null) {
                 return Theme.getColor(key);
             }

@@ -259,7 +259,9 @@ public class ActionBarMenuItem extends FrameLayout {
     public ActionBarMenuItem(Context context, ActionBarMenu menu, int backgroundColor, int iconColor, boolean text, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        if (backgroundColor != 0) {
+        if (app.miogram.ui.yumi.YumiUi.enabled() && !text) {
+            setBackground(app.miogram.ui.yumi.YumiUi.selectable(0, app.amegram.theme.YumiMd3.RADIUS_FULL_DP));
+        } else if (backgroundColor != 0) {
             setBackgroundDrawable(Theme.createSelectorDrawable(backgroundColor, text ? 5 : 1));
         }
         parentMenu = menu;

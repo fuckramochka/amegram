@@ -218,6 +218,7 @@ public class VoIPFragment implements
     View topShadow;
 
     private VoIPButtonsLayout buttonsLayout;
+    private Drawable buttonsSurfaceBackground;
     Paint overlayPaint = new Paint();
     Paint overlayBottomPaint = new Paint();
 
@@ -661,6 +662,15 @@ public class VoIPFragment implements
 
     }
 
+    private android.graphics.drawable.Drawable createYumiCallControlBackground() {
+        return app.miogram.ui.yumi.YumiUi.ripple(
+                ColorUtils.setAlphaComponent(Color.WHITE, 54),
+                app.miogram.ui.yumi.YumiUi.rounded(
+                        ColorUtils.setAlphaComponent(0xFF101820, 208),
+                        app.amegram.theme.YumiMd3.RADIUS_L_DP,
+                        ColorUtils.setAlphaComponent(Color.WHITE, 52), 0.8f));
+    }
+
     public View createView(Context context) {
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
         accessibilityManager = ContextCompat.getSystemService(context, AccessibilityManager.class);
@@ -1037,7 +1047,13 @@ public class VoIPFragment implements
         callingUserTitle.setMaxLines(2);
         callingUserTitle.setEllipsize(TextUtils.TruncateAt.END);
         callingUserTitle.setTextColor(Color.WHITE);
+        callingUserTitle.setTypeface(android.graphics.Typeface.create("sans-serif-medium", android.graphics.Typeface.NORMAL));
         callingUserTitle.setGravity(Gravity.CENTER_HORIZONTAL);
+        callingUserTitle.setPadding(dp(18), dp(8), dp(18), dp(8));
+        callingUserTitle.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                ColorUtils.setAlphaComponent(0xFF101820, 174),
+                app.amegram.theme.YumiMd3.RADIUS_XL_DP,
+                ColorUtils.setAlphaComponent(Color.WHITE, 46), 0.8f));
         callingUserTitle.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
         statusLayout.addView(callingUserTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 8, 0, 8, 6));
 
@@ -1069,6 +1085,12 @@ public class VoIPFragment implements
         frameLayout.addView(rateCallLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT, 0, 380, 0, 0));
 
         buttonsLayout = new VoIPButtonsLayout(context);
+        buttonsSurfaceBackground = new android.graphics.drawable.InsetDrawable(
+                app.miogram.ui.yumi.YumiUi.rounded(
+                        ColorUtils.setAlphaComponent(0xFF101820, 218),
+                        app.amegram.theme.YumiMd3.RADIUS_XXL_DP,
+                        ColorUtils.setAlphaComponent(Color.WHITE, 48), 0.8f),
+                dp(18), dp(4), dp(18), dp(4));
         bottomSpeakerBtn = new VoIpSwitchLayout(context, backgroundProvider);
         bottomVideoBtn = new VoIpSwitchLayout(context, backgroundProvider);
         bottomMuteBtn = new VoIpSwitchLayout(context, backgroundProvider);
@@ -1159,14 +1181,14 @@ public class VoIPFragment implements
         frameLayout.addView(acceptDeclineView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 186, Gravity.BOTTOM, horizontalMargin, 0, horizontalMargin, 0));
 
         addIcon = new ImageView(context);
-        addIcon.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f))));
+        addIcon.setBackground(createYumiCallControlBackground());
         addIcon.setImageResource(R.drawable.msg_addcontact);
         addIcon.setPadding(dp(16), dp(16), dp(16), dp(16));
         frameLayout.addView(addIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT));
         ScaleStateListAnimator.apply(addIcon);
 
         backIcon = new ImageView(context);
-        backIcon.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f))));
+        backIcon.setBackground(createYumiCallControlBackground());
         backIcon.setImageResource(R.drawable.msg_call_minimize_shadow);
         backIcon.setPadding(dp(16), dp(16), dp(16), dp(16));
         backIcon.setContentDescription(LocaleController.getString(R.string.Back));
@@ -1186,7 +1208,7 @@ public class VoIPFragment implements
             }
         };
         speakerPhoneIcon.setContentDescription(LocaleController.getString(R.string.VoipSpeaker));
-        speakerPhoneIcon.setBackground(Theme.createSelectorDrawable(ColorUtils.setAlphaComponent(Color.WHITE, (int) (255 * 0.3f))));
+        speakerPhoneIcon.setBackground(createYumiCallControlBackground());
         speakerPhoneIcon.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12), AndroidUtilities.dp(12));
         frameLayout.addView(speakerPhoneIcon, LayoutHelper.createFrame(56, 56, Gravity.TOP | Gravity.RIGHT, 0, 56, 0, 0));
         speakerPhoneIcon.setAlpha(0f);
@@ -2637,6 +2659,7 @@ public class VoIPFragment implements
             bottomVideoBtn.setVisibility(View.GONE);
             bottomMuteBtn.setVisibility(View.GONE);
             bottomEndCallBtn.setVisibility(View.GONE);
+            buttonsLayout.setBackground(null);
             return;
         }
 
@@ -2702,6 +2725,14 @@ public class VoIPFragment implements
         }
         if (bottomEndCallBtn.getVisibility() == View.VISIBLE) {
             bottomEndCallBtn.animationDelay = animationDelay;
+        }
+        boolean hasVisibleControl = bottomSpeakerBtn.getVisibility() == View.VISIBLE
+                || bottomVideoBtn.getVisibility() == View.VISIBLE
+                || bottomMuteBtn.getVisibility() == View.VISIBLE
+                || bottomEndCallBtn.getVisibility() == View.VISIBLE;
+        Drawable controlsBackground = hasVisibleControl ? buttonsSurfaceBackground : null;
+        if (buttonsLayout.getBackground() != controlsBackground) {
+            buttonsLayout.setBackground(controlsBackground);
         }
         updateSpeakerPhoneIcon();
     }

@@ -12,6 +12,8 @@ import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.os.Build;
 import android.os.Bundle;
@@ -43,6 +45,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import app.exteraless.appearance.AppearanceConfig;
 import app.exteraless.appearance.MainTabsUiHelper;
+import app.amegram.theme.YumiMd3;
+import app.miogram.ui.yumi.YumiUi;
 import app.exteraless.feed.FeedController;
 import app.exteraless.feed.ui.FeedActivity;
 import app.exteraless.feed.ui.FeedChannelsActivity;
@@ -179,9 +183,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private UpdateLayoutWrapper updateLayoutWrapper;
     private FrameLayout tabsViewWrapper;
     private MainTabsLayout tabsView;
-    private BlurredBackgroundDrawable tabsViewBackground;
+    private Drawable tabsViewBackground;
     private FrameLayout searchButton;
-    private BlurredBackgroundDrawable searchButtonBackground;
+    private Drawable searchButtonBackground;
     private ImageView searchIcon;
     private View fadeView;
     private boolean lastHideContacts = NaConfig.INSTANCE.getMainTabsHideContacts().Bool();
@@ -463,9 +467,15 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         iBlur3FactoryGlass.setSourceRootView(viewPositionWatcher, contentView);
         iBlur3FactoryGlass.setLiquidGlassEffectAllowed(LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS));
 
-        tabsViewBackground = iBlur3FactoryGlass.create(tabsView, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
-        tabsViewBackground.setRadius(MainTabsUiHelper.getBackgroundRadius());
-        tabsViewBackground.setPadding(MainTabsUiHelper.getBackgroundInset());
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            tabsViewBackground = YumiUi.rounded(YumiMd3.surfaceContainerHigh(), 25f,
+                    YumiMd3.outlineVariant(), 0.8f);
+        } else {
+            BlurredBackgroundDrawable glass = iBlur3FactoryGlass.create(tabsView, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+            glass.setRadius(MainTabsUiHelper.getBackgroundRadius());
+            glass.setPadding(MainTabsUiHelper.getBackgroundInset());
+            tabsViewBackground = glass;
+        }
         tabsView.setBackground(tabsViewBackground);
 
         BlurredBackgroundDrawableViewFactory iBlur3FactoryFade = new BlurredBackgroundDrawableViewFactory(iBlur3SourceColor);
@@ -489,9 +499,18 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 72, 0));
 
             searchButton = new FrameLayout(context);
-            searchButtonBackground = iBlur3FactoryGlass.create(searchButton, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
-            searchButtonBackground.setRadius(AndroidUtilities.dp(30));
-            searchButtonBackground.setPadding(0);
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
+                GradientDrawable searchShape = new GradientDrawable(
+                        GradientDrawable.Orientation.TL_BR,
+                        new int[]{YumiMd3.actionGradientStart(), YumiMd3.actionGradientEnd()});
+                searchShape.setCornerRadius(dp(20));
+                searchButtonBackground = YumiUi.ripple(YumiMd3.withAlpha(0xFFFFFFFF, 0.2f), searchShape);
+            } else {
+                BlurredBackgroundDrawable searchGlass = iBlur3FactoryGlass.create(searchButton, BlurredBackgroundProviderImpl.mainTabs(resourceProvider));
+                searchGlass.setRadius(AndroidUtilities.dp(30));
+                searchGlass.setPadding(0);
+                searchButtonBackground = searchGlass;
+            }
             searchButton.setBackground(searchButtonBackground);
 
             ScaleStateListAnimator.apply(searchButton, 0.08f, 1.8f);
@@ -499,7 +518,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
             searchIcon = new ImageView(context);
             searchIcon.setImageResource(R.drawable.outline_header_search);
-            searchIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_glass_defaultIcon, resourceProvider), PorterDuff.Mode.SRC_IN));
+            searchIcon.setColorFilter(new PorterDuffColorFilter(
+                    app.exteraless.appearance.YougramExpressive.enabled() ? YumiMd3.onActionGradient() : Theme.getColor(Theme.key_glass_defaultIcon, resourceProvider), PorterDuff.Mode.SRC_IN));
             searchButton.addView(searchIcon, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
 
             searchButton.setOnClickListener(v -> {
@@ -1590,13 +1610,29 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private void blur3_updateColors() {
         blur3_updateFadeColors();
         if (tabsViewBackground != null) {
-            tabsViewBackground.updateColors();
+            if (tabsViewBackground instanceof BlurredBackgroundDrawable) {
+                ((BlurredBackgroundDrawable) tabsViewBackground).updateColors();
+            } else if (tabsView != null && app.exteraless.appearance.YougramExpressive.enabled()) {
+                tabsViewBackground = YumiUi.rounded(YumiMd3.surfaceContainerHigh(), 25f,
+                        YumiMd3.outlineVariant(), 0.8f);
+                tabsView.setBackground(tabsViewBackground);
+            }
         }
         if (searchButtonBackground != null) {
-            searchButtonBackground.updateColors();
+            if (searchButtonBackground instanceof BlurredBackgroundDrawable) {
+                ((BlurredBackgroundDrawable) searchButtonBackground).updateColors();
+            } else if (searchButton != null && app.exteraless.appearance.YougramExpressive.enabled()) {
+                GradientDrawable searchShape = new GradientDrawable(
+                        GradientDrawable.Orientation.TL_BR,
+                        new int[]{YumiMd3.actionGradientStart(), YumiMd3.actionGradientEnd()});
+                searchShape.setCornerRadius(dp(20));
+                searchButtonBackground = YumiUi.ripple(YumiMd3.withAlpha(0xFFFFFFFF, 0.2f), searchShape);
+                searchButton.setBackground(searchButtonBackground);
+            }
         }
         if (searchIcon != null) {
-            searchIcon.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_glass_defaultIcon, resourceProvider), PorterDuff.Mode.SRC_IN));
+            searchIcon.setColorFilter(new PorterDuffColorFilter(
+                    app.exteraless.appearance.YougramExpressive.enabled() ? YumiMd3.onActionGradient() : Theme.getColor(Theme.key_glass_defaultIcon, resourceProvider), PorterDuff.Mode.SRC_IN));
         }
         blur3_invalidateBlur();
         if (fadeView != null) {

@@ -32,6 +32,13 @@ public final class YumiPalette {
     public int navActive;
     public int navInactive;
     public int navBorder;
+    public int navGlass;
+    public int navRim;
+    public int cardSurface;
+    public int cardRim;
+    public int separator;
+    public int secondaryFill;
+    public int textSecondary;
     public int error;
     public int onError;
 
@@ -57,6 +64,13 @@ public final class YumiPalette {
             navActive = token("navActive", 0xFFE5486B, true);
             navInactive = token("navInactive", 0xFFC4B8BC, true);
             navBorder = token("navBorder", 0x2AE5486B, true);
+            navGlass = Color.argb(220, 24, 24, 27);
+            navRim = Color.argb(38, 255, 255, 255);
+            cardSurface = 0xFF251B22;
+            cardRim = Color.argb(42, 255, 196, 218);
+            separator = Color.argb(32, 255, 255, 255);
+            secondaryFill = 0xFF2C2C2E;
+            textSecondary = 0xFF8E8E93;
             error = token("error", 0xFFFFB4AB, true);
             onError = token("onError", 0xFF690005, true);
         } else {
@@ -73,6 +87,13 @@ public final class YumiPalette {
             navActive = token("navActive", 0xFFD81B60, false);
             navInactive = token("navInactive", 0xFF514349, false);
             navBorder = token("navBorder", 0x2AD81B60, false);
+            navGlass = Color.argb(225, 255, 255, 255);
+            navRim = Color.argb(24, 0, 0, 0);
+            cardSurface = 0xFFFFF7FA;
+            cardRim = Color.argb(35, 126, 35, 76);
+            separator = Color.argb(24, 0, 0, 0);
+            secondaryFill = 0xFFE5E5EA;
+            textSecondary = 0xFF8E8E93;
             error = token("error", 0xFFB3261E, false);
             onError = token("onError", 0xFFFFFFFF, false);
         }

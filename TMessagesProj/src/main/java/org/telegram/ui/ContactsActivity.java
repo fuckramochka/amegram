@@ -20,6 +20,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.PorterDuff;
@@ -27,6 +28,9 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -76,6 +80,7 @@ import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import app.amegram.theme.YumiMd3;
 import org.telegram.messenger.utils.SearchTextWatcher;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -120,6 +125,18 @@ import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
 
 public class ContactsActivity extends BaseFragment implements FactorAnimator.Target, NotificationCenter.NotificationCenterDelegate, MainTabsActivity.TabFragmentDelegate, WindowAnimatedInsetsProvider.Listener {
+
+    private boolean useYumiContactSurfaces() {
+        return app.exteraless.appearance.YougramExpressive.enabled();
+    }
+
+    private Drawable createYumiContactRowSurface() {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(YumiMd3.surfaceContainerHigh());
+        surface.setCornerRadius(dp(16));
+        RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(Theme.multAlpha(YumiMd3.primary(), 0.12f)), surface, null);
+        return new InsetDrawable(ripple, dp(8), dp(2), dp(8), dp(2));
+    }
     private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
 
     private static final int ANIMATOR_ID_SEARCH_FIELD_VISIBLE = 0;
@@ -474,7 +491,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                     if (iBlur3SourceGlassFrosted != null && !iBlur3SourceGlassFrosted.inRecording()) {
                         // if (iBlur3SourceGlassFrosted.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
                         final Canvas c = iBlur3SourceGlassFrosted.beginRecording(width, height);
-                        c.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                        c.drawColor(useYumiContactSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundWhite));
                         if (SharedConfig.chatBlurEnabled()) {
                             scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_FROSTED_GLASS);
                         }
@@ -484,7 +501,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                     if (iBlur3SourceGlass != null && !iBlur3SourceGlass.inRecording()) {
                         // if (iBlur3SourceGlass.needUpdateDisplayList(width, height) || iBlur3Invalidated) {
                         final Canvas c = iBlur3SourceGlass.beginRecording(width, height);
-                        c.drawColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                        c.drawColor(useYumiContactSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundWhite));
                         if (SharedConfig.chatBlurEnabled()) {
                             scrollableViewNoiseSuppressor.draw(c, DownscaleScrollableNoiseSuppressor.DRAW_GLASS);
                         }
@@ -541,7 +558,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
             blur3_InvalidateBlur();
         }));
         listView.setSections(true);
-        contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+        contentView.setBackgroundColor(useYumiContactSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundGray));
 
         FlickerLoadingView flickerLoadingView = new FlickerLoadingView(context);
         flickerLoadingView.setViewType(FlickerLoadingView.PROFILE_SEARCH_CELL);
@@ -565,6 +582,18 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
         listView.setFastScrollEnabled(RecyclerListView.FastScroll.LETTER_TYPE);
         listView.setLayoutManager(layoutManager = new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
         listView.setAdapter(listViewAdapter);
+        listView.addOnChildAttachStateChangeListener(new RecyclerView.OnChildAttachStateChangeListener() {
+            @Override
+            public void onChildViewAttachedToWindow(@NonNull View view) {
+                if (useYumiContactSurfaces() && (view instanceof UserCell || view instanceof ProfileSearchCell)) {
+                    view.setBackground(createYumiContactRowSurface());
+                }
+            }
+
+            @Override
+            public void onChildViewDetachedFromWindow(@NonNull View view) {
+            }
+        });
         listView.setClipToPadding(false);
         scrollHelper = new RecyclerAnimationScrollHelper(listView, layoutManager);
         scrollHelper.setScrollListener(this::blur3_InvalidateBlur);
@@ -1458,7 +1487,7 @@ public class ContactsActivity extends BaseFragment implements FactorAnimator.Tar
                 actionBar.updateColors();
             }
             if (contentView != null) {
-                contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
+                contentView.setBackgroundColor(useYumiContactSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundGray));
             }
         };
 

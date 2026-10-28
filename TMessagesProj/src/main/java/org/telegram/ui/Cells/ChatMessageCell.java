@@ -20519,6 +20519,34 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     }
 
     private Paint selectionOverlayPaint;
+    private Paint yumiMessageAccentPaint;
+
+    private void drawYumiMessageAccent(Canvas canvas) {
+        if (!app.exteraless.appearance.YougramExpressive.enabled()
+                || currentMessageObject == null
+                || currentMessageObject.type != MessageObject.TYPE_TEXT
+                || currentMessagesGroup != null
+                || currentBackgroundDrawable == null
+                || mediaBackground
+                || drawSelectionBackground) {
+            return;
+        }
+        Rect bounds = currentBackgroundDrawable.getBounds();
+        if (bounds.isEmpty()) {
+            return;
+        }
+        if (yumiMessageAccentPaint == null) {
+            yumiMessageAccentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        }
+        boolean outgoing = currentMessageObject.isOutOwner();
+        int color = getThemedColor(outgoing ? Theme.key_chat_outReplyLine : Theme.key_chat_inReplyLine);
+        yumiMessageAccentPaint.setColor(Theme.multAlpha(color, outgoing ? 0.80f : 0.72f));
+        float width = dp(18);
+        float height = dp(2);
+        float left = outgoing ? bounds.right - dp(18) - width : bounds.left + dp(18);
+        float top = bounds.top + dp(5);
+        canvas.drawRoundRect(left, top, left + width, top + height, height / 2f, height / 2f, yumiMessageAccentPaint);
+    }
 
     public void setupTextColors() {
         if (currentMessageObject.isOutOwner()) {
@@ -20715,6 +20743,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         }
 
         drawBackgroundInternal(canvas, false);
+        drawYumiMessageAccent(canvas);
         if (isHighlightedAnimated) {
             long newTime = System.currentTimeMillis();
             long dt = Math.abs(newTime - lastHighlightProgressTime);

@@ -15,6 +15,7 @@ import androidx.annotation.NonNull;
 
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.blur3.drawable.BlurredBackgroundDrawable;
+import app.amegram.theme.YumiMd3;
 
 import me.vkryl.android.animator.ListAnimator;
 
@@ -27,6 +28,15 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
     }
 
     BlurredBackgroundDrawable backgroundDrawable;
+    private boolean yumiStyle;
+    private final Paint yumiSurfacePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint yumiOutlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+
+    public void setYumiStyle(boolean enabled) {
+        yumiStyle = enabled;
+        defaultRadiusDp = enabled ? 25 : 24;
+        invalidate();
+    }
 
     public void setBlurredBackground(BlurredBackgroundDrawable background) {
         backgroundDrawable = background;
@@ -81,6 +91,12 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
         if (backgroundDrawable != null) {
             backgroundDrawable.updateColors();
         }
+        if (yumiStyle) {
+            yumiSurfacePaint.setColor(YumiMd3.surfaceContainerLow());
+            yumiOutlinePaint.setColor(YumiMd3.withAlpha(YumiMd3.outlineVariant(), 0.48f));
+            yumiOutlinePaint.setStyle(Paint.Style.STROKE);
+            yumiOutlinePaint.setStrokeWidth(Math.max(1, dp(0.8f)));
+        }
         invalidate();
     }
 
@@ -100,7 +116,13 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
     protected void dispatchDraw(@NonNull Canvas canvas) {
         if (getMetadata().getTotalVisibility() == 0) return;
 
-        if (backgroundDrawable != null) {
+        if (yumiStyle) {
+            final float alpha = getMetadata().getTotalVisibility();
+            yumiSurfacePaint.setColor(YumiMd3.withAlpha(YumiMd3.surfaceContainerLow(), alpha));
+            yumiOutlinePaint.setColor(YumiMd3.withAlpha(YumiMd3.outlineVariant(), alpha * 0.48f));
+            canvas.drawRoundRect(clipRectF, r, r, yumiSurfacePaint);
+            canvas.drawRoundRect(clipRectF, r, r, yumiOutlinePaint);
+        } else if (backgroundDrawable != null) {
             backgroundDrawable.draw(canvas);
         }
 
@@ -151,11 +173,16 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout {
             }
 
             final int wasAlpha = Theme.dividerPaint.getAlpha();
+            final int wasColor = Theme.dividerPaint.getColor();
             Theme.dividerPaint.setAlpha((int) (wasAlpha * alpha));
+            if (yumiStyle) {
+                Theme.dividerPaint.setColor(YumiMd3.hairline());
+            }
             final float offsetL = getPaddingLeft() + dp(16) * (1f - alpha);
             final float offsetR = getPaddingRight() + dp(16) * (1f - alpha);
             canvas.drawLine(offsetL, top, getWidth() - offsetR, top, Theme.dividerPaint);
             Theme.dividerPaint.setAlpha(wasAlpha);
+            if (yumiStyle) Theme.dividerPaint.setColor(wasColor);
         }
 
         exceptCall = callDrawnView != null;

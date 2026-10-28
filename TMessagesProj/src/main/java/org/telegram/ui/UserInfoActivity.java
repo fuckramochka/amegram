@@ -234,7 +234,7 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
                 checkDone(true);
             }
         };
-        firstNameEdit.setDivider(true);
+        firstNameEdit.setDivider(false);
         firstNameEdit.hideKeyboardOnEnter();
         lastNameEdit = new EditTextCell(context, getString(R.string.EditProfileLastName), false, false, -1, resourceProvider) {
             @Override
@@ -258,6 +258,22 @@ public class UserInfoActivity extends UniversalFragment implements NotificationC
 
         super.createView(context);
         this.listView = super.listView;
+        final int editorInset = dp(12);
+        firstNameEdit.setBackground(new android.graphics.drawable.InsetDrawable(
+                app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                        app.amegram.theme.YumiMd3.RADIUS_XL_DP,
+                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.14f), 0.7f),
+                editorInset, 0, editorInset, 0));
+        lastNameEdit.setBackground(new android.graphics.drawable.InsetDrawable(
+                app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                        app.amegram.theme.YumiMd3.RADIUS_XL_DP,
+                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.14f), 0.7f),
+                editorInset, 0, editorInset, 0));
+        bioEdit.setBackground(new android.graphics.drawable.InsetDrawable(
+                app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                        app.amegram.theme.YumiMd3.RADIUS_XL_DP,
+                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.14f), 0.7f),
+                editorInset, 0, editorInset, 0));
         listView.setSections();
         listView.setClipToPadding(false);
         actionBar.setAdaptiveBackground(listView);

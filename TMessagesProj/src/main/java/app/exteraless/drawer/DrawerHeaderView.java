@@ -5,6 +5,7 @@ import android.graphics.Canvas;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.transition.ChangeBounds;
 import android.transition.TransitionManager;
 import android.view.Gravity;
@@ -16,6 +17,7 @@ import android.widget.LinearLayout;
 import java.util.Locale;
 
 import app.exteraless.appearance.AppearanceConfig;
+import app.amegram.theme.YumiMd3;
 
 import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.AndroidUtilities;
@@ -93,6 +95,7 @@ public class DrawerHeaderView extends FrameLayout {
 
     public DrawerHeaderView(Context context) {
         super(context);
+        updateHeaderSurface();
 
         avatarView = new BackupImageView(context);
         avatarView.getImageReceiver().setAvatarCornersApplied(true);
@@ -265,6 +268,7 @@ public class DrawerHeaderView extends FrameLayout {
     }
 
     public void updateColors() {
+        updateHeaderSurface();
         nameView.setTextColor(Theme.getColor(COLOR_KEY_TEXT));
         subtitleView.setTextColor(Theme.getColor(COLOR_KEY_SUBTITLE));
         chevronView.setColorFilter(createColorFilter(COLOR_KEY_SUBTITLE));
@@ -466,6 +470,19 @@ public class DrawerHeaderView extends FrameLayout {
     }
 
     private static int getThemeToggleBackgroundColor() {
-        return Theme.multAlpha(Theme.getColor(COLOR_KEY_ICON), 0.075f);
+        return app.exteraless.appearance.YougramExpressive.enabled()
+                ? YumiMd3.surfaceContainerHigh()
+                : Theme.multAlpha(Theme.getColor(COLOR_KEY_ICON), 0.075f);
+    }
+
+    private void updateHeaderSurface() {
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            GradientDrawable surface = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
+                    new int[]{YumiMd3.primaryContainer(), YumiMd3.surfaceContainerHigh()});
+            surface.setCornerRadius(AndroidUtilities.dp(22.0f));
+            setBackground(surface);
+        } else {
+            setBackground(null);
+        }
     }
 }

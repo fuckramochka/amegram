@@ -8,6 +8,7 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -16,6 +17,9 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.Rect;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.text.Editable;
 import android.text.Layout;
@@ -58,6 +62,7 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.support.LongSparseIntArray;
+import app.amegram.theme.YumiMd3;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.tl.TL_chatlists;
@@ -112,6 +117,18 @@ import tw.nekomimi.nekogram.folder.FolderIconHelper;
 import tw.nekomimi.nekogram.folder.IconSelectorAlert;
 
 public class FilterCreateActivity extends BaseFragment {
+
+    private boolean useYumiFilterSurfaces() {
+        return app.exteraless.appearance.YougramExpressive.enabled();
+    }
+
+    private Drawable createYumiFilterRowSurface() {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(YumiMd3.surfaceContainerHigh());
+        surface.setCornerRadius(dp(16));
+        RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(Theme.multAlpha(YumiMd3.primary(), 0.12f)), surface, null);
+        return new InsetDrawable(ripple, dp(8), dp(2), dp(8), dp(2));
+    }
 
     private RecyclerListView listView;
     private ListAdapter adapter;
@@ -530,7 +547,7 @@ public class FilterCreateActivity extends BaseFragment {
             }
         };
         FrameLayout frameLayout = (FrameLayout) fragmentView;
-        frameLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        frameLayout.setBackgroundColor(useYumiFilterSurfaces() ? YumiMd3.surface() : Theme.getColor(Theme.key_windowBackgroundGray));
 
         listView = new RecyclerListView(context) {
             @Override
@@ -553,6 +570,18 @@ public class FilterCreateActivity extends BaseFragment {
         listView.setVerticalScrollBarEnabled(false);
         frameLayout.addView(listView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
         listView.setAdapter(adapter = new ListAdapter(context));
+        listView.addOnChildAttachStateChangeListener(new RecyclerView.OnChildAttachStateChangeListener() {
+            @Override
+            public void onChildViewAttachedToWindow(@NonNull View view) {
+                if (useYumiFilterSurfaces() && (view instanceof UserCell || view instanceof TextCell || view instanceof ButtonCell || view instanceof CreateLinkCell || view instanceof LinkCell)) {
+                    view.setBackground(createYumiFilterRowSurface());
+                }
+            }
+
+            @Override
+            public void onChildViewDetachedFromWindow(@NonNull View view) {
+            }
+        });
         listView.setOnItemClickListener((view, position) -> {
             if (getParentActivity() == null) {
                 return;

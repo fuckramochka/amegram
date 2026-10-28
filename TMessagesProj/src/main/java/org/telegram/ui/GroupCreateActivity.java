@@ -14,10 +14,15 @@ import static org.telegram.messenger.LocaleController.getString;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.InsetDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
@@ -56,6 +61,7 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import app.amegram.theme.YumiMd3;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.ActionBar;
@@ -101,6 +107,25 @@ import me.vkryl.android.animator.FactorAnimator;
 import tw.nekomimi.nekogram.NekoConfig;
 
 public class GroupCreateActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate, FactorAnimator.Target, View.OnClickListener, WindowAnimatedInsetsProvider.Listener {
+
+    private boolean useYumiGroupSurfaces() {
+        return app.exteraless.appearance.YougramExpressive.enabled();
+    }
+
+    private Drawable createYumiGroupRowSurface() {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(YumiMd3.surfaceContainerHigh());
+        surface.setCornerRadius(dp(16));
+        RippleDrawable ripple = new RippleDrawable(ColorStateList.valueOf(Theme.multAlpha(YumiMd3.primary(), 0.12f)), surface, null);
+        return new InsetDrawable(ripple, dp(8), dp(2), dp(8), dp(2));
+    }
+
+    private Drawable createYumiGroupHeaderSurface() {
+        GradientDrawable surface = new GradientDrawable();
+        surface.setColor(YumiMd3.surfaceContainer());
+        surface.setCornerRadius(dp(20));
+        return surface;
+    }
     private final int ADDITIONAL_LIST_HEIGHT_DP = Build.VERSION.SDK_INT >= 31 ? 48 : 0;
 
     private static final int ANIMATOR_ID_SELECTED_CONTAINER_HEIGHT = 3;
@@ -373,7 +398,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
                 }
 
                 super.dispatchDraw(canvas);
-                AndroidUtilities.drawNavigationBarProtection(canvas, this, getThemedColor(Theme.key_windowBackgroundWhite), navigationBarHeight);
+                AndroidUtilities.drawNavigationBarProtection(canvas, this, useYumiGroupSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundWhite), navigationBarHeight);
             }
 
             @Override
@@ -413,6 +438,7 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         };
         contentView.setFocusableInTouchMode(true);
         contentView.setDescendantFocusability(ViewGroup.FOCUS_BEFORE_DESCENDANTS);
+        contentView.setBackgroundColor(useYumiGroupSurfaces() ? YumiMd3.surface() : getThemedColor(Theme.key_windowBackgroundWhite));
 
         spansContainer = new FragmentSpansContainer(context, currentAccount) {
             @Override
@@ -440,6 +466,9 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
             }
         };
         spansContainer.setDelegate(height -> animatorSelectorContainerHeight.animateTo(Math.min(height, maxSize)));
+        if (useYumiGroupSurfaces()) {
+            spansContainer.setBackground(createYumiGroupHeaderSurface());
+        }
         spansContainer.getSpansContainer().setOnClickListener(v -> {
             searchField.editText.clearFocus();
             searchField.editText.requestFocus();
@@ -519,6 +548,18 @@ public class GroupCreateActivity extends BaseFragment implements NotificationCen
         listView.setEmptyView(emptyView);
         listView.setAdapter(adapter = new GroupCreateAdapter(context));
         listView.setLayoutManager(layoutManager);
+        listView.addOnChildAttachStateChangeListener(new RecyclerView.OnChildAttachStateChangeListener() {
+            @Override
+            public void onChildViewAttachedToWindow(@NonNull View view) {
+                if (useYumiGroupSurfaces() && (view instanceof GroupCreateUserCell || view instanceof TextCell)) {
+                    view.setBackground(createYumiGroupRowSurface());
+                }
+            }
+
+            @Override
+            public void onChildViewDetachedFromWindow(@NonNull View view) {
+            }
+        });
         listView.setVerticalScrollBarEnabled(false);
         listView.setClipToPadding(false);
         listView.setVerticalScrollbarPosition(LocaleController.isRTL ? View.SCROLLBAR_POSITION_LEFT : View.SCROLLBAR_POSITION_RIGHT);

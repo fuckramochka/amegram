@@ -116,7 +116,8 @@ public final class YumiNavController {
         }
         if (search != null) {
             search.setBackground(searchBackground(context));
-            search.setElevation(dp(context, 8));
+            search.setElevation(dp(context, 10));
+            owner.applySpringStateListAnimator(search);
         }
         if (icon != null) {
             icon.setColorFilter(new android.graphics.PorterDuffColorFilter(
@@ -320,14 +321,16 @@ public final class YumiNavController {
     private Drawable navBackground(Context context) {
         final GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(palette.navSurface);
-        drawable.setCornerRadius(dp(context, 28));
+        drawable.setStroke(Math.max(1, dp(context, 1f)), palette.navBorder);
+        drawable.setCornerRadius(dp(context, 22));
         return drawable;
     }
 
     private Drawable searchBackground(Context context) {
         final GradientDrawable drawable = new GradientDrawable();
         drawable.setShape(GradientDrawable.OVAL);
-        drawable.setColor(palette.navSurface);
+        drawable.setColor(palette.primaryContainer);
+        drawable.setStroke(Math.max(1, dp(context, 1f)), palette.navBorder);
         return drawable;
     }
 

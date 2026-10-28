@@ -66,7 +66,6 @@ import org.telegram.ui.ActionBar.SimpleTextView;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Business.ProfileHoursCell;
 import org.telegram.ui.Business.ProfileLocationCell;
-import org.telegram.ui.Cells.TextDetailCell;
 import org.telegram.ui.Components.AnimatedFloat;
 import org.telegram.ui.Components.AvatarDrawable;
 import org.telegram.ui.Components.BulletinFactory;
@@ -220,6 +219,7 @@ public class ProfileActivity2 extends BaseFragment implements
 
     private boolean hoursExpanded;
     private boolean hoursShownMine;
+    private float profileHeaderProgress;
 
     @Override
     public View createView(Context context) {
@@ -423,6 +423,7 @@ public class ProfileActivity2 extends BaseFragment implements
         float h = lerp3(actionBarHeight, actionBarHeight + dpf2(122), actionBarHeight + dpf2(152 + 122), top);
         final float expanded = this.expanded.set(top > 0.25f);
         top = top <= 0 ? top : expanded;
+        profileHeaderProgress = top;
 
         avatarImage.setRelativeScrollTop(top);
         avatarImage.setExpandedHeight(h);
@@ -475,6 +476,112 @@ public class ProfileActivity2 extends BaseFragment implements
     private static final int ID_BIRTHDAY = 8;
     private static final int ID_BIZ_HOURS = 9;
     private static final int ID_BIZ_LOCATION = 10;
+
+    /** Profile facts keep the existing UItem IDs and span actions, with a Yumi card surface. */
+    private static final class YumiProfileInfoCell extends app.miogram.ui.yumi.YumiCell {
+        private CharSequence titleText;
+        private CharSequence subtitleText;
+
+        YumiProfileInfoCell(Context context) {
+            super(context);
+            setShowDivider(false);
+            setChevronVisible(false);
+            getTitleView().setMaxLines(1);
+            getSubtitleView().setMaxLines(2);
+            getSubtitleView().setSingleLine(false);
+            setSubtitleMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+            getTitleView().setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+            getTitleView().setLinkTextColor(app.amegram.theme.YumiMd3.primary());
+            getSubtitleView().setLinkTextColor(app.amegram.theme.YumiMd3.primary());
+            getTitleView().setHighlightColor(android.graphics.Color.TRANSPARENT);
+            getSubtitleView().setHighlightColor(android.graphics.Color.TRANSPARENT);
+        }
+
+        void bind(UItem item) {
+            titleText = item.text;
+            subtitleText = item.subtext;
+            setAlpha(1f);
+            setTitle(item.text);
+            setSubtitle(item.subtext);
+            int icon;
+            int accent;
+            switch (item.id) {
+                case ID_PHONE:
+                    icon = R.drawable.settings_calls;
+                    accent = app.amegram.theme.YumiMd3.green();
+                    break;
+                case ID_USERNAME:
+                    icon = R.drawable.filled_chatlist_mention;
+                    accent = app.amegram.theme.YumiMd3.violet();
+                    break;
+                case ID_BIRTHDAY:
+                    icon = R.drawable.filled_birthday;
+                    accent = app.amegram.theme.YumiMd3.primary();
+                    break;
+                default:
+                    icon = R.drawable.filled_location;
+                    accent = app.amegram.theme.YumiMd3.cyan();
+                    break;
+            }
+            setIcon(icon);
+            setAccent(accent);
+            setIconBackground(app.amegram.theme.YumiMd3.tone(accent, 0.18f));
+            setIconTint(accent);
+            setContentDescription(android.text.TextUtils.concat(
+                    item.text == null ? "" : item.text,
+                    item.subtext == null ? "" : ", " + item.subtext));
+        }
+
+        void setLoadingSpan(CharacterStyle span) {
+            getTitleView().setAlpha(hasSpan(titleText, span) ? 0.58f : 1f);
+            getSubtitleView().setAlpha(hasSpan(subtitleText, span) ? 0.58f : 1f);
+        }
+
+        private static boolean hasSpan(CharSequence text, CharacterStyle span) {
+            return span != null && text instanceof Spanned
+                    && ((Spanned) text).getSpanStart(span) >= 0;
+        }
+
+        static final class Factory extends UItem.UItemFactory<YumiProfileInfoCell> {
+            static { setup(new Factory()); }
+
+            @Override
+            public YumiProfileInfoCell createView(Context context, RecyclerListView listView,
+                    int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
+                YumiProfileInfoCell cell = new YumiProfileInfoCell(context);
+                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
+                        RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
+                cell.setLayoutParams(lp);
+                return cell;
+            }
+
+            @Override
+            public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter,
+                    UniversalRecyclerView listView) {
+                ((YumiProfileInfoCell) view).bind(item);
+            }
+
+            @Override
+            public boolean equals(UItem a, UItem b) {
+                return a.id == b.id;
+            }
+
+            @Override
+            public boolean contentsEquals(UItem a, UItem b) {
+                return android.text.TextUtils.equals(a.text, b.text)
+                        && android.text.TextUtils.equals(a.subtext, b.subtext);
+            }
+
+            static UItem of(int id, CharSequence title, CharSequence value) {
+                UItem item = UItem.ofFactory(Factory.class);
+                item.id = id;
+                item.text = title;
+                item.subtext = value;
+                return item;
+            }
+        }
+    }
     private static final int ID_NOTE = 11;
 
     private boolean isSection(View view) {
@@ -505,7 +612,7 @@ public class ProfileActivity2 extends BaseFragment implements
                         text = LocaleController.formatString(today ? R.string.ProfileBirthdayTodayValue : R.string.ProfileBirthdayValue, text);
                     }
 
-                    items.add(TextDetailCell.Factory.of(ID_BIRTHDAY, text, getString(today ? R.string.ProfileBirthdayToday : R.string.ProfileBirthday)));
+                    items.add(YumiProfileInfoCell.Factory.of(ID_BIRTHDAY, text, getString(today ? R.string.ProfileBirthdayToday : R.string.ProfileBirthday)));
                 }
                 if (userInfo.business_work_hours != null) {
                     items.add(ProfileHoursCell.Factory.of(ID_BIZ_HOURS, userInfo.business_work_hours, hoursExpanded, hoursShownMine, v -> {
@@ -529,7 +636,7 @@ public class ProfileActivity2 extends BaseFragment implements
                     }
                     if (chatInfo.location instanceof TLRPC.TL_channelLocation) {
                         final TLRPC.TL_channelLocation location = (TLRPC.TL_channelLocation) chatInfo.location;
-                        items.add(TextDetailCell.Factory.of(ID_LOCATION, location.address, getString(R.string.AttachLocation)));
+                        items.add(YumiProfileInfoCell.Factory.of(ID_LOCATION, location.address, getString(R.string.AttachLocation)));
                     }
                 }
                 if (ChatObject.isPublic(chat)) {
@@ -563,7 +670,7 @@ public class ProfileActivity2 extends BaseFragment implements
         }
 
         final boolean isFragment = phoneNumber != null && phoneNumber.matches("888\\d{8}");
-        items.add(TextDetailCell.Factory.of(
+        items.add(YumiProfileInfoCell.Factory.of(
             ID_PHONE,
             phoneNumber != null ? PhoneFormat.getInstance().format("+" + phoneNumber) : getString(R.string.PhoneHidden),
             isFragment ? getString(R.string.AnonymousNumber) : getString(R.string.PhoneMobile)
@@ -613,7 +720,7 @@ public class ProfileActivity2 extends BaseFragment implements
         } else return;
         if (TextUtils.isEmpty(username))
             return;
-        items.add(TextDetailCell.Factory.of(ID_USERNAME, text, alsoUsernamesString(username, usernames, value)));
+        items.add(YumiProfileInfoCell.Factory.of(ID_USERNAME, text, alsoUsernamesString(username, usernames, value)));
     }
 
     private CharSequence alsoUsernamesString(String originalUsername, ArrayList<TLRPC.TL_username> alsoUsernames, CharSequence fallback) {
@@ -705,9 +812,8 @@ public class ProfileActivity2 extends BaseFragment implements
         if (loadingSpan == span) return;
         loadingSpan = span;
         AndroidUtilities.forEachViews(listView, view -> {
-            if (view instanceof TextDetailCell) {
-                ((TextDetailCell) view).textView.setLoading(loadingSpan);
-                ((TextDetailCell) view).valueTextView.setLoading(loadingSpan);
+            if (view instanceof YumiProfileInfoCell) {
+                ((YumiProfileInfoCell) view).setLoadingSpan(loadingSpan);
             }
         });
     }
@@ -1008,10 +1114,32 @@ public class ProfileActivity2 extends BaseFragment implements
     private class ContainerView extends SizeNotifierFrameLayout implements NestedScrollingParent3 {
 
         private NestedScrollingParentHelper nestedScrollingParentHelper;
+        private final Paint profileCardPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint profileAccentPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final RectF profileCardRect = new RectF();
 
         public ContainerView(Context context) {
             super(context);
             nestedScrollingParentHelper = new NestedScrollingParentHelper(this);
+            setWillNotDraw(false);
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (title == null || subtitle == null || profileHeaderProgress < 0.35f) return;
+            final float top = title.getTop() + title.getTranslationY() - dp(10);
+            final float bottom = subtitle.getTop() + subtitle.getTranslationY()
+                    + subtitle.getHeight() + dp(10);
+            if (bottom <= top || top < 0 || bottom > getHeight()) return;
+            profileCardRect.set(dp(12), top, getWidth() - dp(12), bottom);
+            profileCardPaint.setColor(app.amegram.theme.YumiMd3.surfaceContainerLow());
+            profileAccentPaint.setColor(app.amegram.theme.YumiMd3.primary());
+            canvas.drawRoundRect(profileCardRect, dp(app.amegram.theme.YumiMd3.RADIUS_XL_DP),
+                    dp(app.amegram.theme.YumiMd3.RADIUS_XL_DP), profileCardPaint);
+            final float edgeX = LocaleController.isRTL ? profileCardRect.right - dp(3) : profileCardRect.left;
+            canvas.drawRoundRect(edgeX, top + dp(14), edgeX + dp(3), bottom - dp(14),
+                    dp(2), dp(2), profileAccentPaint);
         }
 
         @Override

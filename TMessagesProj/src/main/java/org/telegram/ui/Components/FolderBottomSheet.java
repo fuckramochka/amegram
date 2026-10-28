@@ -50,6 +50,7 @@ import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
+import app.amegram.theme.YumiMd3;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.tgnet.Vector;
@@ -71,6 +72,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
+
+    private static boolean useYumiFolderSurfaces() {
+        return app.exteraless.appearance.YougramExpressive.enabled();
+    }
 
     private String slug;
     private int filterId = -1;
@@ -339,17 +344,20 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
 
         button = new Button(getContext(), "");
         button.setOnClickListener(e -> onJoinButtonClicked());
+        if (useYumiFolderSurfaces()) {
+            containerView.setBackgroundColor(YumiMd3.surfaceContainerLow());
+        }
         containerView.addView(button, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 16, 10, 16, 10));
 
         buttonShadow = new View(getContext());
-        buttonShadow.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+        buttonShadow.setBackgroundColor(useYumiFolderSurfaces() ? YumiMd3.outlineVariant() : Theme.getColor(Theme.key_windowBackgroundGray));
         containerView.addView(buttonShadow, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 1f / AndroidUtilities.density, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 6, 0, 6, 68));
         recyclerListView.setPadding(dp(6), 0, dp(6), dp(button != null ? 68 : 0));
 
         bulletinContainer = new FrameLayout(getContext());
         containerView.addView(bulletinContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 100, Gravity.BOTTOM | Gravity.FILL_HORIZONTAL, 6, 0, 6, 68));
 
-        fixNavigationBar(Theme.getColor(Theme.key_dialogBackground));
+        fixNavigationBar(useYumiFolderSurfaces() ? YumiMd3.surfaceContainerLow() : Theme.getColor(Theme.key_dialogBackground));
 
         updateCount(false);
 
@@ -702,21 +710,24 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
         public Button(Context context, String string) {
             super(context);
 
+            final int buttonColor = useYumiFolderSurfaces() ? YumiMd3.primary() : Theme.getColor(Theme.key_featuredStickers_addButton);
+            final int buttonTextColor = useYumiFolderSurfaces() ? YumiMd3.onPrimary() : Theme.getColor(Theme.key_featuredStickers_buttonText);
+
             rippleView = new View(context);
-            rippleView.setBackground(Theme.AdaptiveRipple.rect(Theme.getColor(Theme.key_featuredStickers_addButton), 8));
+            rippleView.setBackground(Theme.AdaptiveRipple.rect(buttonColor, 8));
             addView(rippleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
-            setBackground(background = (ShapeDrawable) Theme.createRoundRectDrawable(dp(8), Theme.getColor(Theme.key_featuredStickers_addButton)));
+            setBackground(background = (ShapeDrawable) Theme.createRoundRectDrawable(dp(8), buttonColor));
 
             paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-            paint.setColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            paint.setColor(buttonTextColor);
 
             text = new AnimatedTextView.AnimatedTextDrawable(true, true, false);
             text.setAnimationProperties(.3f, 0, 250, CubicBezierInterpolator.EASE_OUT_QUINT);
             text.setCallback(this);
             text.setTextSize(dp(14));
             text.setTypeface(AndroidUtilities.bold());
-            text.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+            text.setTextColor(buttonTextColor);
             text.setText(string);
             text.setGravity(Gravity.CENTER_HORIZONTAL);
 
@@ -725,7 +736,7 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
             countText.setCallback(this);
             countText.setTextSize(dp(12));
             countText.setTypeface(AndroidUtilities.bold());
-            countText.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
+            countText.setTextColor(buttonColor);
             countText.setText("");
             countText.setGravity(Gravity.CENTER_HORIZONTAL);
 
@@ -977,14 +988,14 @@ public class FolderBottomSheet extends BottomSheetWithRecyclerListView {
                     view = titleCell = new TitleCell(getContext(), invite instanceof TL_chatlists.TL_chatlists_chatlistInviteAlready || updates != null, escapedTitle, titleEntities, titleNoanimate);
                 } else if (viewType == VIEW_TYPE_HINT) {
                     view = new TextInfoPrivacyCell(getContext());
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
+                    view.setBackgroundColor(useYumiFolderSurfaces() ? YumiMd3.surfaceContainer() : Theme.getColor(Theme.key_windowBackgroundGray));
                 } else if (viewType == VIEW_TYPE_USER) {
                     GroupCreateUserCell userCell = new GroupCreateUserCell(getContext(), 1, 0, false);
-                    userCell.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    userCell.setBackgroundColor(useYumiFolderSurfaces() ? YumiMd3.surfaceContainerHigh() : Theme.getColor(Theme.key_windowBackgroundWhite));
                     view = userCell;
                 } else if (viewType == VIEW_TYPE_HEADER) {
                     view = new HeaderCell(getContext());
-                    view.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+                    view.setBackgroundColor(useYumiFolderSurfaces() ? YumiMd3.surfaceContainerHigh() : Theme.getColor(Theme.key_windowBackgroundWhite));
                 }
                 return new RecyclerListView.Holder(view);
             }

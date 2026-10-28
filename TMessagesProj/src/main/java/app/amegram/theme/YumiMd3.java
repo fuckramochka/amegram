@@ -18,9 +18,8 @@ import org.telegram.ui.ActionBar.Theme;
  * Yumi Material 3 Expressive design tokens.
  *
  * <p>This is intentionally separate from {@link YumiTheme}: the old token set is
- * still used by legacy screens, while this one describes the new expressive
- * settings surface. Everything visual in the settings screen must come from
- * here — no raw hex values or bare dp/sp magic numbers in screen code.</p>
+ * still used by legacy screens, while this one defines the expressive client
+ * palette, type scale, shapes and motion.</p>
  */
 public final class YumiMd3 {
 
@@ -223,41 +222,15 @@ public final class YumiMd3 {
         }
         sOutline = div;
 
-        int prim = dark ? 0xFFE5486B : 0xFFD81B60;
-        try {
-            int themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
-            if (isValidAccent(themeAccent)) {
-                prim = themeAccent;
-            } else {
-                themeAccent = Theme.getColor(Theme.key_featuredStickers_addButton);
-                if (isValidAccent(themeAccent)) {
-                    prim = themeAccent;
-                } else {
-                    themeAccent = Theme.getColor(Theme.key_switchTrackChecked);
-                    if (isValidAccent(themeAccent)) {
-                        prim = themeAccent;
-                    } else {
-                        themeAccent = Theme.getColor(Theme.key_dialogFloatingButton);
-                        if (isValidAccent(themeAccent)) {
-                            prim = themeAccent;
-                        } else {
-                            themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueText);
-                            if (isValidAccent(themeAccent)) {
-                                prim = themeAccent;
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Throwable ignore) {
-        }
+        // Yumi owns its accent; it does not inherit Telegram's blue theme accent.
+        int prim = dark ? 0xFFFF8FB7 : 0xFFB83268;
         sPrimary = prim;
         sOnPrimary = ColorUtils.calculateLuminance(prim) > 0.5 ? 0xFF000000 : 0xFFFFFFFF;
         sPrimaryContainer = dark ? blend(surf, prim, 0.28f) : blend(0xFFFFFFFF, prim, 0.16f);
         sOnPrimaryContainer = dark ? blend(prim, 0xFFFFFFFF, 0.85f) : blend(prim, 0xFF000000, 0.85f);
 
-        sActionGradientStart = prim;
-        sActionGradientEnd = blend(prim, 0xFF7C3AED, 0.30f);
+        sActionGradientStart = dark ? 0xFF9C315F : 0xFF9C2858;
+        sActionGradientEnd = dark ? 0xFF683379 : 0xFF713C9A;
 
         sHeroStart = blend(dark ? 0xFF14101E : 0xFFEDE7F6, prim, 0.30f);
         sHeroMid = blend(dark ? 0xFF1E1022 : 0xFFF3E5F5, prim, 0.22f);

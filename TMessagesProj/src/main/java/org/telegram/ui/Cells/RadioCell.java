@@ -74,6 +74,10 @@ public class RadioCell extends FrameLayout {
             radioButton.setColor(Theme.getColor(Theme.key_radioBackground, resourcesProvider), Theme.getColor(Theme.key_radioBackgroundChecked, resourcesProvider));
         }
         addView(radioButton, LayoutHelper.createFrame(22, 22, (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT) | Gravity.TOP, (LocaleController.isRTL ? padding + 1 : 0), 14, (LocaleController.isRTL ? 0 : padding + 1), 0));
+        if (!dialog) {
+            YumiSettingsRowStyle.title(textView);
+            YumiSettingsRowStyle.applySurface(this, resourcesProvider, app.amegram.theme.YumiMd3.RADIUS_L_DP);
+        }
     }
 
     public void setRadioIcon(Drawable icon) {
@@ -125,7 +129,8 @@ public class RadioCell extends FrameLayout {
     @Override
     protected void onDraw(Canvas canvas) {
         if (needDivider) {
-            canvas.drawLine(0, getMeasuredHeight() - 1, getMeasuredWidth(), getMeasuredHeight() - 1, Theme.dividerPaint);
+            int inset = AndroidUtilities.dp(10);
+            canvas.drawLine(inset, getMeasuredHeight() - 1, getMeasuredWidth() - inset, getMeasuredHeight() - 1, Theme.dividerPaint);
         }
     }
 

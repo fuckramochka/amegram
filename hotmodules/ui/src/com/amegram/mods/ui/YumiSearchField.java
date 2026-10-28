@@ -127,10 +127,11 @@ public final class YumiSearchField extends FrameLayout {
 
     private void updateBackground(boolean focused) {
         background.setShape(GradientDrawable.RECTANGLE);
-        background.setCornerRadius(dp(26));
-        background.setColor(palette.surfaceContainerLow);
-        background.setStroke(Math.max(1, dp(focused ? 1.5f : 1f)),
-                focused ? palette.primary : palette.navBorder);
+        background.setCornerRadius(dp(20));
+        final boolean dark = (palette.onSurface & 0xFF) > 128;
+        background.setColor(dark ? 0x24767680 : 0x14000000);
+        background.setStroke(Math.max(1, dp(focused ? 1.5f : 0.75f)),
+                focused ? palette.primary : (dark ? 0x1AFFFFFF : 0x12000000));
     }
 
     @Override

@@ -1223,10 +1223,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
         {
-            // Amegram: bottom tabs are a floating glass pill in every mode, fragments
-            // already clear the pill internally where needed — reserving tabsHeight
-            // here (d6604120e) double-counted and left a black hole. Reverted.
-            int bottomMargin = navigationBarHeight + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
+            // Keep scrollable screens clear of the floating tab rail. The rail is
+            // drawn over the root window, so the pager must reserve its vertical slot.
+            int bottomMargin = navigationBarHeight + tabsHeight + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
             if (tabletLayout) {
                 bottomMargin = Math.max(bottomMargin, navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
             }

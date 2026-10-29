@@ -222,15 +222,23 @@ public final class YumiMd3 {
         }
         sOutline = div;
 
-        // Yumi owns its accent; it does not inherit Telegram's blue theme accent.
+        // Follow the active Telegram theme so Yumi controls stay in sync when
+        // the user changes the chat/action accent.
         int prim = dark ? 0xFFFF8FB7 : 0xFFB83268;
+        try {
+            int themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
+            if ((themeAccent >>> 24) != 0) {
+                prim = 0xFF000000 | (themeAccent & 0x00FFFFFF);
+            }
+        } catch (Throwable ignore) {
+        }
         sPrimary = prim;
         sOnPrimary = ColorUtils.calculateLuminance(prim) > 0.5 ? 0xFF000000 : 0xFFFFFFFF;
         sPrimaryContainer = dark ? blend(surf, prim, 0.28f) : blend(0xFFFFFFFF, prim, 0.16f);
         sOnPrimaryContainer = dark ? blend(prim, 0xFFFFFFFF, 0.85f) : blend(prim, 0xFF000000, 0.85f);
 
-        sActionGradientStart = dark ? 0xFF9C315F : 0xFF9C2858;
-        sActionGradientEnd = dark ? 0xFF683379 : 0xFF713C9A;
+        sActionGradientStart = blend(prim, dark ? 0xFFFFFFFF : 0xFF000000, dark ? 0.10f : 0.12f);
+        sActionGradientEnd = blend(prim, dark ? 0xFF000000 : 0xFFFFFFFF, dark ? 0.24f : 0.20f);
 
         sHeroStart = blend(dark ? 0xFF14101E : 0xFFEDE7F6, prim, 0.30f);
         sHeroMid = blend(dark ? 0xFF1E1022 : 0xFFF3E5F5, prim, 0.22f);

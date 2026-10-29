@@ -139,9 +139,11 @@ public final class YumiChatRowRenderer {
                 ? blend(palette.cardSurface, palette.primaryContainer, 0.24f)
                 : palette.cardSurface);
         canvas.drawPath(cardPath, cardPaint);
-        strokePaint.setColor(palette.cardRim);
-        strokePaint.setStrokeWidth(Math.max(1, dp(context, 0.75f)));
-        canvas.drawPath(cardPath, strokePaint);
+        if (owner.isChatCardOutline()) {
+            strokePaint.setColor(palette.cardRim);
+            strokePaint.setStrokeWidth(Math.max(1, dp(context, 0.75f)));
+            canvas.drawPath(cardPath, strokePaint);
+        }
 
         // A small Yumi color mark gives each card a clear leading edge while
         // leaving the official avatar, gestures and text layouts untouched.

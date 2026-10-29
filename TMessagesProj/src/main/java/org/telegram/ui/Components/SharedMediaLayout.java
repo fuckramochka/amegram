@@ -11983,6 +11983,23 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
         }
     }
 
+    public void setPagesClipToPadding(boolean clipToPadding) {
+        if (mediaPages == null) {
+            return;
+        }
+        for (MediaPage page : mediaPages) {
+            if (page == null) {
+                continue;
+            }
+            if (page.listView != null) {
+                page.listView.setClipToPadding(clipToPadding);
+            }
+            if (page.animationSupportingListView != null) {
+                page.animationSupportingListView.setClipToPadding(clipToPadding);
+            }
+        }
+    }
+
     private int getPagePaddingBottom(boolean hasButtonPadding) {
         return pagesPaddingBottom + (hasButtonPadding ? dp(44 + 8) : 0);
     }

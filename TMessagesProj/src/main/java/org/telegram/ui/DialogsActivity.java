@@ -4317,7 +4317,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPage.listView.setAllowStopHeaveOperations(true);
             viewPage.listView.setAccessibilityEnabled(false);
             viewPage.listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
-            viewPage.listView.setClipToPadding(false);
+            viewPage.listView.setClipToPadding(!(hasMainTabs && MainTabsLayout.isBottomNavigationFloating()));
             viewPage.listView.setPivotY(0);
             boolean isYougramCards = app.exteraless.appearance.YougramExpressive.enabled()
                     && app.exteraless.appearance.AppearanceConfig.chatListStyle() != app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT;

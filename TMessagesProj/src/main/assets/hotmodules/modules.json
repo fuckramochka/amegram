@@ -303,18 +303,30 @@
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
-          "version": "1.0.10",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.10.hmod",
-          "sha256": "47af5b51a7647775295d5fb6bb6f707e9aef731ac55f58fbb6dc67a18477cb30",
+          "version": "1.0.14",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.14.hmod",
+          "sha256": "cce9fa0e7e5f93415248ae841b02fd126abe6eb0a4bf7e76a8e782a5657448b2",
           "minApp": 7112,
-          "changelog": "Версія 1.0.10: оновлено стилі списку чатів (чистий плаский MD3 за замовчуванням, сегментовані острівці та картки), тонке налаштування закруглення аватарок.",
+          "changelog": "Версія 1.0.14: виправлено завжди видимі контури карток та прибрано зайві обводки нижньої панелі і пошуку.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 33891
+          "sizeBytes": 32732
         }
       },
       "history": [
+        {
+          "branch": "stable",
+          "version": "1.0.13",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.13.hmod",
+          "sha256": "543041cb86bdbbca504c0678913f123b4e4f1f08df20882db18cd36280997aa6",
+          "sizeBytes": 32758,
+          "minApp": 7112,
+          "changelog": "Версія 1.0.13: оновлено тональну палітру, картки та док навігації; перероблено пошук і хром списків, виправлено стани оновлення інтерфейсу.",
+          "permissions": [
+            "hook_ui"
+          ]
+        },
         {
           "branch": "stable",
           "version": "1.0.9",

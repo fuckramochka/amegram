@@ -194,17 +194,27 @@ public final class HotModulesManager {
             android.content.res.AssetManager am = appContext.getAssets();
             String[] list = am.list("hotmodules");
             if (list == null) return;
+            Map<String, String> latestAssetById = new HashMap<>();
+            Map<String, String> latestVersionById = new HashMap<>();
             for (String f : list) {
                 if (!f.endsWith(".hmod")) continue;
                 String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
                 if ("settings_ui".equals(modId) || "badges".equals(modId) || "kpm".equals(modId) || "ui".equals(modId) || isSystem(modId) || f.contains("system")) {
-                    if (shouldSeedSystemModule(modId, f)) {
-                        try {
-                            installBundledModuleDirect(modId, true);
-                        } catch (Throwable e) {
-                            FileLog.e("hotmods: auto-install system module failed: " + modId, e);
-                        }
+                    String version = bundledAssetVersion(f);
+                    String latestVersion = latestVersionById.get(modId);
+                    if (!version.isEmpty() && (latestVersion == null || compareVersions(version, latestVersion) > 0)) {
+                        latestVersionById.put(modId, version);
+                        latestAssetById.put(modId, f);
                     }
+                }
+            }
+            for (Map.Entry<String, String> entry : latestAssetById.entrySet()) {
+                String modId = entry.getKey();
+                if (!shouldSeedSystemModule(modId, entry.getValue())) continue;
+                try {
+                    installBundledModuleDirect(modId, true);
+                } catch (Throwable e) {
+                    FileLog.e("hotmods: auto-install system module failed: " + modId, e);
                 }
             }
         } catch (Throwable e) {
@@ -756,10 +766,13 @@ public final class HotModulesManager {
         String[] list = am.list("hotmodules");
         if (list == null) throw new IllegalStateException("no assets");
         String targetFile = null;
+        String targetVersion = "";
         for (String f : list) {
-            if (f.equals(modId + ".hmod") || f.startsWith(modId + "-")) {
+            if (!f.equals(modId + ".hmod") && !f.startsWith(modId + "-")) continue;
+            String version = bundledAssetVersion(f);
+            if (targetFile == null || compareVersions(version, targetVersion) > 0) {
                 targetFile = f;
-                break;
+                targetVersion = version;
             }
         }
         if (targetFile == null) throw new IllegalStateException("bundled module not found: " + modId);

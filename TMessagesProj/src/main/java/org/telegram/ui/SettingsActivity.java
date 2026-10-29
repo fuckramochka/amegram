@@ -392,7 +392,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         listView.adapter.setApplyBackground(false);
         listView.setSections();
         listView.setPadding(0, AndroidUtilities.statusBarHeight + dp(12), 0, AndroidUtilities.navigationBarHeight + additionNavigationBarHeight);
-        listView.setClipToPadding(false);
+        listView.setClipToPadding(hasMainTabs && app.exteraless.appearance.MainTabsUiHelper.isFloatingPill());
         listView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {

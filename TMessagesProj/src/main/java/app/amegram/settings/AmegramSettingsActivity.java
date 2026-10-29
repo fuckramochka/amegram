@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Set;
 
 import app.amegram.hot.HotModulesManager;
-import app.amegram.hot.HotSettingsUiGate;
 import app.amegram.hot.ui.HotModuleMeta;
 import app.amegram.hot.ui.HotModuleSettingsActivity;
 import app.amegram.hot.ui.HotModulesActivity;
@@ -129,12 +128,6 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
         HotModulesManager.init(context.getApplicationContext());
         HotModulesManager.addListener(this);
-
-        View customView = HotSettingsUiGate.createCustomSettingsView(this, context);
-        if (customView != null) {
-            fragmentView = customView;
-            return fragmentView;
-        }
 
         settingsView = new YumiSettingsView(context, this::buildModel, new YumiSettingsView.Listener() {
             @Override

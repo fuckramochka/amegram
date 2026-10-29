@@ -18,6 +18,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
+import org.telegram.messenger.BuildConfig;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
@@ -35,6 +36,7 @@ import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.TimeZone;
 
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.ui.MiogramUpdateBottomSheet;
@@ -355,14 +357,19 @@ public class MiogramUpdater {
         public final String body;
         public final String apkUrl;
         public final long apkSize;
+        public final int versionCode;
+        public final long publishedAt;
 
-        public ReleaseCandidate(String repo, String version, String tag, String body, String apkUrl, long apkSize) {
+        public ReleaseCandidate(String repo, String version, String tag, String body, String apkUrl, long apkSize,
+                                int versionCode, long publishedAt) {
             this.repo = repo;
             this.version = version;
             this.tag = tag;
             this.body = body;
             this.apkUrl = apkUrl;
             this.apkSize = apkSize;
+            this.versionCode = versionCode;
+            this.publishedAt = publishedAt;
         }
     }
 
@@ -414,6 +421,9 @@ public class MiogramUpdater {
                         String body = json.optString("body", "");
                         String apkUrl = "";
                         long apkSize = 0L;
+                        int apkVersionCode = 0;
+                        long apkPublishedAt = 0L;
+                        long releasePublishedAt = parseGithubTimestamp(json.optString("published_at", ""));
 
                         JSONArray assets = json.optJSONArray("assets");
                         if (assets != null) {
@@ -423,6 +433,8 @@ public class MiogramUpdater {
                                 if (name.endsWith(".apk")) {
                                     apkUrl = asset.optString("browser_download_url", "");
                                     apkSize = asset.optLong("size", 0L);
+                                    apkVersionCode = versionCodeFromApkName(name);
+                                    apkPublishedAt = parseGithubTimestamp(asset.optString("updated_at", ""));
                                     break;
                                 }
                             }
@@ -430,7 +442,8 @@ public class MiogramUpdater {
 
                         if (!TextUtils.isEmpty(apkUrl) && !TextUtils.isEmpty(tag)) {
                             String ver = tag.replace("v", "").replace("V", "").trim();
-                            ReleaseCandidate candidate = new ReleaseCandidate(repo, ver, tag, body, apkUrl, apkSize);
+                            ReleaseCandidate candidate = new ReleaseCandidate(repo, ver, tag, body, apkUrl, apkSize,
+                                    apkVersionCode, apkPublishedAt > 0L ? apkPublishedAt : releasePublishedAt);
                             if (bestCandidate == null) {
                                 bestCandidate = candidate;
                             } else {
@@ -493,7 +506,8 @@ public class MiogramUpdater {
                                     apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk";
                                 }
                             }
-                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, body, apkUrl, 0L);
+                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, body, apkUrl, 0L,
+                                    versionCodeFromApkName(apkUrl), 0L);
                         }
                     }
                 } catch (Throwable t) {
@@ -530,7 +544,9 @@ public class MiogramUpdater {
                                     apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk";
                                 }
                             }
-                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, "Останнє оновлення Yumigram на GitHub: " + tag, apkUrl, 0L);
+                            bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag,
+                                    "Останнє оновлення Yumigram на GitHub: " + tag, apkUrl, 0L,
+                                    versionCodeFromApkName(apkUrl), 0L);
                         }
                     }
                 } catch (Throwable t) {
@@ -540,7 +556,8 @@ public class MiogramUpdater {
 
             if (bestCandidate != null) {
                 final String currentVersion = getCurrentAppVersion();
-                boolean isNewer = isNewerVersion(currentVersion, bestCandidate.version, bestCandidate.tag, bestCandidate.body);
+                boolean isNewer = isNewerBuild(currentVersion, getCurrentAppVersionCode(), bestCandidate.version,
+                        bestCandidate.versionCode, bestCandidate.publishedAt, bestCandidate.tag, bestCandidate.body);
                 callback.onResult(isNewer, bestCandidate.version, bestCandidate.body, bestCandidate.apkUrl, bestCandidate.apkSize);
             } else {
                 callback.onResult(false, getCurrentAppVersion(), null, null, 0L);
@@ -610,6 +627,59 @@ public class MiogramUpdater {
         } catch (Exception e) {
             return 1261;
         }
+    }
+
+    private static int versionCodeFromApkName(String nameOrUrl) {
+        if (TextUtils.isEmpty(nameOrUrl)) return 0;
+        String name = nameOrUrl;
+        int query = name.indexOf('?');
+        if (query >= 0) name = name.substring(0, query);
+        int slash = name.lastIndexOf('/');
+        if (slash >= 0) name = name.substring(slash + 1);
+        java.util.regex.Matcher matcher = java.util.regex.Pattern
+                .compile("[.](\\d{5,7})\\.apk$", java.util.regex.Pattern.CASE_INSENSITIVE)
+                .matcher(name);
+        if (!matcher.find()) return 0;
+        try {
+            return Integer.parseInt(matcher.group(1));
+        } catch (NumberFormatException ignored) {
+            return 0;
+        }
+    }
+
+    private static boolean isNewerBuild(String currentVersion, int currentVersionCode,
+                                        String remoteVersion, int remoteVersionCode,
+                                        long remotePublishedAt,
+                                        String remoteTag, String changelog) {
+        // A date can identify a rebuild whose visible version string stayed the same,
+        // but never offer an APK Android cannot install over the current one.
+        if (currentVersionCode > 0 && remoteVersionCode > 0) {
+            if (remoteVersionCode <= currentVersionCode) return false;
+        }
+
+        // Compare like-for-like build timestamps from CI. Install time is not a
+        // reliable substitute: users may sideload an older APK after a release.
+        long localBuildTime = BuildConfig.BUILD_TIMESTAMP * 1000L;
+        if (remotePublishedAt > 0L && localBuildTime > 0L && remotePublishedAt != localBuildTime) {
+            return remotePublishedAt > localBuildTime;
+        }
+        if (currentVersionCode > 0 && remoteVersionCode > 0) {
+            return remoteVersionCode > currentVersionCode;
+        }
+        return isNewerVersion(currentVersion, remoteVersion, remoteTag, changelog);
+    }
+
+    private static long parseGithubTimestamp(String value) {
+        if (TextUtils.isEmpty(value)) return 0L;
+        for (String pattern : new String[]{"yyyy-MM-dd'T'HH:mm:ss'Z'", "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"}) {
+            try {
+                SimpleDateFormat format = new SimpleDateFormat(pattern, Locale.US);
+                format.setTimeZone(TimeZone.getTimeZone("UTC"));
+                Date parsed = format.parse(value);
+                if (parsed != null) return parsed.getTime();
+            } catch (Throwable ignored) {}
+        }
+        return 0L;
     }
 
     public static boolean isNewerVersion(String currentVersion, String remoteVersion, String remoteTag, String changelog) {

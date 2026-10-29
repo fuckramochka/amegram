@@ -779,9 +779,13 @@ public class MiogramDownloadManager {
                             PackageInfo archiveInfo = pm.getPackageArchiveInfo(file.getAbsolutePath(), 0);
                             if (archiveInfo != null) {
                                 if (archiveInfo.packageName == null || archiveInfo.packageName.equals(ctx.getPackageName())) {
-                                    if (currentVersionCode > 0 && archiveInfo.versionCode <= currentVersionCode) {
-                                        shouldDelete = true;
-                                    } else if (currentVersionName != null && !MiogramUpdater.isNewerVersion(currentVersionName, archiveInfo.versionName, null, null)) {
+                                    if (currentVersionCode > 0 && archiveInfo.versionCode > 0) {
+                                        // The versionCode is the installability/order source of truth.
+                                        // versionName can intentionally stay the same across CI rebuilds.
+                                        shouldDelete = archiveInfo.versionCode <= currentVersionCode;
+                                    } else if (currentVersionName != null && archiveInfo.versionName != null
+                                            && !MiogramUpdater.isNewerVersion(currentVersionName, archiveInfo.versionName, null, null)) {
+                                        // Older APKs without a readable versionCode use the semantic fallback.
                                         shouldDelete = true;
                                     }
                                 }

@@ -975,11 +975,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 break;
             }
             case 100: {
-                presentSettingFragment(new app.amegram.settings.AmegramSettingsActivity());
+                presentFragment(new app.amegram.settings.AmegramSettingsActivity());
                 break;
             }
             case 102: {
-                presentSettingFragment(new app.amegram.settings.AmegramSettingsActivity());
+                presentFragment(new app.amegram.settings.AmegramSettingsActivity());
                 break;
             }
             case 103: {

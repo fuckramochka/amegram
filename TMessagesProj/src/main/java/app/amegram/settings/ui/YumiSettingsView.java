@@ -165,7 +165,8 @@ public class YumiSettingsView extends FrameLayout {
     private void updateRecyclerPadding(int width) {
         int side = Math.max(0, (width - YumiMd3.dp(620)) / 2);
         int top = topBarHeight + YumiMd3.dp(4);
-        int bottom = YumiMd3.dp(28) + Math.max(0, AndroidUtilities.navigationBarHeight);
+        int bottomContentDp = app.exteraless.appearance.MainTabsUiHelper.isFloatingPill() ? 68 : 28;
+        int bottom = YumiMd3.dp(bottomContentDp) + Math.max(0, AndroidUtilities.navigationBarHeight);
         if (recyclerView.getPaddingLeft() != side || recyclerView.getPaddingTop() != top
                 || recyclerView.getPaddingRight() != side || recyclerView.getPaddingBottom() != bottom) {
             recyclerView.setPadding(side, top, side, bottom);

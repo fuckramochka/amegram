@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Set;
 
 import app.amegram.hot.HotModulesManager;
-import app.amegram.hot.HotSettingsUiGate;
 import app.amegram.hot.ui.HotModuleMeta;
 import app.amegram.hot.ui.HotModuleSettingsActivity;
 import app.amegram.hot.ui.HotModulesActivity;
@@ -197,17 +196,11 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         customInstalledModules.clear();
         YumiSettingsModel model = new YumiSettingsModel();
         buildMainModel(model);
-        HotSettingsUiGate.customizeModel(model);
         finalizeModel(model);
         return model;
     }
 
-    /**
-     * Службовий етап після кастомізації hot-модулем. Модуль settings_ui
-     * історично додавав дублюючі кнопки в підвал і пошукові рядки з чужими
-     * id. Хаб сам відповідає за навігацию та пошук, тому футер і індекс
-     * перебудовуються тут — незалежно від версії встановленого модуля.
-     */
+    /** Rebuild the footer and search index from the native settings model. */
     private void finalizeModel(YumiSettingsModel model) {
         model.footerPrimary = null;
         model.footerSecondary = null;
@@ -544,65 +537,84 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
     private void openModule(String moduleId) {
         if (HotModulesManager.isModuleInstalled(moduleId)) {
-            presentFragment(new HotModuleSettingsActivity(moduleId));
+            openSettingsFragment(new HotModuleSettingsActivity(moduleId));
         } else {
-            presentFragment(new HotModulesActivity());
+            openSettingsFragment(new HotModulesActivity());
         }
+    }
+
+    private boolean openSettingsFragment(BaseFragment fragment) {
+        if (presentFragment(fragment)) {
+            return true;
+        }
+        try {
+            org.telegram.ui.LaunchActivity launch = org.telegram.ui.LaunchActivity.instance;
+            org.telegram.ui.ActionBar.INavigationLayout layout = launch == null ? null : launch.getActionBarLayout();
+            if (layout != null && layout != getParentLayout() && layout.presentFragment(fragment)) {
+                return true;
+            }
+        } catch (Throwable error) {
+            org.telegram.messenger.FileLog.e(error);
+        }
+        org.telegram.messenger.FileLog.e("Yumigram settings navigation failed: row fragment=" + fragment.getClass().getName()
+                + ", parentLayout=" + getParentLayout());
+        showToast("Не вдалося відкрити цей розділ. Спробуйте ще раз.");
+        return false;
     }
 
     private void route(int id, String moduleId) {
         if (id >= ROW_CUSTOM_BASE && moduleId != null) {
-            presentFragment(new HotModuleSettingsActivity(moduleId));
+            openSettingsFragment(new HotModuleSettingsActivity(moduleId));
             return;
         }
         if (id == ROW_PERSONALIZATION) {
-            presentFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
+            openSettingsFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
         } else if (id == ROW_CHATS_MEDIA) {
-            presentFragment(new app.exteraless.settings.OpenExteraChatsActivity());
+            openSettingsFragment(new app.exteraless.settings.OpenExteraChatsActivity());
         } else if (id == ROW_NOTIFICATIONS) {
             new app.miogram.bridge.push.MiogramPushSheet(getParentActivity(), getResourceProvider()).show();
         } else if (id == ROW_PRIVACY_SECURITY) {
-            presentFragment(new MiogramPrivacySettingsActivity());
+            openSettingsFragment(new MiogramPrivacySettingsActivity());
         } else if (id == ROW_DATA_STORAGE) {
-            presentFragment(new org.telegram.ui.DataSettingsActivity());
+            openSettingsFragment(new org.telegram.ui.DataSettingsActivity());
         } else if (id == ROW_NEKO_TRANSLATOR) {
-            presentFragment(new NekoTranslatorSettingsActivity());
+            openSettingsFragment(new NekoTranslatorSettingsActivity());
         } else if (id == ROW_NEKO_EXPERIMENTAL || id == SEARCH_HISTORY) {
-            presentFragment(new NekoExperimentalSettingsActivity());
+            openSettingsFragment(new NekoExperimentalSettingsActivity());
         } else if (id == ROW_CHANNEL) {
             openChannel();
         } else if (id == ROW_ADVANCED) {
-            presentFragment(new AmegramAdvancedSettingsActivity());
+            openSettingsFragment(new AmegramAdvancedSettingsActivity());
         } else if (id == ROW_NEKO_GENERAL) {
-            presentFragment(new NekoGeneralSettingsActivity());
+            openSettingsFragment(new NekoGeneralSettingsActivity());
         } else if (id == ROW_NEKO_CHAT) {
-            presentFragment(new NekoChatSettingsActivity());
+            openSettingsFragment(new NekoChatSettingsActivity());
         } else if (id == ROW_NEKO_PASSCODE || id == SEARCH_PASSCODE) {
-            presentFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
+            openSettingsFragment(new app.miogram.bridge.vault.MiogramDoubleBottomActivity());
         } else if (id == ROW_ANTIBLOCK || id == SEARCH_ANTIBLOCK) {
-            presentFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
+            openSettingsFragment(new app.miogram.bridge.bypass.MiogramAntiBlockActivity());
         } else if (id == ROW_EXTERA_GENERAL) {
-            presentFragment(new app.exteraless.settings.OpenExteraGeneralActivity());
+            openSettingsFragment(new app.exteraless.settings.OpenExteraGeneralActivity());
         } else if (id == ROW_EXTERA_APPEARANCE) {
-            presentFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
+            openSettingsFragment(new app.exteraless.settings.OpenExteraAppearanceActivity());
         } else if (id == ROW_EXTERA_CHATS) {
-            presentFragment(new app.exteraless.settings.OpenExteraChatsActivity());
+            openSettingsFragment(new app.exteraless.settings.OpenExteraChatsActivity());
         } else if (id == ROW_EXTERA_OTHER) {
-            presentFragment(new app.exteraless.settings.OpenExteraOtherActivity());
+            openSettingsFragment(new app.exteraless.settings.OpenExteraOtherActivity());
         } else if (id == ROW_HOTMODULES || id == SEARCH_SYSTEM_MODULES) {
-            presentFragment(new HotModulesActivity());
+            openSettingsFragment(new HotModulesActivity());
         } else if (id == ROW_PLUGINS) {
-            presentFragment(new PluginsActivity());
+            openSettingsFragment(new PluginsActivity());
         } else if (id == ROW_GUIDE) {
-            presentFragment(new AmegramGuideActivity());
+            openSettingsFragment(new AmegramGuideActivity());
         } else if (id == ROW_BADGES) {
             app.miogram.bridge.badge.MiogramBadgeManager.openBadgesSettings(this);
         } else if (id == SEARCH_BADGE_WORKSHOP) {
-            presentFragment(new AmegramBadgeWorkshopActivity());
+            openSettingsFragment(new AmegramBadgeWorkshopActivity());
         } else if (id == ROW_UPDATES) {
-            presentFragment(new AmegramUpdateSettingsActivity());
+            openSettingsFragment(new AmegramUpdateSettingsActivity());
         } else if (id == ROW_ABOUT) {
-            presentFragment(new MiogramAboutActivity());
+            openSettingsFragment(new MiogramAboutActivity());
         } else if (id == ROW_GHOST) {
             openModule("ghost");
         } else if (id == ROW_VAULT || id == SEARCH_VAULT) {

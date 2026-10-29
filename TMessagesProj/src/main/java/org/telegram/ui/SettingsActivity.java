@@ -238,7 +238,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             hasMainTabs = arguments.getBoolean("hasMainTabs", false);
         }
 
-        additionNavigationBarHeight = hasMainTabs ? dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp()) : 0;
+        additionNavigationBarHeight = hasMainTabs ? dp(app.exteraless.appearance.MainTabsUiHelper.getContentBottomInsetDp()) : 0;
         return super.onFragmentCreate();
     }
 
@@ -269,7 +269,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
     @Override
     public View createView(Context context) {
-        additionNavigationBarHeight = hasMainTabs ? dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp()) : 0;
+        additionNavigationBarHeight = hasMainTabs ? dp(app.exteraless.appearance.MainTabsUiHelper.getContentBottomInsetDp()) : 0;
 
         contentView = new SizeNotifierFrameLayout(context) {
             @Override
@@ -853,9 +853,31 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 }
                 layout.closeLastFragment(false);
             }
-            layout.presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true).forceRightLayout());
+            if (!layout.presentFragment(new INavigationLayout.NavigationParams(fragment).setNoAnimation(true).forceRightLayout())) {
+                presentInMainLayout(fragment);
+            }
         } else {
-            presentFragment(fragment);
+            if (!presentFragment(fragment)) {
+                presentInMainLayout(fragment);
+            }
+        }
+    }
+
+    private void presentInMainLayout(BaseFragment fragment) {
+        try {
+            LaunchActivity launch = LaunchActivity.instance;
+            INavigationLayout layout = launch == null ? null : launch.getActionBarLayout();
+            if (layout != null && layout != getParentLayout() && layout.presentFragment(fragment)) {
+                return;
+            }
+        } catch (Throwable error) {
+            FileLog.e(error);
+        }
+        FileLog.e("Settings navigation failed: fragment=" + fragment.getClass().getName()
+                + ", parentLayout=" + getParentLayout());
+        try {
+            Toast.makeText(getParentActivity(), "Не вдалося відкрити розділ налаштувань", Toast.LENGTH_SHORT).show();
+        } catch (Throwable ignore) {
         }
     }
 

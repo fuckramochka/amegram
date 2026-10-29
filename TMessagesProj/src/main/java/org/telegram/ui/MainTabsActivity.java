@@ -1223,8 +1223,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             }
         }
         {
-            // Keep screens clear of the floating tab rail drawn over the root window.
-            int bottomMargin = navigationBarHeight + tabsHeight + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
+            // Individual tab fragments apply their own rail inset; reserving it here
+            // as well double-counts the bottom space and hides part of the content.
+            int bottomMargin = navigationBarHeight + (isUpdateLayoutVisible ? updateLayoutHeight : 0);
             if (tabletLayout) {
                 bottomMargin = Math.max(bottomMargin, navigationBarHeight + dp(DialogsActivity.MAIN_TABS_HEIGHT_WITH_MARGINS));
             }

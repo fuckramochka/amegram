@@ -71,6 +71,11 @@ public final class MainTabsUiHelper {
         return isMaterial3NavigationBar() ? 64 : MainTabsHelper.getMainTabsHeightWithMargins();
     }
 
+    /** Space needed after scrollable tab content so the floating pill cannot cover its last row. */
+    public static int getContentBottomInsetDp() {
+        return isFloatingPill() ? 68 : getTabsViewHeightDp();
+    }
+
     /** M3 — dp(64) плюс системный отступ снизу, иначе высота из MainTabsHelper. */
     public static int getTabsViewHeight(int bottomInset) {
         if (isFloatingPill()) {

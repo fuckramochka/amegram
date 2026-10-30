@@ -30,28 +30,13 @@ public final class Md3Player {
     }
 
     public static BottomSheet create(Context context, Theme.ResourcesProvider resourcesProvider) {
-        if (handles(MediaController.getInstance().getPlayingMessageObject())) {
-            if (PlayerSheet.instance != null) {
-                PlayerSheet.instance.dismissImmediately();
-            }
-            return new PlayerSheet(context, resourcesProvider);
-        }
-        return new AudioPlayerAlert(context, resourcesProvider);
+        // Єдиний роутер плеєра: md3player-модуль → сучасний AudioPlayerAlert.
+        return app.amegram.hot.Md3Router.create(context, resourcesProvider);
     }
 
     public static void open(BaseFragment fragment, PlayerMiniView source) {
-        if (fragment == null || fragment.getParentActivity() == null) {
-            return;
-        }
-        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-        if (messageObject == null) {
-            return;
-        }
-        BottomSheet sheet = create(fragment.getParentActivity(), fragment.getResourceProvider());
-        if (sheet instanceof PlayerSheet && source != null && source.canTransition()) {
-            ((PlayerSheet) sheet).setTransitionSource(source);
-        }
-        fragment.showDialog(sheet);
+        // Міні-бар веде туди ж, куди й решта точок входу в плеєр.
+        app.amegram.hot.Md3Router.open(fragment, source);
     }
 
     public static boolean hidesContextPlayer(BaseFragment fragment, MessageObject messageObject) {

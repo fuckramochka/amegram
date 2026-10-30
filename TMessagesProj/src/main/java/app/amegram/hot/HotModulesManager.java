@@ -394,6 +394,27 @@ public final class HotModulesManager {
         return ACTIVE_MODULES.contains(moduleId);
     }
 
+    /**
+     * Чи має бути активним візуальний шар Yumi. Це єдина точка вимкнення
+     * інтерфейсу: коли модуль "ui" вимкнено або видалено, ядро повертається
+     * до класичного вигляду, навіть якщо в AppearanceConfig лишився Expressive.
+     */
+    public static boolean isUiModuleOn() {
+        if (appContext == null) init(ApplicationLoader.applicationContext);
+        if (appContext == null) {
+            // До ініціалізації не форсуємо класику — інакше на старті буде flip-flop.
+            return true;
+        }
+        if (prefs().getBoolean("uninstalled_ui", false)) {
+            return false;
+        }
+        if (!isModuleInstalledOnDisk("ui")) {
+            // Модуль ще не посіяно з assets (перший запуск) — лишаємо типовий Expressive.
+            return true;
+        }
+        return prefs().getBoolean("enabled_ui", false);
+    }
+
     // ---------- crash-ізоляція: карантин після 3 провалів ----------
 
     private static final int MAX_LOAD_FAILURES = 3;

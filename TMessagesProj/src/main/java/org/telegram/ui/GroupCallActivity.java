@@ -8978,7 +8978,8 @@ public class GroupCallActivity extends BottomSheet implements NotificationCenter
                     break;
             }
             RecyclerView.LayoutParams params = new RecyclerView.LayoutParams(RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
-            if (viewType == VIEW_TYPE_PARTICIPANT || viewType == VIEW_TYPE_CALL_INVITED || viewType == VIEW_TYPE_INVITE_MEMBERS) {
+            if (app.miogram.ui.yumi.YumiUi.enabled()
+                    && (viewType == VIEW_TYPE_PARTICIPANT || viewType == VIEW_TYPE_CALL_INVITED || viewType == VIEW_TYPE_INVITE_MEMBERS)) {
                 int horizontalInset = AndroidUtilities.isTablet() ? dp(0) : dp(12);
                 params.setMargins(horizontalInset, dp(3), horizontalInset, dp(3));
                 android.graphics.drawable.Drawable card = app.miogram.ui.yumi.YumiUi.rounded(

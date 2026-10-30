@@ -1612,11 +1612,40 @@ public class AudioPlayerAlert extends BottomSheet implements NotificationCenter.
             itemTouchHelper.attachToRecyclerView(listView);
         }
 
-        // Music opens MD3 through Md3Router. Keep AudioPlayerAlert's stock layout for voice messages.
-        lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
-        lyricsView.setVisibility(View.GONE);
-        lyricsView.setAlpha(0.0f);
-        containerView.addView(lyricsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        // --- Amegram: повертаємо попередній сучасний плеєр, коли модуль player увімкнено. ---
+        // Вимкнений модуль / вимкнений modern_layout = стоковий вигляд Telegram.
+        boolean modernOn = false;
+        try {
+            modernOn = app.amegram.hot.HotPlayerGate.isModernLayoutEnabled();
+        } catch (Throwable ignore) {
+        }
+        if (modernOn) {
+            lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
+            lyricsView.setVisibility(View.VISIBLE);
+
+            modernPlayerLayout = new app.miogram.bridge.player.MiogramModernPlayerLayout(context, this, resourcesProvider);
+            coverContainer.setCoverRoundRadius(dp(20));
+            modernPlayerLayout.setCoverView(coverContainer);
+            modernPlayerLayout.setLyricsView(lyricsView);
+            modernPlayerLayout.setQueueListView(listView);
+            modernPlayerLayout.setSeekBarViews(seekBarView, timeTextView, durationTextView);
+            modernPlayerLayout.setControlButtons(repeatButton, prevButton, playButton, nextButton);
+            modernPlayerLayout.setProfileButtons(saveToProfileButton, unsaveFromProfileButton);
+            modernPlayerLayout.setSong(MediaController.getInstance().getPlayingMessageObject());
+            modernPlayerLayout.setPlaying(!MediaController.getInstance().isMessagePaused());
+
+            containerView.addView(modernPlayerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
+            playerLayout.setVisibility(View.GONE);
+            playerShadow.setVisibility(View.GONE);
+            actionBarShadow.setVisibility(View.GONE);
+            actionBar.setVisibility(View.GONE);
+        } else {
+            lyricsView = new app.miogram.bridge.lyrics.MiogramLyricsView(context, resourcesProvider);
+            lyricsView.setVisibility(View.GONE);
+            lyricsView.setAlpha(0.0f);
+            containerView.addView(lyricsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.FILL));
+        }
 
         containerView.addView(playerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 179 + (!isMyList() && !noforwards ? 52 : 0), Gravity.LEFT | Gravity.BOTTOM));
         containerView.addView(playerShadow, new FrameLayout.LayoutParams(LayoutHelper.MATCH_PARENT, AndroidUtilities.getShadowHeight(), Gravity.LEFT | Gravity.BOTTOM));

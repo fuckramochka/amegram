@@ -433,9 +433,11 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         imageUpdater.setDelegate(this);
 
         topView = new FrameLayout(context);
-        topView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
-                app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                app.amegram.theme.YumiMd3.RADIUS_XXL_DP));
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            topView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                    app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                    app.amegram.theme.YumiMd3.RADIUS_XXL_DP));
+        }
 
         avatarContainer = new FrameLayout(context);
         topView.addView(avatarContainer, LayoutHelper.createFrame(120, 120, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 23 - 12, 0, 0));
@@ -601,8 +603,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
         contentView.setBackgroundColor(app.amegram.theme.YumiMd3.surface());
-        topView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
-                app.amegram.theme.YumiMd3.surfaceContainerLow(), app.amegram.theme.YumiMd3.RADIUS_XXL_DP));
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            topView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                    app.amegram.theme.YumiMd3.surfaceContainerLow(), app.amegram.theme.YumiMd3.RADIUS_XXL_DP));
+        } else {
+            topView.setBackground(null);
+        }
         titleView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
         subtitleView.setTextColor(app.amegram.theme.YumiMd3.onSurfaceVariant());
         searchItem.updateColor();

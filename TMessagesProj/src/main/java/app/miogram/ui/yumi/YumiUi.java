@@ -81,13 +81,17 @@ public final class YumiUi {
     public static GradientDrawable rounded(int color, float radiusDp) {
         final GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(color);
-        drawable.setCornerRadius(dp(radiusDp));
+        // Коли модуль "ui" вимкнено, прибираємо Yumi-скруглення: лишається
+        // звичайна фонова поверхня замість характерних карток/пігулок.
+        drawable.setCornerRadius(enabled() ? dp(radiusDp) : 0f);
         return drawable;
     }
 
     public static GradientDrawable rounded(int color, float radiusDp, int strokeColor, float strokeDp) {
         final GradientDrawable drawable = rounded(color, radiusDp);
-        drawable.setStroke(Math.max(1, dp(strokeDp)), strokeColor);
+        if (enabled()) {
+            drawable.setStroke(Math.max(1, dp(strokeDp)), strokeColor);
+        }
         return drawable;
     }
 

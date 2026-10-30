@@ -14278,7 +14278,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         public void setBackground(View view, int viewType) {
-            if (!isYumiCardRow(viewType)) return;
+            if (!app.miogram.ui.yumi.YumiUi.enabled() || !isYumiCardRow(viewType)) return;
             final float radius = app.amegram.theme.YumiMd3.RADIUS_XL_DP;
             final android.graphics.drawable.Drawable surface = app.miogram.ui.yumi.YumiUi.rounded(
                     app.amegram.theme.YumiMd3.surfaceContainerLow(), radius,

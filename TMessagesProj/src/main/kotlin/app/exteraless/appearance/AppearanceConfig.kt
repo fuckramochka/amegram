@@ -1,6 +1,7 @@
 package app.exteraless.appearance
 
 import android.content.SharedPreferences
+import app.amegram.hot.HotModulesManager
 import org.telegram.messenger.AndroidUtilities
 import org.telegram.messenger.ApplicationLoader
 import org.telegram.messenger.FileLog
@@ -83,7 +84,7 @@ object AppearanceConfig {
         if (cached != null) return cached
         val value = try {
             ensureLoaded()
-            uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE
+            uiStyleMode.Int() == UI_STYLE_YOUGRAM_EXPRESSIVE && HotModulesManager.isUiModuleOn()
         } catch (t: Throwable) {
             false
         }

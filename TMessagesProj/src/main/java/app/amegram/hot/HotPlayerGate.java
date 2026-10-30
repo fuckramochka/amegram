@@ -19,6 +19,12 @@ public final class HotPlayerGate {
         }
     }
 
+    /** Чи активний кастомний сучасний плеєр (модуль player + його перемикач). */
+    public static boolean isModernLayoutEnabled() {
+        HotPlayer p = service();
+        return p != null && p.isModernLayoutEnabled();
+    }
+
     public static boolean isMusicSearchAvailable() {
         HotPlayer p = service();
         return p != null;

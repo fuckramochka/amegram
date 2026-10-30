@@ -530,10 +530,12 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
         frameLayout.addView(scrollView);
 
         spansContainer = new SpansContainer(context);
-        spansContainer.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
-                app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                app.amegram.theme.YumiMd3.RADIUS_XL_DP,
-                app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.16f), 0.7f));
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            spansContainer.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                    app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                    app.amegram.theme.YumiMd3.RADIUS_XL_DP,
+                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.16f), 0.7f));
+        }
         scrollView.addView(spansContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         spansContainer.setOnClickListener(v -> {
             editText.clearFocus();
@@ -1236,16 +1238,18 @@ public class UsersSelectActivity extends BaseFragment implements NotificationCen
             switch (viewType) {
                 case 1:
                     view = new GroupCreateUserCell(context, 1, 0, true);
-                    view.setBackground(app.miogram.ui.yumi.YumiUi.ripple(
-                            app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.primary(), 0.08f),
-                            app.miogram.ui.yumi.YumiUi.rounded(
-                                    app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                                    app.amegram.theme.YumiMd3.RADIUS_L_DP,
-                                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.12f), 0.6f)));
-                    RecyclerView.LayoutParams rowParams = new RecyclerView.LayoutParams(
-                            RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
-                    rowParams.setMargins(AndroidUtilities.dp(12), AndroidUtilities.dp(3), AndroidUtilities.dp(12), AndroidUtilities.dp(3));
-                    view.setLayoutParams(rowParams);
+                    if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                        view.setBackground(app.miogram.ui.yumi.YumiUi.ripple(
+                                app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.primary(), 0.08f),
+                                app.miogram.ui.yumi.YumiUi.rounded(
+                                        app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                                        app.amegram.theme.YumiMd3.RADIUS_L_DP,
+                                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.outline(), 0.12f), 0.6f)));
+                        RecyclerView.LayoutParams rowParams = new RecyclerView.LayoutParams(
+                                RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                        rowParams.setMargins(AndroidUtilities.dp(12), AndroidUtilities.dp(3), AndroidUtilities.dp(12), AndroidUtilities.dp(3));
+                        view.setLayoutParams(rowParams);
+                    }
                     break;
                 case 2:
                 default:

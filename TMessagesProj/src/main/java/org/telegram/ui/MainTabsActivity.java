@@ -482,6 +482,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         iBlur3FactoryFade.setSourceRootView(viewPositionWatcher, contentView);
 
         fadeView = new View(context);
+        fadeView.setClickable(false);
+        fadeView.setFocusable(false);
         BlurredBackgroundWithFadeDrawable fadeDrawable = new BlurredBackgroundWithFadeDrawable(iBlur3FactoryFade.create(fadeView, null));
         fadeDrawable.setFadeHeight(dp(60), true);
         fadeView.setBackground(fadeDrawable);

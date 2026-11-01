@@ -408,6 +408,9 @@ public final class HotModulesManager {
         if (prefs().getBoolean("uninstalled_ui", false)) {
             return false;
         }
+        if (prefs().contains("enabled_ui")) {
+            return prefs().getBoolean("enabled_ui", false);
+        }
         if (!isModuleInstalledOnDisk("ui")) {
             // Модуль ще не посіяно з assets (перший запуск) — лишаємо типовий Expressive.
             return true;

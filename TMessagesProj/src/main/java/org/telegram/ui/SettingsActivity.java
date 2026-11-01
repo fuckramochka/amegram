@@ -389,7 +389,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         search.loadFaqWebPage();
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
-        listView.adapter.setApplyBackground(false);
         listView.setSections();
         listView.setPadding(0, AndroidUtilities.statusBarHeight + dp(12), 0, AndroidUtilities.navigationBarHeight + additionNavigationBarHeight);
         listView.setClipToPadding(false);
@@ -602,15 +601,18 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
     public void updateColors() {
         actionBar.setTitleColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
         actionBar.setItemsColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText), false);
-        contentView.setBackgroundColor(app.amegram.theme.YumiMd3.surface());
         if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            contentView.setBackgroundColor(app.amegram.theme.YumiMd3.surface());
             topView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
                     app.amegram.theme.YumiMd3.surfaceContainerLow(), app.amegram.theme.YumiMd3.RADIUS_XXL_DP));
+            titleView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
+            subtitleView.setTextColor(app.amegram.theme.YumiMd3.onSurfaceVariant());
         } else {
+            contentView.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundGray));
             topView.setBackground(null);
+            titleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+            subtitleView.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
         }
-        titleView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
-        subtitleView.setTextColor(app.amegram.theme.YumiMd3.onSurfaceVariant());
         searchItem.updateColor();
 
         if (listView != null) {
@@ -1115,16 +1117,12 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             setOrientation(HORIZONTAL);
             setGravity(Gravity.CENTER_VERTICAL);
-            setMinimumHeight(dp(68));
-            setPadding(dp(12), dp(6), dp(12), dp(6));
-            setBackground(app.miogram.ui.yumi.YumiUi.ripple(
-                    app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
-                    app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                            app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
+            setMinimumHeight(dp(58));
+            setBackground(Theme.getSelectorDrawable(false));
 
             avatarDrawable = new AvatarDrawable();
             avatarView = new BackupImageView(context);
-            avatarView.setRoundRadius(dp(12));
+            avatarView.setRoundRadius(dp(14));
 
             textView = new SimpleTextView(context);
             textView.setTextSize(15);
@@ -1177,17 +1175,26 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 addView(counterView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 20, 0, Gravity.CENTER_VERTICAL, 0, 0, 0, 0));
                 addView(arrowView, LayoutHelper.createLinear(24, 24, 0, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, 12, 0));
             }
+            updateColors();
         }
 
         @Override
         public void updateColors() {
-            textView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
-            counterView.setTextColor(app.amegram.theme.YumiMd3.onPrimary());
-            counterView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
-                    app.amegram.theme.YumiMd3.primary(), app.amegram.theme.YumiMd3.RADIUS_FULL_DP));
-            arrowView.setColorFilter(new PorterDuffColorFilter(
-                    app.amegram.theme.YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
-            emojiStatusDrawable.setColor(app.amegram.theme.YumiMd3.primary());
+            if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                textView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
+                counterView.setTextColor(app.amegram.theme.YumiMd3.onPrimary());
+                counterView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
+                        app.amegram.theme.YumiMd3.primary(), app.amegram.theme.YumiMd3.RADIUS_FULL_DP));
+                arrowView.setColorFilter(new PorterDuffColorFilter(
+                        app.amegram.theme.YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+                emojiStatusDrawable.setColor(app.amegram.theme.YumiMd3.primary());
+            } else {
+                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                counterView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
+                counterView.setBackground(Theme.createRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
+                arrowView.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayIcon, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                emojiStatusDrawable.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader, resourcesProvider));
+            }
         }
 
         public void set(int account) {
@@ -1228,7 +1235,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(68), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(dp(58), MeasureSpec.EXACTLY)
             );
         }
 
@@ -1237,12 +1244,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public AccountCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                AccountCell cell = new AccountCell(context, resourcesProvider);
-                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
-                        RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
-                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
-                cell.setLayoutParams(lp);
-                return cell;
+                return new AccountCell(context, resourcesProvider);
             }
 
             @Override
@@ -1278,11 +1280,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         return super.onBackPressed(invoked);
     }
 
-    public static class SettingCell extends app.miogram.ui.yumi.YumiCell implements Theme.Colorable {
+    public static class SettingCell extends LinearLayout implements Theme.Colorable {
 
-        private int sourceIconTone;
-        private int iconTone;
-        private int iconTint;
+        private final Theme.ResourcesProvider resourcesProvider;
+        private final Background iconBackground;
+        private final FrameLayout iconLayout;
+        private final ImageView iconView;
+        private final LinearLayout textLayout;
+        private final TextView titleView;
+        private final TextView subtitleView;
+        private final TextView valueView;
         private final boolean mini;
 
         public SettingCell(Context context, Theme.ResourcesProvider resourcesProvider) {
@@ -1291,18 +1298,59 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         public SettingCell(Context context, Theme.ResourcesProvider resourcesProvider, boolean mini) {
             super(context);
+
+            this.resourcesProvider = resourcesProvider;
             this.mini = mini;
-            setShowDivider(false);
-            setChevronVisible(true);
-            setClickable(false);
-            setFocusable(false);
+            setOrientation(HORIZONTAL);
+
+            iconLayout = new FrameLayout(context);
+            iconLayout.setBackground(iconBackground = new Background());
+
+            iconView = new ImageView(context);
+            iconView.setScaleType(ImageView.ScaleType.FIT_CENTER);
+            iconLayout.addView(iconView, LayoutHelper.createFrame(24, 24, Gravity.CENTER));
+
+            textLayout = new LinearLayout(context);
+            textLayout.setOrientation(VERTICAL);
+
+            titleView = new TextView(context);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 0));
+
+            subtitleView = new TextView(context);
+            subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+            textLayout.addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 4, 0, 0));
+
+            valueView = new TextView(context);
+            valueView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            if (LocaleController.isRTL) {
+                addView(valueView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 20, 0, 0, 0));
+                addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL, 20, 0, mini ? 12 : 18, 0));
+                addView(iconLayout, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.RIGHT, 0, 0, mini ? 9 : 18, 0));
+            } else {
+                addView(iconLayout, LayoutHelper.createLinear(28, 28, Gravity.CENTER_VERTICAL | Gravity.LEFT, mini ? 9 : 18, 0, 0, 0));
+                addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL,  mini ? 12 : 18, 0, 20, 0));
+                addView(valueView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 20, 0));
+            }
+            setBackground(Theme.getSelectorDrawable(false));
+            updateColors();
         }
 
         @Override
         public void updateColors() {
-            super.updateColors();
-            updateIconTone();
+            if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                titleView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
+                subtitleView.setTextColor(app.amegram.theme.YumiMd3.onSurfaceVariant());
+                valueView.setTextColor(app.amegram.theme.YumiMd3.primary());
+            } else {
+                titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
+                subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
+                valueView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
+            }
+            iconBackground.setDrawBorder(resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark());
         }
+
+        private boolean twoLines;
 
         public void set(
             int iconColorTop, int iconColorBottom, int icon,
@@ -1310,25 +1358,21 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             CharSequence subtitle,
             CharSequence value
         ) {
-            setTitle(title);
-            setSubtitle(subtitle);
+            iconLayout.setVisibility(icon != 0 ? View.VISIBLE : View.GONE);
+            titleView.setTranslationX(icon == 0 ? dp(2) : 0);
+            subtitleView.setTranslationX(icon == 0 ? dp(2) : 0);
+
+            iconView.setImageResource(icon);
+            applyIconColors(iconView, iconBackground, iconColorTop, iconColorBottom, resourcesProvider);
+            titleView.setText(title);
+            subtitleView.setVisibility((twoLines = !TextUtils.isEmpty(subtitle)) ? View.VISIBLE : View.GONE);
+            subtitleView.setText(subtitle);
             setValue(value);
-            setIcon(icon);
-            sourceIconTone = icon == 0 ? 0 : (iconColorBottom != 0 ? iconColorBottom : iconColorTop);
-            updateIconTone();
-            setChevronVisible(true);
-            setContentDescription(TextUtils.concat(title == null ? "" : title,
-                    TextUtils.isEmpty(subtitle) ? "" : ", " + subtitle,
-                    TextUtils.isEmpty(value) ? "" : ", " + value));
         }
 
-        private void updateIconTone() {
-            if (sourceIconTone == 0) return;
-            iconTint = app.amegram.theme.YumiMd3.blend(
-                    app.amegram.theme.YumiMd3.primary(), sourceIconTone, 0.28f);
-            iconTone = app.amegram.theme.YumiMd3.iconTone(iconTint, 0.18f);
-            setIconBackground(iconTone);
-            setIconTint(iconTint);
+        public void setValue(CharSequence value) {
+            valueView.setVisibility(!TextUtils.isEmpty(value) ? View.VISIBLE : View.GONE);
+            valueView.setText(value);
         }
 
         /** Compatibility drawable for legacy settings cells that still use this API. */
@@ -1415,10 +1459,10 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-            super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-            if (mini && getMeasuredHeight() > dp(52)) {
-                setMeasuredDimension(getMeasuredWidth(), dp(52));
-            }
+            super.onMeasure(
+                MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(dp(mini ? 48 : (twoLines ? 60 : 50)), MeasureSpec.EXACTLY)
+            );
         }
 
         public static class Factory extends UItem.UItemFactory<SettingCell> {
@@ -1426,12 +1470,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public SettingCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                SettingCell cell = new SettingCell(context, resourcesProvider);
-                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
-                        RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
-                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
-                cell.setLayoutParams(lp);
-                return cell;
+                return new SettingCell(context, resourcesProvider);
             }
 
             @Override
@@ -1455,7 +1494,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 item.id = id;
                 item.iconResId = icon;
                 item.text = title;
-                item.subtext = subtitle;
+                // Subtitle is omitted so standard settings rows stay at clean 50dp
+                item.subtext = null;
                 item.textValue = value;
                 item.longValue = ((long) iconColorBottom << 32) | (iconColorTop & 0xFFFFFFFFL);
                 return item;

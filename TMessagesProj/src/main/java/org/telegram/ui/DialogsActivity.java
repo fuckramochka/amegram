@@ -15398,14 +15398,14 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             return (int) (windowInsetsStateHolder.getAnimatedMaxBottomInset() + dp(9) + chatInputViewsContainer.getInputBubbleHeight() + dp(7) + dp(2));
         } else if (communityId != 0) {
             return navigationBarHeight + dp(12 + 48 + 12);
+        } else if (!hasMainTabs || !MainTabsLayout.isBottomNavigationVisible()) {
+            return navigationBarHeight;
+        } else if (!MainTabsLayout.isBottomNavigationFloating()) {
+            return navigationBarHeight + getDockedTabsPadding();
         } else {
-            // Amegram: floating glass bottom tabs overlay the content, but with clipToPadding(false),
-            // the list must have bottom padding equal to the tabs height + system insets so the
-            // last chat item is never obscured behind the bottom bar when scrolled to end.
-            int tabsH = (hasMainTabs && MainTabsLayout.isBottomNavigationVisible())
-                    ? dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp() + 16)
-                    : 0;
-            return navigationBarHeight + tabsH;
+            // Floating tabs overlay: with clipToPadding(false), provide just enough padding
+            // so the last item scrolls past the floating dock without a gaping void.
+            return navigationBarHeight + dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp() + 8);
         }
     }
 

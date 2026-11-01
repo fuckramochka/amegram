@@ -134,10 +134,13 @@ public final class MainTabsUiHelper {
         return isMaterial3NavigationBar() || isIosNavigationBar() ? LayoutHelper.MATCH_PARENT : MainTabsHelper.getTabsViewWidth();
     }
 
-    /** Сдвиг кнопки «написать» над панелью: в Yougram floating pill — 82dp (60 + 8 + 14). */
+    /** Сдвиг кнопки «написать» над панелью: в Yougram floating pill — 68dp (60 + 8).
+     * ФАБ уже имеет собственный bottomMargin = 14dp в createDefaultLayoutParams,
+     * поэтому дополнительное прибавление 14dp здесь удваивало отступ и подвешивало
+     * кнопку слишком высоко над доком. */
     public static int getTabsFabOffsetDp() {
         if (isFloatingPill()) {
-            return 60 + 8 + 14;
+            return 60 + 8;
         }
         if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(null)) {
             return 56;

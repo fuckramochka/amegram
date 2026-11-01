@@ -440,11 +440,13 @@ public class MiogramUpdater {
                                 JSONObject asset = assets.getJSONObject(i);
                                 String name = asset.optString("name", "");
                                 if (name.endsWith(".apk")) {
-                                    apkUrl = asset.optString("browser_download_url", "");
-                                    apkSize = asset.optLong("size", 0L);
-                                    apkVersionCode = versionCodeFromApkName(name);
-                                    apkPublishedAt = parseGithubTimestamp(asset.optString("updated_at", ""));
-                                    break;
+                                    int code = versionCodeFromApkName(name);
+                                    if (code > apkVersionCode || apkUrl.isEmpty()) {
+                                        apkUrl = asset.optString("browser_download_url", "");
+                                        apkSize = asset.optLong("size", 0L);
+                                        apkVersionCode = code;
+                                        apkPublishedAt = parseGithubTimestamp(asset.optString("updated_at", ""));
+                                    }
                                 }
                             }
                         }
@@ -621,7 +623,6 @@ public class MiogramUpdater {
                             bestVersionCode = code;
                             bestPublishedAt = pub;
                         }
-                        break;
                     }
                 }
             } catch (Throwable ignore) {}
@@ -671,22 +672,21 @@ public class MiogramUpdater {
                                         String remoteVersion, int remoteVersionCode,
                                         long remotePublishedAt,
                                         String remoteTag, String changelog) {
-        // A date can identify a rebuild whose visible version string stayed the same,
-        // but never offer an APK Android cannot install over the current one.
         if (currentVersionCode > 0 && remoteVersionCode > 0) {
-            if (remoteVersionCode <= currentVersionCode) return false;
+            if (remoteVersionCode > currentVersionCode) return true;
+            if (remoteVersionCode < currentVersionCode) return false;
         }
 
-        // Compare like-for-like build timestamps from CI. Install time is not a
-        // reliable substitute: users may sideload an older APK after a release.
+        if (isNewerVersion(currentVersion, remoteVersion, remoteTag, changelog)) {
+            return true;
+        }
+
         long localBuildTime = BuildConfig.BUILD_TIMESTAMP * 1000L;
         if (remotePublishedAt > 0L && localBuildTime > 0L && remotePublishedAt != localBuildTime) {
             return remotePublishedAt > localBuildTime;
         }
-        if (currentVersionCode > 0 && remoteVersionCode > 0) {
-            return remoteVersionCode > currentVersionCode;
-        }
-        return isNewerVersion(currentVersion, remoteVersion, remoteTag, changelog);
+
+        return false;
     }
 
     private static long parseGithubTimestamp(String value) {

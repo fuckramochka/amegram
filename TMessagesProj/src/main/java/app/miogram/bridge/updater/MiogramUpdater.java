@@ -440,11 +440,11 @@ public class MiogramUpdater {
                                 JSONObject asset = assets.getJSONObject(i);
                                 String name = asset.optString("name", "");
                                 if (name.endsWith(".apk")) {
-                                    int code = versionCodeFromApkName(name);
-                                    if (code > apkVersionCode || apkUrl.isEmpty()) {
+                                    int vCode = versionCodeFromApkName(name);
+                                    if (vCode > apkVersionCode || apkUrl.isEmpty()) {
                                         apkUrl = asset.optString("browser_download_url", "");
                                         apkSize = asset.optLong("size", 0L);
-                                        apkVersionCode = code;
+                                        apkVersionCode = vCode;
                                         apkPublishedAt = parseGithubTimestamp(asset.optString("updated_at", ""));
                                     }
                                 }

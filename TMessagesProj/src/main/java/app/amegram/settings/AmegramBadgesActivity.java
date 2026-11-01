@@ -1,12 +1,21 @@
 package app.amegram.settings;
 
 import android.content.Context;
+import android.text.InputType;
+import android.text.TextUtils;
+import android.util.TypedValue;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.EditTextBoldCursor;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
 import org.telegram.ui.Components.UniversalRecyclerView;
@@ -31,7 +40,10 @@ public class AmegramBadgesActivity extends BaseFragment {
     private static final int ROW_MY_BADGE = 1;
     private static final int ROW_GRANT = 2;
     private static final int ROW_MASTER_TOGGLE = 3;
-    private static final int ROW_WORKSHOP = 4;
+    private static final int ROW_SERVER_URL = 4;
+    private static final int ROW_SERVER_SYNC = 5;
+    private static final int ROW_GRANT_SECRET = 6;
+    private static final int ROW_WORKSHOP = 7;
     private static final int ROW_STYLE_BASE = 100;
 
     private UniversalRecyclerView listView;
@@ -95,6 +107,19 @@ public class AmegramBadgesActivity extends BaseFragment {
                     MiogramLocale.get("Відзнака відсутня • Видається засновником", "Отличие отсутствует • Выдаётся создателем", "No badge • Granted by founder")));
         }
 
+        String serverUrl = MiogramSupabaseBridge.getYumiServerUrl(getContext());
+        items.add(UItem.asHeader(MiogramLocale.get("Yumi Server (Основний стандарт)", "Yumi Server (Основной стандарт)", "Yumi Server (Primary Standard)")));
+        items.add(YumiSettingCell.Factory.of(ROW_SERVER_URL, R.drawable.msg_link, YumiTheme.getPrimary(),
+                MiogramLocale.get("Адреса сервера на ПК", "Адрес сервера на ПК", "Server URL on PC"),
+                serverUrl));
+        items.add(YumiSettingCell.Factory.of(ROW_SERVER_SYNC, R.drawable.msg_retry, YumiTheme.getPrimary(),
+                MiogramLocale.get("Синхронізувати зараз", "Синхронизировать сейчас", "Sync Now"),
+                MiogramLocale.get("Yumi Server → Фолбек: GitHub", "Yumi Server → Фолбэк: GitHub", "Yumi Server → Fallback: GitHub")));
+        items.add(UItem.asShadow(MiogramLocale.get(
+                "Yumi Server на вашому ПК є основним стандартом. Якщо сервер вимкнено або недоступний, клієнт автоматично перемикається на GitHub-дзеркало.",
+                "Yumi Server на вашем ПК является основным стандартом. Если сервер выключен или недоступен, клиент автоматически переключается на GitHub-зеркало.",
+                "Yumi Server on your PC is the primary standard. If offline, the client automatically falls back to GitHub mirror.")));
+
         items.add(YumiSettingCell.Factory.of(ROW_WORKSHOP, R.drawable.msg_edit, YumiTheme.getPrimary(),
                 MiogramLocale.get("Майстерня бейджиків", "Мастерская бейджиков", "Badge Workshop"),
                 MiogramLocale.get("Створення та перегляд SVG/PNG бейджів 128x128",
@@ -109,6 +134,12 @@ public class AmegramBadgesActivity extends BaseFragment {
         // Опція видачі для адміністратора/засновника
         if (selfId == MiogramBadgeManager.FOUNDER_USER_ID) {
             items.add(UItem.asHeader(MiogramLocale.get("Керування спільнотою", "Управление сообществом", "Community Management")));
+            String founderSecret = MiogramSupabaseBridge.getGrantSecret();
+            items.add(YumiSettingCell.Factory.of(ROW_GRANT_SECRET, R.drawable.msg_permissions, 0xFF7E57C2,
+                    MiogramLocale.get("Секрет засновника", "Секрет создателя", "Founder secret"),
+                    TextUtils.isEmpty(founderSecret)
+                            ? MiogramLocale.get("Не налаштовано • потрібен для видачі", "Не настроен • нужен для выдачи", "Not set • required for granting")
+                            : MiogramLocale.get("Налаштовано ✓", "Настроен ✓", "Configured ✓")));
             items.add(YumiSettingCell.Factory.of(ROW_GRANT, R.drawable.msg_fave, 0xFF7E57C2,
                     MiogramLocale.get("Видати бейдж користувачу", "Выдать бейдж пользователю", "Grant badge to user"),
                     MiogramLocale.get("Призначити або змінити стиль відзнаки за User ID", "Назначить или изменить стиль отличия по User ID", "Assign or change badge style by User ID")));
@@ -182,6 +213,52 @@ public class AmegramBadgesActivity extends BaseFragment {
                         "У вас пока нет активного отличия. Отличия выдаются исключительно создателем сообщества Miyumi (@fuckramochka).",
                         "You currently do not have an active badge. Badges are granted exclusively by the founder of Miyumi (@fuckramochka)."), Toast.LENGTH_LONG).show();
             }
+        } else if (item.id == ROW_SERVER_URL) {
+            String current = MiogramSupabaseBridge.getYumiServerUrl(ctx);
+            AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+            builder.setTitle(MiogramLocale.get("Адреса сервера на ПК", "Адрес сервера на ПК", "Server URL on PC"));
+            builder.setMessage(MiogramLocale.get(
+                    "Введіть IP-адресу вашого ПК (наприклад " + MiogramSupabaseBridge.DEFAULT_YUMI_SERVER_URL + ") або Cloudflare Tunnel URL:",
+                    "Введите IP-адрес вашего ПК (например " + MiogramSupabaseBridge.DEFAULT_YUMI_SERVER_URL + ") или Cloudflare Tunnel URL:",
+                    "Enter your PC IP address (e.g. " + MiogramSupabaseBridge.DEFAULT_YUMI_SERVER_URL + ") or Cloudflare Tunnel URL:"));
+
+            FrameLayout frameLayout = new FrameLayout(getParentActivity());
+            frameLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
+            EditTextBoldCursor editText = new EditTextBoldCursor(getParentActivity());
+            editText.setText(current);
+            editText.setSelection(editText.getText().length());
+            editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+            editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+            editText.setBackground(Theme.createEditTextDrawable(getParentActivity(), false));
+            frameLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+            builder.setView(frameLayout);
+
+            builder.setPositiveButton(MiogramLocale.get("Зберегти", "Сохранить", "Save"), (dialog, which) -> {
+                String val = editText.getText().toString().trim();
+                if (!val.isEmpty()) {
+                    MiogramSupabaseBridge.setYumiServerUrl(ctx, val);
+                    if (listView != null && listView.adapter != null) listView.adapter.update(true);
+                    Toast.makeText(ctx, MiogramLocale.get("Збережено ✓ Синхронізація...", "Сохранено ✓ Синхронизация...", "Saved ✓ Syncing..."), Toast.LENGTH_SHORT).show();
+                    MiogramBadgeManager.refreshBadges(() -> {
+                        AndroidUtilities.runOnUIThread(() -> {
+                            Toast.makeText(ctx, MiogramLocale.get("Бейджі оновлено ✓", "Бейджи обновлены ✓", "Badges updated ✓"), Toast.LENGTH_SHORT).show();
+                            if (listView != null && listView.adapter != null) listView.adapter.update(true);
+                        });
+                    });
+                }
+            });
+            builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+            showDialog(builder.create());
+        } else if (item.id == ROW_SERVER_SYNC) {
+            Toast.makeText(ctx, MiogramLocale.get("Синхронізація з Yumi Server...", "Синхронизация с Yumi Server...", "Syncing with Yumi Server..."), Toast.LENGTH_SHORT).show();
+            MiogramBadgeManager.refreshBadges(() -> {
+                AndroidUtilities.runOnUIThread(() -> {
+                    Toast.makeText(ctx, MiogramLocale.get("Бейджі оновлено ✓", "Бейджи обновлены ✓", "Badges updated ✓"), Toast.LENGTH_SHORT).show();
+                    if (listView != null && listView.adapter != null) listView.adapter.update(true);
+                });
+            });
+        } else if (item.id == ROW_GRANT_SECRET) {
+            showFounderSecretDialog(ctx);
         } else if (item.id == ROW_WORKSHOP) {
             presentFragment(new AmegramBadgeWorkshopActivity());
         } else if (item.id == ROW_GRANT) {
@@ -201,6 +278,45 @@ public class AmegramBadgesActivity extends BaseFragment {
             }
             MiogramBadgeBottomSheet.show(ctx, selfId, pickedType);
         }
+    }
+
+    private void showFounderSecretDialog(Context ctx) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        String current = MiogramSupabaseBridge.getGrantSecret();
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(MiogramLocale.get("Секрет засновника", "Секрет создателя", "Founder secret"));
+        builder.setMessage(MiogramLocale.get(
+                "Секрет лежить у server/data/founder_secret.txt на ПК (або в YUMI_FOUNDER_SECRET). Він потрібен лише для видачі та відкликання бейджів.",
+                "Секрет лежит в server/data/founder_secret.txt на ПК (или в YUMI_FOUNDER_SECRET). Он нужен только для выдачи и отзыва бейджей.",
+                "The secret is stored in server/data/founder_secret.txt on the PC (or YUMI_FOUNDER_SECRET). It is only needed to grant or revoke badges."));
+
+        FrameLayout frameLayout = new FrameLayout(getParentActivity());
+        frameLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);
+        EditTextBoldCursor editText = new EditTextBoldCursor(getParentActivity());
+        editText.setText(current);
+        editText.setSelection(editText.getText().length());
+        editText.setSingleLine(true);
+        editText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        editText.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        editText.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        editText.setBackground(Theme.createEditTextDrawable(getParentActivity(), false));
+        frameLayout.addView(editText, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        builder.setView(frameLayout);
+
+        builder.setPositiveButton(MiogramLocale.get("Зберегти", "Сохранить", "Save"), (dialog, which) -> {
+            String value = editText.getText().toString().trim();
+            MiogramSupabaseBridge.setGrantSecret(value);
+            Toast.makeText(ctx, TextUtils.isEmpty(value)
+                    ? MiogramLocale.get("Секрет очищено", "Секрет очищен", "Secret cleared")
+                    : MiogramLocale.get("Секрет збережено ✓", "Секрет сохранён ✓", "Secret saved ✓"), Toast.LENGTH_SHORT).show();
+            if (listView != null && listView.adapter != null) {
+                listView.adapter.update(true);
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     @Override

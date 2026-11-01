@@ -71,6 +71,7 @@ public final class HotUiGate {
     /** Застосувати поточний стиль на льоту: перебудова фрагментів + перезавантаження діалогів. */
     public static void applyLive() {
         try {
+            app.exteraless.appearance.AppearanceConfig.invalidateExpressiveCache();
             app.exteraless.appearance.AppearanceConfig.invalidateDividerStyle();
             org.telegram.ui.MainTabsLayout.resetFloatingCache();
         } catch (Throwable ignore) {
@@ -86,7 +87,7 @@ public final class HotUiGate {
                 try {
                     if (org.telegram.ui.LaunchActivity.instance != null
                             && !org.telegram.ui.LaunchActivity.instance.isFinishing()) {
-                        org.telegram.ui.LaunchActivity.instance.rebuildAllFragments(false);
+                        org.telegram.ui.LaunchActivity.instance.rebuildAllFragments(true);
                     }
                 } catch (Throwable ignore) {
                 }

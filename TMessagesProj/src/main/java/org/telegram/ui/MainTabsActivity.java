@@ -1105,6 +1105,39 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             GlassTabView tab = tabs[a];
             tab.setSelected(indexToPosition(a) == position, animated);
         }
+        updateSearchButtonVisibility(position, animated);
+    }
+
+    private void updateSearchButtonVisibility(int position, boolean animated) {
+        if (searchButton == null) {
+            return;
+        }
+        final boolean visible = position == getPositionChats() && animatorTabsVisible.getFloatValue() > 0;
+        final float targetAlpha = visible ? animatorTabsVisible.getFloatValue() : 0f;
+        searchButton.setClickable(visible);
+        searchButton.setEnabled(visible && animatorTabsVisible.getFloatValue() >= 0.99f);
+        if (animated) {
+            searchButton.animate().cancel();
+            if (visible) {
+                searchButton.setVisibility(View.VISIBLE);
+            }
+            searchButton.animate().alpha(targetAlpha)
+                    .scaleX(visible ? 1f : 0.7f)
+                    .scaleY(visible ? 1f : 0.7f)
+                    .setDuration(180L)
+                    .withEndAction(() -> {
+                        if (!visible && searchButton != null) {
+                            searchButton.setVisibility(View.GONE);
+                        }
+                    })
+                    .start();
+        } else {
+            searchButton.animate().cancel();
+            searchButton.setAlpha(targetAlpha);
+            searchButton.setScaleX(visible ? 1f : 0.7f);
+            searchButton.setScaleY(visible ? 1f : 0.7f);
+            searchButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+        }
     }
 
     public void setGestureSelectedOverride(float animatedPosition, boolean allow) {
@@ -1405,10 +1438,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.setAlpha(factor);
         tabsView.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
         if (searchButton != null) {
-            searchButton.setClickable(true);
-            searchButton.setEnabled(factor >= 0.99f);
-            searchButton.setAlpha(factor);
-            searchButton.setVisibility(factor > 0 ? View.VISIBLE : View.GONE);
+            final boolean onChats = (viewPager == null || viewPager.getCurrentPosition() == getPositionChats());
+            final boolean visible = onChats && factor > 0;
+            searchButton.setClickable(visible);
+            searchButton.setEnabled(visible && factor >= 0.99f);
+            searchButton.setAlpha(visible ? factor : 0f);
+            searchButton.setVisibility(visible ? View.VISIBLE : View.GONE);
         }
 
         if (updateLayoutWrapper != null) {

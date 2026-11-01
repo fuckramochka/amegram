@@ -142,27 +142,35 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             final boolean selected = isTabSelected();
             final View icon = backupImageView != null ? backupImageView : imageView;
             final int iconSize = dp(24);
-            if (selected) {
-                textView.setVisibility(VISIBLE);
-                textView.measure(
-                        MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
-                        MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST)
-                );
-                final int textWidth = textView.getMeasuredWidth();
-                final int textHeight = textView.getMeasuredHeight();
-                final int gap = dp(6);
-                final int totalContentWidth = iconSize + gap + textWidth;
-                final int startX = Math.max(dp(8), (width - totalContentWidth) / 2);
-                final int iconTop = (height - iconSize) / 2;
-                icon.layout(startX, iconTop, startX + iconSize, iconTop + iconSize);
-                final int textLeft = startX + iconSize + gap;
-                final int textTop = (height - textHeight) / 2;
-                textView.layout(textLeft, textTop, Math.min(width - dp(4), textLeft + textWidth), textTop + textHeight);
-            } else {
-                textView.setVisibility(GONE);
-                final int iconLeft = (width - iconSize) / 2;
-                final int iconTop = (height - iconSize) / 2;
-                icon.layout(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize);
+            if (icon != null && icon.getParent() == this) {
+                if (selected) {
+                    textView.setVisibility(VISIBLE);
+                    textView.measure(
+                            MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
+                            MeasureSpec.makeMeasureSpec(height, MeasureSpec.AT_MOST)
+                    );
+                    final int textWidth = textView.getMeasuredWidth();
+                    final int textHeight = textView.getMeasuredHeight();
+                    final int gap = dp(6);
+                    final int totalContentWidth = iconSize + gap + textWidth;
+                    final int startX = Math.max(dp(8), (width - totalContentWidth) / 2);
+                    final int iconTop = (height - iconSize) / 2;
+                    icon.layout(startX, iconTop, startX + iconSize, iconTop + iconSize);
+                    final int textLeft = startX + iconSize + gap;
+                    final int textTop = (height - textHeight) / 2;
+                    textView.layout(textLeft, textTop, Math.min(width - dp(4), textLeft + textWidth), textTop + textHeight);
+                } else {
+                    textView.setVisibility(GONE);
+                    final int iconLeft = (width - iconSize) / 2;
+                    final int iconTop = (height - iconSize) / 2;
+                    icon.layout(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize);
+                }
+            }
+            for (int i = 0; i < getChildCount(); i++) {
+                View child = getChildAt(i);
+                if (child != icon && child != textView) {
+                    child.layout(0, 0, width, height);
+                }
             }
             return;
         }

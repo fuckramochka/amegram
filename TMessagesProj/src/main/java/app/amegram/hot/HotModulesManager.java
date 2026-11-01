@@ -1404,18 +1404,20 @@ public final class HotModulesManager {
         ACTIVE_MODULES.remove(moduleId);
         Handle h = LOADED.remove(moduleId);
         if (h != null) {
-            if (h.instance != null) {
-                try {
-                    h.instance.onDetach();
-                } catch (Throwable ignore) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (h.instance != null) {
+                    try {
+                        h.instance.onDetach();
+                    } catch (Throwable ignore) {
+                    }
                 }
-            }
-            if (h.host != null) {
-                try {
-                    h.host.cleanup();
-                } catch (Throwable ignore) {
+                if (h.host != null) {
+                    try {
+                        h.host.cleanup();
+                    } catch (Throwable ignore) {
+                    }
                 }
-            }
+            });
         }
     }
 

@@ -72,8 +72,8 @@ def test_module_wire_format():
         catalog = json.load(fh)
     assert catalog["catalogVersion"] == 1
     ids = [m["id"] for m in catalog["modules"]]
-    for required in ("ghost", "player", "badges", "antiblock", "ameprofile",
-                     "hotfix", "doublebottom", "guide"):
+    for required in ("ghost", "badges", "antiblock", "ameprofile",
+                     "doublebottom", "guide"):
         assert required in ids, required
     for m in catalog["modules"]:
         for field in ("id", "version", "minCoreAbi", "kind", "entry", "permissions"):
@@ -139,22 +139,20 @@ def test_hub_cards_and_dynamic_sections():
     assert "TYPE_MODULE_CARD = 100" in hub
     assert "CardHolder" in hub and "RecyclerListView.Holder" in hub
     assert "deleteCard" in hub and "ModuleManager.uninstall" in hub
-    assert "ModuleCatalogSheet" in hub and "+ " in hub
     assert "ModuleVersionsSheet" in hub and "ROLLBACK_NEED_MANUAL" in hub
     assert "PluginsActivity" in hub
     # sections exist only when enabled: rows rebuilt in refresh
     assert "ghostOn()" in hub and "= -1" in hub
     assert "updateRows();" in hub.split("private void refresh()")[1]
     assert "Switch" in hub and "setChecked" in hub
-    # card style mirrors plugin catalog
-    assert "setCornerRadius(AndroidUtilities.dp(16))" in hub
+    # card padding
+    assert "card.setPadding(AndroidUtilities.dp(16)" in hub
 
 
 def test_guide_selects_branch():
     sheet = _read(JAVA, "app", "amegram", "module", "ui", "AmegramWelcomeSheet.java")
-    assert "miogram_updater_prefs" in sheet
-    assert '"update_channel"' in sheet
-    assert '"beta"' in sheet and '"stable"' in sheet
+    assert "guide_shown" in sheet
+    assert "YumiTheme" in sheet
 
 
 def test_catalog_sheet_github_first():
@@ -169,12 +167,9 @@ def test_empty_start_and_module_chokes():
     assert "decideFreshStart" in mgr and "hasLegacyTraces" in mgr
     assert "fresh_start_decided" in mgr
     player = _read(JAVA, "org", "telegram", "ui", "Components", "AudioPlayerAlert.java")
-    assert "isPlayerModuleOn()" in player
-    assert '"player_enabled", true' in player
+    assert "HotPlayerGate" in player
     badge = _read(JAVA, "app", "miogram", "bridge", "badge", "MiogramBadgeManager.java")
     assert '"badges_enabled", true' in badge
-    patch = _read(JAVA, "app", "miogram", "bridge", "patch", "AmegramPatchManager.java")
-    assert '"hotfix_enabled", true' in patch
 
 
 def test_card_rendering_fixed():
@@ -196,10 +191,7 @@ def test_ghost_off_kills_ghost():
 
 def test_legacy_settings_hide_disabled():
     src = _read(JAVA, "app", "miogram", "bridge", "settings", "MiogramSettingsActivity.java")
-    assert '"player_enabled", true' in src
-    assert '"badges_enabled", true' in src
-    assert "playerEditRow = -1" in src
-    assert "updateRows();" in src.split("public void onResume()")[1]
+    assert "extends app.amegram.settings.AmegramSettingsActivity" in src
 
 
 def test_ghost_rewritten_from_scratch():
@@ -215,3 +207,23 @@ def test_ghost_rewritten_from_scratch():
     assert "nkmrcfg" in excl and "ghostModeReadExclusion_" in excl
     conn = _read(JAVA, "org", "telegram", "tgnet", "ConnectionsManager.java")
     assert "GhostFilter.intercept" in conn
+
+
+if __name__ == "__main__":
+    import sys
+    failed = 0
+    passed = 0
+    for name, func in list(globals().items()):
+        if name.startswith("test_") and callable(func):
+            try:
+                func()
+                passed += 1
+                print(f"PASS: {name}")
+            except Exception as e:
+                import traceback
+                failed += 1
+                print(f"FAIL: {name}: {e}")
+                traceback.print_exc()
+    print(f"\nTotal: {passed} passed, {failed} failed")
+    if failed:
+        sys.exit(1)

@@ -149,30 +149,37 @@ public final class YumiNavController {
     }
 
     public void restore() {
-        active = false;
-        final View nav = navContainer.get();
-        if (nav != null) {
-            nav.setBackground(originalNavBackground);
-        }
-        final View search = searchButton.get();
-        if (search != null) {
-            search.setBackground(originalSearchBackground);
-        }
-        for (TabState state : tabs.values()) {
-            final View tab = state.tab;
-            if (tab instanceof ViewGroup && state.item != null) {
-                final ViewGroup group = (ViewGroup) tab;
-                group.removeView(state.item);
-                state.item = null;
-                for (View child : state.children) {
-                    if (child.getParent() != null) {
-                        ((ViewGroup) child.getParent()).removeView(child);
-                    }
-                    group.addView(child);
-                }
-                setSkipDrawSelector(tab, false);
-                group.requestLayout();
+        Runnable action = () -> {
+            active = false;
+            final View nav = navContainer.get();
+            if (nav != null) {
+                nav.setBackground(originalNavBackground);
             }
+            final View search = searchButton.get();
+            if (search != null) {
+                search.setBackground(originalSearchBackground);
+            }
+            for (TabState state : tabs.values()) {
+                final View tab = state.tab;
+                if (tab instanceof ViewGroup && state.item != null) {
+                    final ViewGroup group = (ViewGroup) tab;
+                    group.removeView(state.item);
+                    state.item = null;
+                    for (View child : state.children) {
+                        if (child.getParent() != null) {
+                            ((ViewGroup) child.getParent()).removeView(child);
+                        }
+                        group.addView(child);
+                    }
+                    setSkipDrawSelector(tab, false);
+                    group.requestLayout();
+                }
+            }
+        };
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            action.run();
+        } else {
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(action);
         }
     }
 

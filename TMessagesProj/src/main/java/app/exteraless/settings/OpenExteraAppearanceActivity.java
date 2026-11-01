@@ -634,10 +634,12 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     "2. Експериментальний Yougram Expressive (Рідке скло + M3 сегменти)"
             }, AppearanceConfig.uiStyleMode, () -> {
                 AppearanceConfig.markUiStyleModeTouched();
+                AppearanceConfig.invalidateExpressiveCache();
                 try {
                     app.amegram.hot.HotModulesManager.putInt("ui", "style", AppearanceConfig.uiStyleMode.Int());
                 } catch (Throwable ignore) {
                 }
+                app.amegram.hot.HotUiGate.applyLive();
                 rebuildAll();
                 NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
             });

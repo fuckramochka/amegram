@@ -57,13 +57,7 @@ public class AmegramAmeProfileFeature implements AmegramFeature {
 
     private static void reinitEngine() {
         try {
-            Class<?> engine = Class.forName("app.amegram.bridge.ameprofile.AmeProfileEngine");
-            java.lang.reflect.Field f = engine.getDeclaredField("isInitialized");
-            f.setAccessible(true);
-            f.setBoolean(null, false);
-            engine.getMethod("ensureInitialized").invoke(null);
-        } catch (ClassNotFoundException vanilla) {
-            // Vanilla: engine lands here at rebase (Etap 6).
+            app.amegram.bridge.ameprofile.AmeProfileEngine.reload();
         } catch (Throwable ignore) {
         }
     }

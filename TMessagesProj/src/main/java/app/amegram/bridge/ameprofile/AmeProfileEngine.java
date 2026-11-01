@@ -118,6 +118,11 @@ public class AmeProfileEngine {
         return ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
+    public static synchronized void reload() {
+        isInitialized = false;
+        ensureInitialized();
+    }
+
     public static synchronized void ensureInitialized() {
         if (isInitialized) return;
         isInitialized = true;

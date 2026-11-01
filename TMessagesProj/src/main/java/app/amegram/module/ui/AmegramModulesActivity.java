@@ -56,7 +56,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
     private static final int TYPE_MODULE_CARD = 100;
 
     private static final String[] CARD_ORDER = {
-            "ghost", "badges", "antiblock", "ameprofile", "hotfix", "doublebottom"
+            "ghost", "badges", "antiblock", "ameprofile", "doublebottom"
     };
 
     private static class CardRef {
@@ -111,8 +111,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
     private int headerSystemRow;
     private int guideRow;
-    private int hotfixRow;
-    private int hotfixCodeRow;
     private int versionRow;
 
     @Override
@@ -180,8 +178,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
 
         headerSystemRow = addRow();
         guideRow = addRow();
-        hotfixRow = addRow();
-        hotfixCodeRow = addRow();
         versionRow = addRow();
     }
 
@@ -205,8 +201,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             return "Обхід блокувань: зонди + fallback-проксі";
         } else if ("ameprofile".equals(id)) {
             return "Живий XML-профіль: банери, картки, стиль";
-        } else if ("hotfix".equals(id)) {
-            return "Швидкі фікси без перевстановлення APK";
         } else if ("doublebottom".equals(id)) {
             return "Два PIN: свій відкриває все, тривожний — decoy";
         }
@@ -320,18 +314,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             try {
                 new AmegramWelcomeSheet(getParentActivity()).show();
             } catch (Throwable ignore) {
-            }
-        } else if (position == hotfixRow) {
-            try {
-                app.miogram.bridge.patch.AmegramPatchManager.getInstance()
-                        .checkForPatches((n, msg) -> refresh());
-            } catch (Throwable ignore) {
-            }
-        } else if (position == hotfixCodeRow) {
-            boolean v = !AmegramConfig.getBool("hotfix_code_patches", false);
-            AmegramConfig.setBool("hotfix_code_patches", v);
-            if (view instanceof TextCheckCell) {
-                ((TextCheckCell) view).setChecked(v);
             }
         }
     }
@@ -468,8 +450,7 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
             if (cardAt(position) != null) {
                 return TYPE_MODULE_CARD;
             }
-            if (position == ghostOfflineRow || position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow
-                    || position == hotfixCodeRow) {
+            if (position == ghostOfflineRow || position == ghostReadRow || position == ghostOnlineRow || position == ghostTypingRow) {
                 return TYPE_CHECK;
             }
             if (position == ghostInfoRow) {
@@ -650,9 +631,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                     } else if (position == ghostTypingRow) {
                         cell.setTextAndCheck("\u0421\u043a\u0440\u044b\u0432\u0430\u0442\u044c \u043d\u0430\u0431\u043e\u0440 \u0442\u0435\u043a\u0441\u0442\u0430",
                                 AmegramGhostController.hideTyping(), false);
-                    } else if (position == hotfixCodeRow) {
-                        cell.setTextAndCheck("\u0420\u0430\u0437\u0440\u0435\u0448\u0438\u0442\u044c code-\u043f\u0430\u0442\u0447\u0438 (.dex)",
-                                AmegramConfig.getBool("hotfix_code_patches", false), false);
                     }
                     break;
                 }
@@ -675,16 +653,6 @@ public class AmegramModulesActivity extends BaseNekoSettingsActivity {
                     } else if (position == guideRow) {
                         cell.setTextAndIcon("\u0413\u0438\u0434 \u043f\u043e Amegram",
                                 R.drawable.msg_bot, true);
-                    } else if (position == hotfixRow) {
-                        int applied = 0;
-                        try {
-                            applied = app.miogram.bridge.patch.AmegramPatchManager
-                                    .getInstance().getAppliedPatchCount();
-                        } catch (Throwable ignore) {
-                        }
-                        cell.setTextAndValueAndIcon("\u041f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u0445\u043e\u0442\u0444\u0438\u043a\u0441\u044b",
-                                applied > 0 ? "\u041f\u0440\u0438\u043c\u0435\u043d\u0435\u043d\u043e: " + applied : "OK",
-                                R.drawable.msg_download_solar, false);
                     } else if (position == versionRow) {
                         cell.setTextAndValue("\u042f\u0434\u0440\u043e / \u043c\u043e\u0434\u0443\u043b\u044c",
                                 app.amegram.core.AmegramCore.CORE_VERSION

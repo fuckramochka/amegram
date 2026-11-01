@@ -790,9 +790,11 @@ public class AmegramBadgeWorkshopActivity extends BaseFragment {
         String desc = badgeDescInput != null && !TextUtils.isEmpty(badgeDescInput.getText())
                 ? badgeDescInput.getText().toString().trim() : "Створено в майстерні бейджів";
 
-        MiogramSupabaseBridge.grantBadgeToUser(selfId, "custom", rawName, desc, () -> {
-            BulletinFactory.of(this).createSimpleBulletin(R.raw.done,
-                    MiogramLocale.get("Бейдж успішно застосовано! ✓", "Бейдж успешно применён! ✓", "Badge applied! ✓")).show();
+        MiogramSupabaseBridge.grantBadgeToUser(selfId, "custom", rawName, desc, (success, message) -> {
+            BulletinFactory.of(this).createSimpleBulletin(success ? R.raw.done : R.raw.error,
+                    success
+                            ? MiogramLocale.get("Бейдж успішно застосовано! ✓", "Бейдж успешно применён! ✓", "Badge applied! ✓")
+                            : (message != null ? message : MiogramLocale.get("Не вдалося застосувати бейдж", "Не удалось применить бейдж", "Failed to apply badge"))).show();
         });
     }
 

@@ -48,11 +48,7 @@ public class AmegramAntiBlockFeature implements AmegramFeature {
         loaded = true;
         // Engine autostarts at boot; hub enable after boot needs a kick.
         try {
-            Class<?> engine = Class.forName("app.miogram.bridge.bypass.MiogramAntiBlockEngine");
-            Object inst = engine.getMethod("getInstance").invoke(null);
-            engine.getMethod("start").invoke(inst);
-        } catch (ClassNotFoundException vanilla) {
-            // Vanilla official client: transport lands here at rebase (Etap 6).
+            app.miogram.bridge.bypass.MiogramAntiBlockEngine.getInstance().start();
         } catch (Throwable ignore) {
         }
     }

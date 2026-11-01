@@ -42,7 +42,7 @@ public final class YumiChatPalette {
         if (key == Theme.key_chat_inReplyLine || key == Theme.key_chat_inReplyNameText || key == Theme.key_chat_stickerReplyLine || key == Theme.key_chat_messageLinkIn) return primary;
         if (key == Theme.key_chat_outReplyLine || key == Theme.key_chat_outReplyLine2 || key == Theme.key_chat_outReplyNameText) return withAlpha(white, 0.90f);
         if (key == Theme.key_chat_messageLinkOut) return dark ? 0xFFFFC3D8 : 0xFF8B315E;
-        if (key == Theme.key_actionBarDefault) return dark ? 0xE51D1720 : 0xEFFFFFFB;
+        if (key == Theme.key_actionBarDefault) return dark ? 0xFF1D1720 : 0xFFFFF8FB;
         if (key == Theme.key_actionBarDefaultTitle || key == Theme.key_actionBarDefaultIcon) return onSurface;
         if (key == Theme.key_actionBarDefaultSubtitle) return onSurfaceVariant;
         if (key == Theme.key_actionBarDefaultSelector) return withAlpha(primary, 0.14f);

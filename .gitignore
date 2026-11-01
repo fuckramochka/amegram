@@ -20,6 +20,12 @@ TMessagesProj/jni/ffmpeg/build_android
 __pycache__/
 *.pyc
 
+# Локальні дані Yumi badge server
+server/data/*.db
+server/data/*.db-shm
+server/data/*.db-wal
+server/data/founder_secret.txt
+
 # JVM crash dumps
 hs_err_pid*.log
 replay_pid*.log

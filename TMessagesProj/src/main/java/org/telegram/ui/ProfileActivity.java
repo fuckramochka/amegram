@@ -4376,7 +4376,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         defaultItemAnimator.setSupportsChangeAnimations(false);
         defaultItemAnimator.setDelayAnimations(false);
         defaultItemAnimator.setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT);
-        listView.setClipToPadding(hasMainTabs && app.exteraless.appearance.MainTabsUiHelper.isFloatingPill());
+        listView.setClipToPadding(false);
         listView.setHideIfEmpty(false);
 
         layoutManager = new LinearLayoutManager(context) {
@@ -17997,7 +17997,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         if (sharedMediaLayout != null) {
             sharedMediaLayout.setPagesPaddingBottom(navigationBarHeight + additionNavigationBarHeight);
-            sharedMediaLayout.setPagesClipToPadding(hasMainTabs && app.exteraless.appearance.MainTabsUiHelper.isFloatingPill());
+            sharedMediaLayout.setPagesClipToPadding(false);
 
             if (sharedMediaLayout.giftsContainer != null) {
                 sharedMediaLayout.giftsContainer.setButtonOffset(navigationBarHeight + additionFloatingButtonOffset);
@@ -18006,10 +18006,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         if (listView != null) {
             listView.setPadding(0, 0, 0, navigationBarHeight + additionNavigationBarHeight);
-            listView.setClipToPadding(hasMainTabs && app.exteraless.appearance.MainTabsUiHelper.isFloatingPill());
+            listView.setClipToPadding(false);
         }
         if (sharedMediaLayout != null) {
-            sharedMediaLayout.setPagesClipToPadding(hasMainTabs && app.exteraless.appearance.MainTabsUiHelper.isFloatingPill());
+            sharedMediaLayout.setPagesClipToPadding(false);
         }
         return WindowInsetsCompat.CONSUMED;
     }

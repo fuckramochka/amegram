@@ -44,13 +44,6 @@ public final class PluginCapabilityScan {
         if (file == null) {
             return result;
         }
-        String name = file.getName().toLowerCase();
-        if (name.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-            result.put("MESSAGES_HOOK", java.util.Collections.singletonList("Lua on_message_send & on_command"));
-            result.put("RECEIVE_EVENTS", java.util.Collections.singletonList("Lua on_message_receive"));
-            result.put("UI_NOTIFICATIONS", java.util.Collections.singletonList("client.toast & client.log"));
-            return result;
-        }
         try {
             String json = PythonPluginsEngine.getInstance()
                     .scanCapabilitiesJson(file.getAbsolutePath());

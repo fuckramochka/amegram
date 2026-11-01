@@ -373,7 +373,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
     @Override
     protected void onItemsChanged() {
         super.onItemsChanged();
-        applyYumiChildSelectors();
         checkVisualWidth();
     }
 
@@ -393,7 +392,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
 
     public void setTabSelected(View tab, boolean animated) {
-        applyYumiChildSelectors();
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
             if (child instanceof GlassTabView) {
@@ -401,16 +399,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
         }
         invalidate();
-    }
-
-    private void applyYumiChildSelectors() {
-        if (!app.exteraless.appearance.YougramExpressive.enabled()) return;
-        for (int a = 0, N = getChildCount(); a < N; a++) {
-            final View child = getChildAt(a);
-            if (child instanceof GlassTabView) {
-                ((GlassTabView) child).setSkipDrawSelector(true);
-            }
-        }
     }
 
     private View findSelectedTab() {
@@ -445,7 +433,6 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             dividerPaint.setColor(app.exteraless.appearance.YougramExpressive.enabled()
                     ? YumiMd3.hairline() : Theme.getDividerColor(resourcesProvider));
         }
-        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
         for (int a = 0, N = getChildCount(); a < N; a++) {
             final View child = getChildAt(a);
             if (child.getVisibility() != View.VISIBLE) {
@@ -453,7 +440,7 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             }
 
             if (child instanceof GlassTabView) {
-                ((GlassTabView) child).setSkipDrawSelector(skipDrawSelector || yumi);
+                ((GlassTabView) child).setSkipDrawSelector(skipDrawSelector);
             }
         }
         invalidate();
@@ -467,30 +454,30 @@ public class MainTabsLayout extends AnimatedLinearLayout {
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
-        final boolean yumi = app.exteraless.appearance.YougramExpressive.enabled();
-        if (drawCustomSelector || yumi) {
-            final View selected = !drawCustomSelector && yumi ? findSelectedTab() : null;
-            final float x = selected != null
-                    ? selected.getX() + selected.getWidth() / 2f
-                    : animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
-            final float sWidth = selected != null ? selected.getWidth() : getInterpolatedWidthByX(x, this);
-            if (yumi) {
+        if (drawCustomSelector) {
+            final float x = animatedLongSelectedViewCenterX + animatedLongSelectedViewOffsetX;
+            final float sWidth = getInterpolatedWidthByX(x, this);
+            if (app.exteraless.appearance.YougramExpressive.enabled()) {
                 selectorPaint.setColor(YumiMd3.withAlpha(YumiMd3.primary(), 0.14f));
             }
-            if (selected != null || drawCustomSelector) {
-                if (MainTabsUiHelper.isMaterial3NavigationBar() || MainTabsUiHelper.isFloatingPill()) {
-                    MainTabsUiHelper.setMainTabSelectedIndicatorBounds(selectorRect, sWidth,
-                            getHeight() - getPaddingTop() - getPaddingBottom());
-                    selectorRect.offset(x - sWidth / 2f, getPaddingTop());
-                    final float r = selectorRect.height() / 2f;
-                    canvas.drawRoundRect(selectorRect, r, r, selectorPaint);
-                } else {
-                    final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
-                    canvas.drawRoundRect(
-                            x - sWidth / 2f, (getHeight() - sHeight) / 2f,
-                            x + sWidth / 2f, (getHeight() + sHeight) / 2f,
-                            sHeight / 2f, sHeight / 2f, selectorPaint);
-                }
+            if (MainTabsUiHelper.isFloatingPill()) {
+                final float h = dp(48);
+                final float top = (getHeight() - h) / 2f;
+                selectorRect.set(x - sWidth / 2f + dp(2), top, x + sWidth / 2f - dp(2), top + h);
+                final float r = dp(24);
+                canvas.drawRoundRect(selectorRect, r, r, selectorPaint);
+            } else if (MainTabsUiHelper.isMaterial3NavigationBar()) {
+                MainTabsUiHelper.setMainTabSelectedIndicatorBounds(selectorRect, sWidth,
+                        getHeight() - getPaddingTop() - getPaddingBottom());
+                selectorRect.offset(x - sWidth / 2f, getPaddingTop());
+                final float r = selectorRect.height() / 2f;
+                canvas.drawRoundRect(selectorRect, r, r, selectorPaint);
+            } else {
+                final float sHeight = getHeight() - getPaddingTop() - getPaddingBottom();
+                canvas.drawRoundRect(
+                        x - sWidth / 2f, (getHeight() - sHeight) / 2f,
+                        x + sWidth / 2f, (getHeight() + sHeight) / 2f,
+                        sHeight / 2f, sHeight / 2f, selectorPaint);
             }
         }
 

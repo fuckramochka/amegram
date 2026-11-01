@@ -33,7 +33,6 @@ public final class AmegramFeatureManager {
         register(new AmegramGuideFeature());
         register(new app.amegram.module.features.net.AmegramAntiBlockFeature());
         register(new app.amegram.module.features.profile.AmegramAmeProfileFeature());
-        register(new app.amegram.module.features.system.AmegramHotfixFeature());
         register(new app.amegram.module.features.vault.AmegramDoubleBottomFeature());
         decideFreshStart(appContext);
         // Auto-load only what user previously enabled. Everything else stays on disk.

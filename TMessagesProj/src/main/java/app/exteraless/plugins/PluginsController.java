@@ -438,8 +438,7 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
             }
             f = normalizeInstalledName(f);
             String name = f.getName().toLowerCase();
-            boolean isLua = name.endsWith(PluginsConstants.PLUGIN_EXT_LUA);
-            if (!isLua && !name.endsWith(PluginsConstants.PLUGIN_EXT_PY) && !name.endsWith(PluginsConstants.PLUGIN_EXT)
+            if (!name.endsWith(PluginsConstants.PLUGIN_EXT_PY) && !name.endsWith(PluginsConstants.PLUGIN_EXT)
                     && !name.endsWith(PluginsConstants.PLUGIN_EXT_ELYX) && !name.endsWith(PluginsConstants.PLUGIN_EXT_EAF)) {
                 continue;
             }
@@ -480,12 +479,8 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
             }
             Plugin gone = entry.getValue();
             if (gone.loaded) {
-                if (gone.path != null && gone.path.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-                    LuaPluginsEngine.getInstance().unloadPlugin(gone);
-                } else {
-                    unregisterPluginHooks(gone.id);
-                    PythonPluginsEngine.getInstance().unloadPlugin(gone);
-                }
+                unregisterPluginHooks(gone.id);
+                PythonPluginsEngine.getInstance().unloadPlugin(gone);
             }
             it.remove();
         }
@@ -493,10 +488,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
 
     private Plugin readPluginMetadata(File f) {
         if (f == null) return null;
-        String lowerName = f.getName().toLowerCase();
-        if (lowerName.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-            return LuaPluginsEngine.getInstance().readMetadata(f);
-        }
         String json = PythonPluginsEngine.getInstance().readMetadataJson(f.getAbsolutePath());
         if (json == null) {
             Plugin p = new Plugin();
@@ -693,11 +684,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
 
     private boolean loadPluginInternal(Plugin p) {
         if (p == null || p.path == null) return false;
-        String name = p.path.toLowerCase();
-        if (name.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-            p.hasSettings = false;
-            return LuaPluginsEngine.getInstance().loadPlugin(p);
-        }
         String missingDependency = checkRequiredPlugins(p);
         if (missingDependency != null) {
             p.loaded = false;
@@ -730,12 +716,8 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         List<Plugin> snapshot = getPluginsSnapshot();
         for (Plugin p : snapshot) {
             if (p.loaded) {
-                if (p.path != null && p.path.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-                    LuaPluginsEngine.getInstance().unloadPlugin(p);
-                } else {
-                    unregisterPluginHooks(p.id);
-                    PythonPluginsEngine.getInstance().unloadPlugin(p);
-                }
+                unregisterPluginHooks(p.id);
+                PythonPluginsEngine.getInstance().unloadPlugin(p);
             }
         }
         sendMessageHooks.clear();
@@ -757,19 +739,14 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         }
         preferences.edit().putBoolean(PluginsConstants.KEY_PLUGIN_ENABLED_PREFIX + id, enabled).apply();
         p.enabled = enabled;
-        boolean isLua = p.path != null && p.path.endsWith(PluginsConstants.PLUGIN_EXT_LUA);
-        if (!isLua && !PythonPluginsEngine.getInstance().isStarted()) {
+        if (!PythonPluginsEngine.getInstance().isStarted()) {
             return true;
         }
         if (enabled && !p.loaded && !isSafeMode()) {
             return loadPluginInternal(p);
         } else if (!enabled && p.loaded) {
-            if (isLua) {
-                LuaPluginsEngine.getInstance().unloadPlugin(p);
-            } else {
-                unregisterPluginHooks(id);
-                PythonPluginsEngine.getInstance().unloadPlugin(p);
-            }
+            unregisterPluginHooks(id);
+            PythonPluginsEngine.getInstance().unloadPlugin(p);
         }
         return true;
     }
@@ -786,17 +763,12 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         if (p == null) {
             return;
         }
-        boolean isLua = p.path != null && p.path.endsWith(PluginsConstants.PLUGIN_EXT_LUA);
-        if (!isLua && !PythonPluginsEngine.getInstance().isStarted()) {
+        if (!PythonPluginsEngine.getInstance().isStarted()) {
             return;
         }
         if (p.loaded) {
-            if (isLua) {
-                LuaPluginsEngine.getInstance().unloadPlugin(p);
-            } else {
-                unregisterPluginHooks(id);
-                PythonPluginsEngine.getInstance().unloadPlugin(p);
-            }
+            unregisterPluginHooks(id);
+            PythonPluginsEngine.getInstance().unloadPlugin(p);
         }
         Plugin fresh = readPluginMetadata(new File(p.path));
         if (fresh != null && fresh.loadError == null) {
@@ -890,30 +862,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
                 return;
             }
             String srcName = source.getName().toLowerCase();
-            if (srcName.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-                try {
-                    Plugin meta = LuaPluginsEngine.getInstance().readMetadata(source);
-                    String id = meta != null && meta.id != null ? meta.id : source.getName().replace(".", "_");
-                    File dest = new File(getPluginsDir(), id + PluginsConstants.PLUGIN_EXT_LUA);
-                    copyFile(source, dest);
-                    Plugin p = LuaPluginsEngine.getInstance().readMetadata(dest);
-                    if (p != null) {
-                        p.enabled = enable;
-                        preferences.edit().putBoolean(PluginsConstants.KEY_PLUGIN_ENABLED_PREFIX + id, enable).apply();
-                        synchronized (this) {
-                            plugins.put(id, p);
-                        }
-                        if (enable && !isSafeMode()) {
-                            loadPluginInternal(p);
-                        }
-                    }
-                    deliver(callback, true, null, p);
-                } catch (Exception e) {
-                    FileLog.e(e);
-                    deliver(callback, false, e.getMessage(), null);
-                }
-                return;
-            }
             PythonPluginsEngine engine = PythonPluginsEngine.getInstance();
             if (!awaitEngineStarted()) {
                 deliver(callback, false, "Python engine failed to start", null);
@@ -996,17 +944,11 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
             return false;
         }
         if (p.loaded) {
-            if (p.path != null && p.path.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-                LuaPluginsEngine.getInstance().unloadPlugin(p);
-            } else {
-                unregisterPluginHooks(id);
-                PythonPluginsEngine.getInstance().unloadPlugin(p);
-            }
+            unregisterPluginHooks(id);
+            PythonPluginsEngine.getInstance().unloadPlugin(p);
         }
-        if (p.path == null || !p.path.endsWith(PluginsConstants.PLUGIN_EXT_LUA)) {
-            // pip-зависимости (refcount) и elyx-экстракции чистятся на Python-стороне.
-            PythonPluginsEngine.getInstance().uninstallPlugin(id);
-        }
+        // pip-зависимости (refcount) и elyx-экстракции чистятся на Python-стороне.
+        PythonPluginsEngine.getInstance().uninstallPlugin(id);
         synchronized (this) {
             plugins.remove(id);
         }
@@ -1725,15 +1667,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
                 if (r.isFinal()) {
                     return last;
                 }
-            }
-        }
-        if (params instanceof org.telegram.messenger.SendMessagesHelper.SendMessageParams) {
-            HookResult luaRes = LuaPluginsEngine.getInstance().callSendMessageHook(account, (org.telegram.messenger.SendMessagesHelper.SendMessageParams) params);
-            if (luaRes.isCancel()) {
-                return luaRes;
-            }
-            if (luaRes.strategy != HookResult.Strategy.DEFAULT) {
-                last = luaRes;
             }
         }
         return last;

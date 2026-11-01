@@ -73,7 +73,7 @@ public final class MainTabsUiHelper {
 
     /** Space needed after scrollable tab content so the floating pill cannot cover its last row. */
     public static int getContentBottomInsetDp() {
-        return isFloatingPill() ? 68 : getTabsViewHeightDp();
+        return isFloatingPill() ? 80 : getTabsViewHeightDp();
     }
 
     /** M3 — dp(64) плюс системный отступ снизу, иначе высота из MainTabsHelper. */

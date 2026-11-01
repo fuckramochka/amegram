@@ -151,7 +151,6 @@ android {
             }
             pip {
                 install 'beautifulsoup4'
-                install 'debugpy'
                 install 'lxml'
                 install 'packaging'
                 install 'pillow'
@@ -405,7 +404,6 @@ dependencies {
     implementation 'org.mvel:mvel2:2.5.2.Final'
     implementation 'com.linkedin.dexmaker:dexmaker:2.28.6'
     implementation 'org.lsposed.hiddenapibypass:hiddenapibypass:6.1'
-    implementation 'org.luaj:luaj-jse:3.0.1'
 
     // Miogram: Argon2id KDF (RFC 9106) для деривации ключей ProfileVault
     implementation 'org.bouncycastle:bcprov-jdk18on:1.85.2'

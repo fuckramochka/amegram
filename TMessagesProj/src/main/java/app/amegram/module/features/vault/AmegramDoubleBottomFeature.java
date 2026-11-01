@@ -45,8 +45,7 @@ public class AmegramDoubleBottomFeature implements AmegramFeature {
         if (!enabled) {
             // Never leave a decoy workspace active behind the toggle.
             try {
-                Class<?> mgr = Class.forName("app.miogram.bridge.vault.MiogramDoubleBottomManager");
-                mgr.getMethod("setDuressActive", boolean.class).invoke(null, false);
+                app.miogram.bridge.vault.MiogramDoubleBottomManager.setDuressActive(false);
             } catch (Throwable ignore) {
             }
         }

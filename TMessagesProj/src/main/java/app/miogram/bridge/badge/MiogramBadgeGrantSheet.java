@@ -2,6 +2,7 @@ package app.miogram.bridge.badge;
 
 import android.content.Context;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -338,6 +339,24 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
         pickerSheet.show();
     }
 
+    private boolean ensureFounderSecret() {
+        if (!TextUtils.isEmpty(MiogramSupabaseBridge.getGrantSecret())) {
+            return true;
+        }
+        statusView.setTextColor(0xFFFF4B4B);
+        statusView.setText(MiogramLocale.get(
+                "Спочатку введіть секрет засновника в налаштуваннях бейджиків.",
+                "Сначала введите секрет создателя в настройках бейджиков.",
+                "Enter the founder secret in Badges settings first."));
+        MiogramHaptic.error(grantBtn);
+        return false;
+    }
+
+    private void resetStatus() {
+        statusView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+        statusView.setText("");
+    }
+
     private void onRevoke() {
         long target;
         try {
@@ -349,6 +368,10 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
             Toast.makeText(getContext(), MiogramLocale.get("Введіть числовий ID", "Введите числовой ID", "Enter a numeric ID"), Toast.LENGTH_SHORT).show();
             return;
         }
+        resetStatus();
+        if (!ensureFounderSecret()) {
+            return;
+        }
         progress.setVisibility(View.VISIBLE);
         grantBtn.setAlpha(0.5f);
         grantBtn.setClickable(false);
@@ -356,8 +379,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
             deleteBtn.setAlpha(0.5f);
             deleteBtn.setClickable(false);
         }
-        statusView.setText("");
-        MiogramSupabaseBridge.revokeBadge(target, () -> {
+        MiogramSupabaseBridge.revokeBadge(target, (success, message) -> {
             progress.setVisibility(View.GONE);
             grantBtn.setAlpha(1f);
             grantBtn.setClickable(true);
@@ -365,9 +387,16 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
                 deleteBtn.setAlpha(1f);
                 deleteBtn.setClickable(true);
             }
-            statusView.setText(MiogramLocale.get("Видалено ✓", "Удалено ✓", "Revoked ✓"));
-            MiogramHaptic.success(grantBtn);
-            AndroidUtilities.runOnUIThread(this::dismiss, 800);
+            if (success) {
+                statusView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                statusView.setText(message != null ? message : MiogramLocale.get("Видалено ✓", "Удалено ✓", "Revoked ✓"));
+                MiogramHaptic.success(grantBtn);
+                AndroidUtilities.runOnUIThread(this::dismiss, 800);
+            } else {
+                statusView.setTextColor(0xFFFF4B4B);
+                statusView.setText(message != null ? message : MiogramLocale.get("Не вдалося відкликати бейдж", "Не удалось отозвать бейдж", "Failed to revoke badge"));
+                MiogramHaptic.error(grantBtn);
+            }
         });
     }
 
@@ -386,6 +415,10 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
         if (reason.isEmpty()) {
             reason = MiogramLocale.get("Відзнака засновника Miyumi ໒꒱", "Отличие основателя Miyumi ໒꒱", "Miyumi founder award ໒꒱");
         }
+        resetStatus();
+        if (!ensureFounderSecret()) {
+            return;
+        }
         progress.setVisibility(View.VISIBLE);
         grantBtn.setAlpha(0.5f);
         grantBtn.setClickable(false);
@@ -393,7 +426,6 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
             deleteBtn.setAlpha(0.5f);
             deleteBtn.setClickable(false);
         }
-        statusView.setText("");
         final long t = target;
         final String r = reason;
 
@@ -401,7 +433,7 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
         final String fBadgeId = chosen.getId();
         final String fTitle = chosen.getTitle();
 
-        MiogramSupabaseBridge.grantBadgeToUser(t, fBadgeId, fTitle, r, () -> {
+        MiogramSupabaseBridge.grantBadgeToUser(t, fBadgeId, fTitle, r, (success, message) -> {
             progress.setVisibility(View.GONE);
             grantBtn.setAlpha(1f);
             grantBtn.setClickable(true);
@@ -409,9 +441,16 @@ public class MiogramBadgeGrantSheet extends BottomSheet {
                 deleteBtn.setAlpha(1f);
                 deleteBtn.setClickable(true);
             }
-            statusView.setText(MiogramLocale.get("Збережено ✓", "Сохранено ✓", "Saved ✓"));
-            MiogramHaptic.success(grantBtn);
-            AndroidUtilities.runOnUIThread(this::dismiss, 800);
+            if (success) {
+                statusView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
+                statusView.setText(message != null ? message : MiogramLocale.get("Збережено ✓", "Сохранено ✓", "Saved ✓"));
+                MiogramHaptic.success(grantBtn);
+                AndroidUtilities.runOnUIThread(this::dismiss, 800);
+            } else {
+                statusView.setTextColor(0xFFFF4B4B);
+                statusView.setText(message != null ? message : MiogramLocale.get("Не вдалося видати бейдж", "Не удалось выдать бейдж", "Failed to grant badge"));
+                MiogramHaptic.error(grantBtn);
+            }
         });
     }
 }

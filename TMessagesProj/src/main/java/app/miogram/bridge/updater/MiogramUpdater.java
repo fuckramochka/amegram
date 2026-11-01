@@ -65,6 +65,13 @@ public class MiogramUpdater {
     private static final String KEY_UPDATE_CHANNEL = "update_channel"; // "beta" (default) | "stable"
     private static final String KEY_LAST_CHECK_TIME = "last_check_timestamp";
     private static final String KEY_LAST_ENTRY_CHECK = "last_entry_check_timestamp";
+    private static final String KEY_LAST_EMERGENCY_CHECK = "last_emergency_check_timestamp";
+    private static final String KEY_EMERGENCY_TAG = "emergency_tag";
+    private static final String KEY_EMERGENCY_VERSION = "emergency_version";
+    private static final String KEY_EMERGENCY_CODE = "emergency_version_code";
+    private static final String KEY_EMERGENCY_CHANGELOG = "emergency_changelog";
+    private static final String KEY_EMERGENCY_URL = "emergency_apk_url";
+    private static final String KEY_EMERGENCY_SIZE = "emergency_apk_size";
 
     /** Dismissed update re-prompts after 24 hours instead of immediately. */
     public static final long DISMISS_SNOOZE_MS = 24L * 60 * 60 * 1000L;
@@ -72,6 +79,8 @@ public class MiogramUpdater {
     private static final long CHECK_INTERVAL_MS = 12L * 60 * 60 * 1000L;
     /** On-resume entry check cooldown (12 hours). */
     private static final long ENTRY_CHECK_INTERVAL_MS = 12L * 60 * 60 * 1000L;
+    /** Emergency release probe cooldown (15 minutes). Bypasses auto-check/Wi-Fi/snooze. */
+    private static final long EMERGENCY_CHECK_INTERVAL_MS = 15L * 60 * 1000L;
 
     public static final String CHANNEL_BETA = "beta";
     public static final String CHANNEL_STABLE = "stable";

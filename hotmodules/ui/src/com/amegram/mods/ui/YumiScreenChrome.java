@@ -45,25 +45,32 @@ public final class YumiScreenChrome {
     }
 
     public void restoreAll() {
-        for (ScreenState state : byRoot.values()) {
-            if (state.topBar.getParent() instanceof ViewGroup) {
-                ((ViewGroup) state.topBar.getParent()).removeView(state.topBar);
+        Runnable action = () -> {
+            for (ScreenState state : byRoot.values()) {
+                if (state.topBar.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) state.topBar.getParent()).removeView(state.topBar);
+                }
+                if (state.searchField != null && state.searchField.getParent() instanceof ViewGroup) {
+                    ((ViewGroup) state.searchField.getParent()).removeView(state.searchField);
+                }
+                state.actionBar.setVisibility(state.originalActionBarVisibility);
+                state.actionBar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
+                if (state.oldSearch != null) {
+                    state.oldSearch.setVisibility(View.VISIBLE);
+                }
+                if (state.list != null) {
+                    state.list.setPadding(state.list.getPaddingLeft(), state.originalListTopPadding,
+                            state.list.getPaddingRight(), state.list.getPaddingBottom());
+                }
             }
-            if (state.searchField != null && state.searchField.getParent() instanceof ViewGroup) {
-                ((ViewGroup) state.searchField.getParent()).removeView(state.searchField);
-            }
-            state.actionBar.setVisibility(state.originalActionBarVisibility);
-            state.actionBar.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_YES);
-            if (state.oldSearch != null) {
-                state.oldSearch.setVisibility(View.VISIBLE);
-            }
-            if (state.list != null) {
-                state.list.setPadding(state.list.getPaddingLeft(), state.originalListTopPadding,
-                        state.list.getPaddingRight(), state.list.getPaddingBottom());
-            }
+            byRoot.clear();
+            byActionBar.clear();
+        };
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) {
+            action.run();
+        } else {
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(action);
         }
-        byRoot.clear();
-        byActionBar.clear();
     }
 
     public void refreshPalette(Context context) {

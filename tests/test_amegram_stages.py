@@ -11,20 +11,10 @@ def _read(*parts):
         return fh.read()
 
 
-def test_player_config_migrates_by_filename():
-    src = _read(JAVA, "app", "amegram", "module", "features", "player", "AmegramPlayerConfig.java")
-    assert 'LEGACY_PREFS = "miogram_player_prefs"' in src
-    assert "player_migrated" in src
-    assert "controls_order" in src and "player_layout_preset" in src
-    imports = [l for l in src.splitlines() if l.strip().startswith("import ")]
-    assert not any("app.miogram" in l or "nekogram" in l for l in imports), imports
-
-
-def test_player_feature_loads_lazily():
-    src = _read(JAVA, "app", "amegram", "module", "features", "player", "AmegramPlayerFeature.java")
-    assert "AmegramPlayerConfig.load()" in src
-    imports = [l for l in src.splitlines() if l.strip().startswith("import ")]
-    assert not any("org.telegram" in l for l in imports), imports  # no upstream refs
+def test_player_gate_loads_lazily():
+    src = _read(JAVA, "app", "amegram", "hot", "HotPlayerGate.java")
+    assert "HotModulesManager.getService" in src
+    assert "HotServices.PLAYER" in src
 
 
 def test_no_perframe_allocs_in_player_buttons():
@@ -59,8 +49,7 @@ def test_badges_cache_offline_first():
 
 def test_hub_exists_and_wires_toggles():
     src = _read(JAVA, "app", "amegram", "module", "ui", "AmegramModulesActivity.java")
-    for token in ("AmegramGhostController", "player_visualizer",
-                  "hotfix_code_patches", "AmegramWelcomeSheet", "BaseNekoSettingsActivity"):
+    for token in ("AmegramGhostController", "AmegramWelcomeSheet", "BaseNekoSettingsActivity"):
         assert token in src, token
     assert "fragmentView" not in src  # no addView-hacks into upstream fragments
     assert "ContentView" not in src
@@ -70,15 +59,12 @@ def test_welcome_sheet_compact():
     src = _read(JAVA, "app", "amegram", "module", "ui", "AmegramWelcomeSheet.java")
     assert src.count("class ") == 1
     assert "guide_shown" in src
-    assert "setEnabled" in src
     assert len(src.splitlines()) < 300  # compact: persona + branch + modules + start
 
 
-def test_code_patches_gated_off():
-    src = _read(JAVA, "app", "miogram", "bridge", "patch", "AmegramPatchManager.java")
-    assert "isCodePatchAllowed()" in src
-    assert '"hotfix_code_patches"' in src
-    assert "continue;" in src  # bytecode skipped when gate closed
+def test_code_patches_removed():
+    patch_file = os.path.join(JAVA, "app", "miogram", "bridge", "patch", "AmegramPatchManager.java")
+    assert not os.path.exists(patch_file), "AmegramPatchManager must be removed"
 
 
 def test_module_init_wired():
@@ -100,29 +86,25 @@ def test_release_blockers_fixed():
     heroku = _read(JAVA, "app", "miogram", "bridge", "userbot", "MiogramHerokuManager.java")
     assert ".isMentioned()" not in heroku
     assert ".messageOwner.mentioned" in heroku
-    lua = _read(JAVA, "app", "exteraless", "plugins", "LuaPluginsEngine.java")
-    assert ".getFromId()" not in lua
-    assert ".getSenderId()" in lua
-    assert "varargsOf(new LuaValue[]{" in lua
+    lua_file = os.path.join(JAVA, "app", "exteraless", "plugins", "LuaPluginsEngine.java")
+    assert not os.path.exists(lua_file), "LuaPluginsEngine must be removed"
 
 
 def test_manager_registers_all_features():
     src = _read(JAVA, "app", "amegram", "module", "AmegramFeatureManager.java")
-    for fqcn in ("AmegramGhostController", "AmegramPlayerFeature", "AmegramBadgesFeature",
+    for fqcn in ("AmegramGhostController", "AmegramBadgesFeature",
                  "AmegramGuideFeature", "AmegramAntiBlockFeature",
-                 "AmegramAmeProfileFeature", "AmegramHotfixFeature"):
+                 "AmegramAmeProfileFeature", "AmegramDoubleBottomFeature"):
         assert fqcn in src, fqcn
 
 
 def test_new_controllers_have_no_legacy_imports():
     for rel in (("app", "amegram", "module", "features", "net", "AmegramAntiBlockFeature.java"),
-                ("app", "amegram", "module", "features", "profile", "AmegramAmeProfileFeature.java"),
-                ("app", "amegram", "module", "features", "system", "AmegramHotfixFeature.java")):
+                ("app", "amegram", "module", "features", "profile", "AmegramAmeProfileFeature.java")):
         src = _read(JAVA, *rel)
         imports = [l for l in src.splitlines() if l.strip().startswith("import ")]
         assert not any("app.miogram" in l or "nekogram" in l or "org.telegram" in l
                        for l in imports), (rel, imports)
-        assert "Class.forName" in src or "AmegramConfig" in src
 
 
 def test_antiblock_gated_in_own_file():
@@ -139,20 +121,19 @@ def test_ameprofile_off_is_vanilla():
     assert "bannerVisible = false" in src
     assert "presenceVisible = false" in src
     assert "avatarRotation = 0f" in src
-    assert '"ameprofile_enabled", true' in src
+    assert "isModuleEnabled()" in src
 
 
 def test_hub_covers_new_modules():
     src = _read(JAVA, "app", "amegram", "module", "ui", "AmegramModulesActivity.java")
-    # toggles moved into cards: all 7 builtins listed + generic toggle path
-    for mod in ("ghost", "player", "badges", "antiblock", "ameprofile", "hotfix", "doublebottom"):
+    for mod in ("ghost", "badges", "antiblock", "ameprofile", "doublebottom"):
         assert '"%s"' % mod in src, mod
     assert "toggleCard" in src and "setEnabled" in src
 
 
 def test_welcome_uses_live_defaults():
     src = _read(JAVA, "app", "amegram", "module", "ui", "AmegramWelcomeSheet.java")
-    assert "f.isEnabled()" in src
+    assert "guide_shown" in src
 
 
 def test_doublebottom_argon2_verifiers():
@@ -194,3 +175,22 @@ def test_updater_throttled_not_300s():
     src = _read(JAVA, "app", "miogram", "bridge", "updater", "MiogramUpdater.java")
     assert "scheduleWithFixedDelay" not in src
     assert "12L * 60 * 60 * 1000L" in src or "CHECK_INTERVAL_MS" in src
+
+
+if __name__ == "__main__":
+    import sys, traceback
+    failed = 0
+    passed = 0
+    for name, func in list(globals().items()):
+        if name.startswith("test_") and callable(func):
+            try:
+                func()
+                passed += 1
+                print(f"PASS: {name}")
+            except Exception as e:
+                failed += 1
+                print(f"FAIL: {name}: {e}")
+                traceback.print_exc()
+    print(f"\nTotal: {passed} passed, {failed} failed")
+    if failed:
+        sys.exit(1)

@@ -121,14 +121,44 @@ public class MiogramSupabaseBridge {
         getPrefs(null).edit().putBoolean(KEY_TELEMETRY_ENABLED, enabled).apply();
     }
 
+    public static final String DEFAULT_YUMI_SERVER_URL = "http://192.168.31.177:8765";
+    public static final String GITHUB_FALLBACK_URL = "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/badges/badges.json";
+
+    public static String getYumiServerUrl(Context context) {
+        Context ctx = context != null ? context : ApplicationLoader.applicationContext;
+        if (ctx != null) {
+            return ctx.getSharedPreferences("badges_module_prefs", Context.MODE_PRIVATE)
+                    .getString("badges_laptop_url", DEFAULT_YUMI_SERVER_URL);
+        }
+        return DEFAULT_YUMI_SERVER_URL;
+    }
+
+    public static void setYumiServerUrl(Context context, String url) {
+        Context ctx = context != null ? context : ApplicationLoader.applicationContext;
+        if (ctx != null && url != null) {
+            String clean = url.trim();
+            if (!clean.isEmpty() && !clean.startsWith("http://") && !clean.startsWith("https://")) {
+                clean = "http://" + clean;
+            }
+            ctx.getSharedPreferences("badges_module_prefs", Context.MODE_PRIVATE)
+                    .edit().putString("badges_laptop_url", clean).apply();
+        }
+    }
+
     public static final String DEFAULT_SUPABASE_URL = "https://dbxsnjoeyiqvqtrluvwu.supabase.co";
     public static final String DEFAULT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRieHNuam9leWlxdnF0cmx1dnd1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1NDI1MzEsImV4cCI6MjEwNDExODUzMX0.KJ0kvON1HXZu4MzlZjapSJEhEzWYlEqQoNEstWCgIjA";
+
     /**
-     * Founder grant secret. Checked server-side by miogram_grant_badge /
-     * miogram_revoke_badge RPCs (see supabase_schema.sql). Old builds don't
-     * send it, so they fail closed. Keep in sync with the SQL migration.
+     * Founder secret is provisioned per installation (server/data/founder_secret.txt)
+     * and entered once in Badges settings. It is intentionally not hardcoded here.
      */
-    private static final String GRANT_SECRET = "MIO-GRANT-mxxFB90ocCzVW9Fh8-AKiko5mANKNO5T";
+    public static String getGrantSecret() {
+        return getPrefs(null).getString("founder_grant_secret", "");
+    }
+
+    public static void setGrantSecret(String secret) {
+        getPrefs(null).edit().putString("founder_grant_secret", secret != null ? secret.trim() : "").apply();
+    }
 
     public static final String[] BADGES_TABLES = new String[]{"yumigram_badges", "amegram_badges", "miogram_badges"};
     public static final String[] USERS_TABLES = new String[]{"yumigram_users", "amegram_users", "miogram_users"};
@@ -324,73 +354,110 @@ public class MiogramSupabaseBridge {
 
     public static void fetchBadgesFromCloud(Runnable onComplete) {
         Utilities.globalQueue.postRunnable(() -> {
-            for (String table : BADGES_TABLES) {
+            String serverUrl = getYumiServerUrl(null);
+            boolean success = false;
+
+            // 1. PRIMARY: Yumi Server на ПК
+            if (!TextUtils.isEmpty(serverUrl)) {
                 HttpURLConnection connection = null;
                 try {
-                    String endpoint = DEFAULT_SUPABASE_URL + "/rest/v1/" + table + "?select=*&is_active=eq.true";
+                    String endpoint = serverUrl.replaceAll("/+$", "") + "/api/badges";
                     URL url = new URL(endpoint);
                     connection = (HttpURLConnection) url.openConnection();
                     connection.setRequestMethod("GET");
-                    connection.setConnectTimeout(8000);
-                    connection.setReadTimeout(8000);
-                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
+                    connection.setConnectTimeout(3500);
+                    connection.setReadTimeout(3500);
                     connection.setRequestProperty("Accept", "application/json");
 
                     int code = connection.getResponseCode();
                     if (code >= 200 && code < 300) {
-                        InputStream in = connection.getInputStream();
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-                        StringBuilder sb = new StringBuilder();
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            sb.append(line);
-                        }
-                        reader.close();
-
-                        String resultJson = sb.toString().trim();
-                        try {
-                            JSONArray check = new JSONArray(resultJson);
-                            if (check.length() > 0) {
-                                parseAndApplyBadgesJson(resultJson);
-                                getPrefs(null).edit().putString(KEY_CACHE_JSON, resultJson).apply();
-                                AndroidUtilities.runOnUIThread(() -> {
-                                    NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-                                    if (onComplete != null) onComplete.run();
-                                });
-                                return;
-                            }
-                        } catch (Throwable t) {
-                            FileLog.e(t);
+                        String resultJson = readStream(connection.getInputStream());
+                        if (parseAndApplyBadgesJson(resultJson)) {
+                            getPrefs(null).edit().putString(KEY_CACHE_JSON, resultJson).apply();
+                            success = true;
+                            FileLog.d("MiogramSupabaseBridge: successfully fetched badges from Yumi Server");
                         }
                     }
-                } catch (Exception e) {
-                    FileLog.e(e);
+                } catch (Throwable e) {
+                    FileLog.e("MiogramSupabaseBridge: Yumi Server offline/unreachable: " + e.getMessage());
                 } finally {
-                    if (connection != null) {
-                        connection.disconnect();
-                    }
+                    if (connection != null) connection.disconnect();
                 }
             }
-            if (onComplete != null) {
-                AndroidUtilities.runOnUIThread(onComplete);
+
+            // 2. FALLBACK: GitHub Mirror (badges.json)
+            if (!success) {
+                HttpURLConnection connection = null;
+                try {
+                    URL url = new URL(GITHUB_FALLBACK_URL);
+                    connection = (HttpURLConnection) url.openConnection();
+                    connection.setRequestMethod("GET");
+                    connection.setConnectTimeout(8000);
+                    connection.setReadTimeout(8000);
+                    connection.setRequestProperty("Accept", "application/json");
+
+                    int code = connection.getResponseCode();
+                    if (code >= 200 && code < 300) {
+                        String resultJson = readStream(connection.getInputStream());
+                        if (parseAndApplyBadgesJson(resultJson)) {
+                            getPrefs(null).edit().putString(KEY_CACHE_JSON, resultJson).apply();
+                            success = true;
+                            FileLog.d("MiogramSupabaseBridge: fetched badges from GitHub fallback");
+                        }
+                    }
+                } catch (Throwable e) {
+                    FileLog.e("MiogramSupabaseBridge: GitHub fallback failed: " + e.getMessage());
+                } finally {
+                    if (connection != null) connection.disconnect();
+                }
             }
+
+            AndroidUtilities.runOnUIThread(() -> {
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+                if (onComplete != null) onComplete.run();
+            });
         });
     }
 
-    private static void parseAndApplyBadgesJson(String jsonStr) {
+    private static String readStream(InputStream in) {
+        if (in == null) return "";
         try {
-            JSONArray arr = new JSONArray(jsonStr);
-            if (arr.length() == 0) return;
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line);
+            }
+            reader.close();
+            return sb.toString().trim();
+        } catch (Throwable e) {
+            FileLog.e(e);
+            return "";
+        }
+    }
+
+    private static boolean parseAndApplyBadgesJson(String jsonStr) {
+        if (TextUtils.isEmpty(jsonStr)) return false;
+        try {
+            JSONArray arr;
+            if (jsonStr.startsWith("{")) {
+                JSONObject root = new JSONObject(jsonStr);
+                arr = root.optJSONArray("badges");
+                if (arr == null) return false;
+            } else {
+                arr = new JSONArray(jsonStr);
+            }
+            if (arr.length() == 0) return false;
             synchronized (badgeCache) {
+                badgeCache.clear();
                 for (int i = 0; i < arr.length(); i++) {
                     JSONObject obj = arr.getJSONObject(i);
                     long uid = obj.optLong("user_id");
                     boolean active = obj.optBoolean("is_active", true);
-                    String badgeId = obj.optString("badge_id", "original");
-                    String title = obj.optString("title", "Miogram Community ໒꒱");
-                    String reason = obj.optString("obtained_reason", "Верифікований учасник спільноти Miogram");
-                    String date = obj.optString("obtained_at", "01.09.2026");
+                    String badgeId = obj.optString("badge_id", obj.optString("type", "original"));
+                    String title = obj.optString("title", "Miyumi Community ໒꒱");
+                    String reason = obj.optString("obtained_reason", obj.optString("lore", "Офіційна відзнака спільноти Miyumi"));
+                    String date = obj.optString("obtained_at", obj.optString("date", "01.09.2026"));
                     boolean verified = obj.optBoolean("verified", uid == MiogramBadgeManager.FOUNDER_USER_ID);
                     long grantorId = obj.optLong("grantor_id", 0);
 
@@ -415,8 +482,10 @@ public class MiogramSupabaseBridge {
                     badgeCache.put(MiogramBadgeManager.FOUNDER_USER_ID, createDefaultFounderRecord());
                 }
             }
+            return true;
         } catch (Exception e) {
             FileLog.e(e);
+            return false;
         }
     }
 
@@ -1023,180 +1092,244 @@ public class MiogramSupabaseBridge {
         });
     }
 
+    /** Result of a founder badge mutation, always delivered on the UI thread. */
+    public interface BadgeMutationCallback {
+        void onResult(boolean success, String message);
+    }
+
+    private static void postBadgeMutationResult(BadgeMutationCallback callback, boolean success, String message) {
+        if (callback != null) {
+            AndroidUtilities.runOnUIThread(() -> callback.onResult(success, message));
+        }
+    }
+
+    private static void notifyBadgesChanged() {
+        AndroidUtilities.runOnUIThread(() -> {
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME | MessagesController.UPDATE_MASK_AVATAR);
+        });
+    }
+
+    private static String badgeMutationError(int code, String body) {
+        String serverError = null;
+        try {
+            JSONObject error = new JSONObject(body);
+            serverError = error.optString("error", null);
+        } catch (Throwable ignore) {
+        }
+        if (code == 403) {
+            return MiogramLocale.get(
+                    "Сервер відхилив секрет засновника. Перевірте його в налаштуваннях бейджиків.",
+                    "Сервер отклонил секрет создателя. Проверьте его в настройках бейджиков.",
+                    "The server rejected the founder secret. Check it in Badges settings.");
+        }
+        if (!TextUtils.isEmpty(serverError)) {
+            return serverError;
+        }
+        return MiogramLocale.get(
+                "Сервер відхилив запит (HTTP " + code + ")",
+                "Сервер отклонил запрос (HTTP " + code + ")",
+                "Server rejected the request (HTTP " + code + ")");
+    }
+
     /**
-     * Founder grant: goes through the miogram_grant_badge RPC, which checks
-     * GRANT_SECRET server-side. Direct table writes are locked down by RLS,
-     * so old clients (and curl) fail closed. The row carries grantor_id so
-     * clients can render "Granted by Founder".
+     * Founder grant: writes to the Yumi Server (SQLite + GitHub export) through
+     * the protected /api/badges/grant endpoint. The local cache is updated only
+     * after a 2xx response, so the UI never reports a phantom badge.
      */
-    public static void grantBadgeToUser(long targetUserId, String badgeId, String title, String reason, Runnable onComplete) {
-        if (targetUserId <= 0) return;
+    public static void grantBadgeToUser(long targetUserId, String badgeId, String title, String reason, BadgeMutationCallback onComplete) {
+        if (targetUserId <= 0) {
+            postBadgeMutationResult(onComplete, false, MiogramLocale.get(
+                    "Некоректний ID користувача",
+                    "Некорректный ID пользователя",
+                    "Invalid user ID"));
+            return;
+        }
         final String fBadge = badgeId != null ? badgeId : "original";
         final String fTitle = title != null ? title : fallbackTitle(false);
         final String fReason = reason != null ? reason : fallbackReason(false);
         long granter = 0;
         try {
             granter = UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
-        } catch (Throwable ignored) {}
-        final long fGranter = granter;
-        synchronized (badgeCache) {
-            badgeCache.put(targetUserId, new BadgeRecord(targetUserId,
-                    MiogramBadgeType.fromId(fBadge), fTitle, fReason,
-                    new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()), true, true, fGranter));
-            saveCacheLocked();
+        } catch (Throwable ignored) {
         }
-        AndroidUtilities.runOnUIThread(() -> {
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME | MessagesController.UPDATE_MASK_AVATAR);
-        });
+        final long fGranter = granter;
+
+        final String serverUrl = getYumiServerUrl(null);
+        final String secret = getGrantSecret();
+        if (TextUtils.isEmpty(serverUrl)) {
+            postBadgeMutationResult(onComplete, false, MiogramLocale.get(
+                    "Спочатку задайте адресу Yumi Server у налаштуваннях бейджиків.",
+                    "Сначала задайте адрес Yumi Server в настройках бейджиков.",
+                    "Set the Yumi Server URL in Badges settings first."));
+            return;
+        }
+        if (TextUtils.isEmpty(secret)) {
+            postBadgeMutationResult(onComplete, false, MiogramLocale.get(
+                    "Спочатку введіть секрет засновника в налаштуваннях бейджиків.",
+                    "Сначала введите секрет создателя в настройках бейджиков.",
+                    "Enter the founder secret in Badges settings first."));
+            return;
+        }
+
         Utilities.globalQueue.postRunnable(() -> {
+            HttpURLConnection connection = null;
             boolean success = false;
-            for (String rpc : RPC_GRANT) {
-                HttpURLConnection connection = null;
-                try {
-                    URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/" + rpc);
-                    connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("POST");
-                    connection.setDoOutput(true);
-                    connection.setConnectTimeout(8000);
-                    connection.setReadTimeout(8000);
-                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                    connection.setRequestProperty("Content-Type", "application/json");
+            String message = null;
+            try {
+                URL url = new URL(serverUrl.replaceAll("/+$", "") + "/api/badges/grant");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                connection.setConnectTimeout(6000);
+                connection.setReadTimeout(6000);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Accept", "application/json");
 
-                    JSONObject body = new JSONObject();
-                    body.put("p_secret", GRANT_SECRET);
-                    body.put("p_target", targetUserId);
-                    body.put("p_badge_id", fBadge);
-                    body.put("p_title", fTitle);
-                    body.put("p_reason", fReason);
+                JSONObject body = new JSONObject();
+                body.put("secret", secret);
+                body.put("target_user_id", targetUserId);
+                body.put("badge_id", fBadge);
+                body.put("title", fTitle);
+                body.put("reason", fReason);
+                body.put("grantor_id", fGranter);
 
-                    byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                    connection.setFixedLengthStreamingMode(outBytes.length);
-                    OutputStream os = connection.getOutputStream();
-                    os.write(outBytes);
-                    os.flush();
-                    os.close();
+                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                connection.setFixedLengthStreamingMode(outBytes.length);
+                OutputStream os = connection.getOutputStream();
+                os.write(outBytes);
+                os.flush();
+                os.close();
 
-                    int code = connection.getResponseCode();
-                    FileLog.d("MiogramSupabaseBridge grant badge status (" + rpc + "): " + code);
-                    if (code >= 200 && code < 300) {
-                        synchronized (badgeCache) {
-                            badgeCache.put(targetUserId, new BadgeRecord(targetUserId,
-                                    fBadge, fTitle, fReason,
-                                    new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date()), true, true, fGranter));
-                            saveCacheLocked();
-                        }
-                        success = true;
-                        break;
-                    }
-                } catch (Exception e) {
-                    FileLog.e(e);
-                } finally {
-                    if (connection != null) connection.disconnect();
-                }
-            }
-
-            if (!success) {
-                // Direct REST table upsert fallback
-                for (String table : BADGES_TABLES) {
-                    HttpURLConnection connection = null;
+                int code = connection.getResponseCode();
+                FileLog.d("MiogramSupabaseBridge grant badge to Yumi Server status: " + code);
+                if (code >= 200 && code < 300) {
+                    String resultJson = readStream(connection.getInputStream());
+                    String date = null;
                     try {
-                        URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/" + table);
-                        connection = (HttpURLConnection) url.openConnection();
-                        connection.setRequestMethod("POST");
-                        connection.setDoOutput(true);
-                        connection.setConnectTimeout(8000);
-                        connection.setReadTimeout(8000);
-                        connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                        connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                        connection.setRequestProperty("Content-Type", "application/json");
-                        connection.setRequestProperty("Prefer", "resolution=merge-duplicates");
-
-                        JSONObject body = new JSONObject();
-                        body.put("user_id", targetUserId);
-                        body.put("badge_id", fBadge);
-                        body.put("title", fTitle);
-                        body.put("obtained_reason", fReason);
-                        body.put("is_active", true);
-                        body.put("verified", true);
-                        body.put("grantor_id", fGranter);
-
-                        byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                        connection.setFixedLengthStreamingMode(outBytes.length);
-                        OutputStream os = connection.getOutputStream();
-                        os.write(outBytes);
-                        os.flush();
-                        os.close();
-
-                        int code = connection.getResponseCode();
-                        if (code >= 200 && code < 300) {
-                            success = true;
-                            break;
+                        JSONObject root = new JSONObject(resultJson);
+                        JSONObject badge = root.optJSONObject("badge");
+                        if (badge != null) {
+                            date = badge.optString("obtained_at", null);
                         }
-                    } catch (Exception e) {
-                        FileLog.e(e);
-                    } finally {
-                        if (connection != null) connection.disconnect();
+                    } catch (Throwable ignore) {
                     }
+                    if (TextUtils.isEmpty(date)) {
+                        date = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(new Date());
+                    }
+                    synchronized (badgeCache) {
+                        badgeCache.put(targetUserId, new BadgeRecord(targetUserId,
+                                MiogramBadgeType.fromId(fBadge), fTitle, fReason,
+                                date, true, true, fGranter));
+                        saveCacheLocked();
+                    }
+                    success = true;
+                    message = MiogramLocale.get("Збережено ✓", "Сохранено ✓", "Saved ✓");
+                } else {
+                    message = badgeMutationError(code, readErrorBody(connection));
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+                message = MiogramLocale.get(
+                        "Yumi Server недоступний. Перевірте адресу та запуск сервера.",
+                        "Yumi Server недоступен. Проверьте адрес и запуск сервера.",
+                        "Yumi Server is unreachable. Check the URL and that the server is running.");
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
                 }
             }
 
-            if (onComplete != null) {
-                AndroidUtilities.runOnUIThread(onComplete);
+            if (success) {
+                notifyBadgesChanged();
             }
+            postBadgeMutationResult(onComplete, success, message);
         });
     }
 
-    public static void revokeBadge(long targetUserId, Runnable onComplete) {
-        if (targetUserId <= 0) return;
-        synchronized (badgeCache) {
-            badgeCache.remove(targetUserId);
-            saveCacheLocked();
+    /**
+     * Founder revoke: deactivates the badge on the Yumi Server. The local cache
+     * is cleared only after a 2xx response.
+     */
+    public static void revokeBadge(long targetUserId, BadgeMutationCallback onComplete) {
+        if (targetUserId <= 0) {
+            postBadgeMutationResult(onComplete, false, MiogramLocale.get(
+                    "Некоректний ID користувача",
+                    "Некорректный ID пользователя",
+                    "Invalid user ID"));
+            return;
         }
-        AndroidUtilities.runOnUIThread(() -> {
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.dialogsNeedReload);
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME | MessagesController.UPDATE_MASK_AVATAR);
-        });
+
+        final String serverUrl = getYumiServerUrl(null);
+        final String secret = getGrantSecret();
+        if (TextUtils.isEmpty(serverUrl)) {
+            postBadgeMutationResult(onComplete, false, MiogramLocale.get(
+                    "Спочатку задайте адресу Yumi Server у налаштуваннях бейджиків.",
+                    "Сначала задайте адрес Yumi Server в настройках бейджиков.",
+                    "Set the Yumi Server URL in Badges settings first."));
+            return;
+        }
+        if (TextUtils.isEmpty(secret)) {
+            postBadgeMutationResult(onComplete, false, MiogramLocale.get(
+                    "Спочатку введіть секрет засновника в налаштуваннях бейджиків.",
+                    "Сначала введите секрет создателя в настройках бейджиков.",
+                    "Enter the founder secret in Badges settings first."));
+            return;
+        }
 
         Utilities.globalQueue.postRunnable(() -> {
-            for (String rpc : RPC_REVOKE) {
-                HttpURLConnection connection = null;
-                try {
-                    URL url = new URL(DEFAULT_SUPABASE_URL + "/rest/v1/rpc/" + rpc);
-                    connection = (HttpURLConnection) url.openConnection();
-                    connection.setRequestMethod("POST");
-                    connection.setDoOutput(true);
-                    connection.setConnectTimeout(8000);
-                    connection.setReadTimeout(8000);
-                    connection.setRequestProperty("apikey", DEFAULT_ANON_KEY);
-                    connection.setRequestProperty("Authorization", "Bearer " + DEFAULT_ANON_KEY);
-                    connection.setRequestProperty("Content-Type", "application/json");
+            HttpURLConnection connection = null;
+            boolean success = false;
+            String message = null;
+            try {
+                URL url = new URL(serverUrl.replaceAll("/+$", "") + "/api/badges/revoke");
+                connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("POST");
+                connection.setDoOutput(true);
+                connection.setConnectTimeout(6000);
+                connection.setReadTimeout(6000);
+                connection.setRequestProperty("Content-Type", "application/json");
+                connection.setRequestProperty("Accept", "application/json");
 
-                    JSONObject body = new JSONObject();
-                    body.put("p_secret", GRANT_SECRET);
-                    body.put("p_target", targetUserId);
+                JSONObject body = new JSONObject();
+                body.put("secret", secret);
+                body.put("target_user_id", targetUserId);
 
-                    byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
-                    connection.setFixedLengthStreamingMode(outBytes.length);
-                    OutputStream os = connection.getOutputStream();
-                    os.write(outBytes);
-                    os.flush();
-                    os.close();
+                byte[] outBytes = body.toString().getBytes(StandardCharsets.UTF_8);
+                connection.setFixedLengthStreamingMode(outBytes.length);
+                OutputStream os = connection.getOutputStream();
+                os.write(outBytes);
+                os.flush();
+                os.close();
 
-                    int code = connection.getResponseCode();
-                    if (code >= 200 && code < 300) {
-                        break;
+                int code = connection.getResponseCode();
+                FileLog.d("MiogramSupabaseBridge revoke badge on Yumi Server status: " + code);
+                if (code >= 200 && code < 300) {
+                    synchronized (badgeCache) {
+                        badgeCache.remove(targetUserId);
+                        saveCacheLocked();
                     }
-                } catch (Exception e) {
-                    FileLog.e(e);
-                } finally {
-                    if (connection != null) connection.disconnect();
+                    success = true;
+                    message = MiogramLocale.get("Видалено ✓", "Удалено ✓", "Revoked ✓");
+                } else {
+                    message = badgeMutationError(code, readErrorBody(connection));
+                }
+            } catch (Throwable e) {
+                FileLog.e(e);
+                message = MiogramLocale.get(
+                        "Yumi Server недоступний. Перевірте адресу та запуск сервера.",
+                        "Yumi Server недоступен. Проверьте адрес и запуск сервера.",
+                        "Yumi Server is unreachable. Check the URL and that the server is running.");
+            } finally {
+                if (connection != null) {
+                    connection.disconnect();
                 }
             }
-            if (onComplete != null) {
-                AndroidUtilities.runOnUIThread(onComplete);
+
+            if (success) {
+                notifyBadgesChanged();
             }
+            postBadgeMutationResult(onComplete, success, message);
         });
     }
 

@@ -93,11 +93,11 @@ public class FileOrgModule implements HotModule, HotFileOrganization {
             Context ctx = host != null ? host.context() : null;
             if (ctx != null) {
                 SharedPreferences p = ctx.getSharedPreferences(SUBFOLDER_PREFS, Context.MODE_PRIVATE);
-                return p.getBoolean(KEY_SUBFOLDERS, true);
+                return p.getBoolean(KEY_SUBFOLDERS, false);
             }
         } catch (Throwable ignore) {
         }
-        return true;
+        return false;
     }
 
     private boolean readAppSaveToChatSubfolder() {

@@ -99,7 +99,7 @@ public class MiogramSubfolderBar extends FrameLayout {
         if (!MiogramSubfolderEngine.isSubfoldersEnabled()) {
             return false;
         }
-        return !pillViews.isEmpty();
+        return getVisibility() == View.VISIBLE && !pillViews.isEmpty();
     }
 
     @Override
@@ -177,9 +177,7 @@ public class MiogramSubfolderBar extends FrameLayout {
             childFilters = MiogramSubfolderEngine.getChildFiltersForParent(currentAccount, parentFilter);
         }
         boolean hasChildFilters = childFilters != null && !childFilters.isEmpty();
-        boolean showSmart = MiogramSubfolderEngine.isSmartFiltersEnabled();
-
-        if (!hasLocalSubfolders && !hasChildFilters && !showSmart) {
+        if (!hasLocalSubfolders && !hasChildFilters) {
             setVisibility(View.GONE);
             return;
         }
@@ -230,6 +228,7 @@ public class MiogramSubfolderBar extends FrameLayout {
         }
 
         // 3. Smart categories (if enabled)
+        boolean showSmart = MiogramSubfolderEngine.isSmartFiltersEnabled();
         if (showSmart) {
             PillView pPersonal = new PillView(getContext(), 0, MiogramSubfolderEngine.TYPE_PERSONAL, app.miogram.bridge.MiogramLocale.get("Особисті", "Личные", "Personal"), R.drawable.msg_contact);
             pPersonal.setSelectedState(activeChildId == 0 && activeType == MiogramSubfolderEngine.TYPE_PERSONAL);

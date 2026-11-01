@@ -15397,15 +15397,18 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (commentView != null) {
             return (int) (windowInsetsStateHolder.getAnimatedMaxBottomInset() + dp(9) + chatInputViewsContainer.getInputBubbleHeight() + dp(7) + dp(2));
         } else if (communityId != 0) {
-            return navigationBarHeight + dp(12 + 48 + 12);
-        } else if (!hasMainTabs || !MainTabsLayout.isBottomNavigationVisible()) {
+            return (hasMainTabs ? 0 : navigationBarHeight) + dp(12 + 48 + 12);
+        } else if (!hasMainTabs) {
             return navigationBarHeight;
+        } else if (!MainTabsLayout.isBottomNavigationVisible()) {
+            return 0;
         } else if (!MainTabsLayout.isBottomNavigationFloating()) {
-            return navigationBarHeight + getDockedTabsPadding();
+            return getDockedTabsPadding();
         } else {
-            // Floating tabs overlay: with clipToPadding(false), provide just enough padding
-            // so the last item scrolls past the floating dock without a gaping void.
-            return navigationBarHeight + dp(app.exteraless.appearance.MainTabsUiHelper.getTabsViewHeightDp() + 8);
+            // Floating tabs overlay: with clipToPadding(false) and viewPager already
+            // accounting for navigationBarHeight, reserve only the floating dock height
+            // so the last item scrolls past the pill without a gaping void.
+            return dp(app.exteraless.appearance.MainTabsUiHelper.getContentBottomInsetDp());
         }
     }
 

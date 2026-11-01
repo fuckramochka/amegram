@@ -389,6 +389,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         search.loadFaqWebPage();
 
         listView = new UniversalRecyclerView(this, this::fillItems, this::onClick, this::onLongClick);
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            listView.adapter.setApplyBackground(false);
+        }
         listView.setSections();
         listView.setPadding(0, AndroidUtilities.statusBarHeight + dp(12), 0, AndroidUtilities.navigationBarHeight + additionNavigationBarHeight);
         listView.setClipToPadding(false);
@@ -1117,8 +1120,17 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             setOrientation(HORIZONTAL);
             setGravity(Gravity.CENTER_VERTICAL);
-            setMinimumHeight(dp(58));
-            setBackground(Theme.getSelectorDrawable(false));
+            if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                setMinimumHeight(dp(68));
+                setPadding(dp(12), dp(6), dp(12), dp(6));
+                setBackground(app.miogram.ui.yumi.YumiUi.ripple(
+                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
+                        app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                                app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
+            } else {
+                setMinimumHeight(dp(58));
+                setBackground(Theme.getSelectorDrawable(false));
+            }
 
             avatarDrawable = new AvatarDrawable();
             avatarView = new BackupImageView(context);
@@ -1235,7 +1247,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(58), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(dp(app.miogram.ui.yumi.YumiUi.enabled() ? 68 : 58), MeasureSpec.EXACTLY)
             );
         }
 
@@ -1244,7 +1256,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public AccountCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                return new AccountCell(context, resourcesProvider);
+                AccountCell cell = new AccountCell(context, resourcesProvider);
+                if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                    RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
+                            RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                    lp.setMargins(dp(12), dp(3), dp(12), dp(3));
+                    cell.setLayoutParams(lp);
+                }
+                return cell;
             }
 
             @Override
@@ -1332,7 +1351,16 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 addView(textLayout, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1, Gravity.CENTER_VERTICAL | Gravity.FILL_HORIZONTAL,  mini ? 12 : 18, 0, 20, 0));
                 addView(valueView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 0, 0, 20, 0));
             }
-            setBackground(Theme.getSelectorDrawable(false));
+            if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                setMinimumHeight(dp(68));
+                setPadding(dp(12), dp(6), dp(12), dp(6));
+                setBackground(app.miogram.ui.yumi.YumiUi.ripple(
+                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
+                        app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
+                                app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
+            } else {
+                setBackground(Theme.getSelectorDrawable(false));
+            }
             updateColors();
         }
 
@@ -1461,7 +1489,9 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
                 MeasureSpec.makeMeasureSpec(MeasureSpec.getSize(widthMeasureSpec), MeasureSpec.EXACTLY),
-                MeasureSpec.makeMeasureSpec(dp(mini ? 48 : (twoLines ? 60 : 50)), MeasureSpec.EXACTLY)
+                MeasureSpec.makeMeasureSpec(dp(app.miogram.ui.yumi.YumiUi.enabled()
+                        ? (mini ? 52 : (twoLines ? 68 : 58))
+                        : (mini ? 48 : (twoLines ? 60 : 50))), MeasureSpec.EXACTLY)
             );
         }
 
@@ -1470,7 +1500,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public SettingCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                return new SettingCell(context, resourcesProvider);
+                SettingCell cell = new SettingCell(context, resourcesProvider);
+                if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                    RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
+                            RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
+                    lp.setMargins(dp(12), dp(3), dp(12), dp(3));
+                    cell.setLayoutParams(lp);
+                }
+                return cell;
             }
 
             @Override
@@ -1494,8 +1531,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 item.id = id;
                 item.iconResId = icon;
                 item.text = title;
-                // Subtitle is omitted so standard settings rows stay at clean 50dp
-                item.subtext = null;
+                item.subtext = subtitle;
                 item.textValue = value;
                 item.longValue = ((long) iconColorBottom << 32) | (iconColorTop & 0xFFFFFFFFL);
                 return item;

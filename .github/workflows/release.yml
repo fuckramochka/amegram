@@ -126,6 +126,8 @@ jobs:
             IS_RELEASE=true
           elif echo "$MSG" | grep -qi '\[release\]'; then
             IS_RELEASE=true
+          elif git log -1 --pretty=%B | grep -qi '\[release\]'; then
+            IS_RELEASE=true
           elif [[ "$REF" == refs/tags/v* ]] && [[ "$REF" != *beta* ]]; then
             IS_RELEASE=true
           fi

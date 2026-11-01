@@ -602,6 +602,9 @@ public class MiogramUpdater {
 
     private static JSONObject pickBetaRelease(JSONArray releases) {
         if (releases == null) return null;
+        JSONObject best = null;
+        int bestVersionCode = -1;
+        long bestPublishedAt = -1;
         for (int i = 0; i < releases.length(); i++) {
             try {
                 JSONObject r = releases.getJSONObject(i);
@@ -609,13 +612,21 @@ public class MiogramUpdater {
                 JSONArray assets = r.optJSONArray("assets");
                 if (assets == null) continue;
                 for (int j = 0; j < assets.length(); j++) {
-                    if (assets.getJSONObject(j).optString("name", "").endsWith(".apk")) {
-                        return r;
+                    String name = assets.getJSONObject(j).optString("name", "");
+                    if (name.endsWith(".apk")) {
+                        int code = versionCodeFromApkName(name);
+                        long pub = parseGithubTimestamp(r.optString("published_at", ""));
+                        if (best == null || code > bestVersionCode || (code == bestVersionCode && pub > bestPublishedAt)) {
+                            best = r;
+                            bestVersionCode = code;
+                            bestPublishedAt = pub;
+                        }
+                        break;
                     }
                 }
             } catch (Throwable ignore) {}
         }
-        return null;
+        return best;
     }
 
     public static String getCurrentAppVersion() {

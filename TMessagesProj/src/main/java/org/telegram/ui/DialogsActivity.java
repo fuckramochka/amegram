@@ -4317,7 +4317,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             viewPage.listView.setAllowStopHeaveOperations(true);
             viewPage.listView.setAccessibilityEnabled(false);
             viewPage.listView.setAnimateEmptyView(true, RecyclerListView.EMPTY_VIEW_ANIMATION_TYPE_ALPHA);
-            viewPage.listView.setClipToPadding(!(hasMainTabs && MainTabsLayout.isBottomNavigationFloating()));
+            viewPage.listView.setClipToPadding(!hasMainTabs);
             viewPage.listView.setPivotY(0);
             boolean isYougramCards = app.exteraless.appearance.YougramExpressive.enabled()
                     && app.exteraless.appearance.AppearanceConfig.chatListStyle() != app.exteraless.appearance.AppearanceConfig.CHAT_LIST_STYLE_FLAT;
@@ -6919,6 +6919,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
         } else if (subfolderBar != null) {
             subfolderBar.setVisibility(View.GONE);
+            subfolderBar.setAlpha(0f);
         }
 
         if (topPanelLayout != null) {
@@ -15498,7 +15499,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             additionNavigationBarHeight = getDockedTabsPadding();
             final int listPaddingBottom = calculateListViewPaddingBottom();
             for (int i = 0; i < viewPages.length; i++) {
-                if (viewPages[i] != null) {
+                if (viewPages[i] != null && viewPages[i].listView != null) {
+                    if (hasMainTabs) {
+                        viewPages[i].listView.setClipToPadding(false);
+                    }
                     viewPages[i].listView.setPadding(0, viewPages[i].listView.topPadding, 0, listPaddingBottom);
                 }
             }

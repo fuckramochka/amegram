@@ -1516,7 +1516,11 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter implements
                     dialogsHeight += onlineContacts.size() * AndroidUtilities.dp(58) + (onlineContacts.size() - 1) + AndroidUtilities.dp(52);
                 }
                 int archiveHeight = (hasArchive ? cellHeight + 1 : 0);
-                if (dialogsHeight < height) {
+                if (parentFragment != null && parentFragment.hasMainTabs) {
+                    // With bottom navigation tabs, content padding handles the bottom clearance.
+                    // Extra spacer height here creates an artificial empty dead zone after the chats.
+                    height = 0;
+                } else if (dialogsHeight < height) {
                     height = height - dialogsHeight + archiveHeight - paddingBottom;
                     if (paddingTop != 0) {
                         height -= AndroidUtilities.statusBarHeight;

@@ -99,7 +99,7 @@ public class MiogramSubfolderBar extends FrameLayout {
         if (!MiogramSubfolderEngine.isSubfoldersEnabled()) {
             return false;
         }
-        return getVisibility() == View.VISIBLE && !pillViews.isEmpty();
+        return !pillViews.isEmpty();
     }
 
     @Override
@@ -163,10 +163,28 @@ public class MiogramSubfolderBar extends FrameLayout {
         MessagesController mc = dialogsActivity.getMessagesController();
         if (mc == null) return;
 
-        ArrayList<MessagesController.DialogFilter> filters = mc.getDialogFilters();
+        if (currentParentTabId <= 0) {
+            // Main "All chats" tab never has subfolders — avoid duplicating tabs/pills
+            setVisibility(View.GONE);
+            return;
+        }
+
         MessagesController.DialogFilter parentFilter = null;
-        if (currentParentTabId >= 0 && currentParentTabId < filters.size()) {
-            parentFilter = filters.get(currentParentTabId);
+        if (mc.dialogFiltersById != null) {
+            parentFilter = mc.dialogFiltersById.get(currentParentTabId);
+        }
+        if (parentFilter == null) {
+            ArrayList<MessagesController.DialogFilter> filters = mc.getDialogFilters();
+            for (int i = 0; i < filters.size(); i++) {
+                if (filters.get(i).id == currentParentTabId) {
+                    parentFilter = filters.get(i);
+                    break;
+                }
+            }
+        }
+        if (parentFilter == null) {
+            setVisibility(View.GONE);
+            return;
         }
 
         ArrayList<MiogramSubfolderEngine.LocalSubfolder> localSubfolders = MiogramSubfolderEngine.getLocalSubfoldersForParent(currentAccount, parentFilter != null ? parentFilter.id : 0);

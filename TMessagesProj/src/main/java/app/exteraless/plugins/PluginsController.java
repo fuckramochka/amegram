@@ -176,20 +176,20 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
             }
 
             if (isAppUpdate) {
-                // On app update, only refresh plugins that the user already chose to have installed
+                java.util.Set<String> deleted = preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet());
+                // On app update or first run, deploy and refresh builtin plugins that were not deleted
                 String[] assets = appContext.getAssets().list("plugins");
                 if (assets != null) {
                     for (String name : assets) {
                         if ("kangel_plugins_manager.eaf".equals(name)) continue;
+                        if (deleted != null && deleted.contains(name)) continue;
                         File target = new File(pluginsDir, name);
-                        if (target.exists() && target.length() > 0) {
-                            try (java.io.InputStream is = appContext.getAssets().open("plugins/" + name);
-                                 java.io.FileOutputStream fos = new java.io.FileOutputStream(target)) {
-                                byte[] buf = new byte[8192];
-                                int len;
-                                while ((len = is.read(buf)) != -1) {
-                                    fos.write(buf, 0, len);
-                                }
+                        try (java.io.InputStream is = appContext.getAssets().open("plugins/" + name);
+                             java.io.FileOutputStream fos = new java.io.FileOutputStream(target)) {
+                            byte[] buf = new byte[8192];
+                            int len;
+                            while ((len = is.read(buf)) != -1) {
+                                fos.write(buf, 0, len);
                             }
                         }
                     }

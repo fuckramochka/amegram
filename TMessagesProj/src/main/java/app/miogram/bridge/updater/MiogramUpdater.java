@@ -507,18 +507,18 @@ public class MiogramUpdater {
                             }
 
                             String apkUrl = fetchApkUrlFromExpandedAssets(tag);
+                            int foundCode = versionCodeFromApkName(apkUrl);
                             if (TextUtils.isEmpty(apkUrl)) {
-                                String runNum = ver.contains(".") ? ver.substring(ver.lastIndexOf('.') + 1) : ver;
-                                int calcCode = 0;
-                                try { calcCode = 126100 + Integer.parseInt(runNum); } catch (Exception ignored) {}
-                                if (calcCode > 0) {
-                                    apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + "." + calcCode + ".apk";
-                                } else {
-                                    apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk";
-                                }
+                                apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk";
+                            }
+                            long atomPub = 0L;
+                            java.util.regex.Pattern pUpdated = java.util.regex.Pattern.compile("<updated>([^<]+)</updated>");
+                            java.util.regex.Matcher mUpdated = pUpdated.matcher(content);
+                            if (mUpdated.find()) {
+                                atomPub = parseGithubTimestamp(mUpdated.group(1).trim());
                             }
                             bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag, body, apkUrl, 0L,
-                                    versionCodeFromApkName(apkUrl), 0L);
+                                    foundCode, atomPub);
                         }
                     }
                 } catch (Throwable t) {
@@ -545,19 +545,13 @@ public class MiogramUpdater {
                             String tag = loc.substring(loc.lastIndexOf("/tag/") + 5).trim();
                             String ver = tag.replace("v", "").replace("V", "").trim();
                             String apkUrl = fetchApkUrlFromExpandedAssets(tag);
+                            int foundCode = versionCodeFromApkName(apkUrl);
                             if (TextUtils.isEmpty(apkUrl)) {
-                                String runNum = ver.contains(".") ? ver.substring(ver.lastIndexOf('.') + 1) : ver;
-                                int calcCode = 0;
-                                try { calcCode = 126100 + Integer.parseInt(runNum); } catch (Exception ignored) {}
-                                if (calcCode > 0) {
-                                    apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + "." + calcCode + ".apk";
-                                } else {
-                                    apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk";
-                                }
+                                apkUrl = "https://github.com/fuckramochka/amegram/releases/download/" + tag + "/amegram-" + tag + ".apk";
                             }
                             bestCandidate = new ReleaseCandidate("fuckramochka/amegram", ver, tag,
                                     "Останнє оновлення Yumigram на GitHub: " + tag, apkUrl, 0L,
-                                    versionCodeFromApkName(apkUrl), 0L);
+                                    foundCode, 0L);
                         }
                     }
                 } catch (Throwable t) {

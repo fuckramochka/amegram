@@ -135,8 +135,18 @@ public final class YumiMd3 {
 
     private static synchronized void ensureCache() {
         try {
+            int accentKey = 0;
+            try {
+                Theme.ThemeInfo activeTheme = Theme.getActiveTheme();
+                if (activeTheme != null) {
+                    accentKey = activeTheme.currentAccentId;
+                }
+            } catch (Throwable ignore) {
+            }
             int key = Theme.getColor(Theme.key_windowBackgroundWhite)
                     ^ Theme.getColor(Theme.key_chats_actionBackground)
+                    ^ Theme.getColor(Theme.key_featuredStickers_addButton)
+                    ^ accentKey
                     ^ (Theme.isCurrentThemeDark() ? 0x55555555 : 0xAAAAAAAA);
             if (sCacheValid && key == sLastKey) {
                 return;
@@ -157,7 +167,7 @@ public final class YumiMd3 {
         }
         sDark = dark;
 
-        int surf = dark ? 0xFF0E0F12 : 0xFFFAF9FD;
+        int surf = dark ? 0xFF141218 : 0xFFFAF9FD;
         try {
             int bg = Theme.getColor(Theme.key_windowBackgroundWhite);
             if (bg != 0 && (bg & 0xFF000000) != 0) {
@@ -168,7 +178,7 @@ public final class YumiMd3 {
         sSurface = surf;
 
         sSurfaceContainerLow = dark
-                ? 0xFF171A21
+                ? blend(surf, 0xFF000000, 0.15f)
                 : blend(surf, 0xFF000000, 0.03f);
 
         int gray = 0;
@@ -180,19 +190,19 @@ public final class YumiMd3 {
             sSurfaceContainer = gray;
         } else {
             sSurfaceContainer = dark
-                    ? 0xFF1B1E26
+                    ? blend(surf, 0xFFFFFFFF, 0.04f)
                     : blend(surf, 0xFF000000, 0.05f);
         }
 
         sSurfaceContainerHigh = dark
-                ? 0xFF212530
+                ? blend(surf, 0xFFFFFFFF, 0.08f)
                 : blend(surf, 0xFF000000, 0.08f);
 
         sSurfaceContainerHighest = dark
-                ? 0xFF282D3A
+                ? blend(surf, 0xFFFFFFFF, 0.12f)
                 : blend(surf, 0xFF000000, 0.12f);
 
-        int text = dark ? 0xFFF0F2F8 : 0xFF1D1B20;
+        int text = dark ? 0xFFE6E0E9 : 0xFF1D1B20;
         try {
             int tColor = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
             if (tColor != 0 && (tColor & 0xFF000000) != 0) {
@@ -202,7 +212,7 @@ public final class YumiMd3 {
         }
         sOnSurface = text;
 
-        int sub = dark ? 0xFF9299A8 : 0xFF49454F;
+        int sub = dark ? 0xFFCAC4D0 : 0xFF49454F;
         try {
             int subColor = Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2);
             if (subColor != 0 && (subColor & 0xFF000000) != 0) {
@@ -212,7 +222,7 @@ public final class YumiMd3 {
         }
         sOnSurfaceVariant = sub;
 
-        int div = dark ? 0xFF242833 : 0xFF79747E;
+        int div = dark ? 0xFF938F99 : 0xFF79747E;
         try {
             int divColor = Theme.getColor(Theme.key_divider);
             if (divColor != 0 && (divColor & 0xFF000000) != 0) {
@@ -224,18 +234,31 @@ public final class YumiMd3 {
 
         // Follow the active Telegram theme so Yumi controls stay in sync when
         // the user changes the chat/action accent.
-        int prim = dark ? 0xFF8AB4F8 : 0xFF2A5BB8;
+        int prim = dark ? 0xFFFF8FB7 : 0xFFB83268;
         try {
-            int themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
-            if ((themeAccent >>> 24) != 0) {
+            int themeAccent = 0;
+            Theme.ThemeInfo activeTheme = Theme.getActiveTheme();
+            if (activeTheme != null && activeTheme.hasAccentColors()) {
+                themeAccent = activeTheme.getAccentColor(activeTheme.currentAccentId);
+            }
+            if (!isValidAccent(themeAccent)) {
+                themeAccent = Theme.getColor(Theme.key_featuredStickers_addButton);
+            }
+            if (!isValidAccent(themeAccent)) {
+                themeAccent = Theme.getColor(Theme.key_chats_actionBackground);
+            }
+            if (!isValidAccent(themeAccent)) {
+                themeAccent = Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader);
+            }
+            if (isValidAccent(themeAccent)) {
                 prim = 0xFF000000 | (themeAccent & 0x00FFFFFF);
             }
         } catch (Throwable ignore) {
         }
         sPrimary = prim;
-        sOnPrimary = ColorUtils.calculateLuminance(prim) > 0.5 ? 0xFF082C5E : 0xFFFFFFFF;
-        sPrimaryContainer = dark ? 0xFF334A78 : blend(0xFFFFFFFF, prim, 0.16f);
-        sOnPrimaryContainer = dark ? 0xFFD3E3FD : blend(prim, 0xFF000000, 0.85f);
+        sOnPrimary = ColorUtils.calculateLuminance(prim) > 0.5 ? 0xFF000000 : 0xFFFFFFFF;
+        sPrimaryContainer = dark ? blend(surf, prim, 0.28f) : blend(0xFFFFFFFF, prim, 0.16f);
+        sOnPrimaryContainer = dark ? blend(prim, 0xFFFFFFFF, 0.85f) : blend(prim, 0xFF000000, 0.85f);
 
         sActionGradientStart = blend(prim, dark ? 0xFFFFFFFF : 0xFF000000, dark ? 0.10f : 0.12f);
         sActionGradientEnd = blend(prim, dark ? 0xFF000000 : 0xFFFFFFFF, dark ? 0.24f : 0.20f);
@@ -405,11 +428,11 @@ public final class YumiMd3 {
     // Chat roles -----------------------------------------------------------
 
     public static int chatWallpaper() {
-        return isDark() ? 0xFF0E0F12 : 0xFFF7F1F6;
+        return isDark() ? 0xFF100D14 : 0xFFF7F1F6;
     }
 
     public static int chatInBubble() {
-        return isDark() ? 0xFF171A21 : 0xFFFFFFFF;
+        return isDark() ? 0xFF211B27 : 0xFFFFFFFF;
     }
 
     public static int chatOutBubble() {
@@ -475,11 +498,25 @@ public final class YumiMd3 {
     }
 
     public static int popupSurface() {
-        return isDark() ? 0xFF1B1E26 : 0xFFFFFFFF;
+        try {
+            int bg = Theme.getColor(Theme.key_dialogBackground);
+            if (bg != 0 && (bg & 0xFF000000) != 0) {
+                return bg;
+            }
+        } catch (Throwable ignore) {
+        }
+        return isDark() ? 0xFF241E2B : 0xFFFFFFFF;
     }
 
     public static int dialogSurface() {
-        return isDark() ? 0xFF171A21 : 0xFFFFFBFF;
+        try {
+            int bg = Theme.getColor(Theme.key_dialogBackground);
+            if (bg != 0 && (bg & 0xFF000000) != 0) {
+                return bg;
+            }
+        } catch (Throwable ignore) {
+        }
+        return isDark() ? 0xFF1D1822 : 0xFFFFFBFF;
     }
 
     public static int sliderTrack() {

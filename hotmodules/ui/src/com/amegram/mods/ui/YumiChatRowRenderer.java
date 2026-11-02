@@ -221,15 +221,15 @@ public final class YumiChatRowRenderer {
             final float by = height - dp(context, 9) - badgeH;
 
             // Expressive capsule badge
-            badgePaint.setColor(row.muted ? palette.secondaryFill : 0xFF3D75E6);
+            badgePaint.setColor(row.muted ? palette.secondaryFill : palette.primary);
             canvas.drawRoundRect(bx, by, bx + badgeW, by + badgeH, badgeR, badgeR, badgePaint);
             if (!TextUtils.isEmpty(row.badgeText)) {
-                badgeTextPaint.setColor(row.muted ? palette.textSecondary : 0xFFFFFFFF);
+                badgeTextPaint.setColor(row.muted ? palette.textSecondary : palette.onPrimary);
                 final float baseline = by + badgeH / 2f
                         - (badgeTextPaint.descent() + badgeTextPaint.ascent()) / 2f;
                 canvas.drawText(row.badgeText, bx + badgeW / 2f, baseline, badgeTextPaint);
             } else {
-                dotPaint.setColor(0xFFFFFFFF);
+                dotPaint.setColor(palette.onPrimary);
                 canvas.drawCircle(bx + badgeW / 2f, by + badgeH / 2f, dp(context, 3.5f), dotPaint);
             }
         }

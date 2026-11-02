@@ -90,7 +90,7 @@ final class YumiNavItem extends FrameLayout {
 
         counterView = new TextView(context);
         counterView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 9f);
-        counterView.setTextColor(0xFFFFFFFF);
+        counterView.setTextColor(palette.onPrimary);
         counterView.setGravity(Gravity.CENTER);
         counterView.setMinWidth(dp(16));
         counterView.setMinHeight(dp(16));
@@ -160,7 +160,7 @@ final class YumiNavItem extends FrameLayout {
         iconView.setColorFilter(new PorterDuffColorFilter(
                 selected ? updated.navActive : updated.navInactive, PorterDuff.Mode.SRC_IN));
         labelView.setTextColor(updated.navActive);
-        counterView.setTextColor(0xFFFFFFFF);
+        counterView.setTextColor(updated.onPrimary);
         GradientDrawable bg = (GradientDrawable) avatarView.getBackground();
         if (bg != null) {
             bg.setColor(updated.primaryContainer);

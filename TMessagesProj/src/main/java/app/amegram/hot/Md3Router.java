@@ -33,7 +33,7 @@ public final class Md3Router {
     }
 
     public static boolean sheetEnabled() {
-        return service() != null;
+        return true;
     }
 
     public static boolean miniEnabled() {
@@ -67,11 +67,16 @@ public final class Md3Router {
                     }
                 } catch (Throwable ignore) {
                 }
-                return new AudioPlayerAlert(context, resourcesProvider);
+            }
+            try {
+                if (app.exteraless.player.PlayerSheet.instance != null) {
+                    app.exteraless.player.PlayerSheet.instance.dismissImmediately();
+                }
+                return new app.exteraless.player.PlayerSheet(context, resourcesProvider);
+            } catch (Throwable e) {
+                org.telegram.messenger.FileLog.e(e);
             }
         }
-        // Без окремого md3player-модуля повертаємось до попереднього плеєра
-        // AudioPlayerAlert (усередині — сучасний layout, якщо player увімкнено).
         return new AudioPlayerAlert(context, resourcesProvider);
     }
 

@@ -30,7 +30,7 @@ public final class Md3Player {
     }
 
     public static BottomSheet create(Context context, Theme.ResourcesProvider resourcesProvider) {
-        // Єдиний роутер плеєра: md3player-модуль → сучасний AudioPlayerAlert.
+        // Єдиний роутер плеєра: Md3Router створює сучасний PlayerSheet для музики.
         return app.amegram.hot.Md3Router.create(context, resourcesProvider);
     }
 

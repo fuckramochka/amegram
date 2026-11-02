@@ -17,20 +17,12 @@ final class YumiSettingsRowStyle {
     private YumiSettingsRowStyle() {}
 
     static void applySurface(android.view.View row, Theme.ResourcesProvider resourcesProvider, float radiusDp) {
-        if (!YougramExpressive.enabled()) {
-            return;
-        }
-        int surface = YumiMd3.surfaceContainerLow();
-        int outline = YumiMd3.withAlpha(YumiMd3.primary(), YumiMd3.isDark() ? 0.30f : 0.20f);
-        int rippleColor = YumiMd3.withAlpha(YumiMd3.primary(), 0.16f);
-        Drawable rounded = YumiUi.rounded(surface, radiusDp, outline, 0.85f);
-        Drawable ripple = YumiUi.ripple(rippleColor, rounded);
-        row.setBackground(new InsetDrawable(ripple,
-                AndroidUtilities.dp(10), AndroidUtilities.dp(2), AndroidUtilities.dp(10), AndroidUtilities.dp(2)));
+        // No-op: settings rows are hosted within section cards and must not have
+        // individual nested outline capsules or artificial inset margins.
     }
 
     static void title(TextView view) {
-        if (!YougramExpressive.enabled()) {
+        if (!YougramExpressive.enabled() || view == null) {
             return;
         }
         view.setTypeface(YumiMd3.typeface(YumiMd3.MEDIUM));
@@ -38,9 +30,10 @@ final class YumiSettingsRowStyle {
     }
 
     static void detail(TextView view) {
-        if (!YougramExpressive.enabled()) {
+        if (!YougramExpressive.enabled() || view == null) {
             return;
         }
         view.setTypeface(YumiMd3.typeface(YumiMd3.REGULAR));
+        view.setTextColor(YumiMd3.onSurfaceVariant());
     }
 }

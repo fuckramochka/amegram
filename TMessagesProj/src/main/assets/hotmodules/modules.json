@@ -303,18 +303,30 @@
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
+          "version": "1.0.15",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.15.hmod",
+          "sha256": "5b2099bf372f26089952a357fde617ab3909faa63f4c9b28b48ea3e85e8569e6",
+          "minApp": 7112,
+          "changelog": "Версія 1.0.15: новий виразний дизайн — темна сланцева палітра з синім акцентом, активна капсула вкладки з лічильником ('2 Чати'), плаваючі картки 22dp з капсульними мітками часу, виправлено смуги розмиття під папками та над панеллю навігації.",
+          "permissions": [
+            "hook_ui"
+          ],
+          "sizeBytes": 32906
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.14",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.14.hmod",
           "sha256": "cce9fa0e7e5f93415248ae841b02fd126abe6eb0a4bf7e76a8e782a5657448b2",
+          "sizeBytes": 32732,
           "minApp": 7112,
           "changelog": "Версія 1.0.14: виправлено завжди видимі контури карток та прибрано зайві обводки нижньої панелі і пошуку.",
           "permissions": [
             "hook_ui"
-          ],
-          "sizeBytes": 32732
-        }
-      },
-      "history": [
+          ]
+        },
         {
           "branch": "stable",
           "version": "1.0.13",

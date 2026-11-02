@@ -3284,11 +3284,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         paddingBottom = 0;
                     } else {
                         paddingTop = listView.getMeasuredWidth() + getActionsExtraHeight();
-                        paddingBottom = Math.max(0, getMeasuredHeight() - (listContentHeight + getHeaderExtraHeight() + actionBarHeight));
+                        paddingBottom = Math.max(0, getMeasuredHeight() - (listContentHeight + getHeaderExtraHeight() + actionBarHeight)) + navigationBarHeight + additionNavigationBarHeight;
                     }
                     if (banFromGroup != 0) {
-                        paddingBottom += dp(48) + AndroidUtilities.navigationBarHeight;
-                        listView.setBottomGlowOffset(dp(48) + AndroidUtilities.navigationBarHeight);
+                        paddingBottom += dp(48);
+                        listView.setBottomGlowOffset(dp(48) + navigationBarHeight);
                     } else {
                         listView.setBottomGlowOffset(0);
                     }
@@ -3311,11 +3311,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         paddingBottom = 0;
                     } else {
                         paddingTop = listView.getMeasuredWidth() + getActionsExtraHeight();
-                        paddingBottom = Math.max(0, getMeasuredHeight() - (listContentHeight + getHeaderExtraHeight() + actionBarHeight));
+                        paddingBottom = Math.max(0, getMeasuredHeight() - (listContentHeight + getHeaderExtraHeight() + actionBarHeight)) + navigationBarHeight + additionNavigationBarHeight;
                     }
                     if (banFromGroup != 0) {
-                        paddingBottom += AndroidUtilities.dp(48) + AndroidUtilities.navigationBarHeight;
-                        listView.setBottomGlowOffset(AndroidUtilities.dp(48) + AndroidUtilities.navigationBarHeight);
+                        paddingBottom += AndroidUtilities.dp(48);
+                        listView.setBottomGlowOffset(AndroidUtilities.dp(48) + navigationBarHeight);
                     } else {
                         listView.setBottomGlowOffset(0);
                     }
@@ -18005,7 +18005,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (listView != null) {
-            listView.setPadding(0, 0, 0, navigationBarHeight + additionNavigationBarHeight);
+            int top = listView.getPaddingTop();
+            if (top == 0 && listView.getMeasuredWidth() > 0) {
+                top = listView.getMeasuredWidth() + getActionsExtraHeight();
+            }
+            listView.setPadding(0, top, 0, navigationBarHeight + additionNavigationBarHeight);
             listView.setClipToPadding(false);
         }
         if (sharedMediaLayout != null) {

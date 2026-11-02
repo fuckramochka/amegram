@@ -570,9 +570,6 @@ object AppearanceConfig {
     /** Стиль разделителя внутри карточки: 0 — скрыт, 1 — линия, 2 — сегменты. */
     @JvmStatic
     fun dividerStyle(): Int {
-        if (isYougramExpressive()) {
-            return DIVIDER_SEGMENTS
-        }
         ensureLoaded()
         return dividerStyle.Int()
     }

@@ -240,6 +240,24 @@ public final class HotModulesManager {
             return false;
         }
         if (seed.equals(installed)) {
+            try {
+                File installedFile = new File(new File(new File(root(), modId), installed), "module.hmod");
+                if (!installedFile.exists()) {
+                    return true;
+                }
+                if (appContext != null) {
+                    try (InputStream in = appContext.getAssets().open("hotmodules/" + assetFile)) {
+                        int assetLen = 0;
+                        byte[] b = new byte[8192];
+                        int r;
+                        while ((r = in.read(b)) != -1) assetLen += r;
+                        if (assetLen > 0 && assetLen != installedFile.length()) {
+                            return true;
+                        }
+                    }
+                }
+            } catch (Throwable ignore) {
+            }
             return false;
         }
         return compareVersions(seed, installed) > 0;

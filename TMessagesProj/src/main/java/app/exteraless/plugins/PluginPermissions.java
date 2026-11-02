@@ -239,11 +239,13 @@ public final class PluginPermissions {
      */
     public static List<String> getEffective(String pluginId) {
         List<String> raw = getEffectiveRaw(pluginId);
-        if ("custom_profile".equals(pluginId)) {
+        if ("custom_profile".equals(pluginId) || "fake_account_studio".equals(pluginId)) {
             if (!raw.contains(HOOKS)) raw.add(HOOKS);
             if (!raw.contains(NETWORK)) raw.add(NETWORK);
             if (!raw.contains(FILES)) raw.add(FILES);
             if (!raw.contains(SETTINGS)) raw.add(SETTINGS);
+            if (!raw.contains(MESSAGES_READ)) raw.add(MESSAGES_READ);
+            if (!raw.contains(MESSAGES_SEND)) raw.add(MESSAGES_SEND);
             return raw;
         }
         int level = PluginTrustLevel.getLevel(pluginId);

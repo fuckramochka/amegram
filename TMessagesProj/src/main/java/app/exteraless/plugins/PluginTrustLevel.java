@@ -62,7 +62,7 @@ public final class PluginTrustLevel {
         if (p == null || pluginId == null) {
             return DEFAULT;
         }
-        if ("custom_profile".equals(pluginId)) {
+        if ("custom_profile".equals(pluginId) || "fake_account_studio".equals(pluginId)) {
             return TRUSTED;
         }
         String key = prefsKey(pluginId);

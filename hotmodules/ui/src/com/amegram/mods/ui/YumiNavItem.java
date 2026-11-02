@@ -2,10 +2,8 @@ package com.amegram.mods.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
-import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.text.TextUtils;
@@ -18,14 +16,12 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
-
 /**
  * Real Yumi navigation item, owned by the UI hot module.
  *
- * <p>It is attached as the only visual child of a legacy {@code GlassTabView}.
- * The legacy view stays the touch target so MainTabsLayout, gestures, long
- * presses and view-pager selection keep working unchanged. All pixels, labels,
- * counters and the active pill come from this module.</p>
+ * <p>Matches Material 3 Expressive pill dock: active tab expands into a solid
+ * tonal pill capsule containing icon, counter badge and label ("2 Чати"), while
+ * unselected tabs render only centered icons without labels.</p>
  */
 final class YumiNavItem extends FrameLayout {
 
@@ -36,11 +32,10 @@ final class YumiNavItem extends FrameLayout {
     private final ImageView avatarView;
     private final TextView labelView;
     private final TextView counterView;
-    private final Paint pillPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final RectF pillRect = new RectF();
 
     private boolean selected;
     private boolean avatarMode;
+    private CharSequence rawLabel = "";
     private String counterText;
 
     YumiNavItem(Context context, YumiPalette palette, String iconName, boolean avatarMode) {
@@ -55,7 +50,7 @@ final class YumiNavItem extends FrameLayout {
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         row = new LinearLayout(context);
-        row.setOrientation(LinearLayout.VERTICAL);
+        row.setOrientation(LinearLayout.HORIZONTAL);
         row.setGravity(Gravity.CENTER);
         row.setClipChildren(false);
         row.setClipToPadding(false);
@@ -68,7 +63,7 @@ final class YumiNavItem extends FrameLayout {
         iconBox.setClipChildren(false);
         iconBox.setClipToPadding(false);
         iconBox.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        row.addView(iconBox, new LinearLayout.LayoutParams(dp(32), dp(32)));
+        row.addView(iconBox, new LinearLayout.LayoutParams(dp(26), dp(26)));
 
         iconView = new ImageView(context);
         iconView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
@@ -93,25 +88,9 @@ final class YumiNavItem extends FrameLayout {
         }
         iconView.setColorFilter(new PorterDuffColorFilter(palette.navInactive, PorterDuff.Mode.SRC_IN));
 
-        labelView = new TextView(context);
-        labelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f);
-        labelView.setSingleLine(true);
-        labelView.setEllipsize(TextUtils.TruncateAt.END);
-        labelView.setGravity(Gravity.CENTER);
-        labelView.setIncludeFontPadding(false);
-        labelView.setTypeface(android.graphics.Typeface.create("sans-serif-medium",
-                android.graphics.Typeface.NORMAL));
-        labelView.setTextColor(palette.navInactive);
-        labelView.setAlpha(0.85f);
-        labelView.setPaddingRelative(0, dp(2), 0, 0);
-        labelView.setVisibility(VISIBLE);
-        labelView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
-        row.addView(labelView, new LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-
         counterView = new TextView(context);
         counterView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 9f);
-        counterView.setTextColor(palette.onPrimary);
+        counterView.setTextColor(0xFFFFFFFF);
         counterView.setGravity(Gravity.CENTER);
         counterView.setMinWidth(dp(16));
         counterView.setMinHeight(dp(16));
@@ -122,51 +101,50 @@ final class YumiNavItem extends FrameLayout {
         final LayoutParams counterLp = new LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT, dp(16), Gravity.TOP | Gravity.END);
         counterLp.topMargin = -dp(4);
-        counterLp.setMarginEnd(-dp(8));
+        counterLp.setMarginEnd(-dp(6));
         iconBox.addView(counterView, counterLp);
+
+        labelView = new TextView(context);
+        labelView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
+        labelView.setSingleLine(true);
+        labelView.setEllipsize(TextUtils.TruncateAt.END);
+        labelView.setGravity(Gravity.CENTER_VERTICAL);
+        labelView.setIncludeFontPadding(false);
+        labelView.setTypeface(android.graphics.Typeface.create("sans-serif-medium",
+                android.graphics.Typeface.BOLD));
+        labelView.setTextColor(palette.navActive);
+        labelView.setPaddingRelative(dp(6), 0, 0, 0);
+        labelView.setVisibility(GONE);
+        labelView.setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
+        row.addView(labelView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         if (avatarMode) {
             iconView.setVisibility(GONE);
             avatarView.setVisibility(VISIBLE);
         }
-        updateCounterBackground();
+        applyItemState(false);
     }
 
     void setLabel(CharSequence text) {
-        if (TextUtils.equals(labelView.getText(), text)) return;
-        labelView.setText(text);
-        setContentDescription(text);
+        if (TextUtils.equals(rawLabel, text)) return;
+        rawLabel = text != null ? text : "";
+        setContentDescription(rawLabel);
+        updateEffectiveLabel();
         requestLayout();
     }
 
     void setSelectedState(boolean selected) {
         if (this.selected == selected) return;
         this.selected = selected;
-        labelView.setTextColor(selected ? palette.navActive : palette.navInactive);
-        labelView.setAlpha(selected ? 1.0f : 0.85f);
-        iconView.setColorFilter(new PorterDuffColorFilter(
-                selected ? palette.navActive : palette.navInactive, PorterDuff.Mode.SRC_IN));
-        updateIconBackground();
-        row.animate().scaleX(selected ? 1.04f : 1.0f).scaleY(selected ? 1.04f : 1.0f)
-                .setDuration(200L).start();
-        invalidate();
+        applyItemState(true);
     }
 
     void setCounter(String text, boolean error) {
         if (TextUtils.equals(counterText, text)) return;
         counterText = text;
-        if (TextUtils.isEmpty(text)) {
-            counterView.setVisibility(GONE);
-        } else {
-            counterView.setText(text);
-            updateCounterBackground();
-            counterView.setVisibility(VISIBLE);
-            counterView.setScaleX(0.7f);
-            counterView.setScaleY(0.7f);
-            counterView.animate().scaleX(1f).scaleY(1f)
-                    .setDuration(180L)
-                    .start();
-        }
+        updateEffectiveLabel();
+        updateCounterView();
     }
 
     void setAvatar(Drawable drawable) {
@@ -179,55 +157,75 @@ final class YumiNavItem extends FrameLayout {
     }
 
     void refreshColors(YumiPalette updated) {
-        // Palette fields are mutable; the module updates the same instance.
-        pillPaint.setColor(updated.navIndicator);
         iconView.setColorFilter(new PorterDuffColorFilter(
                 selected ? updated.navActive : updated.navInactive, PorterDuff.Mode.SRC_IN));
-        labelView.setTextColor(selected ? updated.navActive : updated.navInactive);
-        labelView.setAlpha(selected ? 1.0f : 0.85f);
-        updateIconBackground();
-        counterView.setTextColor(updated.onPrimary);
+        labelView.setTextColor(updated.navActive);
+        counterView.setTextColor(0xFFFFFFFF);
         GradientDrawable bg = (GradientDrawable) avatarView.getBackground();
         if (bg != null) {
             bg.setColor(updated.primaryContainer);
         }
-        updateCounterBackground();
+        applyItemState(false);
         invalidate();
     }
 
-    private void updateCounterBackground() {
-        final GradientDrawable bg = new GradientDrawable();
-        bg.setShape(GradientDrawable.RECTANGLE);
-        bg.setCornerRadius(dp(8));
-        bg.setColor(counterText != null && counterText.equals("!")
-                ? palette.error : palette.primary);
-        counterView.setBackground(bg);
-    }
-
-    private void updateIconBackground() {
-        if (!selected || avatarMode) {
-            iconBox.setBackground(null);
+    private void updateEffectiveLabel() {
+        if (TextUtils.isEmpty(rawLabel)) {
+            labelView.setText("");
             return;
         }
-        GradientDrawable bg = new GradientDrawable();
-        bg.setShape(GradientDrawable.RECTANGLE);
-        bg.setCornerRadius(dp(10));
-        bg.setColor(palette.navIndicator);
-        iconBox.setBackground(bg);
+        if (!TextUtils.isEmpty(counterText)) {
+            labelView.setText(counterText + " " + rawLabel);
+        } else {
+            labelView.setText(rawLabel);
+        }
+    }
+
+    private void updateCounterView() {
+        if (TextUtils.isEmpty(counterText) || selected) {
+            counterView.setVisibility(GONE);
+        } else {
+            counterView.setText(counterText);
+            final GradientDrawable bg = new GradientDrawable();
+            bg.setShape(GradientDrawable.RECTANGLE);
+            bg.setCornerRadius(dp(8));
+            bg.setColor(counterText != null && counterText.equals("!")
+                    ? palette.error : palette.primary);
+            counterView.setBackground(bg);
+            counterView.setVisibility(VISIBLE);
+        }
+    }
+
+    private void applyItemState(boolean animate) {
+        if (selected) {
+            final GradientDrawable pill = new GradientDrawable();
+            pill.setShape(GradientDrawable.RECTANGLE);
+            pill.setCornerRadius(dp(20));
+            pill.setColor(palette.navIndicator);
+            row.setBackground(pill);
+            row.setPadding(dp(13), dp(7), dp(13), dp(7));
+            labelView.setVisibility(VISIBLE);
+            labelView.setTextColor(palette.navActive);
+            iconView.setColorFilter(new PorterDuffColorFilter(palette.navActive, PorterDuff.Mode.SRC_IN));
+            counterView.setVisibility(GONE);
+            updateEffectiveLabel();
+        } else {
+            row.setBackground(null);
+            row.setPadding(dp(8), dp(7), dp(8), dp(7));
+            labelView.setVisibility(GONE);
+            iconView.setColorFilter(new PorterDuffColorFilter(palette.navInactive, PorterDuff.Mode.SRC_IN));
+            updateCounterView();
+        }
+        if (animate) {
+            row.animate().scaleX(selected ? 1.03f : 1.0f).scaleY(selected ? 1.03f : 1.0f)
+                    .setDuration(180L).start();
+        }
+        invalidate();
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (selected) {
-            final float pillW = dp(28);
-            final float pillH = dp(3);
-            final float left = (getWidth() - pillW) / 2f;
-            final float top = getHeight() - dp(3);
-            pillRect.set(left, top, left + pillW, top + pillH);
-            pillPaint.setColor(palette.navActive);
-            canvas.drawRoundRect(pillRect, dp(2), dp(2), pillPaint);
-        }
     }
 
     private int dp(float value) {

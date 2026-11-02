@@ -328,7 +328,8 @@ public final class YumiNavController {
     private Drawable navBackground(Context context) {
         final GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(palette.navSurface);
-        drawable.setCornerRadius(dp(context, 22));
+        drawable.setCornerRadius(dp(context, 24));
+        drawable.setStroke(dp(context, 1), palette.navBorder);
         return drawable;
     }
 

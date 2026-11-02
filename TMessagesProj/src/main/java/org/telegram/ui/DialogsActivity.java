@@ -6933,10 +6933,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
 
         if (topBubblesFadeView != null) {
-            topBubblesFadeView.setTranslationY(fadeViewT - searchOffset);
-            final float s = lerp(dp(7), dp(50), Math.min(topPanelsVisibility, filtersTabVisibility));
-            topBubblesFadeView.setPosition(s, Math.min(dp(40), topPanelsHeight + filtersTabHeight - s));
-            topBubblesFadeView.setAlpha(Math.max(filtersTabVisibility, topPanelsVisibility));
+            if (app.exteraless.appearance.AppearanceConfig.isYougramExpressive()) {
+                topBubblesFadeView.setVisibility(View.GONE);
+                topBubblesFadeView.setAlpha(0f);
+            } else {
+                topBubblesFadeView.setTranslationY(fadeViewT - searchOffset);
+                final float s = lerp(dp(7), dp(50), Math.min(topPanelsVisibility, filtersTabVisibility));
+                topBubblesFadeView.setPosition(s, Math.min(dp(40), topPanelsHeight + filtersTabHeight - s));
+                topBubblesFadeView.setAlpha(Math.max(filtersTabVisibility, topPanelsVisibility));
+            }
         }
     }
 

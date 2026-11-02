@@ -29,14 +29,15 @@ class FakeAccountStudioTest(unittest.TestCase):
         plugin = fake_account_studio.FakeAccountStudioPlugin()
         plugin._exteraless_attach("fake_account_studio")
 
-        # Verify defaults
+        # Verify English defaults
         self.assertTrue(plugin.is_fake_account_active())
         self.assertTrue(plugin.is_fake_premium())
         self.assertTrue(plugin.is_fake_verified())
-        self.assertTrue(plugin.is_hide_real_chats())
+        # hide_real_chats is False by default so actual chats are kept intact alongside demo chats
+        self.assertFalse(plugin.is_hide_real_chats())
         self.assertTrue(plugin.is_demo_chats_active())
-        self.assertEqual(plugin.get_fake_first_name(), "Олексій")
-        self.assertEqual(plugin.get_fake_last_name(), "Юміграм")
+        self.assertEqual(plugin.get_fake_first_name(), "Alex")
+        self.assertEqual(plugin.get_fake_last_name(), "Smith")
         self.assertEqual(plugin.get_fake_username(), "yumi_creator")
 
         # Test settings creation
@@ -46,8 +47,8 @@ class FakeAccountStudioTest(unittest.TestCase):
 
         # Check presets
         plugin._apply_preset("durov")
-        self.assertEqual(plugin.get_fake_first_name(), "Павел")
-        self.assertEqual(plugin.get_fake_last_name(), "Дуров")
+        self.assertEqual(plugin.get_fake_first_name(), "Pavel")
+        self.assertEqual(plugin.get_fake_last_name(), "Durov")
         self.assertEqual(plugin.get_fake_username(), "durov")
         self.assertTrue(plugin.is_fake_premium())
         self.assertTrue(plugin.is_fake_verified())
@@ -81,6 +82,24 @@ class FakeAccountStudioTest(unittest.TestCase):
         self.assertEqual(len(plugin._chat_histories[99990001]), initial_count + 1)
         self.assertEqual(plugin._chat_histories[99990001][-1]["text"], "Test message for ad video")
         self.assertTrue(plugin._chat_histories[99990001][-1]["out"])
+
+    def test_custom_chat_creation_keeps_existing(self):
+        plugin = fake_account_studio.FakeAccountStudioPlugin()
+        plugin._exteraless_attach("fake_account_studio")
+        plugin._init_demo_data()
+
+        initial_count = len(plugin._chat_histories)
+        plugin.set_setting("new_chat_title", "Crypto Sponsor")
+        plugin.set_setting("new_chat_message", "Partnership agreement approved! 💎")
+        plugin.set_setting("new_chat_is_channel", False)
+
+        plugin._add_custom_chat_clicked()
+        self.assertEqual(len(plugin._chat_histories), initial_count + 1)
+
+        # Check that the new chat exists
+        new_peer_id = list(plugin._chat_histories.keys())[-1]
+        self.assertTrue(plugin.is_demo_dialog(new_peer_id))
+        self.assertEqual(fake_account_studio.DEMO_PEERS[new_peer_id]["first_name"], "Crypto Sponsor")
 
 
 if __name__ == "__main__":

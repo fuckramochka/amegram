@@ -56,6 +56,16 @@ public final class Md3Router {
         } catch (Throwable ignore) {
         }
         if (handles(now)) {
+            try {
+                Object customSheet = HotModulesManager.createScreen("player", "player_sheet");
+                if (customSheet == null) {
+                    customSheet = HotModulesManager.createScreen("ui", "player_sheet");
+                }
+                if (customSheet instanceof BottomSheet) {
+                    return (BottomSheet) customSheet;
+                }
+            } catch (Throwable ignore) {
+            }
             HotMd3 s = service();
             if (s != null) {
                 try {

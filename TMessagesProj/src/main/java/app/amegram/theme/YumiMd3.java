@@ -14,6 +14,8 @@ import androidx.core.graphics.ColorUtils;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.Theme;
 
+import app.amegram.hot.HotUiGate;
+
 /**
  * Yumi Material 3 Expressive design tokens.
  *
@@ -271,6 +273,22 @@ public final class YumiMd3 {
         sCacheValid = true;
     }
 
+    public static float radiusL() {
+        return HotUiGate.getDimension("card_radius", RADIUS_L_DP);
+    }
+
+    public static float radiusM() {
+        return HotUiGate.getDimension("radius_m", RADIUS_M_DP);
+    }
+
+    public static float radiusXL() {
+        return HotUiGate.getDimension("radius_xl", RADIUS_XL_DP);
+    }
+
+    public static float radiusNav() {
+        return HotUiGate.getDimension("nav_radius", 24f);
+    }
+
     public static boolean isDark() {
         if (!sCacheValid) ensureCache();
         return sDark;
@@ -278,21 +296,29 @@ public final class YumiMd3 {
 
     public static int surface() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("surface", -1);
+        if (override != -1) return override;
         return sSurface;
     }
 
     public static int surfaceContainerLow() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("surfaceContainerLow", -1);
+        if (override != -1) return override;
         return sSurfaceContainerLow;
     }
 
     public static int surfaceContainer() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("surfaceContainer", -1);
+        if (override != -1) return override;
         return sSurfaceContainer;
     }
 
     public static int surfaceContainerHigh() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("surfaceContainerHigh", -1);
+        if (override != -1) return override;
         return sSurfaceContainerHigh;
     }
 
@@ -323,16 +349,22 @@ public final class YumiMd3 {
 
     public static int onSurface() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("onSurface", -1);
+        if (override != -1) return override;
         return sOnSurface;
     }
 
     public static int onSurfaceVariant() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("onSurfaceVariant", -1);
+        if (override != -1) return override;
         return sOnSurfaceVariant;
     }
 
     public static int outline() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("outline", -1);
+        if (override != -1) return override;
         return sOutline;
     }
 
@@ -346,6 +378,8 @@ public final class YumiMd3 {
 
     public static int primary() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("primary", -1);
+        if (override != -1) return override;
         return sPrimary;
     }
 
@@ -358,16 +392,22 @@ public final class YumiMd3 {
 
     public static int onPrimary() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("onPrimary", -1);
+        if (override != -1) return override;
         return sOnPrimary;
     }
 
     public static int primaryContainer() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("primaryContainer", -1);
+        if (override != -1) return override;
         return sPrimaryContainer;
     }
 
     public static int onPrimaryContainer() {
         if (!sCacheValid) ensureCache();
+        int override = HotUiGate.getColor("onPrimaryContainer", -1);
+        if (override != -1) return override;
         return sOnPrimaryContainer;
     }
 
@@ -406,18 +446,26 @@ public final class YumiMd3 {
     // Navigation roles -----------------------------------------------------
 
     public static int navSurface() {
+        int override = HotUiGate.getColor("navSurface", -1);
+        if (override != -1) return override;
         return withAlpha(surfaceContainerHigh(), isDark() ? 0.98f : 0.99f);
     }
 
     public static int navBorder() {
+        int override = HotUiGate.getColor("navBorder", -1);
+        if (override != -1) return override;
         return withAlpha(outline(), isDark() ? 0.8f : 0.9f);
     }
 
     public static int navIndicator() {
+        int override = HotUiGate.getColor("navIndicator", -1);
+        if (override != -1) return override;
         return withAlpha(primary(), isDark() ? 0.26f : 0.14f);
     }
 
     public static int navActive() {
+        int override = HotUiGate.getColor("navActive", -1);
+        if (override != -1) return override;
         return primary();
     }
 

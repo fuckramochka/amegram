@@ -32,16 +32,18 @@ final class YumiNavItem extends FrameLayout {
     private final ImageView avatarView;
     private final TextView labelView;
     private final TextView counterView;
+    private final UiModule owner;
 
     private boolean selected;
     private boolean avatarMode;
     private CharSequence rawLabel = "";
     private String counterText;
 
-    YumiNavItem(Context context, YumiPalette palette, String iconName, boolean avatarMode) {
+    YumiNavItem(Context context, YumiPalette palette, String iconName, boolean avatarMode, UiModule owner) {
         super(context);
         this.palette = palette;
         this.avatarMode = avatarMode;
+        this.owner = owner;
         setWillNotDraw(false);
         setClipChildren(false);
         setClipToPadding(false);
@@ -197,18 +199,26 @@ final class YumiNavItem extends FrameLayout {
     }
 
     private void applyItemState(boolean animate) {
+        final boolean expand = owner == null || owner.isNavExpandActivePillEnabled();
         if (selected) {
             final GradientDrawable pill = new GradientDrawable();
             pill.setShape(GradientDrawable.RECTANGLE);
-            pill.setCornerRadius(dp(20));
+            pill.setCornerRadius(dp(expand ? 20 : 16));
             pill.setColor(palette.navIndicator);
             row.setBackground(pill);
-            row.setPadding(dp(13), dp(7), dp(13), dp(7));
-            labelView.setVisibility(VISIBLE);
-            labelView.setTextColor(palette.navActive);
-            iconView.setColorFilter(new PorterDuffColorFilter(palette.navActive, PorterDuff.Mode.SRC_IN));
-            counterView.setVisibility(GONE);
-            updateEffectiveLabel();
+            if (expand) {
+                row.setPadding(dp(13), dp(7), dp(13), dp(7));
+                labelView.setVisibility(VISIBLE);
+                labelView.setTextColor(palette.navActive);
+                iconView.setColorFilter(new PorterDuffColorFilter(palette.navActive, PorterDuff.Mode.SRC_IN));
+                counterView.setVisibility(GONE);
+                updateEffectiveLabel();
+            } else {
+                row.setPadding(dp(10), dp(7), dp(10), dp(7));
+                labelView.setVisibility(GONE);
+                iconView.setColorFilter(new PorterDuffColorFilter(palette.navActive, PorterDuff.Mode.SRC_IN));
+                updateCounterView();
+            }
         } else {
             row.setBackground(null);
             row.setPadding(dp(8), dp(7), dp(8), dp(7));

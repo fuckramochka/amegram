@@ -54,6 +54,69 @@ public final class HotUiGate {
         return styleMode() == 1;
     }
 
+    // ---- Динамічні кольори з модуля ----
+
+    public static int getColor(String token, int fallback) {
+        HotUi ui = get();
+        if (ui != null) {
+            try {
+                return ui.getColor(token, fallback);
+            } catch (Throwable ignore) {
+            }
+        }
+        return fallback;
+    }
+
+    // ---- Динамічні розміри з модуля ----
+
+    public static float getDimension(String token, float fallbackDp) {
+        HotUi ui = get();
+        if (ui != null) {
+            try {
+                return ui.getDimension(token, fallbackDp);
+            } catch (Throwable ignore) {
+            }
+        }
+        return fallbackDp;
+    }
+
+    // ---- Динамічне розташування та видимість з модуля ----
+
+    public static int getPlacement(String token, int fallback) {
+        HotUi ui = get();
+        if (ui != null) {
+            try {
+                return ui.getPlacement(token, fallback);
+            } catch (Throwable ignore) {
+            }
+        }
+        return fallback;
+    }
+
+    public static boolean isPlacementEnabled(String token, boolean fallback) {
+        HotUi ui = get();
+        if (ui != null) {
+            try {
+                return ui.isPlacementEnabled(token, fallback);
+            } catch (Throwable ignore) {
+            }
+        }
+        return fallback;
+    }
+
+    // ---- Слотна архітектура UI ----
+
+    public static android.view.View createSlotView(String slotId, Context context, Object... args) {
+        HotUi ui = get();
+        if (ui != null) {
+            try {
+                return ui.createSlotView(slotId, context, args);
+            } catch (Throwable ignore) {
+            }
+        }
+        return null;
+    }
+
     /** Перемкнути стиль і застосувати на льоту (rebuild фрагментів, без APK). */
     public static void setExpressive(boolean expressive) {
         try {

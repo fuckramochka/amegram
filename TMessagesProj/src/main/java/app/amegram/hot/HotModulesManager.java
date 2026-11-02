@@ -1680,26 +1680,35 @@ public final class HotModulesManager {
         }
     }
 
-    /** Показати екран модуля: createScreen -> presentFragment. */
+    /** Створити екран модуля: викликає createScreen в інстансу модуля. */
+    public static Object createScreen(String moduleId, String screenId) {
+        try {
+            Handle h = getHandle(moduleId);
+            if (h != null && h.instance != null) {
+                return h.instance.createScreen(screenId);
+            }
+            HotModule mod = getModuleForSettings(moduleId);
+            if (mod != null) {
+                return mod.createScreen(screenId);
+            }
+        } catch (Throwable ignore) {
+        }
+        return null;
+    }
+
+    /** Показати екран модуля: createScreen -> presentFragment / show. */
     public static void openModuleScreen(String moduleId, String screenId) {
         AndroidUtilities.runOnUIThread(() -> {
             try {
-                Handle h = getHandle(moduleId);
-                Object screen = null;
-                if (h != null && h.instance != null) {
-                    try {
-                        screen = h.instance.createScreen(screenId);
-                    } catch (Throwable ignore) {
-                    }
+                Object screen = createScreen(moduleId, screenId);
+                if (screen == null) return;
+                if (screen instanceof org.telegram.ui.ActionBar.BottomSheet) {
+                    ((org.telegram.ui.ActionBar.BottomSheet) screen).show();
+                    return;
                 }
-                if (screen == null) {
-                    HotModule mod = getModuleForSettings(moduleId);
-                    if (mod != null) {
-                        try {
-                            screen = mod.createScreen(screenId);
-                        } catch (Throwable ignore) {
-                        }
-                    }
+                if (screen instanceof android.app.Dialog) {
+                    ((android.app.Dialog) screen).show();
+                    return;
                 }
                 if (!(screen instanceof org.telegram.ui.ActionBar.BaseFragment)) return;
                 org.telegram.ui.ActionBar.BaseFragment last;

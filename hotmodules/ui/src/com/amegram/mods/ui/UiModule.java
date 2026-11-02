@@ -60,6 +60,23 @@ public class UiModule implements HotModule, HotUi {
     public static final String KEY_STICKY_THEME_ADAPTIVE = "OEAppearanceStickyThemeAdaptive";
     public static final String KEY_STICKY_STYLE = "OEAppearanceStickyStyle"; // 0 = Subtle, 1 = Expressive, 2 = Ultra Bouncy
 
+    // Custom accent modes (0: Авто Тема TG, 1: Сакура, 2: Синій, 3: Смарагд, 4: Лаванда, 5: Захід Сонця)
+    public static final String KEY_ACCENT_MODE = "ui_accent_mode";
+
+    // Geometry and dimensions
+    public static final String KEY_CARD_RADIUS = "ui_card_radius";
+    public static final String KEY_CARD_MARGIN_SIDE = "ui_card_margin_side";
+    public static final String KEY_CARD_MARGIN_V = "ui_card_margin_v";
+    public static final String KEY_NAV_RADIUS = "ui_nav_radius";
+    public static final String KEY_NAV_HEIGHT = "ui_nav_height";
+
+    // Placement and visibility
+    public static final String KEY_TIME_BADGE_STYLE = "ui_time_badge_style";
+    public static final String KEY_NAV_EXPAND_PILL = "ui_nav_expand_pill";
+    public static final String KEY_NAV_FLOATING = "ui_nav_floating";
+    public static final String KEY_BLUR_FOLDERS = "ui_blur_folders";
+    public static final String KEY_BLUR_NAV = "ui_blur_nav";
+
     // Physics modes
     public static final int STYLE_SUBTLE = 0;
     public static final int STYLE_EXPRESSIVE = 1;
@@ -266,6 +283,122 @@ public class UiModule implements HotModule, HotUi {
 
     public boolean isChatCardsTouch() {
         return readBool(KEY_CHAT_CARDS_TOUCH, true);
+    }
+
+    public int accentMode() {
+        return readInt(KEY_ACCENT_MODE, 0);
+    }
+
+    public int getCustomAccentColor(boolean dark) {
+        int mode = accentMode();
+        switch (mode) {
+            case 1: return dark ? 0xFFFF8FB7 : 0xFFB83268; // Sakura Pink
+            case 2: return dark ? 0xFF8AB4F8 : 0xFF2A5BB8; // Sky Blue
+            case 3: return dark ? 0xFF89E3AC : 0xFF127240; // Mint Emerald
+            case 4: return dark ? 0xFFC8B8FF : 0xFF6544C4; // Lavender Violet
+            case 5: return dark ? 0xFFFFBE8C : 0xFFA93E0B; // Sunset Coral
+            default: return 0; // 0 = Auto Telegram theme
+        }
+    }
+
+    public float cardRadius() {
+        return readInt(KEY_CARD_RADIUS, 22);
+    }
+
+    public float cardSideMargin() {
+        return readInt(KEY_CARD_MARGIN_SIDE, 12);
+    }
+
+    public float cardVerticalMargin() {
+        int v = readInt(KEY_CARD_MARGIN_V, 35);
+        return v / 10f;
+    }
+
+    public float navRadius() {
+        return readInt(KEY_NAV_RADIUS, 24);
+    }
+
+    public float navHeight() {
+        return readInt(KEY_NAV_HEIGHT, 58);
+    }
+
+    public boolean isTimePillEnabled() {
+        return readInt(KEY_TIME_BADGE_STYLE, 0) == 0;
+    }
+
+    public boolean isNavExpandActivePillEnabled() {
+        return readBool(KEY_NAV_EXPAND_PILL, true);
+    }
+
+    public boolean isNavFloating() {
+        return readBool(KEY_NAV_FLOATING, true);
+    }
+
+    public boolean isBlurFoldersEnabled() {
+        return readBool(KEY_BLUR_FOLDERS, false);
+    }
+
+    public boolean isBlurNavEnabled() {
+        return readBool(KEY_BLUR_NAV, false);
+    }
+
+    @Override
+    public int getColor(String token, int fallback) {
+        if (chatRowRenderer != null && chatRowRenderer.palette != null) {
+            return chatRowRenderer.palette.getColorToken(token, fallback);
+        }
+        return fallback;
+    }
+
+    @Override
+    public float getDimension(String token, float fallbackDp) {
+        if (HotUi.DIMEN_CARD_RADIUS.equals(token) || "card_radius".equals(token) || "radius_l".equals(token)) {
+            return cardRadius();
+        }
+        if (HotUi.DIMEN_CARD_MARGIN_SIDE.equals(token) || "card_margin_side".equals(token)) {
+            return cardSideMargin();
+        }
+        if (HotUi.DIMEN_CARD_MARGIN_V.equals(token) || "card_margin_v".equals(token)) {
+            return cardVerticalMargin();
+        }
+        if (HotUi.DIMEN_NAV_RADIUS.equals(token) || "nav_radius".equals(token)) {
+            return navRadius();
+        }
+        if (HotUi.DIMEN_NAV_HEIGHT.equals(token) || "nav_height".equals(token)) {
+            return navHeight();
+        }
+        return fallbackDp;
+    }
+
+    @Override
+    public int getPlacement(String token, int fallback) {
+        if (HotUi.PLACEMENT_TIME_BADGE_STYLE.equals(token) || "time_badge_style".equals(token)) {
+            return isTimePillEnabled() ? 0 : 1;
+        }
+        if (HotUi.PLACEMENT_NAV_EXPAND_PILL.equals(token) || "nav_expand_pill".equals(token)) {
+            return isNavExpandActivePillEnabled() ? 1 : 0;
+        }
+        if (HotUi.PLACEMENT_NAV_FLOATING.equals(token) || "nav_floating".equals(token)) {
+            return isNavFloating() ? 1 : 0;
+        }
+        if (HotUi.PLACEMENT_BLUR_FOLDERS.equals(token) || "blur_folders".equals(token)) {
+            return isBlurFoldersEnabled() ? 1 : 0;
+        }
+        if (HotUi.PLACEMENT_BLUR_NAV.equals(token) || "blur_nav".equals(token)) {
+            return isBlurNavEnabled() ? 1 : 0;
+        }
+        return fallback;
+    }
+
+    @Override
+    public boolean isPlacementEnabled(String token, boolean fallback) {
+        int v = getPlacement(token, fallback ? 1 : 0);
+        return v != 0;
+    }
+
+    @Override
+    public View createSlotView(String slotId, Context context, Object... args) {
+        return null;
     }
 
     public boolean isStickyEnabled() {
@@ -882,6 +1015,65 @@ public class UiModule implements HotModule, HotUi {
                 "Тактильна мікро-анімація при натисканні на діалог",
                 isChatCardsTouch()));
 
+        rows.add(HotRow.header("Кольори та палітра"));
+        rows.add(HotRow.choice(KEY_ACCENT_MODE,
+                "Акцентний колір",
+                "Оберіть відтінок акценту інтерфейсу або залиште авто-слідування за темою TG",
+                new String[]{
+                        "Тема Telegram (Авто)",
+                        "Рожева Сакура (Sakura Pink)",
+                        "Небесний Синій (Sky Blue)",
+                        "М'ятний Смарагд (Mint Emerald)",
+                        "Лавандовий (Lavender Violet)",
+                        "Захід Сонця (Sunset Coral)"
+                },
+                accentMode()));
+
+        rows.add(HotRow.header("Геометрія та розміри"));
+        rows.add(HotRow.slider(KEY_CARD_RADIUS,
+                "Радіус карток чатів",
+                12, 28,
+                (int) cardRadius(),
+                "dp"));
+        rows.add(HotRow.slider(KEY_CARD_MARGIN_SIDE,
+                "Боковий відступ карток",
+                4, 18,
+                (int) cardSideMargin(),
+                "dp"));
+        rows.add(HotRow.slider(KEY_CARD_MARGIN_V,
+                "Вертикальний інтервал карток",
+                10, 80,
+                readInt(KEY_CARD_MARGIN_V, 35),
+                "·0.1dp"));
+        rows.add(HotRow.slider(KEY_NAV_RADIUS,
+                "Закруглення панелі навігації",
+                14, 36,
+                (int) navRadius(),
+                "dp"));
+
+        rows.add(HotRow.header("Розташування та мітки"));
+        rows.add(HotRow.choice(KEY_TIME_BADGE_STYLE,
+                "Стиль мітки часу",
+                "Виберіть спосіб відображення часу в списку повідомлень",
+                new String[]{"Тональна капсула (Expressive)", "Чистий нативний текст"},
+                isTimePillEnabled() ? 0 : 1));
+        rows.add(HotRow.switchRow(KEY_NAV_EXPAND_PILL,
+                "Розширена капсула вкладки",
+                "Активна вкладка розгортається у пігулку з назвою та лічильником ('2 Чати')",
+                isNavExpandActivePillEnabled()));
+        rows.add(HotRow.switchRow(KEY_NAV_FLOATING,
+                "Плаваюча панель навігації",
+                "М'який плаваючий док з відступом над нижнім краєм екрана",
+                isNavFloating()));
+        rows.add(HotRow.switchRow(KEY_BLUR_FOLDERS,
+                "Смуга розмиття під папками",
+                "М'яке розмиття фону списку чатів під верхньою панеллю папок",
+                isBlurFoldersEnabled()));
+        rows.add(HotRow.switchRow(KEY_BLUR_NAV,
+                "Смуга розмиття над навігацією",
+                "М'яке розмиття фону списку чатів над нижньою панеллю навігації",
+                isBlurNavEnabled()));
+
         rows.add(HotRow.header("Тактильність та анімації"));
         rows.add(HotRow.switchRow(KEY_STICKY_ENABLED,
                 "Пружинна фізика та вібровідгук",
@@ -929,6 +1121,23 @@ public class UiModule implements HotModule, HotUi {
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             return;
         }
+        if (KEY_NAV_EXPAND_PILL.equals(key) || KEY_NAV_FLOATING.equals(key)) {
+            writeBool(key, value);
+            markTouched();
+            if (navController != null) navController.refresh();
+            return;
+        }
+        if (KEY_BLUR_FOLDERS.equals(key) || KEY_BLUR_NAV.equals(key)) {
+            writeBool(key, value);
+            markTouched();
+            try {
+                ClassLoader cl = host != null && host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
+                Class<?> gate = Class.forName("app.amegram.hot.HotUiGate", true, cl);
+                gate.getMethod("applyLive").invoke(null);
+            } catch (Throwable ignore) {
+            }
+            return;
+        }
         writeBool(key, value);
         markTouched();
         if (key != null && (key.startsWith("chat_") || key.startsWith("theme_") || key.startsWith("OEAppearanceChat"))) {
@@ -945,6 +1154,28 @@ public class UiModule implements HotModule, HotUi {
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             return;
         }
+        if (KEY_ACCENT_MODE.equals(key)) {
+            writeInt(KEY_ACCENT_MODE, index);
+            markTouched();
+            if (chatRowRenderer != null) {
+                chatRowRenderer.palette.refresh(null);
+                chatRowRenderer.invalidateAll();
+            }
+            if (navController != null) navController.refresh();
+            try {
+                ClassLoader cl = host != null && host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
+                Class<?> gate = Class.forName("app.amegram.hot.HotUiGate", true, cl);
+                gate.getMethod("applyLive").invoke(null);
+            } catch (Throwable ignore) {
+            }
+            return;
+        }
+        if (KEY_TIME_BADGE_STYLE.equals(key)) {
+            writeInt(KEY_TIME_BADGE_STYLE, index);
+            markTouched();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            return;
+        }
         writeInt(key, index);
         markTouched();
     }
@@ -955,6 +1186,18 @@ public class UiModule implements HotModule, HotUi {
             writeInt("OEAppearanceAvatarCorners", value);
             markTouched();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            return;
+        }
+        if (KEY_CARD_RADIUS.equals(key) || KEY_CARD_MARGIN_SIDE.equals(key) || KEY_CARD_MARGIN_V.equals(key)) {
+            writeInt(key, value);
+            markTouched();
+            if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
+            return;
+        }
+        if (KEY_NAV_RADIUS.equals(key) || KEY_NAV_HEIGHT.equals(key)) {
+            writeInt(key, value);
+            markTouched();
+            if (navController != null) navController.refresh();
             return;
         }
         writeInt(key, value);
@@ -992,6 +1235,17 @@ public class UiModule implements HotModule, HotUi {
             writeBool(KEY_GLASS_MENU, true);
             writeBool(KEY_LOADING, true);
             writeBool("theme_tonal_adaptation", true);
+            writeInt(KEY_ACCENT_MODE, 0);
+            writeInt(KEY_CARD_RADIUS, 22);
+            writeInt(KEY_CARD_MARGIN_SIDE, 12);
+            writeInt(KEY_CARD_MARGIN_V, 35);
+            writeInt(KEY_NAV_RADIUS, 24);
+            writeInt(KEY_NAV_HEIGHT, 58);
+            writeInt(KEY_TIME_BADGE_STYLE, 0);
+            writeBool(KEY_NAV_EXPAND_PILL, true);
+            writeBool(KEY_NAV_FLOATING, true);
+            writeBool(KEY_BLUR_FOLDERS, false);
+            writeBool(KEY_BLUR_NAV, false);
             markTouched();
             if (navController != null) navController.refresh();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();

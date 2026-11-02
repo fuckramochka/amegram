@@ -35,13 +35,14 @@ public final class YumiScreenChrome {
 
     private final UiModule owner;
     private final HotHost host;
-    private final YumiPalette palette = new YumiPalette(null);
+    private final YumiPalette palette;
     private final Map<View, ScreenState> byRoot = new WeakHashMap<>();
     private final Map<View, ScreenState> byActionBar = new WeakHashMap<>();
 
     public YumiScreenChrome(UiModule owner, HotHost host) {
         this.owner = owner;
         this.host = host;
+        this.palette = new YumiPalette(null, owner);
     }
 
     public void restoreAll() {

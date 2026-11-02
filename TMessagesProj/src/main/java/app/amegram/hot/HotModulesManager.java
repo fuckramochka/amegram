@@ -157,6 +157,23 @@ public final class HotModulesManager {
         return dir;
     }
 
+    private static void cleanDexOpt(String moduleId) {
+        try {
+            File dir = dexOptDir();
+            if (dir != null && dir.exists()) {
+                File[] files = dir.listFiles();
+                if (files != null) {
+                    for (File f : files) {
+                        if (moduleId == null || f.getName().contains(moduleId)) {
+                            f.delete();
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+    }
+
     // ---------- attach включённых при старте (фон, без спешки) ----------
 
     public static void attachEnabledAsync() {
@@ -202,7 +219,7 @@ public final class HotModulesManager {
                 if ("settings_ui".equals(modId) || "badges".equals(modId) || "kpm".equals(modId) || "ui".equals(modId) || isSystem(modId) || f.contains("system")) {
                     String version = bundledAssetVersion(f);
                     String latestVersion = latestVersionById.get(modId);
-                    if (!version.isEmpty() && (latestVersion == null || compareVersions(version, latestVersion) > 0)) {
+                    if (!version.isEmpty() && (latestVersion == null || compareVersions(version, latestVersion) >= 0)) {
                         latestVersionById.put(modId, version);
                         latestAssetById.put(modId, f);
                     }
@@ -224,43 +241,44 @@ public final class HotModulesManager {
 
     /**
      * Чи варто сіяти системний модуль із assets: коли його ще нема, або коли
-     * у сіді лежить версія новіша за встановлену (у assets буває кілька
-     * файлів різних версій — старі пропускаємо).
+     * у сіді лежить новіша версія, або версія та сама, але змінився вміст (sha256 / розмір).
+     * Для фіксів та малих змін піднімати версію модуля НЕ потрібно!
      */
     private static boolean shouldSeedSystemModule(String modId, String assetFile) {
         if (prefs().getBoolean("uninstalled_" + modId, false)) {
             return false;
         }
         String installed = prefs().getString("installed_" + modId, "");
-        if (!isModuleInstalled(modId)) {
-            return installed.isEmpty(); // уже сіяли, потім видалили/вимкнули руками
+        if (!isModuleInstalledOnDisk(modId)) {
+            return true;
         }
         String seed = bundledAssetVersion(assetFile);
         if (seed.isEmpty()) {
             return false;
         }
-        if (seed.equals(installed)) {
-            try {
-                File installedFile = new File(new File(new File(root(), modId), installed), "module.hmod");
-                if (!installedFile.exists()) {
-                    return true;
-                }
-                if (appContext != null) {
-                    try (InputStream in = appContext.getAssets().open("hotmodules/" + assetFile)) {
-                        int assetLen = 0;
-                        byte[] b = new byte[8192];
-                        int r;
-                        while ((r = in.read(b)) != -1) assetLen += r;
-                        if (assetLen > 0 && assetLen != installedFile.length()) {
-                            return true;
-                        }
+        int cmp = compareVersions(seed, installed);
+        if (cmp > 0) {
+            return true;
+        }
+        // cmp <= 0: версія не піднята (наприклад, bugfix у межах тієї самої версії).
+        // Перевіряємо зміну вмісту файлу через SHA-256 та розмір.
+        try {
+            File installedFile = new File(new File(new File(root(), modId), installed), "module.hmod");
+            if (!installedFile.exists()) {
+                return true;
+            }
+            if (appContext != null) {
+                try (InputStream in = appContext.getAssets().open("hotmodules/" + assetFile)) {
+                    String assetSha = HotDownloader.sha256(in);
+                    String installedSha = HotDownloader.sha256(installedFile);
+                    if (!assetSha.equalsIgnoreCase(installedSha)) {
+                        return true;
                     }
                 }
-            } catch (Throwable ignore) {
             }
-            return false;
+        } catch (Throwable ignore) {
         }
-        return compareVersions(seed, installed) > 0;
+        return false;
     }
 
     /** Версія з manifest.json безпосередньо з assets (тимчасовий файл не лишаємо). */
@@ -506,9 +524,28 @@ public final class HotModulesManager {
                     HotCatalog.Entry e = catalog.find(info.manifest.id);
                     if (e == null) continue;
                     HotCatalog.Build latest = e.latestCompatible(appVer);
-                    if (latest != null && latest.version.compareTo(info.manifest.version) > 0) {
-                        found.put(info.manifest.id, latest);
-                        prefs().edit().putString("update_available_" + info.manifest.id, latest.version).apply();
+                    if (latest != null) {
+                        int cmp = compareVersions(latest.version, info.manifest.version);
+                        boolean hasUpdate = cmp > 0;
+                        if (!hasUpdate && cmp == 0 && latest.sha256 != null && !latest.sha256.isEmpty()) {
+                            // Версія однакова, але перевіряємо зміну вмісту через sha256 (фікс без підняття версії)
+                            try {
+                                File installedFile = new File(new File(new File(root(), info.manifest.id), info.manifest.version), "module.hmod");
+                                if (installedFile.exists()) {
+                                    String instSha = HotDownloader.sha256(installedFile);
+                                    if (!latest.sha256.equalsIgnoreCase(instSha)) {
+                                        hasUpdate = true;
+                                    }
+                                }
+                            } catch (Throwable ignore) {
+                            }
+                        }
+                        if (hasUpdate) {
+                            found.put(info.manifest.id, latest);
+                            prefs().edit().putString("update_available_" + info.manifest.id, latest.version).apply();
+                        } else {
+                            prefs().edit().remove("update_available_" + info.manifest.id).apply();
+                        }
                     } else {
                         prefs().edit().remove("update_available_" + info.manifest.id).apply();
                     }
@@ -829,11 +866,23 @@ public final class HotModulesManager {
         File vdir = new File(new File(root(), m.id), m.version);
         vdir.mkdirs();
         File dest = new File(vdir, "module.hmod");
+        if (dest.exists()) {
+            dest.setWritable(true);
+            dest.delete();
+        }
         if (!tmp.renameTo(dest)) {
+            try (InputStream in = new FileInputStream(tmp);
+                 FileOutputStream out = new FileOutputStream(dest)) {
+                byte[] buf = new byte[16 * 1024];
+                int n;
+                while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+            }
             tmp.delete();
-            throw new IllegalStateException("rename failed");
         }
         makeReadOnly(dest);
+        cleanDexOpt(m.id);
+        dropLoaded(m.id);
+        clearLoadFailures(m.id);
         boolean shouldEnable = prefs().contains("enabled_" + m.id)
                 ? prefs().getBoolean("enabled_" + m.id, false)
                 : (enable || m.isSystem);
@@ -953,14 +1002,26 @@ public final class HotModulesManager {
                 File vdir = new File(new File(root(), moduleId), m.version);
                 vdir.mkdirs();
                 File dest = new File(vdir, "module.hmod");
-                if (dest.exists()) dest.delete();
+                if (dest.exists()) {
+                    dest.setWritable(true);
+                    dest.delete();
+                }
                 if (!tmp.renameTo(dest)) {
+                    try (InputStream in = new FileInputStream(tmp);
+                         FileOutputStream out = new FileOutputStream(dest)) {
+                        byte[] buf = new byte[16 * 1024];
+                        int n;
+                        while ((n = in.read(buf)) != -1) out.write(buf, 0, n);
+                    } catch (Throwable writeErr) {
+                        tmp.delete();
+                        postProgress(cb, false, "Не вдалося зберегти модуль: " + writeErr.getMessage(), null);
+                        return;
+                    }
                     tmp.delete();
-                    postProgress(cb, false, "Не вдалося зберегти модуль", null);
-                    return;
                 }
                 // Android ріже dex із файла на запис — одразу read-only.
                 makeReadOnly(dest);
+                cleanDexOpt(moduleId);
                 boolean wasEnabled = prefs().getBoolean("enabled_" + moduleId, false);
                 prefs().edit().putString("installed_" + moduleId, m.version).apply();
                 // Старий Handle кешований — без dropLoaded новий код не підхопиться.

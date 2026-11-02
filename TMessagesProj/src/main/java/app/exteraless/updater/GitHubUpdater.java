@@ -226,12 +226,23 @@ public final class GitHubUpdater {
         return null;
     }
 
+    private static int versionCodeFromApkName(String name) {
+        if (TextUtils.isEmpty(name)) return 0;
+        Matcher matcher = Pattern.compile("[.](\\d{5,7})\\.apk$", Pattern.CASE_INSENSITIVE).matcher(name);
+        if (matcher.find()) {
+            try {
+                return Integer.parseInt(matcher.group(1));
+            } catch (Exception ignored) {}
+        }
+        return 0;
+    }
+
     private static JSONObject pickAsset(JSONArray assets) {
         if (assets == null) {
             return null;
         }
-        JSONObject universal = null;
-        JSONObject any = null;
+        JSONObject best = null;
+        int bestCode = -1;
         String abi = Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : "";
         for (int i = 0; i < assets.length(); i++) {
             JSONObject asset = assets.optJSONObject(i);
@@ -239,17 +250,14 @@ public final class GitHubUpdater {
             if (!name.endsWith(".apk")) {
                 continue;
             }
-            if (!abi.isEmpty() && name.contains(abi.toLowerCase(Locale.ROOT))) {
-                return asset;
-            }
-            if (name.contains("universal") && universal == null) {
-                universal = asset;
-            }
-            if (any == null && !name.contains("armeabi") && !name.contains("x86")) {
-                any = asset;
+            int code = versionCodeFromApkName(name);
+            boolean abiMatch = !abi.isEmpty() && name.contains(abi.toLowerCase(Locale.ROOT));
+            if (best == null || code > bestCode || (code == bestCode && abiMatch)) {
+                best = asset;
+                bestCode = code;
             }
         }
-        return universal != null ? universal : any;
+        return best;
     }
 
     private static int[] version(String... sources) {
@@ -280,6 +288,17 @@ public final class GitHubUpdater {
     }
 
     private static Boolean isNewer(Release release) throws Exception {
+        int remoteCode = versionCodeFromApkName(release.apkName);
+        int localCode = 0;
+        try {
+            Context ctx = ApplicationLoader.applicationContext;
+            localCode = ctx.getPackageManager().getPackageInfo(ctx.getPackageName(), 0).versionCode;
+        } catch (Exception ignored) {}
+        if (remoteCode > 0 && localCode > 0) {
+            if (remoteCode > localCode) return true;
+            if (remoteCode < localCode) return false;
+        }
+
         Integer versionOrder = compareVersion(release);
         if (versionOrder != null && versionOrder != 0) {
             return versionOrder > 0;

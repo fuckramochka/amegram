@@ -81,14 +81,12 @@ public final class HotDownloader {
         }
     }
 
-    public static String sha256(File file) throws Exception {
+    public static String sha256(InputStream in) throws Exception {
         MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        try (InputStream in = new FileInputStream(file)) {
-            byte[] buf = new byte[64 * 1024];
-            int n;
-            while ((n = in.read(buf)) != -1) {
-                digest.update(buf, 0, n);
-            }
+        byte[] buf = new byte[64 * 1024];
+        int n;
+        while ((n = in.read(buf)) != -1) {
+            digest.update(buf, 0, n);
         }
         byte[] hash = digest.digest();
         StringBuilder sb = new StringBuilder(hash.length * 2);
@@ -97,5 +95,11 @@ public final class HotDownloader {
             sb.append(Character.forDigit(b & 0xF, 16));
         }
         return sb.toString();
+    }
+
+    public static String sha256(File file) throws Exception {
+        try (InputStream in = new FileInputStream(file)) {
+            return sha256(in);
+        }
     }
 }

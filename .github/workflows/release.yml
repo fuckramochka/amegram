@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+      - master
+      - 'codex/**'
     tags:
       - 'v*'
     paths-ignore:
@@ -18,12 +20,12 @@ on:
         type: boolean
         default: true
       channel:
-        description: 'Release channel (beta or release)'
+        description: 'Release channel (release or beta)'
         type: choice
         options:
-          - beta
           - release
-        default: 'beta'
+          - beta
+        default: 'release'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -117,19 +119,22 @@ jobs:
 
           APP_VER=$(grep "^APP_VERSION_NAME=" gradle.properties | cut -d'=' -f2 | tr -d ' \r\n')
           if [ -z "$APP_VER" ]; then
-            APP_VER="12.12.1"
+            APP_VER="12.13.7"
           fi
 
-          # Variant A: default to beta unless [release] in commit message, tag is v* (non-beta), or workflow_dispatch chose release
-          IS_RELEASE=false
-          if [ "$EVENT" = "workflow_dispatch" ] && [ "$INPUT_CHANNEL" = "release" ]; then
-            IS_RELEASE=true
-          elif echo "$MSG" | grep -qi '\[release\]'; then
-            IS_RELEASE=true
-          elif git log -1 --pretty=%B | grep -qi '\[release\]'; then
-            IS_RELEASE=true
-          elif [[ "$REF" == refs/tags/v* ]] && [[ "$REF" != *beta* ]]; then
-            IS_RELEASE=true
+          # СТРОГЕ ПРАВИЛО: для фіксів та малих змін НЕ ТРЕБА піднімати версію в gradle.properties!
+          # Будь-який пуш або диспатч за замовчуванням створює повноцінний Release (make_latest=true, prerelease=false).
+          # Оновлення визначаються через versionCode (126100 + run_number), який автоматично зростає.
+          # Pre-release / Beta створюється ТІЛЬКИ якщо в коміті є мітка [beta] або вибрано beta у workflow_dispatch.
+          IS_RELEASE=true
+          if [ "$EVENT" = "workflow_dispatch" ] && [ "$INPUT_CHANNEL" = "beta" ]; then
+            IS_RELEASE=false
+          elif echo "$MSG" | grep -qi '\[beta\]'; then
+            IS_RELEASE=false
+          elif git log -1 --pretty=%B | grep -qi '\[beta\]'; then
+            IS_RELEASE=false
+          elif [[ "$REF" == *beta* ]]; then
+            IS_RELEASE=false
           fi
 
           if [ "$IS_RELEASE" = "true" ]; then
@@ -164,12 +169,25 @@ jobs:
           name: Release
           path: |
             TMessagesProj/build/outputs/apk/release/*.apk
+      - name: Clean old assets on existing release
+        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.channel.outputs.tag_name }}
+        run: |
+          gh release view "$TAG" --json assets --jq '.assets[].name' 2>/dev/null | while read -r asset; do
+            if [ -n "$asset" ] && [[ "$asset" == *.apk ]]; then
+              echo "Deleting old asset: $asset"
+              gh release delete-asset "$TAG" "$asset" --yes || true
+            fi
+          done || true
       - name: Create and Publish GitHub Release
         uses: softprops/action-gh-release@v2
         continue-on-error: true
-        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+        if: startsWith(github.ref, 'refs/heads/main') || startsWith(github.ref, 'refs/heads/master') || startsWith(github.ref, 'refs/heads/codex/') || startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
         with:
           tag_name: ${{ steps.channel.outputs.tag_name }}
+          target_commitish: ${{ github.sha }}
           name: ${{ steps.channel.outputs.release_name }}
           body: |
             ${{ steps.channel.outputs.header_title }}

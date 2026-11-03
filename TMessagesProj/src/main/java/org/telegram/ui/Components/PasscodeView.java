@@ -20,6 +20,7 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PixelFormat;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
@@ -73,6 +74,7 @@ import android.text.TextUtils;
 import android.content.SharedPreferences;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
+import app.miogram.ui.yumi.YumiUi;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -585,7 +587,8 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         backgroundFrameLayout.addView(passwordFrameLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
         musicWidget = new PasscodeMusicWidget(context);
-        backgroundFrameLayout.addView(musicWidget, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 62, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 20, 0, 20, 0));
+        musicWidget.setVisibility(GONE);
+        backgroundFrameLayout.addView(musicWidget, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 46, Gravity.TOP | Gravity.CENTER_HORIZONTAL, 20, 0, 20, 0));
 
         passcodeTextView = new TextView(context);
         passcodeTextView.setTextColor(0xffffffff);
@@ -1797,14 +1800,15 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         }
 
         if (musicWidget != null) {
-            if (landscape) {
+            boolean visible = !landscape && YumiUi.isPasscodeMusicEnabled() && musicWidget.hasActiveTrack();
+            if (!visible) {
                 musicWidget.setVisibility(GONE);
             } else {
                 musicWidget.setVisibility(VISIBLE);
                 LayoutParams lp = (LayoutParams) musicWidget.getLayoutParams();
-                int widgetWidth = Math.min(width - dp(32), dp(380));
+                int widgetWidth = Math.min(width - dp(40), dp(320));
                 lp.width = widgetWidth;
-                lp.height = dp(62);
+                lp.height = dp(46);
                 lp.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
                 lp.topMargin = AndroidUtilities.statusBarHeight + dp(10);
                 musicWidget.setLayoutParams(lp);
@@ -1839,8 +1843,12 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
         if (!AndroidUtilities.isTablet() && getContext().getResources().getConfiguration().orientation == Configuration.ORIENTATION_LANDSCAPE) {
             imageView.setTranslationY(imageY = pos[1] - dp(100));
         } else {
-            int minLockY = AndroidUtilities.statusBarHeight + dp(10 + 62 + 12);
-            imageView.setTranslationY(imageY = Math.max(minLockY, pos[1] - dp(100)));
+            if (musicWidget != null && musicWidget.getVisibility() == VISIBLE) {
+                int minLockY = AndroidUtilities.statusBarHeight + dp(10 + 46 + 8);
+                imageView.setTranslationY(imageY = Math.max(minLockY, pos[1] - dp(100)));
+            } else {
+                imageView.setTranslationY(imageY = pos[1] - dp(100));
+            }
         }
     }
 
@@ -2145,51 +2153,67 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
 
     public static class PasscodeMusicWidget extends FrameLayout {
 
-        private static MessageObject lastPlayedMessage;
-        private static String lastMusicTitle;
-        private static String lastMusicAuthor;
-
         private final BackupImageView coverView;
         private final TextView titleView;
         private final TextView artistView;
         private final ImageView playIcon;
         private final FrameLayout playButton;
+        private final DynamicEqualizerView equalizerView;
         private MessageObject currentMessage;
         private boolean isCurrentPlaying;
 
         public PasscodeMusicWidget(@NonNull Context context) {
             super(context);
 
-            setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(18), 0x28ffffff, 0x3effffff));
+            GradientDrawable bg = new GradientDrawable();
+            bg.setShape(GradientDrawable.RECTANGLE);
+            bg.setColor(0xe0101217); // 88% deep OLED slate glass
+            bg.setCornerRadius(AndroidUtilities.dp(23));
+            bg.setStroke(AndroidUtilities.dp(1), 0x22ffffff); // subtle hairline stroke
+            setBackground(bg);
             setClipToOutline(true);
+            if (Build.VERSION.SDK_INT >= 21) {
+                setElevation(AndroidUtilities.dp(4));
+            }
 
+            // Cover artwork (iOS / Dynamic Island style rounded squircle)
             coverView = new BackupImageView(context);
-            coverView.setRoundRadius(dp(12));
-            coverView.setBackground(Theme.createRoundRectDrawable(dp(12), 0x26ffffff));
-            addView(coverView, LayoutHelper.createFrame(46, 46, Gravity.LEFT | Gravity.CENTER_VERTICAL, 8, 0, 0, 0));
+            coverView.setRoundRadius(AndroidUtilities.dp(9));
+            coverView.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(9), 0x22ffffff));
+            addView(coverView, LayoutHelper.createFrame(34, 34, Gravity.LEFT | Gravity.CENTER_VERTICAL, 6, 0, 0, 0));
+
+            // Controls on the right: Equalizer + Play/Pause button
+            LinearLayout rightLayout = new LinearLayout(context);
+            rightLayout.setOrientation(LinearLayout.HORIZONTAL);
+            rightLayout.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
+            addView(rightLayout, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
+
+            equalizerView = new DynamicEqualizerView(context);
+            rightLayout.addView(equalizerView, LayoutHelper.createLinear(16, 14, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
 
             playButton = new FrameLayout(context);
-            playButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(19), 0x33ffffff, 0x5affffff));
-            ScaleStateListAnimator.apply(playButton, 0.12f, 1.4f);
+            playButton.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(15), 0x24ffffff, 0x48ffffff));
+            ScaleStateListAnimator.apply(playButton, 0.12f, 1.35f);
 
             playIcon = new ImageView(context);
             playIcon.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
             playIcon.setColorFilter(new PorterDuffColorFilter(0xffffffff, PorterDuff.Mode.SRC_IN));
-            playButton.addView(playIcon, LayoutHelper.createFrame(22, 22, Gravity.CENTER));
+            playButton.addView(playIcon, LayoutHelper.createFrame(16, 16, Gravity.CENTER));
 
             playButton.setOnClickListener(v -> {
                 v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
                 togglePlayback();
             });
-            addView(playButton, LayoutHelper.createFrame(38, 38, Gravity.RIGHT | Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+            rightLayout.addView(playButton, LayoutHelper.createLinear(30, 30, Gravity.CENTER_VERTICAL));
 
+            // Text layout in center: Title + Artist
             LinearLayout textLayout = new LinearLayout(context);
             textLayout.setOrientation(LinearLayout.VERTICAL);
             textLayout.setGravity(Gravity.CENTER_VERTICAL);
-            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 62, 0, 54, 0));
+            addView(textLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 46, 0, 68, 0));
 
             titleView = new TextView(context);
-            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
+            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12.5f);
             titleView.setTypeface(AndroidUtilities.bold());
             titleView.setTextColor(0xffffffff);
             titleView.setSingleLine(true);
@@ -2197,7 +2221,7 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             textLayout.addView(titleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
             artistView = new TextView(context);
-            artistView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11.5f);
+            artistView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10.5f);
             artistView.setTextColor(0x99ffffff);
             artistView.setSingleLine(true);
             artistView.setEllipsize(TextUtils.TruncateAt.END);
@@ -2211,60 +2235,66 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             update();
         }
 
+        public boolean hasActiveTrack() {
+            MediaController mediaController = MediaController.getInstance();
+            MessageObject playing = mediaController.getPlayingMessageObject();
+            return playing != null && playing.isMusic();
+        }
+
         public void update() {
             MediaController mediaController = MediaController.getInstance();
             MessageObject playing = mediaController.getPlayingMessageObject();
 
-            if (playing != null && playing.isMusic()) {
+            if (playing != null && playing.isMusic() && YumiUi.isPasscodeMusicEnabled()) {
                 currentMessage = playing;
-                lastPlayedMessage = playing;
-                lastMusicTitle = playing.getMusicTitle();
-                lastMusicAuthor = playing.getMusicAuthor();
-                saveLastTrackToPrefs(playing);
-
                 isCurrentPlaying = !mediaController.isMessagePaused();
-                titleView.setText(lastMusicTitle);
-                artistView.setText(TextUtils.isEmpty(lastMusicAuthor) ? LocaleController.getString(R.string.AudioUnknownArtist) : lastMusicAuthor);
+                titleView.setText(playing.getMusicTitle());
+                String author = playing.getMusicAuthor();
+                artistView.setText(TextUtils.isEmpty(author) ? LocaleController.getString(R.string.AudioUnknownArtist) : author);
                 playIcon.setImageResource(isCurrentPlaying ? R.drawable.yumi_ic_pause : R.drawable.yumi_ic_play);
+                if (equalizerView != null) {
+                    equalizerView.setPlaying(isCurrentPlaying);
+                }
                 loadArtwork(playing);
+
+                if (getVisibility() != VISIBLE) {
+                    setVisibility(VISIBLE);
+                    setAlpha(0f);
+                    setScaleX(0.9f);
+                    setScaleY(0.9f);
+                    animate()
+                        .alpha(1f)
+                        .scaleX(1f)
+                        .scaleY(1f)
+                        .setDuration(220)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .start();
+                    if (getParent() instanceof View) {
+                        ((View) getParent()).requestLayout();
+                    }
+                }
             } else {
+                currentMessage = null;
                 isCurrentPlaying = false;
-                playIcon.setImageResource(R.drawable.yumi_ic_play);
-
-                if (lastPlayedMessage != null) {
-                    currentMessage = lastPlayedMessage;
-                    titleView.setText(lastMusicTitle != null ? lastMusicTitle : lastPlayedMessage.getMusicTitle());
-                    String author = lastMusicAuthor != null ? lastMusicAuthor : lastPlayedMessage.getMusicAuthor();
-                    artistView.setText(TextUtils.isEmpty(author) ? "Увімкнути останній трек" : author + " • Увімкнути");
-                    loadArtwork(lastPlayedMessage);
+                if (equalizerView != null) {
+                    equalizerView.setPlaying(false);
+                }
+                if (getVisibility() == VISIBLE) {
+                    animate()
+                        .alpha(0f)
+                        .scaleX(0.9f)
+                        .scaleY(0.9f)
+                        .setDuration(160)
+                        .setInterpolator(CubicBezierInterpolator.EASE_IN)
+                        .withEndAction(() -> {
+                            setVisibility(GONE);
+                            if (getParent() instanceof View) {
+                                ((View) getParent()).requestLayout();
+                            }
+                        })
+                        .start();
                 } else {
-                    ArrayList<MessageObject> playlist = mediaController.getPlaylist();
-                    if (playlist != null && !playlist.isEmpty()) {
-                        MessageObject first = playlist.get(0);
-                        if (first != null && first.isMusic()) {
-                            currentMessage = first;
-                            lastPlayedMessage = first;
-                            lastMusicTitle = first.getMusicTitle();
-                            lastMusicAuthor = first.getMusicAuthor();
-                            titleView.setText(lastMusicTitle);
-                            artistView.setText(TextUtils.isEmpty(lastMusicAuthor) ? "Увімкнути останній трек" : lastMusicAuthor + " • Увімкнути");
-                            loadArtwork(first);
-                            return;
-                        }
-                    }
-
-                    SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("passcode_music_prefs", Context.MODE_PRIVATE);
-                    String savedTitle = prefs.getString("title", null);
-                    String savedAuthor = prefs.getString("author", null);
-
-                    if (!TextUtils.isEmpty(savedTitle)) {
-                        titleView.setText(savedTitle);
-                        artistView.setText(TextUtils.isEmpty(savedAuthor) ? "Увімкнути останній трек" : savedAuthor + " • Увімкнути");
-                    } else {
-                        titleView.setText("Увімкнути останній трек");
-                        artistView.setText("Натисніть для відтворення");
-                    }
-                    setDefaultArtwork();
+                    setVisibility(GONE);
                 }
             }
         }
@@ -2276,12 +2306,12 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
             }
             String artworkUrl = messageObject.getArtworkUrl(true);
             if (!TextUtils.isEmpty(artworkUrl)) {
-                coverView.setImage(ImageLocation.getForPath(artworkUrl), "46_46", (Drawable) null, messageObject);
+                coverView.setImage(ImageLocation.getForPath(artworkUrl), "34_34", (Drawable) null, messageObject);
             } else {
                 TLRPC.Document document = messageObject.getDocument();
                 TLRPC.PhotoSize thumb = document != null ? FileLoader.getClosestPhotoSizeWithSize(document.thumbs, 180) : null;
                 if (thumb instanceof TLRPC.TL_photoSize || thumb instanceof TLRPC.TL_photoSizeProgressive) {
-                    coverView.setImage(ImageLocation.getForDocument(thumb, document), "46_46", (Drawable) null, messageObject);
+                    coverView.setImage(ImageLocation.getForDocument(thumb, document), "34_34", (Drawable) null, messageObject);
                 } else {
                     setDefaultArtwork();
                 }
@@ -2306,52 +2336,59 @@ public class PasscodeView extends FrameLayout implements NotificationCenter.Noti
                 }
             } else if (currentMessage != null) {
                 mediaController.playMessage(currentMessage);
-            } else if (lastPlayedMessage != null) {
-                mediaController.playMessage(lastPlayedMessage);
-            } else {
-                ArrayList<MessageObject> playlist = mediaController.getPlaylist();
-                if (playlist != null && !playlist.isEmpty()) {
-                    mediaController.playMessage(playlist.get(0));
-                } else {
-                    SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("passcode_music_prefs", Context.MODE_PRIVATE);
-                    long dialogId = prefs.getLong("dialog_id", 0);
-                    int msgId = prefs.getInt("msg_id", 0);
-                    int account = prefs.getInt("account", UserConfig.selectedAccount);
-                    if (dialogId != 0 && msgId != 0) {
-                        Utilities.globalQueue.postRunnable(() -> {
-                            TLRPC.Message msg = MessagesStorage.getInstance(account).getMessage(dialogId, msgId);
-                            if (msg != null) {
-                                MessageObject obj = new MessageObject(account, msg, false, true);
-                                AndroidUtilities.runOnUIThread(() -> {
-                                    lastPlayedMessage = obj;
-                                    currentMessage = obj;
-                                    mediaController.playMessage(obj);
-                                    update();
-                                });
-                            } else {
-                                AndroidUtilities.runOnUIThread(() -> AndroidUtilities.shakeView(this));
-                            }
-                        });
-                    } else {
-                        AndroidUtilities.shakeView(this);
-                    }
-                }
             }
-            postDelayed(this::update, 150);
+            postDelayed(this::update, 100);
         }
 
-        private void saveLastTrackToPrefs(MessageObject messageObject) {
-            try {
-                SharedPreferences prefs = ApplicationLoader.applicationContext.getSharedPreferences("passcode_music_prefs", Context.MODE_PRIVATE);
-                prefs.edit()
-                    .putInt("account", messageObject.currentAccount)
-                    .putLong("dialog_id", messageObject.getDialogId())
-                    .putInt("msg_id", messageObject.getId())
-                    .putString("title", messageObject.getMusicTitle())
-                    .putString("author", messageObject.getMusicAuthor())
-                    .apply();
-            } catch (Exception e) {
-                FileLog.e(e);
+        private static class DynamicEqualizerView extends View {
+            private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+            private final RectF rect = new RectF();
+            private boolean isPlaying;
+            private float phase;
+            private long lastFrame;
+
+            public DynamicEqualizerView(Context context) {
+                super(context);
+                paint.setColor(0xeeffffff);
+            }
+
+            public void setPlaying(boolean playing) {
+                if (this.isPlaying != playing) {
+                    this.isPlaying = playing;
+                    lastFrame = 0;
+                    invalidate();
+                }
+            }
+
+            @Override
+            protected void onDraw(Canvas canvas) {
+                long now = SystemClock.elapsedRealtime();
+                float dt = lastFrame == 0 ? 0.016f : Math.min(0.05f, (now - lastFrame) / 1000f);
+                lastFrame = now;
+                if (isPlaying) {
+                    phase += 5.5f * dt;
+                }
+                float[] resting = {AndroidUtilities.dp(3f), AndroidUtilities.dp(6.5f), AndroidUtilities.dp(4f)};
+                float barW = AndroidUtilities.dp(2.2f);
+                float gap = AndroidUtilities.dp(2f);
+                float total = barW * 3 + gap * 2;
+                float x = (getWidth() - total) / 2f;
+                float bottom = getHeight() - AndroidUtilities.dp(1);
+                for (int i = 0; i < 3; i++) {
+                    float maxH = getHeight() - AndroidUtilities.dp(2);
+                    float minH = AndroidUtilities.dp(2.5f);
+                    float h = isPlaying
+                            ? minH + Math.abs((float) Math.sin(phase * 1.5f + i * 2.2f)) * (maxH - minH)
+                            : resting[i];
+                    rect.set(x, bottom - h, x + barW, bottom);
+                    canvas.drawRoundRect(rect, AndroidUtilities.dp(1.1f), AndroidUtilities.dp(1.1f), paint);
+                    x += barW + gap;
+                }
+                if (isPlaying) {
+                    postInvalidateOnAnimation();
+                } else {
+                    lastFrame = 0;
+                }
             }
         }
     }

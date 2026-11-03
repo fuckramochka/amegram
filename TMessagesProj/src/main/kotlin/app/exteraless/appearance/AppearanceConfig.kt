@@ -64,6 +64,13 @@ object AppearanceConfig {
     @JvmStatic
     fun isYumiLogin(): Boolean = isYougramExpressive() && yumiLogin.Bool()
 
+    @JvmField
+    val yumiPasscodeMusic =
+        addConfig("ui_yumi_passcode_music", ConfigItem.configTypeBool, true)
+
+    @JvmStatic
+    fun isYumiPasscodeMusic(): Boolean = isYougramExpressive() && yumiPasscodeMusic.Bool()
+
     /** Звати після того, як користувач обрав режим інтерфейсу у налаштуваннях. */
     @JvmStatic
     fun markUiStyleModeTouched() {

@@ -44,6 +44,7 @@ public class UiModule implements HotModule, HotUi {
     private static final String KEY_MINI_PLAYER = "OEAppearanceMd3MiniPlayer";
     private static final String KEY_LOADING = "OEAppearanceNewLoadingStyle";
     public static final String KEY_YUMI_LOGIN = "ui_yumi_login";
+    public static final String KEY_PASSCODE_MUSIC = "ui_yumi_passcode_music";
 
     // Chat list display keys
     public static final String KEY_CHAT_STYLE = "OEAppearanceChatListStyle";
@@ -280,6 +281,10 @@ public class UiModule implements HotModule, HotUi {
 
     public boolean isYumiLogin() {
         return readBool(KEY_YUMI_LOGIN, true);
+    }
+
+    public boolean isPasscodeMusicEnabled() {
+        return readBool(KEY_PASSCODE_MUSIC, true);
     }
 
     public boolean isChatSquircleAvatars() {
@@ -1035,13 +1040,19 @@ public class UiModule implements HotModule, HotUi {
                   "Harmoniously follow tones and accents of the active user theme"),
                 readBool("theme_tonal_adaptation", true)));
 
-        rows.add(HotRow.header(t("Авторизація та вхід", "Авторизация и вход", "Authentication & Login")));
+        rows.add(HotRow.header(t("Авторизація та екран блокування", "Авторизация и экран блокировки", "Auth & Lock Screen")));
         rows.add(HotRow.switchRow(KEY_YUMI_LOGIN,
                 t("Виразний екран входу Yumi", "Выразительный экран входа Yumi", "Yumi Expressive Login"),
                 t("Фірмовий бренд-хедер, об'єднана картка номера, чіп коду країни, швидкий QR-вхід та оновлена клавіатура",
                   "Фирменный бренд-хедер, объединенная карточка номера, чип кода страны, быстрый QR-вход и обновленная клавиатура",
                   "Brand hero header, unified phone card, country code chip, quick QR login and updated keypad"),
                 isYumiLogin()));
+        rows.add(HotRow.switchRow(KEY_PASSCODE_MUSIC,
+                t("Острівець музики на екрані пін-коду", "Островок музыки на экране пин-кода", "Passcode Music Capsule"),
+                t("Компактна Dynamic Island пігулка з еквалайзером, коли відтворюється музика (без зайвих заглушок)",
+                  "Компактная Dynamic Island пилюля с эквалайзером, когда играет музыка (без лишних заглушек)",
+                  "Compact Dynamic Island pill with equalizer when music is playing (no empty placeholders)"),
+                isPasscodeMusicEnabled()));
 
         rows.add(HotRow.header(t("Список чатів", "Список чатов", "Chat List")));
         rows.add(HotRow.choice("chat_card_style_choice",
@@ -1229,6 +1240,11 @@ public class UiModule implements HotModule, HotUi {
         }
         if (KEY_YUMI_LOGIN.equals(key)) {
             writeBool(KEY_YUMI_LOGIN, value);
+            markTouched();
+            return;
+        }
+        if (KEY_PASSCODE_MUSIC.equals(key)) {
+            writeBool(KEY_PASSCODE_MUSIC, value);
             markTouched();
             return;
         }

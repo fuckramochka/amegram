@@ -8807,16 +8807,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         if (ArticleViewer.hasInstance() && ArticleViewer.getInstance().isVisible()) {
             ArticleViewer.getInstance().close(false, true);
         }
-        if (!AndroidUtilities.isTablet() && fragment instanceof MainTabsActivity) {
-            if (layout != null && layout.getFragmentStack() != null) {
-                for (int a = 0; a < layout.getFragmentStack().size(); a++) {
-                    if (layout.getFragmentStack().get(a) instanceof MainTabsActivity) {
-                        layout.removeAllFragments();
-                        break;
-                    }
-                }
-            }
-        }
         if (AndroidUtilities.isTablet()) {
             if (fragment instanceof MainTabsActivity) {
                 if (layout != actionBarLayout) {
@@ -8934,16 +8924,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
 
     @Override
     public boolean needAddFragmentToStack(BaseFragment fragment, INavigationLayout layout) {
-        if (!AndroidUtilities.isTablet() && fragment instanceof MainTabsActivity) {
-            if (layout != null && layout.getFragmentStack() != null) {
-                for (int a = 0; a < layout.getFragmentStack().size(); a++) {
-                    if (layout.getFragmentStack().get(a) instanceof MainTabsActivity) {
-                        layout.removeAllFragments();
-                        break;
-                    }
-                }
-            }
-        }
         if (AndroidUtilities.isTablet()) {
             if (fragment instanceof DialogsActivity || fragment instanceof MainTabsActivity) {
                 boolean needReplace = layout != actionBarLayout;

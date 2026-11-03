@@ -48,6 +48,14 @@ public final class YumiUi {
         }
     }
 
+    public static boolean isLoginEnabled() {
+        try {
+            return enabled() && app.exteraless.appearance.AppearanceConfig.isYumiLogin();
+        } catch (Throwable ignored) {
+            return enabled();
+        }
+    }
+
     /** Test/preview only. */
     public static void setForceEnabled(@Nullable Boolean value) {
         forceEnabled = value;

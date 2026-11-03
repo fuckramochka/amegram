@@ -10048,14 +10048,18 @@ public class Theme {
     }
 
     public static Drawable getCachedWallpaperNonBlocking() {
-        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+        if (app.exteraless.appearance.YougramExpressive.isTonalChatBgEnabled()) {
             return app.exteraless.appearance.YougramExpressive.chatWallpaper(isCurrentThemeNight());
         }
         if (themedWallpaper != null) {
             return themedWallpaper;
-        } else {
+        } else if (wallpaper != null) {
             return wallpaper;
         }
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            return app.exteraless.appearance.YougramExpressive.chatWallpaper(isCurrentThemeNight());
+        }
+        return null;
     }
 
     public static boolean isWallpaperMotion() {

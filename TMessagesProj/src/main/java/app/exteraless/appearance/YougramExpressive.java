@@ -34,17 +34,37 @@ public final class YougramExpressive {
 
     /** Радиус пузыря, dp; -1 когда режим выключен. */
     public static int bubbleRadiusDp() {
-        return enabled() ? 24 : -1;
+        if (!enabled()) return -1;
+        try {
+            return app.amegram.hot.HotModulesManager.getInt("ui", "bubble_radius", 24);
+        } catch (Throwable ignore) {
+            return 24;
+        }
     }
 
     /** Радиус медиа внутри пузыря (на 2dp меньше пузыря), dp; -1 когда режим выключен. */
     public static int bubbleMediaRadiusDp() {
-        return enabled() ? 22 : -1;
+        int r = bubbleRadiusDp();
+        return r > 0 ? Math.max(8, r - 2) : -1;
     }
 
     /** В режиме — чистые скруглённые пузыри без «хвостиков», как в Yougram. */
     public static boolean removeMessageTail() {
-        return enabled();
+        if (!enabled()) return false;
+        try {
+            return app.amegram.hot.HotModulesManager.getBool("ui", "remove_tails", true);
+        } catch (Throwable ignore) {
+            return true;
+        }
+    }
+
+    public static boolean isTonalChatBgEnabled() {
+        if (!enabled()) return false;
+        try {
+            return app.amegram.hot.HotModulesManager.getBool("ui", "tonal_chat_bg", false);
+        } catch (Throwable ignore) {
+            return false;
+        }
     }
 
     // ---- Список чатів Yumi ----
@@ -262,10 +282,12 @@ public final class YougramExpressive {
         put(colors, Theme.key_glass_defaultText, dark ? lerp(0xFFC4C4C4, accent, 0.12f) : lerp(0xFF555555, accent, 0.12f));
 
         // ---- Чат: тональний фон і виразні бульбашки Yougram ----
-        put(colors, Theme.key_chat_wallpaper, chatBg);
-        put(colors, Theme.key_chat_wallpaper_gradient_to1, chatBg);
-        put(colors, Theme.key_chat_wallpaper_gradient_to2, chatBg);
-        put(colors, Theme.key_chat_wallpaper_gradient_to3, chatBg);
+        if (isTonalChatBgEnabled()) {
+            put(colors, Theme.key_chat_wallpaper, chatBg);
+            put(colors, Theme.key_chat_wallpaper_gradient_to1, chatBg);
+            put(colors, Theme.key_chat_wallpaper_gradient_to2, chatBg);
+            put(colors, Theme.key_chat_wallpaper_gradient_to3, chatBg);
+        }
 
         put(colors, Theme.key_chat_inBubble, inBubble);
         put(colors, Theme.key_chat_outBubble, outBubble);

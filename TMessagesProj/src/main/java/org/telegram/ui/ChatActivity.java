@@ -48017,12 +48017,17 @@ public class ChatActivity extends BaseFragment implements
         private Drawable getBackgroundDrawableFromTheme(EmojiThemes chatTheme, int prevPhase) {
             Drawable drawable;
             if (chatTheme.showAsDefaultStub) {
+                if (app.exteraless.appearance.YougramExpressive.isTonalChatBgEnabled()) {
+                    return app.exteraless.appearance.YougramExpressive.chatWallpaper(isDark);
+                }
                 Theme.ThemeInfo themeInfo = EmojiThemes.getDefaultThemeInfo(isDark);
                 SparseIntArray currentColors = chatTheme.getPreviewColors(currentAccount, isDark ? 1 : 0);
                 String wallpaperLink = chatTheme.getWallpaperLink(isDark ? 1 : 0);
                 Theme.BackgroundDrawableSettings settings = Theme.createBackgroundDrawable(themeInfo, currentColors, wallpaperLink, prevPhase, false);
                 drawable = settings.wallpaper;
-                drawable = new ColorDrawable(Color.BLACK);
+                if (drawable == null) {
+                    drawable = Theme.getCachedWallpaper();
+                }
             } else {
                 int backgroundColor = getColor(Theme.key_chat_wallpaper);
                 int gradientColor1 = getColor(Theme.key_chat_wallpaper_gradient_to1);

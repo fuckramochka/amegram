@@ -231,6 +231,9 @@ import tw.nekomimi.nekogram.helpers.PasscodeHelper;
 import tw.nekomimi.nekogram.ui.BottomBuilder;
 import tw.nekomimi.nekogram.ui.EditTextAutoFill;
 import tw.nekomimi.nekogram.ui.QrView;
+import app.amegram.theme.YumiMd3;
+import app.miogram.ui.yumi.YumiUi;
+import app.miogram.ui.yumi.YumiMotion;
 
 @SuppressLint("HardwareIds")
 public class LoginActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
@@ -747,6 +750,10 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         }
 
         floatingButton = new FragmentFloatingButton(context, resourceProvider);
+        if (YumiUi.isLoginEnabled()) {
+            floatingButton.setOutlineProvider(org.telegram.messenger.utils.ViewOutlineProviderImpl.boundsWithPaddingRoundRect(0, dp(18)));
+            floatingButton.setElevation(dp(4));
+        }
         floatingButton.setButtonVisible(doneButtonVisible[DONE_TYPE_FLOATING], false);
         floatingAutoAnimator = VerticalPositionAutoAnimator.attach(floatingButton);
         sizeNotifierFrameLayout.addView(floatingButton, FragmentFloatingButton.createDefaultLayoutParamsBig());
@@ -759,6 +766,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         backButtonView = new ImageView(context);
         backButtonView.setImageResource(R.drawable.ic_ab_back);
+        if (YumiUi.isLoginEnabled()) {
+            backButtonView.setBackground(YumiUi.selectable(0, 16f));
+        }
         backButtonView.setOnClickListener(v -> {
             if (onBackPressed(true)) {
                 finishFragment();
@@ -826,6 +836,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         moreButtonView.setSubMenuOpenSide(1);
         moreButtonView.setOnClickListener(view -> moreButtonView.toggleSubMenu());
         moreButtonView.setContentDescription(LocaleController.getString(R.string.AccDescrMoreOptions));
+        if (YumiUi.isLoginEnabled()) {
+            moreButtonView.setBackground(YumiUi.selectable(0, 16f));
+        }
         sizeNotifierFrameLayout.addView(moreButtonView, LayoutHelper.createFrame(32, 32, Gravity.RIGHT | Gravity.TOP, 16, 16, 16, 16));
 
         radialProgressView = new RadialProgressView(context);
@@ -2032,6 +2045,28 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         private CheckBoxCell syncContactsBox;
         private CheckBoxCell testBackendCheckBox;
 
+        private FrameLayout yumiHeroBadge;
+        private ImageView yumiHeroIcon;
+        private LinearLayout yumiCard;
+        private LinearLayout yumiCodeChip;
+        private View yumiDivider;
+        private LinearLayout yumiQrButton;
+        private ImageView yumiQrIcon;
+        private TextView yumiQrLabel;
+        private LinearLayout yumiPasskeyButton;
+
+        private void updateYumiCardFocus(boolean focused) {
+            if (yumiCard != null) {
+                int strokeColor = focused ? YumiMd3.primary() : YumiMd3.chatFieldBorder();
+                float strokeWidth = focused ? 1.5f : 1f;
+                yumiCard.setBackground(YumiMd3.rounded(
+                        YumiMd3.chatField(),
+                        strokeColor,
+                        YumiMd3.RADIUS_XL_DP,
+                        strokeWidth));
+            }
+        }
+
         @CountryState
         private int countryState = COUNTRY_STATE_NOT_SET_OR_VALID;
         private CountrySelectActivity.Country currentCountry;
@@ -2079,13 +2114,43 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
         public PhoneView(Context context) {
             super(context);
 
+            final boolean isYumi = YumiUi.isLoginEnabled();
+
             setOrientation(VERTICAL);
             setGravity(Gravity.CENTER);
 
+            if (isYumi) {
+                yumiHeroBadge = new FrameLayout(context);
+                yumiHeroBadge.setBackground(YumiMd3.gradient(
+                        YumiMd3.actionGradientStart(),
+                        YumiMd3.actionGradientEnd(),
+                        YumiMd3.RADIUS_L_DP));
+                yumiHeroIcon = new ImageView(context);
+                yumiHeroIcon.setImageResource(R.drawable.msg_bot);
+                yumiHeroIcon.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+                yumiHeroBadge.addView(yumiHeroIcon, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
+                addView(yumiHeroBadge, LayoutHelper.createLinear(64, 64, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 16));
+                yumiHeroBadge.setOnClickListener(v -> {
+                    YumiUi.haptic(v);
+                    YumiMotion.press(v, true);
+                    postDelayed(() -> YumiMotion.press(v, false), 150);
+                    if (titleView != null) {
+                        titleView.performClick();
+                    }
+                });
+            }
+
             titleView = new TextView(context);
-            titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
-            titleView.setTypeface(AndroidUtilities.bold());
-            titleView.setText(getString(activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneNewNumber : R.string.YourNumber));
+            if (isYumi) {
+                titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, YumiMd3.HEADLINE);
+                titleView.setTypeface(AndroidUtilities.bold());
+                titleView.setTextColor(YumiMd3.onSurface());
+                titleView.setText(activityMode == MODE_CHANGE_PHONE_NUMBER ? getString(R.string.ChangePhoneNewNumber) : "Yumigram");
+            } else {
+                titleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+                titleView.setTypeface(AndroidUtilities.bold());
+                titleView.setText(getString(activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneNewNumber : R.string.YourNumber));
+            }
             titleView.setGravity(Gravity.CENTER);
             titleView.setLineSpacing(dp(2), 1.0f);
             addView(titleView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 0, 32, 0));
@@ -2112,8 +2177,18 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             });
 
             subtitleView = new LinkSpanDrawable.LinksTextView(context);
-            subtitleView.setText(getString(activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneHelp : R.string.StartText));
-            subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            if (isYumi) {
+                subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, YumiMd3.BODY_SMALL);
+                subtitleView.setTextColor(YumiMd3.onSurfaceVariant());
+                if (activityMode == MODE_CHANGE_PHONE_NUMBER) {
+                    subtitleView.setText(getString(R.string.ChangePhoneHelp));
+                } else {
+                    subtitleView.setText("Введіть номер для швидкого та безпечного входу");
+                }
+            } else {
+                subtitleView.setText(getString(activityMode == MODE_CHANGE_PHONE_NUMBER ? R.string.ChangePhoneHelp : R.string.StartText));
+                subtitleView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+            }
             subtitleView.setGravity(Gravity.CENTER);
             subtitleView.setLineSpacing(dp(2), 1.0f);
             addView(subtitleView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_HORIZONTAL, 32, 8, 32, 0));
@@ -2121,10 +2196,17 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             countryButton = new TextViewSwitcher(context);
             countryButton.setFactory(() -> {
                 TextView tv = new TextView(context);
-                tv.setPadding(dp(16), dp(12), dp(16), dp(12));
+                tv.setPadding(dp(isYumi ? 4 : 16), dp(12), dp(isYumi ? 4 : 16), dp(12));
                 tv.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
-                tv.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                tv.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+                if (isYumi) {
+                    tv.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    tv.setTextColor(YumiMd3.onSurface());
+                    tv.setHintTextColor(YumiMd3.onSurfaceVariant());
+                } else {
+                    tv.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    tv.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+                }
+                tv.setHint(LocaleController.getString(R.string.Country));
                 tv.setMaxLines(1);
                 tv.setSingleLine(true);
                 tv.setEllipsize(TextUtils.TruncateAt.END);
@@ -2139,21 +2221,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             chevronRight = new ImageView(context);
             chevronRight.setImageResource(R.drawable.msg_inputarrow);
 
-            LinearLayout countryButtonLinearLayout = new LinearLayout(context);
-            countryButtonLinearLayout.setOrientation(HORIZONTAL);
-            countryButtonLinearLayout.setGravity(Gravity.CENTER_VERTICAL);
-            countryButtonLinearLayout.addView(countryButton, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 0, 0));
-            countryButtonLinearLayout.addView(chevronRight, LayoutHelper.createLinearRelatively(24, 24, 0, 0, 0, 14, 0));
-
-            countryOutlineView = new OutlineTextContainerView(context);
-            countryOutlineView.setText(getString(R.string.Country));
-            countryOutlineView.addView(countryButtonLinearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 0, 0));
-            countryOutlineView.setForceUseCenter(true);
-            countryOutlineView.setFocusable(true);
-            countryOutlineView.setContentDescription(getString(R.string.Country));
-            countryOutlineView.setOnFocusChangeListener((v, hasFocus) -> countryOutlineView.animateSelection(hasFocus ? 1 : 0));
-            addView(countryOutlineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 58, 16, 24, 16, 14));
-            countryOutlineView.setOnClickListener(view -> {
+            Runnable openCountrySelect = () -> {
                 CountrySelectActivity fragment = new CountrySelectActivity(true, countriesArray);
                 fragment.setCountrySelectActivityDelegate((country) -> {
                     selectCountry(country);
@@ -2162,27 +2230,58 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                     phoneField.setSelection(phoneField.length());
                 });
                 presentFragment(fragment);
-            });
+            };
+
+            LinearLayout countryButtonLinearLayout = new LinearLayout(context);
+            countryButtonLinearLayout.setOrientation(HORIZONTAL);
+            countryButtonLinearLayout.setGravity(Gravity.CENTER_VERTICAL);
+
+            countryOutlineView = new OutlineTextContainerView(context);
+            countryOutlineView.setText(getString(R.string.Country));
+            countryOutlineView.setForceUseCenter(true);
+            countryOutlineView.setFocusable(true);
+            countryOutlineView.setContentDescription(getString(R.string.Country));
+            countryOutlineView.setOnFocusChangeListener((v, hasFocus) -> countryOutlineView.animateSelection(hasFocus ? 1 : 0));
+            countryOutlineView.setOnClickListener(view -> openCountrySelect.run());
 
             LinearLayout linearLayout = new LinearLayout(context);
             linearLayout.setOrientation(HORIZONTAL);
 
             phoneOutlineView = new OutlineTextContainerView(context);
-            phoneOutlineView.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 16, 8, 16, 8));
             phoneOutlineView.setText(getString(R.string.PhoneNumber));
-            addView(phoneOutlineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 58, 16, 8, 16, 8));
+
+            if (!isYumi) {
+                countryButtonLinearLayout.addView(countryButton, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 0, 0));
+                countryButtonLinearLayout.addView(chevronRight, LayoutHelper.createLinearRelatively(24, 24, 0, 0, 0, 14, 0));
+                countryOutlineView.addView(countryButtonLinearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT, Gravity.TOP, 0, 0, 0, 0));
+                addView(countryOutlineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 58, 16, 24, 16, 14));
+
+                phoneOutlineView.addView(linearLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL, 16, 8, 16, 8));
+                addView(phoneOutlineView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 58, 16, 8, 16, 8));
+            }
 
             plusTextView = new TextView(context);
             plusTextView.setText("+");
             plusTextView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            if (isYumi) {
+                plusTextView.setTypeface(AndroidUtilities.bold());
+                plusTextView.setTextColor(YumiMd3.primary());
+            }
             plusTextView.setFocusable(false);
-            linearLayout.addView(plusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            if (!isYumi) {
+                linearLayout.addView(plusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            }
 
             codeField = new AnimatedPhoneNumberEditText(context) {
                 @Override
                 protected void onFocusChanged(boolean focused, int direction, Rect previouslyFocusedRect) {
                     super.onFocusChanged(focused, direction, previouslyFocusedRect);
-                    phoneOutlineView.animateSelection(focused || phoneField.isFocused() ? 1f : 0f);
+                    if (phoneOutlineView != null) {
+                        phoneOutlineView.animateSelection(focused || phoneField.isFocused() ? 1f : 0f);
+                    }
+                    if (yumiCard != null) {
+                        updateYumiCardFocus(focused || phoneField.isFocused());
+                    }
 
                     if (focused) {
                         keyboardView.setEditText(this);
@@ -2192,16 +2291,22 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             codeField.setInputType(InputType.TYPE_CLASS_PHONE);
             codeField.setCursorSize(AndroidUtilities.dp(20));
             codeField.setCursorWidth(1.5f);
-            codeField.setPadding(AndroidUtilities.dp(10), 0, 0, 0);
+            codeField.setPadding(AndroidUtilities.dp(isYumi ? 2 : 10), 0, 0, 0);
             codeField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            if (isYumi) {
+                codeField.setTypeface(AndroidUtilities.bold());
+                codeField.setTextColor(YumiMd3.primary());
+                codeField.setCursorColor(YumiMd3.primary());
+            }
             codeField.setMaxLines(1);
             codeField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             codeField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
             codeField.setBackground(null);
-//            codeField.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_text_RedRegular));
             codeField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
             codeField.setContentDescription(getString(R.string.LoginAccessibilityCountryCode));
-            linearLayout.addView(codeField, LayoutHelper.createLinear(55, 36, -9, 0, 0, 0));
+            if (!isYumi) {
+                linearLayout.addView(codeField, LayoutHelper.createLinear(55, 36, -9, 0, 0, 0));
+            }
             codeField.addTextChangedListener(new TextWatcher() {
                 @Override
                 public void beforeTextChanged(CharSequence charSequence, int i, int i2, int i3) {
@@ -2335,9 +2440,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return false;
             });
             codeDividerView = new View(context);
-            LayoutParams params = LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 4, 8, 12, 8);
-            params.width = Math.max(2, AndroidUtilities.dp(0.5f));
-            linearLayout.addView(codeDividerView, params);
+            if (!isYumi) {
+                LayoutParams params = LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 4, 8, 12, 8);
+                params.width = Math.max(2, AndroidUtilities.dp(0.5f));
+                linearLayout.addView(codeDividerView, params);
+            }
 
             phoneField = new AnimatedPhoneNumberEditText(context) {
 
@@ -2366,7 +2473,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 @Override
                 protected void onFocusChanged(boolean focused, int direction, Rect previouslyFocusedRect) {
                     super.onFocusChanged(focused, direction, previouslyFocusedRect);
-                    phoneOutlineView.animateSelection(focused || codeField.isFocused() ? 1f : 0f);
+                    if (phoneOutlineView != null) {
+                        phoneOutlineView.animateSelection(focused || codeField.isFocused() ? 1f : 0f);
+                    }
+                    if (yumiCard != null) {
+                        updateYumiCardFocus(focused || codeField.isFocused());
+                    }
 
                     if (focused) {
                         keyboardView.setEditText(this);
@@ -2386,7 +2498,13 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             phoneField.setPadding(0, 0, 0, 0);
             phoneField.setCursorSize(AndroidUtilities.dp(20));
             phoneField.setCursorWidth(1.5f);
-            phoneField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+            phoneField.setTextSize(TypedValue.COMPLEX_UNIT_DIP, isYumi ? 18 : 16);
+            if (isYumi) {
+                phoneField.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                phoneField.setTextColor(YumiMd3.onSurface());
+                phoneField.setHintTextColor(YumiMd3.onSurfaceVariant());
+                phoneField.setCursorColor(YumiMd3.primary());
+            }
             phoneField.setMaxLines(1);
             phoneField.setGravity(Gravity.LEFT | Gravity.CENTER_VERTICAL);
             phoneField.setImeOptions(EditorInfo.IME_ACTION_NEXT | EditorInfo.IME_FLAG_NO_EXTRACT_UI);
@@ -2394,7 +2512,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 //            phoneField.setLineColors(getThemedColor(Theme.key_windowBackgroundWhiteInputField), getThemedColor(Theme.key_windowBackgroundWhiteInputFieldActivated), getThemedColor(Theme.key_text_RedRegular));
             phoneField.setShowSoftInputOnFocus(!(hasCustomKeyboard() && !isCustomKeyboardForceDisabled()));
             phoneField.setContentDescription(getString(R.string.PhoneNumber));
-            linearLayout.addView(phoneField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36));
+            if (!isYumi) {
+                linearLayout.addView(phoneField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36));
+            }
             phoneField.addTextChangedListener(new TextWatcher() {
 
                 private int characterAction = -1;
@@ -2518,11 +2638,116 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 return false;
             });
 
+            if (isYumi) {
+                yumiCard = new LinearLayout(context);
+                yumiCard.setOrientation(VERTICAL);
+                yumiCard.setBackground(YumiMd3.rounded(
+                        YumiMd3.chatField(),
+                        YumiMd3.chatFieldBorder(),
+                        YumiMd3.RADIUS_XL_DP, 1f));
+                yumiCard.setClipToOutline(true);
+
+                LinearLayout countryRow = new LinearLayout(context);
+                countryRow.setOrientation(HORIZONTAL);
+                countryRow.setGravity(Gravity.CENTER_VERTICAL);
+                countryRow.setBackground(YumiUi.selectable(0, 0));
+                countryRow.setClickable(true);
+                countryRow.setFocusable(true);
+                countryRow.setOnClickListener(v -> openCountrySelect.run());
+
+                ImageView countryGlobe = new ImageView(context);
+                countryGlobe.setImageResource(R.drawable.msg_language);
+                countryGlobe.setColorFilter(new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+                countryRow.addView(countryGlobe, LayoutHelper.createLinear(20, 20, Gravity.CENTER_VERTICAL, 16, 0, 8, 0));
+                countryRow.addView(countryButton, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, 0, 0, 0, 0));
+                chevronRight.setColorFilter(YumiMd3.onSurfaceVariant());
+                countryRow.addView(chevronRight, LayoutHelper.createLinearRelatively(20, 20, 0, 0, 0, 16, 0));
+                yumiCard.addView(countryRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 54));
+
+                yumiDivider = new View(context);
+                yumiDivider.setBackgroundColor(YumiMd3.chatFieldBorder());
+                yumiCard.addView(yumiDivider, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 1, 16, 0, 16, 0));
+
+                LinearLayout phoneRow = new LinearLayout(context);
+                phoneRow.setOrientation(HORIZONTAL);
+                phoneRow.setGravity(Gravity.CENTER_VERTICAL);
+                phoneRow.setPadding(dp(14), dp(8), dp(14), dp(8));
+
+                yumiCodeChip = new LinearLayout(context);
+                yumiCodeChip.setOrientation(HORIZONTAL);
+                yumiCodeChip.setGravity(Gravity.CENTER);
+                yumiCodeChip.setBackground(YumiMd3.rounded(
+                        YumiMd3.surfaceContainerHighest(), 12f));
+                yumiCodeChip.setPadding(dp(8), dp(4), dp(8), dp(4));
+                yumiCodeChip.addView(plusTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+                yumiCodeChip.addView(codeField, LayoutHelper.createLinear(48, 32, Gravity.CENTER_VERTICAL, 2, 0, 0, 0));
+                phoneRow.addView(yumiCodeChip, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+
+                phoneRow.addView(phoneField, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 40, Gravity.CENTER_VERTICAL));
+                yumiCard.addView(phoneRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 56));
+
+                addView(yumiCard, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 16, 20, 16, 12));
+
+                yumiQrButton = new LinearLayout(context);
+                yumiQrButton.setOrientation(HORIZONTAL);
+                yumiQrButton.setGravity(Gravity.CENTER);
+                yumiQrButton.setBackground(YumiMd3.ripple(
+                        YumiMd3.secondaryContainer(), 24f, YumiMd3.defaultRippleColor()));
+                yumiQrButton.setClickable(true);
+                yumiQrButton.setFocusable(true);
+
+                yumiQrIcon = new ImageView(context);
+                yumiQrIcon.setImageResource(R.drawable.msg_qrcode_solar);
+                yumiQrIcon.setColorFilter(new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+                yumiQrButton.addView(yumiQrIcon, LayoutHelper.createLinear(22, 22, Gravity.CENTER, 0, 0, 8, 0));
+
+                yumiQrLabel = new TextView(context);
+                yumiQrLabel.setText(LocaleController.getString(R.string.ImportLogin));
+                yumiQrLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
+                yumiQrLabel.setTypeface(AndroidUtilities.bold());
+                yumiQrLabel.setTextColor(YumiMd3.onSecondaryContainer());
+                yumiQrButton.addView(yumiQrLabel, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+                yumiQrButton.setOnClickListener(v -> {
+                    YumiUi.haptic(v);
+                    setPage(VIEW_QR_LOGIN, true, null, false);
+                });
+                addView(yumiQrButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 48, 16, 4, 16, 8));
+
+                if (BuildVars.SUPPORTS_PASSKEYS) {
+                    yumiPasskeyButton = new LinearLayout(context);
+                    yumiPasskeyButton.setOrientation(HORIZONTAL);
+                    yumiPasskeyButton.setGravity(Gravity.CENTER);
+                    yumiPasskeyButton.setBackground(YumiMd3.ripple(
+                            YumiMd3.surfaceContainerLow(), 22f, YumiMd3.defaultRippleColor()));
+                    yumiPasskeyButton.setClickable(true);
+                    yumiPasskeyButton.setFocusable(true);
+
+                    ImageView passkeyIcon = new ImageView(context);
+                    passkeyIcon.setImageResource(R.drawable.menu_passkey_add);
+                    passkeyIcon.setColorFilter(new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+                    yumiPasskeyButton.addView(passkeyIcon, LayoutHelper.createLinear(20, 20, Gravity.CENTER, 0, 0, 8, 0));
+
+                    TextView passkeyLabel = new TextView(context);
+                    passkeyLabel.setText(LocaleController.getString(R.string.PasskeyLogin));
+                    passkeyLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13.5f);
+                    passkeyLabel.setTypeface(AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+                    passkeyLabel.setTextColor(YumiMd3.onSurface());
+                    yumiPasskeyButton.addView(passkeyLabel, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER));
+
+                    yumiPasskeyButton.setOnClickListener(v -> {
+                        YumiUi.haptic(v);
+                        requestPasskey(true, true);
+                    });
+                    addView(yumiPasskeyButton, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 44, 16, 0, 16, 8));
+                }
+            }
+
             int bottomMargin = 72;
             if (activityMode == MODE_LOGIN) {
                 syncContactsBox = new CheckBoxCell(context, 2);
                 syncContactsBox.setText(getString("SyncContacts", R.string.SyncContacts), "", syncContacts, false);
-                addView(syncContactsBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? 56 : 0), 0));
+                addView(syncContactsBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, isYumi ? LayoutHelper.WRAP_CONTENT : LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, isYumi ? 10 : 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? 56 : 0), 0));
                 bottomMargin -= 24;
                 syncContactsBox.setOnClickListener(v -> {
                     if (getParentActivity() == null) {
@@ -2543,7 +2768,7 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
             if (allowTestBackend && activityMode == MODE_LOGIN) {
                 testBackendCheckBox = new CheckBoxCell(context, 2);
                 testBackendCheckBox.setText(getString(R.string.TestBackend), "", testBackend = getConnectionsManager().isTestBackend(), false);
-                addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? 56 : 0), 0));
+                addView(testBackendCheckBox, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, isYumi ? LayoutHelper.WRAP_CONTENT : LayoutHelper.MATCH_PARENT, Gravity.LEFT | Gravity.TOP, 16, isYumi ? 6 : 0, 16 + (LocaleController.isRTL && AndroidUtilities.isSmallScreen() ? 56 : 0), 0));
                 bottomMargin -= 24;
                 testBackendCheckBox.setOnClickListener(v -> {
                     if (getParentActivity() == null) {
@@ -2756,28 +2981,81 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public void updateColors() {
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
-            subtitleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
-            for (int i = 0; i < countryButton.getChildCount(); i++) {
-                TextView textView = (TextView) countryButton.getChildAt(i);
-                textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-                textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            if (YumiUi.isLoginEnabled()) {
+                titleView.setTextColor(YumiMd3.onSurface());
+                subtitleView.setTextColor(YumiMd3.onSurfaceVariant());
+                subtitleView.setLinkTextColor(YumiMd3.primary());
+                for (int i = 0; i < countryButton.getChildCount(); i++) {
+                    TextView textView = (TextView) countryButton.getChildAt(i);
+                    textView.setTextColor(YumiMd3.onSurface());
+                    textView.setHintTextColor(YumiMd3.onSurfaceVariant());
+                }
+
+                chevronRight.setColorFilter(YumiMd3.onSurfaceVariant());
+                plusTextView.setTextColor(YumiMd3.primary());
+
+                codeField.setTextColor(YumiMd3.primary());
+                codeField.setCursorColor(YumiMd3.primary());
+
+                phoneField.setTextColor(YumiMd3.onSurface());
+                phoneField.setHintTextColor(YumiMd3.onSurfaceVariant());
+                phoneField.setCursorColor(YumiMd3.primary());
+
+                if (yumiHeroBadge != null) {
+                    yumiHeroBadge.setBackground(YumiMd3.gradient(
+                            YumiMd3.actionGradientStart(),
+                            YumiMd3.actionGradientEnd(),
+                            YumiMd3.RADIUS_L_DP));
+                }
+                if (yumiCard != null) {
+                    boolean focused = (codeField != null && codeField.isFocused()) || (phoneField != null && phoneField.isFocused());
+                    updateYumiCardFocus(focused);
+                }
+                if (yumiCodeChip != null) {
+                    yumiCodeChip.setBackground(YumiMd3.rounded(
+                            YumiMd3.surfaceContainerHighest(), 12f));
+                }
+                if (yumiDivider != null) {
+                    yumiDivider.setBackgroundColor(YumiMd3.chatFieldBorder());
+                }
+                if (yumiQrButton != null) {
+                    yumiQrButton.setBackground(YumiMd3.ripple(
+                            YumiMd3.secondaryContainer(), 24f, YumiMd3.defaultRippleColor()));
+                }
+                if (yumiQrIcon != null) {
+                    yumiQrIcon.setColorFilter(new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+                }
+                if (yumiQrLabel != null) {
+                    yumiQrLabel.setTextColor(YumiMd3.onSecondaryContainer());
+                }
+                if (yumiPasskeyButton != null) {
+                    yumiPasskeyButton.setBackground(YumiMd3.ripple(
+                            YumiMd3.surfaceContainerLow(), 22f, YumiMd3.defaultRippleColor()));
+                }
+            } else {
+                titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+                subtitleView.setLinkTextColor(Theme.getColor(Theme.key_chat_messageLinkIn));
+                for (int i = 0; i < countryButton.getChildCount(); i++) {
+                    TextView textView = (TextView) countryButton.getChildAt(i);
+                    textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                    textView.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+                }
+
+                chevronRight.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+                chevronRight.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1));
+
+                plusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+
+                codeField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                codeField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
+
+                codeDividerView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField));
+
+                phoneField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                phoneField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+                phoneField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
             }
-
-            chevronRight.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            chevronRight.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), 1));
-
-            plusTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-
-            codeField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            codeField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
-
-            codeDividerView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputField));
-
-            phoneField.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            phoneField.setHintTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
-            phoneField.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteInputFieldActivated));
 
             if (syncContactsBox != null) {
                 syncContactsBox.setSquareCheckBoxColor(Theme.key_checkboxSquareUnchecked, Theme.key_checkboxSquareBackground, Theme.key_checkboxSquareCheck);
@@ -2788,8 +3066,12 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 testBackendCheckBox.updateTextColor();
             }
 
-            phoneOutlineView.updateColor();
-            countryOutlineView.updateColor();
+            if (phoneOutlineView != null) {
+                phoneOutlineView.updateColor();
+            }
+            if (countryOutlineView != null) {
+                countryOutlineView.updateColor();
+            }
         }
 
         @Override
@@ -2899,7 +3181,9 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
             CharSequence prevText = countryButton.getCurrentView().getText();
             countryButton.setText(cs, !(TextUtils.isEmpty(cs) && TextUtils.isEmpty(prevText)) && !Objects.equals(prevText, cs));
-            countryOutlineView.animateSelection(cs != null ? 1f : 0f);
+            if (countryOutlineView != null) {
+                countryOutlineView.animateSelection(cs != null ? 1f : 0f);
+            }
         }
 
         private void setCountry(HashMap<String, String> languageMap, String country) {
@@ -2952,7 +3236,11 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
                 FileLog.d("sim status = " + tm.getSimState());
             }
             if (codeField.length() == 0 || phoneField.length() == 0) {
-                onFieldError(phoneOutlineView, false);
+                if (yumiCard != null) {
+                    onFieldError(yumiCard, false);
+                } else if (phoneOutlineView != null) {
+                    onFieldError(phoneOutlineView, false);
+                }
                 return;
             }
             String phoneNumber = "+" + codeField.getText() + " " + phoneField.getText();
@@ -8508,9 +8796,22 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
 
         @Override
         public void updateColors() {
-            titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            confirmTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
-            confirmTextView.setLinkTextColor(Theme.getColor(Theme.key_chats_actionBackground));
+            if (YumiUi.isLoginEnabled()) {
+                titleView.setTextColor(YumiMd3.onSurface());
+                confirmTextView.setTextColor(YumiMd3.onSurfaceVariant());
+                confirmTextView.setLinkTextColor(YumiMd3.primary());
+                if (qrView != null) {
+                    qrView.setBackground(YumiMd3.rounded(
+                            YumiMd3.surfaceContainerLow(),
+                            YumiMd3.chatFieldBorder(),
+                            24f, 1f));
+                    qrView.setPadding(dp(16), dp(16), dp(16), dp(16));
+                }
+            } else {
+                titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                confirmTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText6));
+                confirmTextView.setLinkTextColor(Theme.getColor(Theme.key_chats_actionBackground));
+            }
         }
 
         @Override
@@ -8772,22 +9073,42 @@ public class LoginActivity extends BaseFragment implements NotificationCenter.No
     }
 
     private void updateColors() {
-        fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        if (YumiUi.isLoginEnabled()) {
+            fragmentView.setBackgroundColor(YumiMd3.surface());
 
-        backButtonView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+            backButtonView.setColorFilter(YumiMd3.onSurface());
+            backButtonView.setBackground(YumiUi.selectable(0, 16f));
 
-        // proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
-        // proxyButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+            moreButtonView.setIconColor(YumiMd3.onSurface());
+            moreButtonView.setBackground(YumiUi.selectable(0, 16f));
 
-        moreButtonView.setIconColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-        moreButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+            radialProgressView.setProgressColor(YumiMd3.primary());
 
-        radialProgressView.setProgressColor(Theme.getColor(Theme.key_chats_actionBackground));
+            floatingButton.updateColors();
+            floatingButton.setBackground(YumiMd3.gradient(
+                    YumiMd3.actionGradientStart(),
+                    YumiMd3.actionGradientEnd(),
+                    18f));
+            floatingButtonIcon.setColor(YumiMd3.onActionGradient());
+            floatingButtonIcon.setBackgroundColor(Color.TRANSPARENT);
+        } else {
+            fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite));
 
-        floatingButton.updateColors();
-        floatingButtonIcon.setColor(Theme.getColor(Theme.key_chats_actionIcon));
-        floatingButtonIcon.setBackgroundColor(Theme.getColor(Theme.key_chats_actionBackground));
+            backButtonView.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            backButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+
+            // proxyDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText), PorterDuff.Mode.SRC_IN));
+            // proxyButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+
+            moreButtonView.setIconColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+            moreButtonView.setBackground(Theme.createSelectorDrawable(Theme.getColor(Theme.key_listSelector)));
+
+            radialProgressView.setProgressColor(Theme.getColor(Theme.key_chats_actionBackground));
+
+            floatingButton.updateColors();
+            floatingButtonIcon.setColor(Theme.getColor(Theme.key_chats_actionIcon));
+            floatingButtonIcon.setBackgroundColor(Theme.getColor(Theme.key_chats_actionBackground));
+        }
 
         for (SlideView slideView : views) {
             slideView.updateColors();

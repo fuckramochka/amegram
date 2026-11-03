@@ -488,10 +488,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         fadeDrawable.setFadeHeight(dp(60), true);
         fadeView.setBackground(fadeDrawable);
 
-        if (!MainTabsUiHelper.isFloatingPill()) {
-            contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
-        } else {
+        contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
+        if (MainTabsUiHelper.isFloatingPill()) {
             fadeView.setVisibility(View.GONE);
+            fadeView.setAlpha(0f);
         }
 
         tabsViewWrapper = new FrameLayout(context);
@@ -1253,7 +1253,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
 
         ViewGroup.MarginLayoutParams lp;
-        {
+        if (fadeView != null && fadeView.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
             final int height = navigationBarHeight + updateLayoutHeight + tabsHeight;
             lp = (ViewGroup.MarginLayoutParams) fadeView.getLayoutParams();
             if (lp.height != height) {

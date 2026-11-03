@@ -299,19 +299,19 @@
     {
       "id": "ui",
       "name": "Інтерфейс Yumi",
-      "description": "Виразний інтерфейс Yumi: динамічна адаптація палітри під активну тему Telegram, капсульна панель навігації, елегантні мітки часу та чисті картки чатів.",
+      "description": "Виразний інтерфейс Yumi: повноцінний редизайн екрану входу в аккаунт (бренд-хедер, скульптурна об'єднана картка номера, чіп коду, швидкий QR-вхід), капсульна панель навігації та чисті картки чатів.",
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
-          "version": "1.0.15",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.15.hmod",
-          "sha256": "f9a883f333277d1a1c9fcae97ee6e15d043106d6f3a1a8a0cc60b8a666255575",
+          "version": "1.0.17",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.17.hmod",
+          "sha256": "cecf3081343a5cb5b3ec3c4fbe0a30b308e858b37e8ae51f6a9f7a5a7be7b2a6",
           "minApp": 7112,
-          "changelog": "Версія 1.0.15: повноцінна адаптація палітри під активну тему Telegram, чиста українська локалізація налаштувань, виправлення оновлення кольорів інтерфейсу при зміні теми.",
+          "changelog": "Версія 1.0.17: кардинальне оновлення інтерфейсу логіну на Yumi Expressive: фірмовий бренд-хедер, об'єднана картка вибору країни та номера, чіп коду, винесена швидка кнопка входу за QR-кодом і Passkey, редизайн цифрової клавіатури.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 39272
+          "sizeBytes": 40912
         }
       },
       "history": [

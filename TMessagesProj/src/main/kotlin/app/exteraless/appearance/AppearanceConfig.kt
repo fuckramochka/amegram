@@ -57,6 +57,13 @@ object AppearanceConfig {
     val uiStyleModeTouched =
         addConfig("OEAppearanceUiStyleModeTouched", ConfigItem.configTypeBool, false)
 
+    @JvmField
+    val yumiLogin =
+        addConfig("ui_yumi_login", ConfigItem.configTypeBool, true)
+
+    @JvmStatic
+    fun isYumiLogin(): Boolean = isYougramExpressive() && yumiLogin.Bool()
+
     /** Звати після того, як користувач обрав режим інтерфейсу у налаштуваннях. */
     @JvmStatic
     fun markUiStyleModeTouched() {

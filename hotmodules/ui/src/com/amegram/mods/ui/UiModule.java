@@ -43,6 +43,7 @@ public class UiModule implements HotModule, HotUi {
     private static final String KEY_GLASS_MENU = "OEAppearanceGlassMessageMenu";
     private static final String KEY_MINI_PLAYER = "OEAppearanceMd3MiniPlayer";
     private static final String KEY_LOADING = "OEAppearanceNewLoadingStyle";
+    public static final String KEY_YUMI_LOGIN = "ui_yumi_login";
 
     // Chat list display keys
     public static final String KEY_CHAT_STYLE = "OEAppearanceChatListStyle";
@@ -275,6 +276,10 @@ public class UiModule implements HotModule, HotUi {
 
     public boolean isChatPinnedAccent() {
         return readBool(KEY_CHAT_PINNED_ACCENT, true);
+    }
+
+    public boolean isYumiLogin() {
+        return readBool(KEY_YUMI_LOGIN, true);
     }
 
     public boolean isChatSquircleAvatars() {
@@ -972,6 +977,21 @@ public class UiModule implements HotModule, HotUi {
         } catch (Throwable t) {
             host.log("ui: hook list screen chrome failed: " + t.getMessage());
         }
+
+        try {
+            final Class<?> loginCls = Class.forName("org.telegram.ui.LoginActivity", true, cl);
+            final Method createView = loginCls.getMethod("createView", Context.class);
+            final HotHook.Unhook u = host.hook(createView, new HotHook.Callback() {
+                @Override
+                public void after(HotHook.Call call) throws Throwable {
+                    if (!isExpressive() || !isYumiLogin()) return;
+                }
+            });
+            if (u != null) activeHooks.add(u);
+            host.log("ui: hooked LoginActivity.createView for Yumi login");
+        } catch (Throwable t) {
+            host.log("ui: hook LoginActivity failed: " + t.getMessage());
+        }
     }
 
     private void hookScreen(String className, ClassLoader cl, final String kind) {
@@ -1015,6 +1035,14 @@ public class UiModule implements HotModule, HotUi {
                   "Harmoniously follow tones and accents of the active user theme"),
                 readBool("theme_tonal_adaptation", true)));
 
+        rows.add(HotRow.header(t("Авторизація та вхід", "Авторизация и вход", "Authentication & Login")));
+        rows.add(HotRow.switchRow(KEY_YUMI_LOGIN,
+                t("Виразний екран входу Yumi", "Выразительный экран входа Yumi", "Yumi Expressive Login"),
+                t("Фірмовий бренд-хедер, об'єднана картка номера, чіп коду країни, швидкий QR-вхід та оновлена клавіатура",
+                  "Фирменный бренд-хедер, объединенная карточка номера, чип кода страны, быстрый QR-вход и обновленная клавиатура",
+                  "Brand hero header, unified phone card, country code chip, quick QR login and updated keypad"),
+                isYumiLogin()));
+
         rows.add(HotRow.header(t("Список чатів", "Список чатов", "Chat List")));
         rows.add(HotRow.choice("chat_card_style_choice",
                 t("Стиль списку чатів", "Стиль списка чатов", "Chat List Style"),
@@ -1046,6 +1074,25 @@ public class UiModule implements HotModule, HotUi {
                 t("Пружинний відгук на дотик", "Пружинный отклик на касание", "Touch Spring Feedback"),
                 t("Тактильна мікро-анімація при натисканні на діалог", "Тактильная микро-анимация при нажатии на диалог", "Tactile micro-animation when tapping conversations"),
                 isChatCardsTouch()));
+
+        rows.add(HotRow.header(t("Повідомлення та чат", "Сообщения и чат", "Messages & Chat")));
+        rows.add(HotRow.switchRow("tonal_chat_bg",
+                t("Монохромний фон замість шпалер", "Монохромный фон вместо обоев", "Monochrome Chat Background"),
+                t("Використовувати мінімалістичну тональну заливку замість призначених шпалер чату (за замовчуванням вимкнено — відображаються реальні шпалери)",
+                  "Использовать минималистичную тональную заливку вместо установленных обоев чата (по умолчанию выключено — отображаются реальные обои)",
+                  "Use minimalist tonal background instead of set chat wallpapers (disabled by default — real wallpapers are shown)"),
+                readBool("tonal_chat_bg", false)));
+        rows.add(HotRow.slider("bubble_radius",
+                t("Закруглення бульбашок повідомлень", "Скругление пузырей сообщений", "Message Bubble Radius"),
+                10, 32,
+                readInt("bubble_radius", 24),
+                "dp"));
+        rows.add(HotRow.switchRow("remove_tails",
+                t("Приховати хвостики повідомлень", "Скрыть хвостики сообщений", "Hide Message Tails"),
+                t("Чисті скруглені бульбашки без кутових хвостиків",
+                  "Чистые скругленные пузыри без угловых хвостиков",
+                  "Clean rounded message bubbles without pointer tails"),
+                readBool("remove_tails", true)));
 
         rows.add(HotRow.header(t("Кольори та палітра", "Цвета и палитра", "Colors & Palette")));
         rows.add(HotRow.choice(KEY_ACCENT_MODE,
@@ -1180,6 +1227,11 @@ public class UiModule implements HotModule, HotUi {
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             return;
         }
+        if (KEY_YUMI_LOGIN.equals(key)) {
+            writeBool(KEY_YUMI_LOGIN, value);
+            markTouched();
+            return;
+        }
         if (KEY_NAV_EXPAND_PILL.equals(key) || KEY_NAV_FLOATING.equals(key)) {
             writeBool(key, value);
             markTouched();
@@ -1195,6 +1247,18 @@ public class UiModule implements HotModule, HotUi {
                 gate.getMethod("applyLive").invoke(null);
             } catch (Throwable ignore) {
             }
+            return;
+        }
+        if ("tonal_chat_bg".equals(key)) {
+            writeBool("tonal_chat_bg", value);
+            markTouched();
+            notifyThemeChange();
+            return;
+        }
+        if ("remove_tails".equals(key)) {
+            writeBool("remove_tails", value);
+            markTouched();
+            notifyThemeChange();
             return;
         }
         writeBool(key, value);
@@ -1241,6 +1305,12 @@ public class UiModule implements HotModule, HotUi {
 
     @Override
     public void onSettingsSlider(String key, int value) {
+        if ("bubble_radius".equals(key)) {
+            writeInt("bubble_radius", value);
+            markTouched();
+            notifyThemeChange();
+            return;
+        }
         if ("avatar_corners_slider".equals(key)) {
             writeInt("OEAppearanceAvatarCorners", value);
             markTouched();
@@ -1315,5 +1385,22 @@ public class UiModule implements HotModule, HotUi {
     @Override
     public Object createScreen(String screenId) {
         return null;
+    }
+
+    private void notifyThemeChange() {
+        try {
+            ClassLoader cl = host != null && host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
+            Class<?> ncClass = Class.forName("org.telegram.messenger.NotificationCenter", true, cl);
+            Object inst = ncClass.getMethod("getGlobalInstance").invoke(null);
+            int didApplyNewTheme = ncClass.getField("didApplyNewTheme").getInt(null);
+            ncClass.getMethod("postNotificationName", int.class, Object[].class).invoke(inst, didApplyNewTheme, new Object[0]);
+        } catch (Throwable ignore) {
+        }
+        try {
+            ClassLoader cl = host != null && host.context() != null ? host.context().getClassLoader() : getClass().getClassLoader();
+            Class<?> gate = Class.forName("app.amegram.hot.HotUiGate", true, cl);
+            gate.getMethod("applyLive").invoke(null);
+        } catch (Throwable ignore) {
+        }
     }
 }

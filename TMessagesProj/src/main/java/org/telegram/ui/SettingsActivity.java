@@ -1128,16 +1128,7 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             setGravity(Gravity.CENTER_VERTICAL);
             setMinimumHeight(dp(68));
             setPadding(dp(12), dp(6), dp(12), dp(6));
-            if (app.miogram.ui.yumi.YumiUi.enabled()) {
-                setBackground(app.miogram.ui.yumi.YumiUi.ripple(
-                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
-                        app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                                app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
-            } else {
-                int cardBg = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-                int rippleColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
-                setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(app.amegram.theme.YumiMd3.RADIUS_XL_DP), cardBg, rippleColor));
-            }
+            setBackground(Theme.getSelectorDrawable(false));
 
             avatarDrawable = new AvatarDrawable();
             avatarView = new BackupImageView(context);
@@ -1199,11 +1190,8 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
         @Override
         public void updateColors() {
+            setBackground(Theme.getSelectorDrawable(false));
             if (app.miogram.ui.yumi.YumiUi.enabled()) {
-                setBackground(app.miogram.ui.yumi.YumiUi.ripple(
-                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
-                        app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                                app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
                 textView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
                 counterView.setTextColor(app.amegram.theme.YumiMd3.onPrimary());
                 counterView.setBackground(app.miogram.ui.yumi.YumiUi.rounded(
@@ -1212,9 +1200,6 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                         app.amegram.theme.YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
                 emojiStatusDrawable.setColor(app.amegram.theme.YumiMd3.primary());
             } else {
-                int cardBg = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-                int rippleColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
-                setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(app.amegram.theme.YumiMd3.RADIUS_XL_DP), cardBg, rippleColor));
                 textView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
                 counterView.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText, resourcesProvider));
                 counterView.setBackground(Theme.createRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider)));
@@ -1257,6 +1242,26 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             counterView.setText(LocaleController.formatNumber(counter, ','));
         }
 
+        private boolean needDivider;
+
+        public void setNeedDivider(boolean value) {
+            if (needDivider != value) {
+                needDivider = value;
+                setWillNotDraw(!needDivider);
+                invalidate();
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (needDivider) {
+                int left = dp(LocaleController.isRTL ? 20 : 64);
+                int right = getMeasuredWidth() - dp(LocaleController.isRTL ? 64 : 20);
+                canvas.drawLine(left, getMeasuredHeight() - 1, right, getMeasuredHeight() - 1, Theme.dividerPaint);
+            }
+        }
+
         @Override
         protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             super.onMeasure(
@@ -1270,17 +1275,14 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public AccountCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                AccountCell cell = new AccountCell(context, resourcesProvider);
-                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
-                        RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
-                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
-                cell.setLayoutParams(lp);
-                return cell;
+                return new AccountCell(context, resourcesProvider);
             }
 
             @Override
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
-                ((AccountCell) view).set(item.intValue);
+                AccountCell cell = (AccountCell) view;
+                cell.set(item.intValue);
+                cell.setNeedDivider(divider);
             }
 
             public static UItem of(int id, int account) {
@@ -1365,38 +1367,43 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
             }
             setMinimumHeight(dp(68));
             setPadding(dp(12), dp(6), dp(12), dp(6));
-            if (app.miogram.ui.yumi.YumiUi.enabled()) {
-                setBackground(app.miogram.ui.yumi.YumiUi.ripple(
-                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
-                        app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                                app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
-            } else {
-                int cardBg = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-                int rippleColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
-                setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(app.amegram.theme.YumiMd3.RADIUS_XL_DP), cardBg, rippleColor));
-            }
+            setBackground(Theme.getSelectorDrawable(false));
             updateColors();
         }
 
         @Override
         public void updateColors() {
+            setBackground(Theme.getSelectorDrawable(false));
             if (app.miogram.ui.yumi.YumiUi.enabled()) {
-                setBackground(app.miogram.ui.yumi.YumiUi.ripple(
-                        app.amegram.theme.YumiMd3.withAlpha(app.amegram.theme.YumiMd3.onSurface(), 0.08f),
-                        app.miogram.ui.yumi.YumiUi.rounded(app.amegram.theme.YumiMd3.surfaceContainerLow(),
-                                app.amegram.theme.YumiMd3.RADIUS_XL_DP)));
                 titleView.setTextColor(app.amegram.theme.YumiMd3.onSurface());
                 subtitleView.setTextColor(app.amegram.theme.YumiMd3.onSurfaceVariant());
                 valueView.setTextColor(app.amegram.theme.YumiMd3.primary());
             } else {
-                int cardBg = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
-                int rippleColor = Theme.getColor(Theme.key_listSelector, resourcesProvider);
-                setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(app.amegram.theme.YumiMd3.RADIUS_XL_DP), cardBg, rippleColor));
                 titleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider));
                 subtitleView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider));
                 valueView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider));
             }
             iconBackground.setDrawBorder(resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark());
+        }
+
+        private boolean needDivider;
+
+        public void setNeedDivider(boolean value) {
+            if (needDivider != value) {
+                needDivider = value;
+                setWillNotDraw(!needDivider);
+                invalidate();
+            }
+        }
+
+        @Override
+        protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (needDivider) {
+                int left = dp(LocaleController.isRTL ? 20 : 64);
+                int right = getMeasuredWidth() - dp(LocaleController.isRTL ? 64 : 20);
+                canvas.drawLine(left, getMeasuredHeight() - 1, right, getMeasuredHeight() - 1, Theme.dividerPaint);
+            }
         }
 
         private boolean twoLines;
@@ -1519,22 +1526,19 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
 
             @Override
             public SettingCell createView(Context context, RecyclerListView listView, int currentAccount, int classGuid, Theme.ResourcesProvider resourcesProvider) {
-                SettingCell cell = new SettingCell(context, resourcesProvider);
-                RecyclerView.LayoutParams lp = new RecyclerView.LayoutParams(
-                        RecyclerView.LayoutParams.MATCH_PARENT, RecyclerView.LayoutParams.WRAP_CONTENT);
-                lp.setMargins(dp(12), dp(3), dp(12), dp(3));
-                cell.setLayoutParams(lp);
-                return cell;
+                return new SettingCell(context, resourcesProvider);
             }
 
             @Override
             public void bindView(View view, UItem item, boolean divider, UniversalAdapter adapter, UniversalRecyclerView listView) {
                 int iconColorTop = (int) item.longValue;
                 int iconColorBottom = (int) (item.longValue >>> 32);
-                ((SettingCell) view).set(
+                SettingCell cell = (SettingCell) view;
+                cell.set(
                     iconColorTop, iconColorBottom, item.iconResId,
                     item.text, item.subtext, item.textValue
                 );
+                cell.setNeedDivider(divider);
             }
 
             public static UItem of(int id, int iconColorTop, int iconColorBottom, int icon, CharSequence title) {

@@ -252,6 +252,11 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     }
 
     private static Drawable getButtonDrawable(int index) {
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            int bg = app.amegram.theme.YumiMd3.surfaceContainerLow();
+            int ripple = app.amegram.theme.YumiMd3.defaultRippleColor();
+            return app.amegram.theme.YumiMd3.ripple(bg, 16f, ripple);
+        }
         final boolean isTop = index < 3;        // 0 1 2
         final boolean isLeft = index % 3 == 0;  // 0 3 6 9
         final boolean isRight = index % 3 == 2; // 2 5 8 11
@@ -269,7 +274,11 @@ public class CustomPhoneKeyboardView extends ViewGroup {
     }
 
     public void updateColors() {
-        backButton.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        if (app.miogram.ui.yumi.YumiUi.enabled()) {
+            backButton.setColorFilter(app.amegram.theme.YumiMd3.onSurface());
+        } else {
+            backButton.setColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        }
         for (int a = 0; a < views.length; a++) {
             View v = views[a];
             if (v != null) {
@@ -296,13 +305,22 @@ public class CustomPhoneKeyboardView extends ViewGroup {
 
             numberTextPaint.setTextSize(dp(24));
             symbolsTextPaint.setTextSize(dp(14));
+            if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                numberTextPaint.setTypeface(org.telegram.messenger.AndroidUtilities.bold());
+                symbolsTextPaint.setTypeface(org.telegram.messenger.AndroidUtilities.getTypeface("fonts/rmedium.ttf"));
+            }
 
             updateColors();
         }
 
         private void updateColors() {
-            numberTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
-            symbolsTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            if (app.miogram.ui.yumi.YumiUi.enabled()) {
+                numberTextPaint.setColor(app.amegram.theme.YumiMd3.onSurface());
+                symbolsTextPaint.setColor(app.amegram.theme.YumiMd3.onSurfaceVariant());
+            } else {
+                numberTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+                symbolsTextPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteHintText));
+            }
         }
 
         @Override

@@ -177,7 +177,11 @@ public class UiModule implements HotModule, HotUi {
 
     @Override
     public String settingsTitle() {
-        return "Інтерфейс Yumi";
+        return t("Інтерфейс Yumi", "Интерфейс Yumi", "Yumi Interface");
+    }
+
+    private static String t(String uk, String ru, String en) {
+        return YumiText.tr(uk, ru, en);
     }
 
     private SharedPreferences prefs() {
@@ -437,8 +441,20 @@ public class UiModule implements HotModule, HotUi {
             }
 
             try {
+                int needSetDayNightTheme = ncClass.getField("needSetDayNightTheme").getInt(null);
+                host.subscribeNotification(needSetDayNightTheme, observer);
+            } catch (Throwable ignore) {
+            }
+
+            try {
                 int themeListUpdated = ncClass.getField("themeListUpdated").getInt(null);
                 host.subscribeNotification(themeListUpdated, observer);
+            } catch (Throwable ignore) {
+            }
+
+            try {
+                int reloadInterface = ncClass.getField("reloadInterface").getInt(null);
+                host.subscribeNotification(reloadInterface, observer);
             } catch (Throwable ignore) {
             }
 
@@ -479,16 +495,24 @@ public class UiModule implements HotModule, HotUi {
                 isThemeAmoled = false;
             }
 
-            rebuildPhysicsParameters();
-            if (navController != null) {
-                navController.refreshPalette(host != null ? host.context() : null);
+            // Invalidate YumiMd3 cache so it recomputes colors from current theme
+            try {
+                Class<?> md3Class = Class.forName("app.amegram.theme.YumiMd3", true, cl);
+                md3Class.getMethod("invalidateCache").invoke(null);
+            } catch (Throwable ignore) {
             }
+
+            rebuildPhysicsParameters();
+            Context ctx = host != null ? host.context() : null;
             if (chatRowRenderer != null) {
-                chatRowRenderer.refreshPalette(host != null ? host.context() : null);
+                chatRowRenderer.refreshPalette(ctx);
                 chatRowRenderer.invalidateAll();
             }
+            if (navController != null) {
+                navController.refreshPalette(ctx);
+            }
             if (screenChrome != null) {
-                screenChrome.refreshPalette(host != null ? host.context() : null);
+                screenChrome.refreshPalette(ctx);
             }
             if (host != null) {
                 host.log("ui: theme updated -> dark=" + isThemeDark + ", monet=" + isThemeMonet + ", amoled=" + isThemeAmoled);
@@ -561,15 +585,15 @@ public class UiModule implements HotModule, HotUi {
     private String getThemeSummary() {
         if (isThemeMonet) return "Material You Monet";
         if (isThemeAmoled) return "AMOLED Pure Black";
-        if (isThemeDark) return "Темна тема";
-        return "Світла тема";
+        if (isThemeDark) return t("Темна тема", "Темная тема", "Dark Theme");
+        return t("Світла тема", "Светлая тема", "Light Theme");
     }
 
     private String getAdaptiveProfileDescription() {
-        if (isThemeMonet) return "Pixel M3 Expressive (динамічні кольори Monet, 190ms)";
-        if (isThemeAmoled) return "Ультра-чіткий відгук (170ms, без OLED ghosting)";
-        if (isThemeDark) return "Преміальний швидкий відгук (180ms, темна фізика)";
-        return "Органічний текучий спрінг (200ms, тактильний мікро-овершут)";
+        if (isThemeMonet) return t("Pixel M3 Expressive (динамічні кольори Monet, 190ms)", "Pixel M3 Expressive (динамические цвета Monet, 190ms)", "Pixel M3 Expressive (Monet dynamic colors, 190ms)");
+        if (isThemeAmoled) return t("Ультра-чіткий відгук (170ms, без OLED ghosting)", "Ультра-четкий отклик (170ms, без OLED ghosting)", "Ultra-crisp response (170ms, no OLED ghosting)");
+        if (isThemeDark) return t("Преміальний швидкий відгук (180ms, темна фізика)", "Премиальный быстрый отклик (180ms, темная физика)", "Premium fast response (180ms, dark physics)");
+        return t("Органічний текучий спрінг (200ms, тактильний мікро-овершут)", "Органический текучий спринг (200ms, тактильный микро-овершут)", "Organic fluid spring (200ms, tactile micro-overshoot)");
     }
 
     // ==================== Optimized Spring Physics ====================
@@ -977,130 +1001,165 @@ public class UiModule implements HotModule, HotUi {
     public void fillSettings(List<HotRow> rows) {
         boolean exp = styleMode() == 1;
 
-        rows.add(HotRow.header("Стиль інтерфейсу"));
+        rows.add(HotRow.header(t("Стиль інтерфейсу", "Стиль интерфейса", "Interface Style")));
         rows.add(HotRow.switchRow("expressive",
-                "Yougram Expressive (MD3)",
-                "Картки Yumi, власний док навігації та оновлені заголовки списків",
+                t("Виразний інтерфейс Yumi", "Выразительный интерфейс Yumi", "Yumi Expressive"),
+                t("Картки Yumi, власний док навігації та оновлені заголовки списків",
+                  "Карточки Yumi, собственный док навигации и обновленные заголовки списков",
+                  "Yumi cards, custom navigation dock and updated list headers"),
                 exp));
         rows.add(HotRow.switchRow("theme_tonal_adaptation",
-                "Адаптація під активну тему",
-                "Гармонійно наслідувати відтінки та акценти поточної теми користувача",
+                t("Адаптація під активну тему", "Адаптация под активную тему", "Adaptive Theme Palette"),
+                t("Гармонійно наслідувати відтінки та акценти поточної теми користувача",
+                  "Гармонично следовать оттенкам и акцентам текущей темы пользователя",
+                  "Harmoniously follow tones and accents of the active user theme"),
                 readBool("theme_tonal_adaptation", true)));
 
-        rows.add(HotRow.header("Список чатів"));
+        rows.add(HotRow.header(t("Список чатів", "Список чатов", "Chat List")));
         rows.add(HotRow.choice("chat_card_style_choice",
-                "Стиль списку чатів",
-                "Оберіть окремий вигляд рядків і відступів",
-                new String[]{"Картки Yumi", "М'які острівці", "Плаский список"},
+                t("Стиль списку чатів", "Стиль списка чатов", "Chat List Style"),
+                t("Оберіть окремий вигляд рядків і відступів", "Выберите отдельный вид строк и отступов", "Choose distinct row style and spacing"),
+                new String[]{
+                        t("Картки Yumi", "Карточки Yumi", "Yumi Cards"),
+                        t("М'які острівці", "Мягкие островки", "Soft Islands"),
+                        t("Плаский список", "Плоский список", "Flat List")
+                },
                 chatListStyle() == CHAT_STYLE_CARDS ? 0 : (chatListStyle() == CHAT_STYLE_ISLANDS ? 1 : 2)));
         rows.add(HotRow.switchRow(KEY_CHAT_CARD_OUTLINE,
-                "Контур карток чатів",
-                "Легкий контур навколо кожної картки",
+                t("Контур карток чатів", "Контур карточек чатов", "Chat Card Outline"),
+                t("Легкий контур навколо кожної картки", "Легкий контур вокруг каждой карточки", "Subtle outline around each card"),
                 isChatCardOutline()));
         rows.add(HotRow.slider("avatar_corners_slider",
-                "Закруглення аватарок",
+                t("Закруглення аватарок", "Закругление аватаров", "Avatar Corner Radius"),
                 0, 28,
                 readInt("OEAppearanceAvatarCorners", 28),
                 "dp"));
         rows.add(HotRow.switchRow(KEY_CHAT_PINNED_ACCENT,
-                "Підсвічування закріплених чатів",
-                "Виділяє закріплені розмови фірмовим кольором Yumi",
+                t("Підсвічування закріплених чатів", "Подсветка закрепленных чатов", "Accent Pinned Chats"),
+                t("Виділяє закріплені розмови акцентним кольором", "Выделяет закрепленные беседы акцентным цветом", "Highlights pinned chats with the accent color"),
                 isChatPinnedAccent()));
         rows.add(HotRow.switchRow(KEY_CHAT_SQUIRCLE_AVATARS,
-                "Скруглені аватари (Squircle)",
-                "М'яка квадратна форма аватарок",
+                t("Заокруглені аватари", "Скругленные аватары", "Rounded Avatars"),
+                t("М'яка заокруглена форма аватарок", "Мягкая скругленная форма аватаров", "Soft rounded avatar shape"),
                 isChatSquircleAvatars()));
         rows.add(HotRow.switchRow(KEY_CHAT_CARDS_TOUCH,
-                "Пружинний відгук на дотик",
-                "Тактильна мікро-анімація при натисканні на діалог",
+                t("Пружинний відгук на дотик", "Пружинный отклик на касание", "Touch Spring Feedback"),
+                t("Тактильна мікро-анімація при натисканні на діалог", "Тактильная микро-анимация при нажатии на диалог", "Tactile micro-animation when tapping conversations"),
                 isChatCardsTouch()));
 
-        rows.add(HotRow.header("Кольори та палітра"));
+        rows.add(HotRow.header(t("Кольори та палітра", "Цвета и палитра", "Colors & Palette")));
         rows.add(HotRow.choice(KEY_ACCENT_MODE,
-                "Акцентний колір",
-                "Оберіть відтінок акценту інтерфейсу або залиште авто-слідування за темою TG",
+                t("Акцентний колір", "Акцентный цвет", "Accent Color"),
+                t("Оберіть відтінок акценту інтерфейсу або залиште авто-слідування за темою",
+                  "Выберите оттенок акцента интерфейса или оставьте авто-следование за темой",
+                  "Choose interface accent shade or follow active Telegram theme"),
                 new String[]{
-                        "Тема Telegram (Авто)",
-                        "Рожева Сакура (Sakura Pink)",
-                        "Небесний Синій (Sky Blue)",
-                        "М'ятний Смарагд (Mint Emerald)",
-                        "Лавандовий (Lavender Violet)",
-                        "Захід Сонця (Sunset Coral)"
+                        t("Тема Telegram (Авто)", "Тема Telegram (Авто)", "Telegram Theme (Auto)"),
+                        t("Рожева сакура", "Розовая сакура", "Sakura Pink"),
+                        t("Небесно-блакитний", "Небесно-голубой", "Sky Blue"),
+                        t("М'ятний смарагд", "Мятный изумруд", "Mint Emerald"),
+                        t("Лавандовий", "Лавандовый", "Lavender"),
+                        t("Захід сонця", "Закат", "Sunset Coral")
                 },
                 accentMode()));
 
-        rows.add(HotRow.header("Геометрія та розміри"));
+        rows.add(HotRow.header(t("Геометрія та розміри", "Геометрия и размеры", "Geometry & Sizes")));
         rows.add(HotRow.slider(KEY_CARD_RADIUS,
-                "Радіус карток чатів",
+                t("Радіус карток чатів", "Радиус карточек чатов", "Chat Card Radius"),
                 12, 28,
                 (int) cardRadius(),
                 "dp"));
         rows.add(HotRow.slider(KEY_CARD_MARGIN_SIDE,
-                "Боковий відступ карток",
+                t("Боковий відступ карток", "Боковой отступ карточек", "Card Side Margin"),
                 4, 18,
                 (int) cardSideMargin(),
                 "dp"));
         rows.add(HotRow.slider(KEY_CARD_MARGIN_V,
-                "Вертикальний інтервал карток",
+                t("Вертикальний інтервал карток", "Вертикальный интервал карточек", "Card Vertical Spacing"),
                 10, 80,
                 readInt(KEY_CARD_MARGIN_V, 35),
                 "·0.1dp"));
         rows.add(HotRow.slider(KEY_NAV_RADIUS,
-                "Закруглення панелі навігації",
+                t("Закруглення панелі навігації", "Закругление панели навигации", "Navigation Bar Radius"),
                 14, 36,
                 (int) navRadius(),
                 "dp"));
 
-        rows.add(HotRow.header("Розташування та мітки"));
+        rows.add(HotRow.header(t("Розташування та мітки", "Расположение и метки", "Placement & Badges")));
         rows.add(HotRow.choice(KEY_TIME_BADGE_STYLE,
-                "Стиль мітки часу",
-                "Виберіть спосіб відображення часу в списку повідомлень",
-                new String[]{"Тональна капсула (Expressive)", "Чистий нативний текст"},
+                t("Стиль мітки часу", "Стиль метки времени", "Time Badge Style"),
+                t("Виберіть спосіб відображення часу в списку повідомлень",
+                  "Выберите способ отображения времени в списке сообщений",
+                  "Choose time display style in conversation list"),
+                new String[]{
+                        t("Тональна капсула", "Тональная капсула", "Tonal Pill"),
+                        t("Звичайний текст", "Обычный текст", "Native Text")
+                },
                 isTimePillEnabled() ? 0 : 1));
         rows.add(HotRow.switchRow(KEY_NAV_EXPAND_PILL,
-                "Розширена капсула вкладки",
-                "Активна вкладка розгортається у пігулку з назвою та лічильником ('2 Чати')",
+                t("Розширена капсула вкладки", "Расширенная капсула вкладки", "Expanded Active Tab Pill"),
+                t("Активна вкладка розгортається у пігулку з назвою та лічильником («2 Чати»)",
+                  "Активная вкладка раскрывается в пилюлю с названием и счетчиком («2 Чата»)",
+                  "Active tab expands into a pill with label and counter («2 Chats»)"),
                 isNavExpandActivePillEnabled()));
         rows.add(HotRow.switchRow(KEY_NAV_FLOATING,
-                "Плаваюча панель навігації",
-                "М'який плаваючий док з відступом над нижнім краєм екрана",
+                t("Плаваюча панель навігації", "Плавающая панель навигации", "Floating Navigation Bar"),
+                t("М'який плаваючий док з відступом над нижнім краєм екрана",
+                  "Мягкий плавающий док с отступом над нижним краем экрана",
+                  "Soft floating dock detached from bottom screen edge"),
                 isNavFloating()));
         rows.add(HotRow.switchRow(KEY_BLUR_FOLDERS,
-                "Смуга розмиття під папками",
-                "М'яке розмиття фону списку чатів під верхньою панеллю папок",
+                t("Смуга розмиття під папками", "Полоса размытия под папками", "Blur Under Folders"),
+                t("М'яке розмиття фону списку чатів під верхньою панеллю папок",
+                  "Мягкое размытие фона списка чатов под верхней панелью папок",
+                  "Soft background blur beneath top folder bar"),
                 isBlurFoldersEnabled()));
         rows.add(HotRow.switchRow(KEY_BLUR_NAV,
-                "Смуга розмиття над навігацією",
-                "М'яке розмиття фону списку чатів над нижньою панеллю навігації",
+                t("Смуга розмиття над навігацією", "Полоса размытия над навигацией", "Blur Over Navigation"),
+                t("М'яке розмиття фону списку чатів над нижньою панеллю навігації",
+                  "Мягкое размытие фона списка чатов над нижней панелью навигации",
+                  "Soft background blur above bottom navigation dock"),
                 isBlurNavEnabled()));
 
-        rows.add(HotRow.header("Тактильність та анімації"));
+        rows.add(HotRow.header(t("Тактильність та анімації", "Тактильность и анимации", "Physics & Haptics")));
         rows.add(HotRow.switchRow(KEY_STICKY_ENABLED,
-                "Пружинна фізика та вібровідгук",
-                "Плавні переходи, відкриття шторок та мікро-анімації кнопок",
+                t("Пружинна фізика та вібровідгук", "Пружинная физика и виброотклик", "Spring Physics & Haptics"),
+                t("Плавні переходи, відкриття шторок та мікро-анімації кнопок",
+                  "Плавные переходы, открытие шторок и микро-анимации кнопок",
+                  "Smooth transitions, sheet settling and tactile button animations"),
                 isStickyEnabled()));
 
-        rows.add(HotRow.header("Компоненти"));
+        rows.add(HotRow.header(t("Компоненти", "Компоненты", "Components")));
         rows.add(HotRow.switchRow(KEY_MINI_PLAYER,
-                "MD3 Міні-плеєр",
-                "Компактна плашка аудіоплеєра над списком чатів",
+                t("Компактний міні-плеєр", "Компактный мини-плеер", "Compact Mini Player"),
+                t("Компактна панель аудіоплеєра над списком чатів",
+                  "Компактная плашка аудиоплеера над списком чатов",
+                  "Compact audio player plate above chat list"),
                 readBool(KEY_MINI_PLAYER, true)));
         rows.add(HotRow.switchRow(KEY_GLASS_MENU,
-                "Скляне контекстне меню",
-                "Напівпрозоре розмите меню дій для повідомлень",
+                t("Скляне контекстне меню", "Стеклянное контекстное меню", "Glass Message Menu"),
+                t("Напівпрозоре розмите меню дій для повідомлень",
+                  "Полупрозрачное размытое меню действий для сообщений",
+                  "Translucent blurred context menu for messages"),
                 readBool(KEY_GLASS_MENU, true)));
         rows.add(HotRow.switchRow(KEY_LOADING,
-                "M3 індикатори завантаження",
-                "Сучасні плавні прогрес-бари Material You",
+                t("Сучасні індикатори завантаження", "Современные индикаторы загрузки", "Modern Loading Indicators"),
+                t("Плавні індикатори прогресу в стилі Material Design",
+                  "Плавные индикаторы прогресса в стиле Material Design",
+                  "Smooth Material Design progress bars"),
                 readBool(KEY_LOADING, true)));
 
-        rows.add(HotRow.header("Дії"));
+        rows.add(HotRow.header(t("Дії", "Действия", "Actions")));
         rows.add(HotRow.button("apply_live",
-                "Оновити інтерфейс",
-                "Миттєво застосувати всі параметри на льоту"));
+                t("Оновити інтерфейс", "Обновить интерфейс", "Refresh Interface"),
+                t("Миттєво застосувати всі параметри на льоту",
+                  "Мгновенно применить все параметры на лету",
+                  "Instantly re-apply all parameters live")));
         rows.add(HotRow.button("reset_defaults",
-                "Скинути до рекомендованих",
-                "Повернути чистий стандартний стиль Material 3"));
+                t("Скинути до рекомендованих", "Сбросить к рекомендованным", "Reset to Defaults"),
+                t("Повернути чистий стандартний стиль інтерфейсу",
+                  "Вернуть чистый стандартный стиль интерфейса",
+                  "Restore clean standard interface style")));
     }
 
     @Override
@@ -1212,7 +1271,7 @@ public class UiModule implements HotModule, HotUi {
             markTouched();
             if (navController != null) navController.refresh();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
-            if (host != null) host.toast("Інтерфейс оновлено");
+            if (host != null) host.toast(t("Інтерфейс оновлено", "Интерфейс обновлен", "Interface updated"));
         } else if ("go_classic".equals(rowId)) {
             writeInt(KEY_STYLE, 0);
             writeInt("style", 0);
@@ -1220,7 +1279,7 @@ public class UiModule implements HotModule, HotUi {
             if (navController != null) navController.refresh();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
             if (screenChrome != null) screenChrome.restoreAll();
-            if (host != null) host.toast("Класичний стиль застосовано");
+            if (host != null) host.toast(t("Класичний стиль застосовано", "Классический стиль применен", "Classic style applied"));
         } else if ("reset_defaults".equals(rowId)) {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
@@ -1249,7 +1308,7 @@ public class UiModule implements HotModule, HotUi {
             markTouched();
             if (navController != null) navController.refresh();
             if (chatRowRenderer != null) chatRowRenderer.invalidateAll();
-            if (host != null) host.toast("Встановлено чистий стиль Material 3");
+            if (host != null) host.toast(t("Параметри інтерфейсу повернуто до рекомендованих", "Параметры интерфейса сброшены к рекомендованным", "Interface settings restored to defaults"));
         }
     }
 

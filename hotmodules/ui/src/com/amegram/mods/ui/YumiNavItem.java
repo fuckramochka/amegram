@@ -25,7 +25,7 @@ import android.widget.TextView;
  */
 final class YumiNavItem extends FrameLayout {
 
-    private final YumiPalette palette;
+    private YumiPalette palette;
     private final LinearLayout row;
     private final FrameLayout iconBox;
     private final ImageView iconView;
@@ -159,13 +159,16 @@ final class YumiNavItem extends FrameLayout {
     }
 
     void refreshColors(YumiPalette updated) {
+        if (updated != null) {
+            this.palette = updated;
+        }
         iconView.setColorFilter(new PorterDuffColorFilter(
-                selected ? updated.navActive : updated.navInactive, PorterDuff.Mode.SRC_IN));
-        labelView.setTextColor(updated.navActive);
-        counterView.setTextColor(updated.onPrimary);
+                selected ? palette.navActive : palette.navInactive, PorterDuff.Mode.SRC_IN));
+        labelView.setTextColor(palette.navActive);
+        counterView.setTextColor(palette.onPrimary);
         GradientDrawable bg = (GradientDrawable) avatarView.getBackground();
         if (bg != null) {
-            bg.setColor(updated.primaryContainer);
+            bg.setColor(palette.primaryContainer);
         }
         applyItemState(false);
         invalidate();

@@ -128,21 +128,15 @@ public final class YumiPalette {
     }
 
     public int getColorToken(String token, int fallback) {
-        if ("primary".equals(token)) return primary;
-        if ("primaryContainer".equals(token)) return primaryContainer;
-        if ("onPrimary".equals(token)) return onPrimary;
-        if ("surface".equals(token)) return surface;
-        if ("surfaceContainerLow".equals(token)) return surfaceContainerLow;
-        if ("onSurface".equals(token)) return onSurface;
-        if ("onSurfaceVariant".equals(token)) return onSurfaceVariant;
-        if ("outline".equals(token)) return outline;
-        if ("navSurface".equals(token)) return navSurface;
-        if ("navIndicator".equals(token)) return navIndicator;
-        if ("navActive".equals(token)) return navActive;
-        if ("navInactive".equals(token)) return navInactive;
-        if ("navBorder".equals(token)) return navBorder;
-        if ("cardSurface".equals(token)) return cardSurface;
-        if ("secondaryFill".equals(token)) return secondaryFill;
+        final boolean dark = isDark(null);
+        final int customAccent = owner != null ? owner.getCustomAccentColor(dark) : 0;
+        if (customAccent != 0) {
+            if ("primary".equals(token) || "navActive".equals(token)) return primary;
+            if ("primaryContainer".equals(token)) return primaryContainer;
+            if ("onPrimary".equals(token)) return onPrimary;
+            if ("navIndicator".equals(token)) return navIndicator;
+            if ("navBorder".equals(token)) return navBorder;
+        }
         return fallback;
     }
 

@@ -4113,8 +4113,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         } else {
                             hideActionMode(true);
                         }
+                    } else if (searchIsShowed) {
+                        showSearch(false, false, true);
+                        if (fragmentSearchFieldWatcher != null) {
+                            fragmentSearchFieldWatcher.toggleSearch(false);
+                        }
+                        if (fragmentSearchField != null) {
+                            fragmentSearchField.editText.getText().clear();
+                            AndroidUtilities.hideKeyboard(fragmentSearchField.editText);
+                            fragmentSearchField.editText.clearFocus();
+                        }
+                        updateDrawerButton();
                     } else if (onlySelect || folderId != 0 || communityId != 0) {
                         finishFragment();
+                    } else if (!AppearanceConfig.navigationDrawer() && searchString == null) {
+                        openSearch();
                     }
                 } else if (id == 1) {
                     if (getParentActivity() == null) {
@@ -7857,6 +7870,21 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
     }
 
+    public void openSearch() {
+        if (!searchIsShowed) {
+            showSearch(true, false, true);
+            if (fragmentSearchFieldWatcher != null) {
+                fragmentSearchFieldWatcher.toggleSearch(true);
+            }
+            if (fragmentSearchField != null) {
+                AndroidUtilities.runOnUIThread(() -> {
+                    fragmentSearchField.editText.requestFocus();
+                    AndroidUtilities.showKeyboard(fragmentSearchField.editText);
+                }, 100);
+            }
+        }
+    }
+
     public void search(String query, boolean animated) {
         showSearch(true, false, animated);
         if (fragmentSearchField != null) {
@@ -8033,6 +8061,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                         if (rightSlidingDialogContainer != null) {
                             rightSlidingDialogContainer.setVisibility(View.VISIBLE);
                         }
+                        updateDrawerButton();
                     }
 
                     if (fragmentView != null) {
@@ -9461,10 +9490,12 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         if (backDrawable != null) {
             backDrawable.setRotation(0, true);
         }
-        // После режима выделения возвращаем бургер.
+        // После режима выделения возвращаем бургер или поиск слева.
         if (menuDrawable != null && actionBar.getBackButton() != null
                 && !(actionBar.getBackButton().getDrawable() instanceof MenuDrawable)) {
             actionBar.setBackButtonDrawable(menuDrawable);
+        } else if (!AppearanceConfig.navigationDrawer() && !onlySelect && folderId == 0 && communityId == 0 && searchString == null) {
+            updateDrawerButton();
         }
         if (filterTabsView != null) {
             filterTabsView.animateColorsTo(Theme.key_actionBarTabLine, Theme.key_actionBarTabActiveText, Theme.key_actionBarTabUnactiveText, Theme.key_actionBarTabSelector, Theme.key_windowBackgroundWhite);
@@ -15191,7 +15222,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     }
 
     private float getDialogStoriesMenuItemsOffset() {
-        return (isArchive() || shouldUseDrawerActionBarLayout()) ? dp(68) : dpf2(16.66f);
+        return (isArchive() || shouldUseDrawerActionBarLayout() || (!AppearanceConfig.navigationDrawer() && !onlySelect && folderId == 0 && communityId == 0 && searchString == null)) ? dp(68) : dpf2(16.66f);
     }
 
     /**
@@ -15247,11 +15278,40 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             }
             actionBar.setBackButtonDrawable(menuDrawable);
             actionBar.setBackButtonContentDescription(getString(R.string.AccDescrOpenMenu));
-        } else {
-            if (actionBar.getBackButton() != null && actionBar.getBackButton().getDrawable() instanceof MenuDrawable) {
-                actionBar.setBackButtonDrawable(null);
+            if (actionBar.getBackButton() != null) {
+                actionBar.getBackButton().setOnLongClickListener(null);
             }
+        } else {
             menuDrawable = null;
+            if (!searchIsShowed && !actionBar.isActionModeShowed()) {
+                actionBar.setBackButtonImage(R.drawable.outline_header_search);
+                actionBar.setBackButtonContentDescription(getString(R.string.Search));
+                if (actionBar.getBackButton() != null) {
+                    actionBar.getBackButton().setOnLongClickListener(v -> {
+                        if (!AppearanceConfig.navigationDrawer() && !onlySelect && folderId == 0 && communityId == 0 && searchString == null) {
+                            if (MessagesController.getInstance(UserConfig.selectedAccount).savedViewAsChats) {
+                                Bundle args = new Bundle();
+                                args.putLong("dialog_id", UserConfig.getInstance(currentAccount).getClientUserId());
+                                args.putInt("type", MediaActivity.TYPE_MEDIA);
+                                args.putInt("start_from", SharedMediaLayout.TAB_SAVED_DIALOGS);
+                                presentFragment(new MediaActivity(args, null));
+                            } else {
+                                Bundle args = new Bundle();
+                                args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
+                                presentFragment(new ChatActivity(args));
+                            }
+                            return true;
+                        }
+                        return false;
+                    });
+                }
+            } else if (searchIsShowed) {
+                actionBar.setBackButtonDrawable(backDrawable = new BackDrawable(false));
+                actionBar.setBackButtonContentDescription(getString(R.string.AccDescrGoBack));
+                if (actionBar.getBackButton() != null) {
+                    actionBar.getBackButton().setOnLongClickListener(null);
+                }
+            }
         }
         checkUi_itemOptionsVisibility();
         checkUi_itemBackButtonVisibility();
@@ -15311,7 +15371,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factor1 = animatorSearchButtonVisible.getFloatValue();
         final float factor2 = 1f - getRightSlidingProgress();
         final float factor3 = 1f - animatorDoneButtonVisible.getFloatValue();
-        final float factor = factor0 * factor1 * factor2 * factor3;
+        final float factor4 = AppearanceConfig.navigationDrawer() ? 1f : 0f;
+        final float factor = factor0 * factor1 * factor2 * factor3 * factor4;
         FragmentFloatingButton.setAnimatedVisibility(searchItem, factor);
         if (dialogStoriesCell != null) {
             dialogStoriesCell.invalidate();

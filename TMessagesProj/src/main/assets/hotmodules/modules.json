@@ -276,19 +276,19 @@
     {
       "id": "fileorganization",
       "name": "Організація файлів",
-      "description": "Підпапки чатів + збереження по папках",
+      "description": "Підпапки чатів та автоматичне сортування файлів по папках чатів.",
       "entry": "com.amegram.mods.fileorganization.FileOrgModule",
       "branches": {
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/fileorganization-1.0.0.hmod",
-          "sha256": "c90ddf9570584873353f8579c37505259d1f77cf9dbc5bc158734c47f4ba3bab",
+          "sha256": "40f3e35d76947c3d1b5429b7964e85691a04c1b736419c85f6b54cea2bb245cc",
           "minApp": 7112,
-          "changelog": "Підпапки чатів + збереження по папках винесено в окремий модуль.",
+          "changelog": "Версія 1.0.0: організація файлів та підпапки чатів, чиста українська локалізація.",
           "permissions": [
             "storage"
           ],
-          "sizeBytes": 2951
+          "sizeBytes": 3733
         }
       },
       "history": [],
@@ -299,19 +299,19 @@
     {
       "id": "ui",
       "name": "Інтерфейс Yumi",
-      "description": "Автентичний Google Material Design 3 (Pixel / Android 14/15): надзвичайно плавний та оптимізований інтерфейс, стильна навігація M3 та тональні кольори без лагів.",
+      "description": "Виразний інтерфейс Yumi: динамічна адаптація палітри під активну тему Telegram, капсульна панель навігації, елегантні мітки часу та чисті картки чатів.",
       "entry": "com.amegram.mods.ui.UiModule",
       "branches": {
         "stable": {
           "version": "1.0.15",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.15.hmod",
-          "sha256": "85b4f765975b8de1f4e28f10953d89c10efa67b1e8cbc01cea97d86057548d87",
+          "sha256": "f9a883f333277d1a1c9fcae97ee6e15d043106d6f3a1a8a0cc60b8a666255575",
           "minApp": 7112,
-          "changelog": "Версія 1.0.15: архітектурне розширення HotUi — повний динамічний контроль над кольорами (пресети/авто), розмірами карток/навігації, розташуванням міток часу і капсул дока на льоту без оновлення APK.",
+          "changelog": "Версія 1.0.15: повноцінна адаптація палітри під активну тему Telegram, чиста українська локалізація налаштувань, виправлення оновлення кольорів інтерфейсу при зміні теми.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 36164
+          "sizeBytes": 39272
         }
       },
       "history": [
@@ -466,19 +466,19 @@
     {
       "id": "settings_ui",
       "name": "Інтерфейс налаштувань Yumi",
-      "description": "Системний модуль керування інтерфейсом налаштувань Yumigram: персоналізація Hero-банера, швидкі перемикачі, мінімалістичний режим та панель швидких дій.",
+      "description": "Системний модуль керування інтерфейсом налаштувань Yumigram: персоналізація головного банера, швидкі перемикачі, мінімалістичний режим та панель швидких дій.",
       "entry": "com.amegram.mods.settings.SettingsUiModule",
       "branches": {
         "stable": {
           "version": "1.0.2",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/settings_ui-1.0.2.hmod",
-          "sha256": "910661a2764b16b8f9a8850306fba90679684c9682647115650cf6bc7071dbc4",
+          "sha256": "a7dcb125d9407d89a7705cf9bd6cb539de9f4a71ae8333495e7508af6d201294",
           "minApp": 7112,
-          "changelog": "Версія 1.0.2: чистий інтерфейс налаштувань без дублікатів та зайвих перемикачів.",
+          "changelog": "Версія 1.0.2: чистий україномовний інтерфейс налаштувань без дублікатів та зайвих перемикачів.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 4959
+          "sizeBytes": 6842
         }
       },
       "history": [
@@ -540,8 +540,8 @@
     },
     {
       "id": "kpm",
-      "name": "Kangel Plugins Manager",
-      "description": "Офіційний менеджер плагінів Kangel Plugins Store: каталог, 1-тап встановлення з 4 дзеркал (Kangel, GitHub, Codeberg, GitVerse), перевірка оновлень та обробка посилань tg://kpm.",
+      "name": "Менеджер плагінів KPM",
+      "description": "Офіційний менеджер плагінів KPM: каталог, встановлення в один дотик з 4 дзеркал (Kangel, GitHub, Codeberg, GitVerse), перевірка оновлень та обробка посилань tg://kpm.",
       "entry": "com.amegram.mods.kpm.KpmModule",
       "type": "system",
       "system": true,
@@ -549,15 +549,15 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/kpm-1.0.0.hmod",
-          "sha256": "8ef857ba685b0dff493ba0c2cb5ddfac141938b7876b24d0cdd5aa5065f6eb08",
+          "sha256": "6f6d05bfee6f78910e1f4396deb9c06f1a6d98c6bc0131def47d094d7cb7d855",
           "minApp": 7112,
-          "changelog": "Версія 1.0.0: нативна інтеграція KPM як хот-модуля Yumigram у стилі Material Design 3.",
+          "changelog": "Версія 1.0.0: нативна інтеграція KPM як хот-модуля Yumigram, чиста українська локалізація.",
           "permissions": [
             "network",
             "storage",
             "hook_ui"
           ],
-          "sizeBytes": 15234
+          "sizeBytes": 17251
         }
       },
       "history": [],

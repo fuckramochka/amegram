@@ -488,7 +488,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         fadeDrawable.setFadeHeight(dp(60), true);
         fadeView.setBackground(fadeDrawable);
 
-        contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
+        if (!MainTabsUiHelper.isFloatingPill()) {
+            contentView.addView(fadeView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 0, Gravity.BOTTOM));
+        } else {
+            fadeView.setVisibility(View.GONE);
+        }
 
         tabsViewWrapper = new FrameLayout(context);
         // Amegram: the wrapper must NOT swallow touches — it is full-width and mostly
@@ -530,8 +534,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                     selectTab(getPositionChats(), true);
                     viewPager.scrollToPosition(getPositionChats());
                 }
-                if (dialogsActivity != null && dialogsActivity.searchItem != null) {
-                    dialogsActivity.searchItem.openSearch(true);
+                if (dialogsActivity != null) {
+                    dialogsActivity.openSearch();
                 }
             });
             tabsViewWrapper.addView(searchButton, LayoutHelper.createFrame(60, 60, Gravity.BOTTOM | Gravity.RIGHT));
@@ -1400,7 +1404,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final float isProfile = 1f - MathUtils.clamp(Math.abs(getPositionProfile() - animatedPosition), 0, 1);
         final float hide = 1f - AndroidUtilities.getNavigationBarThirdButtonsFactor(0, 1f, navigationBarHeight);
         float alpha = (1f - isProfile * hide) * animatorTabsVisible.getFloatValue();
-        if (tabletLayout || AppearanceConfig.isYougramExpressive()) {
+        if (tabletLayout || AppearanceConfig.isYougramExpressive() || MainTabsUiHelper.isFloatingPill()) {
             alpha = 0.0f;
         }
 

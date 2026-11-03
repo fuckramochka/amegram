@@ -234,7 +234,7 @@ public final class YougramExpressive {
         put(colors, Theme.key_actionBarDefaultSubmenuBackground, surface);
         put(colors, Theme.key_actionBarDefaultSubmenuItem, dark ? DARK_TEXT : LIGHT_TEXT);
         put(colors, Theme.key_actionBarDefaultSubmenuItemIcon, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
-        put(colors, Theme.key_featuredStickers_addButton, dark ? 0xFF9C315F : 0xFF9C2858);
+        put(colors, Theme.key_featuredStickers_addButton, accent);
         put(colors, Theme.key_featuredStickers_buttonText, 0xFFFFFFFF);
         put(colors, Theme.key_dialogTextGray, dark ? DARK_MUTED : LIGHT_MUTED);
         put(colors, Theme.key_dialogTextGray2, dark ? DARK_SECONDARY : LIGHT_SECONDARY);
@@ -301,7 +301,33 @@ public final class YougramExpressive {
     }
 
     private static int accentColor(boolean dark) {
+        int custom = app.amegram.hot.HotUiGate.getColor("primary", -1);
+        if (custom != -1) {
+            return custom;
+        }
+        try {
+            int themeAccent = 0;
+            Theme.ThemeInfo activeTheme = Theme.getActiveTheme();
+            if (activeTheme != null && activeTheme.hasAccentColors()) {
+                themeAccent = activeTheme.getAccentColor(activeTheme.currentAccentId);
+            }
+            Theme.ThemeInfo currentTheme = Theme.getCurrentTheme();
+            if (themeAccent == 0 && currentTheme != null && currentTheme.hasAccentColors()) {
+                themeAccent = currentTheme.getAccentColor(currentTheme.currentAccentId);
+            }
+            if (isValidAccent(themeAccent)) {
+                return 0xFF000000 | (themeAccent & 0x00FFFFFF);
+            }
+        } catch (Throwable ignore) {
+        }
         return dark ? 0xFFFF8FB7 : 0xFFB83268;
+    }
+
+    private static boolean isValidAccent(int color) {
+        if (color == 0 || (color & 0xFF000000) == 0) return false;
+        float[] hsl = new float[3];
+        ColorUtils.colorToHSL(color, hsl);
+        return hsl[1] >= 0.08f && hsl[2] >= 0.10f && hsl[2] <= 0.90f;
     }
 
     private static int lerp(int from, int to, float amount) {

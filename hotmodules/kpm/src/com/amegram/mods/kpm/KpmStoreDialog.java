@@ -43,6 +43,28 @@ import java.util.Locale;
 
 public class KpmStoreDialog {
 
+    static String t(String uk, String ru, String en) {
+        try {
+            Class<?> locale = Class.forName("app.miogram.bridge.MiogramLocale");
+            java.lang.reflect.Method get = locale.getMethod("get", String.class, String.class, String.class);
+            Object value = get.invoke(null, uk, ru, en);
+            if (value instanceof String) return (String) value;
+        } catch (Throwable ignore) {
+        }
+        try {
+            Class<?> lc = Class.forName("org.telegram.messenger.LocaleController");
+            Object inst = lc.getMethod("getInstance").invoke(null);
+            Locale current = (Locale) lc.getMethod("getCurrentLocale").invoke(inst);
+            if (current != null) {
+                String lang = current.getLanguage().toLowerCase();
+                if (lang.startsWith("uk")) return uk;
+                if (lang.startsWith("ru") || lang.startsWith("be") || lang.startsWith("kk")) return ru;
+            }
+        } catch (Throwable ignore) {
+        }
+        return uk != null ? uk : (en != null ? en : "");
+    }
+
     public static class KpmPlugin {
         public String id;
         public String name;
@@ -123,14 +145,14 @@ public class KpmStoreDialog {
         titleBox.setOrientation(LinearLayout.VERTICAL);
 
         TextView titleText = new TextView(context);
-        titleText.setText("Kangel Plugins Store ໒꒱");
+        titleText.setText(t("Каталог плагінів KPM ໒꒱", "Каталог плагинов KPM ໒꒱", "KPM Plugins Catalog ໒꒱"));
         titleText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 19);
         titleText.setTextColor(0xFFFFFFFF);
         titleText.getPaint().setFakeBoldText(true);
         titleBox.addView(titleText);
 
         TextView subtitleText = new TextView(context);
-        subtitleText.setText("Офіційне сховище плагінів KPM");
+        subtitleText.setText(t("Офіційне сховище плагінів Yumigram", "Официальное хранилище плагинов Yumigram", "Official Yumigram Plugins Repository"));
         subtitleText.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         subtitleText.setTextColor(0xFF8888AA);
         titleBox.addView(subtitleText);
@@ -149,7 +171,7 @@ public class KpmStoreDialog {
 
         // Search
         EditText search = new EditText(context);
-        search.setHint("Пошук серед плагінів KPM…");
+        search.setHint(t("Пошук серед плагінів KPM…", "Поиск среди плагинов KPM…", "Search KPM plugins…"));
         search.setHintTextColor(0xFF777788);
         search.setTextColor(0xFFFFFFFF);
         search.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
@@ -194,7 +216,7 @@ public class KpmStoreDialog {
         contentArea.addView(loading, pbLp);
 
         TextView emptyView = new TextView(context);
-        emptyView.setText("Плагінів не знайдено");
+        emptyView.setText(t("Плагінів не знайдено", "Плагины не найдены", "No plugins found"));
         emptyView.setTextColor(0xFF8888AA);
         emptyView.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         emptyView.setVisibility(View.GONE);
@@ -237,7 +259,15 @@ public class KpmStoreDialog {
 
         // Populate Categories
         String[] cats = {"ALL", "utilities", "customization", "media", "tools", "text", "other"};
-        String[] catTitles = {"Всі", "Утиліти", "Інтерфейс", "Медіа", "Інструменти", "Текст", "Інше"};
+        String[] catTitles = {
+                t("Всі", "Все", "All"),
+                t("Утиліти", "Утилиты", "Utilities"),
+                t("Інтерфейс", "Интерфейс", "Customization"),
+                t("Медіа", "Медиа", "Media"),
+                t("Інструменти", "Инструменты", "Tools"),
+                t("Текст", "Текст", "Text"),
+                t("Інше", "Другое", "Other")
+        };
 
         Runnable rebuildChips = new Runnable() {
             @Override
@@ -352,7 +382,7 @@ public class KpmStoreDialog {
 
         if (!TextUtils.isEmpty(plugin.author)) {
             TextView author = new TextView(context);
-            author.setText("від " + plugin.author);
+            author.setText(t("від ", "от ", "by ") + plugin.author);
             author.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 11);
             author.setTextColor(0xFF8888AA);
             author.setPadding(0, dp(context, 2), 0, dp(context, 4));
@@ -371,7 +401,7 @@ public class KpmStoreDialog {
         }
 
         TextView btn = new TextView(context);
-        btn.setText(installed ? "Встановлено ✓" : "Встановити ⤓");
+        btn.setText(installed ? t("Встановлено ✓", "Установлено ✓", "Installed ✓") : t("Встановити ⤓", "Установить ⤓", "Install ⤓"));
         btn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
         btn.setGravity(Gravity.CENTER);
         btn.setPadding(dp(context, 14), dp(context, 6), dp(context, 14), dp(context, 6));
@@ -389,23 +419,23 @@ public class KpmStoreDialog {
 
         btn.setOnClickListener(v -> {
             btn.setEnabled(false);
-            btn.setText("Завантаження…");
+            btn.setText(t("Завантаження…", "Загрузка…", "Loading…"));
             new Thread(() -> {
                 boolean ok = downloadAndInstallPlugin(context, plugin, module != null && module.isSecurityAuditEnabled());
                 new Handler(Looper.getMainLooper()).post(() -> {
                     btn.setEnabled(true);
                     if (ok) {
-                        btn.setText("Встановлено ✓");
+                        btn.setText(t("Встановлено ✓", "Установлено ✓", "Installed ✓"));
                         GradientDrawable sBg = new GradientDrawable();
                         sBg.setCornerRadius(dp(context, 8));
                         sBg.setColor(0x2200E676);
                         btn.setBackground(sBg);
                         btn.setTextColor(0xFF00E676);
                         if (module != null && module.getHost() != null) {
-                            module.getHost().toast("Плагін " + plugin.name + " встановлено! ✧");
+                            module.getHost().toast(t("Плагін ", "Плагин ", "Plugin ") + plugin.name + t(" встановлено! ✧", " установлен! ✧", " installed! ✧"));
                         }
                     } else {
-                        btn.setText("Помилка ✕");
+                        btn.setText(t("Помилка ✕", "Ошибка ✕", "Error ✕"));
                     }
                 });
             }).start();

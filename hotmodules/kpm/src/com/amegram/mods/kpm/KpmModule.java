@@ -75,6 +75,28 @@ public class KpmModule implements HotModule, HotKpm {
         this.host = null;
     }
 
+    private static String t(String uk, String ru, String en) {
+        try {
+            Class<?> locale = Class.forName("app.miogram.bridge.MiogramLocale");
+            java.lang.reflect.Method get = locale.getMethod("get", String.class, String.class, String.class);
+            Object value = get.invoke(null, uk, ru, en);
+            if (value instanceof String) return (String) value;
+        } catch (Throwable ignore) {
+        }
+        try {
+            Class<?> lc = Class.forName("org.telegram.messenger.LocaleController");
+            Object inst = lc.getMethod("getInstance").invoke(null);
+            java.util.Locale current = (java.util.Locale) lc.getMethod("getCurrentLocale").invoke(inst);
+            if (current != null) {
+                String lang = current.getLanguage().toLowerCase();
+                if (lang.startsWith("uk")) return uk;
+                if (lang.startsWith("ru") || lang.startsWith("be") || lang.startsWith("kk")) return ru;
+            }
+        } catch (Throwable ignore) {
+        }
+        return uk != null ? uk : (en != null ? en : "");
+    }
+
     @Override
     public boolean hasSettings() {
         return true;
@@ -82,30 +104,47 @@ public class KpmModule implements HotModule, HotKpm {
 
     @Override
     public String settingsTitle() {
-        return "Kangel Plugins Manager";
+        return t("Менеджер плагінів KPM", "Менеджер плагинов KPM", "KPM Plugins Manager");
     }
 
     @Override
     public void fillSettings(List<HotRow> rows) {
         if (rows == null) return;
-        rows.add(HotRow.header("KANGEL PLUGINS STORE"));
-        rows.add(HotRow.button("open_store", "Відкрити KPM Store ✧",
-                "Офіційний каталог плагінів, пошук та встановлення в 1 тап"));
+        rows.add(HotRow.header(t("КАТАЛОГ ПЛАГІНІВ KPM", "КАТАЛОГ ПЛАГИНОВ KPM", "KPM PLUGINS CATALOG")));
+        rows.add(HotRow.button("open_store",
+                t("Відкрити каталог плагінів ✧", "Открыть каталог плагинов ✧", "Open Plugins Catalog ✧"),
+                t("Офіційний каталог плагінів, пошук та встановлення в один дотик",
+                  "Официальный каталог плагинов, поиск и установка в одно касание",
+                  "Official plugins catalog, search and one-tap install")));
 
         int mirrorIdx = host != null ? host.getInt("kpm_mirror", 0) : 0;
         if (mirrorIdx < 0 || mirrorIdx >= MIRROR_NAMES.length) mirrorIdx = 0;
-        rows.add(HotRow.choice("kpm_mirror", "Дзеркало KPM Store",
-                "Активне сховище для завантаження каталогу та оновлень", MIRROR_NAMES, mirrorIdx));
+        rows.add(HotRow.choice("kpm_mirror",
+                t("Дзеркало каталогу плагінів", "Зеркало каталога плагинов", "Plugin Catalog Mirror"),
+                t("Активне сховище для завантаження каталогу та оновлень",
+                  "Активное хранилище для загрузки каталога и обновлений",
+                  "Active repository for catalog download and updates"),
+                MIRROR_NAMES, mirrorIdx));
 
         boolean autoUpdate = host == null || host.getBool("kpm_auto_update", true);
-        rows.add(HotRow.switchRow("kpm_auto_update", "Автоперевірка оновлень",
-                "Автоматично перевіряти свіжі релізи встановлених плагінів", autoUpdate));
+        rows.add(HotRow.switchRow("kpm_auto_update",
+                t("Автоматична перевірка оновлень", "Автоматическая проверка обновлений", "Automatic Update Check"),
+                t("Автоматично перевіряти свіжі релізи встановлених плагінів",
+                  "Автоматически проверять свежие релизы установленных плагинов",
+                  "Automatically check for new releases of installed plugins"),
+                autoUpdate));
 
         boolean audit = host == null || host.getBool("kpm_audit", true);
-        rows.add(HotRow.switchRow("kpm_audit", "Безпековий аудит",
-                "Перевірка цілісності SHA-256 та аналіз дозволів перед встановленням", audit));
+        rows.add(HotRow.switchRow("kpm_audit",
+                t("Безпековий аудит", "Аудит безопасности", "Security Audit"),
+                t("Перевірка цілісності SHA-256 та аналіз дозволів перед встановленням",
+                  "Проверка целостности SHA-256 и анализ разрешений перед установкой",
+                  "SHA-256 integrity check and permission analysis prior to installation"),
+                audit));
 
-        rows.add(HotRow.info("Yumigram Native Engine: модуль KPM інтегровано у нативну систему хот-модулів."));
+        rows.add(HotRow.info(t("Модуль KPM інтегровано у нативну систему хот-модулів Yumigram.",
+                "Модуль KPM интегрирован в нативную систему хот-модулей Yumigram.",
+                "KPM module integrated into Yumigram hot-modules system.")));
     }
 
     @Override
@@ -119,7 +158,7 @@ public class KpmModule implements HotModule, HotKpm {
     public void onSettingsChoice(String key, int index) {
         if ("kpm_mirror".equals(key) && host != null) {
             host.setInt(key, index);
-            host.toast("Дзеркало KPM: " + MIRROR_NAMES[Math.max(0, Math.min(index, MIRROR_NAMES.length - 1))]);
+            host.toast(t("Дзеркало каталогу: ", "Зеркало каталога: ", "Catalog mirror: ") + MIRROR_NAMES[Math.max(0, Math.min(index, MIRROR_NAMES.length - 1))]);
         }
     }
 
@@ -138,7 +177,9 @@ public class KpmModule implements HotModule, HotKpm {
     @Override
     public void openStore(BaseFragment fragment, Context context) {
         try {
-            if (app.amegram.hot.HotKpmGate.openStoreDirect(fragment, context)) {
+            Class<?> gate = Class.forName("app.amegram.hot.HotKpmGate");
+            Object res = gate.getMethod("openStoreDirect", Object.class, Context.class).invoke(null, fragment, context);
+            if (Boolean.TRUE.equals(res)) {
                 return;
             }
         } catch (Throwable ignore) {
@@ -168,7 +209,9 @@ public class KpmModule implements HotModule, HotKpm {
     public boolean handleDeepLink(BaseFragment fragment, String url) {
         if (url == null || url.isEmpty()) return false;
         try {
-            if (app.amegram.hot.HotKpmGate.handleDeepLink(fragment, url)) {
+            Class<?> gate = Class.forName("app.amegram.hot.HotKpmGate");
+            Object res = gate.getMethod("handleDeepLink", Object.class, String.class).invoke(null, fragment, url);
+            if (Boolean.TRUE.equals(res)) {
                 return true;
             }
         } catch (Throwable ignore) {
@@ -234,23 +277,23 @@ public class KpmModule implements HotModule, HotKpm {
                 final Context ctx = foundCtx;
 
                 if (found == null) {
-                    if (host != null) host.toast("Плагін '" + pluginId + "' не знайдено в KPM Store");
+                    if (host != null) host.toast(t("Плагін '" + pluginId + "' не знайдено в KPM Store", "Плагин '" + pluginId + "' не найден в KPM Store", "Plugin '" + pluginId + "' not found in KPM Store"));
                     return;
                 }
                 new AlertDialog.Builder(ctx)
-                        .setTitle("Встановлення плагіна KPM")
-                        .setMessage("Встановити плагін \"" + found.name + "\" v" + found.version + " від " + found.author + "?\n\n" + found.description)
-                        .setPositiveButton("Встановити", (dialog, which) -> {
+                        .setTitle(t("Встановлення плагіна KPM", "Установка плагина KPM", "Install KPM Plugin"))
+                        .setMessage(t("Встановити плагін \"", "Установить плагин \"", "Install plugin \"") + found.name + "\" v" + found.version + t(" від ", " от ", " by ") + found.author + "?\n\n" + found.description)
+                        .setPositiveButton(t("Встановити", "Установить", "Install"), (dialog, which) -> {
                             new Thread(() -> {
                                 boolean ok = KpmStoreDialog.downloadAndInstallPlugin(ctx, found, isSecurityAuditEnabled());
                                 new Handler(Looper.getMainLooper()).post(() -> {
                                     if (host != null) {
-                                        host.toast(ok ? "Плагін " + found.name + " встановлено! ✧" : "Помилка завантаження плагіна");
+                                        host.toast(ok ? (t("Плагін ", "Плагин ", "Plugin ") + found.name + t(" встановлено! ✧", " установлен! ✧", " installed! ✧")) : t("Помилка завантаження плагіна", "Ошибка загрузки плагина", "Plugin download error"));
                                     }
                                 });
                             }).start();
                         })
-                        .setNegativeButton("Скасувати", null)
+                        .setNegativeButton(t("Скасувати", "Отмена", "Cancel"), null)
                         .show();
             });
         } catch (Throwable e) {

@@ -58,6 +58,28 @@ public class FileOrgModule implements HotModule, HotFileOrganization {
         host = null;
     }
 
+    private static String t(String uk, String ru, String en) {
+        try {
+            Class<?> locale = Class.forName("app.miogram.bridge.MiogramLocale");
+            java.lang.reflect.Method get = locale.getMethod("get", String.class, String.class, String.class);
+            Object value = get.invoke(null, uk, ru, en);
+            if (value instanceof String) return (String) value;
+        } catch (Throwable ignore) {
+        }
+        try {
+            Class<?> lc = Class.forName("org.telegram.messenger.LocaleController");
+            Object inst = lc.getMethod("getInstance").invoke(null);
+            java.util.Locale current = (java.util.Locale) lc.getMethod("getCurrentLocale").invoke(inst);
+            if (current != null) {
+                String lang = current.getLanguage().toLowerCase();
+                if (lang.startsWith("uk")) return uk;
+                if (lang.startsWith("ru") || lang.startsWith("be") || lang.startsWith("kk")) return ru;
+            }
+        } catch (Throwable ignore) {
+        }
+        return uk != null ? uk : (en != null ? en : "");
+    }
+
     @Override
     public boolean hasSettings() {
         return true;
@@ -65,7 +87,7 @@ public class FileOrgModule implements HotModule, HotFileOrganization {
 
     @Override
     public String settingsTitle() {
-        return "Організація файлів";
+        return t("Організація файлів", "Организация файлов", "File Organization");
     }
 
     private boolean readSubfoldersEnabled() {
@@ -130,12 +152,14 @@ public class FileOrgModule implements HotModule, HotFileOrganization {
     @Override
     public void fillSettings(List<HotRow> rows) {
         rows.add(HotRow.switchRow("subfolders",
-                "Підпапки чатів",
-                "Горизонтальна смужка підпапок (MiogramSubfolder)",
+                t("Підпапки чатів", "Подпапки чатов", "Chat Subfolders"),
+                t("Горизонтальна панель підпапок", "Горизонтальная панель подпапок", "Horizontal subfolders bar"),
                 readSubfoldersEnabled()));
         rows.add(HotRow.switchRow("SaveToChatSubfolder",
-                "Збереження по папках чатів",
-                "Save Attachments by Chat Name (NaConfig)",
+                t("Збереження по папках чатів", "Сохранение по папкам чатов", "Save to Chat Folders"),
+                t("Зберігати завантажені файли в окремі папки за назвами чатів",
+                  "Сохранять загруженные файлы в отдельные папки по названиям чатов",
+                  "Save downloaded files into separate folders by chat names"),
                 readSaveToChatSubfolder()));
     }
 

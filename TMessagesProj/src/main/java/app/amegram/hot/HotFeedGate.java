@@ -12,6 +12,9 @@ public final class HotFeedGate {
     }
 
     private static HotFeed service() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("feed") || !HotModulesManager.isModuleEnabled("feed")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.FEED);
         } catch (Throwable ignore) {

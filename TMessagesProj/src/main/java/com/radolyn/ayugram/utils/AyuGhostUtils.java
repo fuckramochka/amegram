@@ -33,7 +33,7 @@ public class AyuGhostUtils {
             return !AmegramGhostController.hideRead();
         } catch (Throwable ignore) {
         }
-        return NekoConfig.sendReadMessagePackets.Bool();
+        return true;
     }
 
     private static boolean effSendStories() {
@@ -44,7 +44,7 @@ public class AyuGhostUtils {
             return !AmegramGhostController.hideRead();
         } catch (Throwable ignore) {
         }
-        return NekoConfig.sendReadStoriesPackets.Bool();
+        return true;
     }
 
     private static boolean effSendOnline() {
@@ -55,7 +55,7 @@ public class AyuGhostUtils {
             return !AmegramGhostController.hideOnline();
         } catch (Throwable ignore) {
         }
-        return NekoConfig.sendOnlinePackets.Bool();
+        return true;
     }
 
     private static boolean effSendTyping() {
@@ -66,7 +66,7 @@ public class AyuGhostUtils {
             return !AmegramGhostController.hideTyping();
         } catch (Throwable ignore) {
         }
-        return NekoConfig.sendUploadProgress.Bool();
+        return true;
     }
 
     public static Long getDialogId(TLRPC.InputPeer peer) {
@@ -194,6 +194,9 @@ public class AyuGhostUtils {
     }
 
     public static InterceptResult interceptRequest(TLObject object, RequestDelegate onCompleteOrig) {
+        if (!AmegramGhostController.isOn()) {
+            return InterceptResult.Proceed(onCompleteOrig);
+        }
         Long dialogId = extractDialogId(object);
         boolean readExcluded = dialogId != null && AyuGhostPreferences.getGhostModeReadExclusion(dialogId);
         boolean typingExcluded = dialogId != null && AyuGhostPreferences.getGhostModeTypingExclusion(dialogId);

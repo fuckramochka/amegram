@@ -33,10 +33,13 @@ public final class Md3Router {
     }
 
     public static boolean sheetEnabled() {
-        return true;
+        return HotModulesManager.isModuleInstalledOnDisk("player") && HotModulesManager.isModuleEnabled("player");
     }
 
     public static boolean miniEnabled() {
+        if (!sheetEnabled()) {
+            return false;
+        }
         try {
             return app.exteraless.appearance.AppearanceConfig.md3MiniPlayer();
         } catch (Throwable ignore) {
@@ -55,7 +58,7 @@ public final class Md3Router {
             now = MediaController.getInstance().getPlayingMessageObject();
         } catch (Throwable ignore) {
         }
-        if (handles(now)) {
+        if (handles(now) && sheetEnabled()) {
             try {
                 Object customSheet = HotModulesManager.createScreen("player", "player_sheet");
                 if (customSheet == null) {

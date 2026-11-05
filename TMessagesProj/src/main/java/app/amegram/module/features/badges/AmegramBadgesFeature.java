@@ -35,12 +35,12 @@ public class AmegramBadgesFeature implements AmegramFeature {
 
     @Override
     public boolean isAvailable() {
-        return true;
+        return app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("badges");
     }
 
     @Override
     public boolean isEnabled() {
-        return AmegramConfig.getBool("badges_enabled", true);
+        return isAvailable() && AmegramConfig.getBool("badges_enabled", false);
     }
 
     @Override

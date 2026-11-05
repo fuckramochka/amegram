@@ -8,6 +8,9 @@ public final class HotFileOrganizationGate {
     private HotFileOrganizationGate() {}
 
     public static String chatSubfolder(String chatTitle, long peerId) {
+        if (!HotModulesManager.isModuleInstalledOnDisk("fileorganization") || !HotModulesManager.isModuleEnabled("fileorganization")) {
+            return null;
+        }
         try {
             HotFileOrganization service = HotModulesManager.getService(HotServices.FILE_ORGANIZATION);
             return service == null ? null : service.chatSubfolder(chatTitle, peerId);

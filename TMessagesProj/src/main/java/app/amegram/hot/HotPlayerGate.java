@@ -21,11 +21,17 @@ public final class HotPlayerGate {
 
     /** Чи активний кастомний сучасний плеєр (модуль player + його перемикач). */
     public static boolean isModernLayoutEnabled() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("player") || !HotModulesManager.isModuleEnabled("player")) {
+            return false;
+        }
         HotPlayer p = service();
         return p != null && p.isModernLayoutEnabled();
     }
 
     public static boolean isMusicSearchAvailable() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("player") || !HotModulesManager.isModuleEnabled("player")) {
+            return false;
+        }
         HotPlayer p = service();
         return p != null;
     }

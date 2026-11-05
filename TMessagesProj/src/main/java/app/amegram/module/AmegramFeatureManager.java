@@ -56,13 +56,7 @@ public final class AmegramFeatureManager {
             if (app.amegram.module.AmegramConfig.getBool("fresh_start_decided", false)) {
                 return;
             }
-            // Нативні функції (бейджики, антиблок, подвійне дно) активні за замовчуванням
-            for (AmegramFeature f : FEATURES.values()) {
-                try {
-                    f.setEnabled(true);
-                } catch (Throwable ignore) {
-                }
-            }
+            // Порожній старт: жодних авто-включень функцій без завантажених модулів
             app.amegram.module.AmegramConfig.setBool("fresh_start_decided", true);
         } catch (Throwable ignore) {
         }

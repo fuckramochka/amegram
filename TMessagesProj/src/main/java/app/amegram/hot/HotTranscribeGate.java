@@ -31,6 +31,9 @@ public final class HotTranscribeGate {
 
     /** true = перехопили (сток далі не йде). */
     public static boolean tryTranscribe(MessageObject messageObject) {
+        if (!HotModulesManager.isModuleInstalledOnDisk("stt") || !HotModulesManager.isModuleEnabled("stt")) {
+            return false;
+        }
         if (messageObject == null || messageObject.messageOwner == null) {
             return false;
         }

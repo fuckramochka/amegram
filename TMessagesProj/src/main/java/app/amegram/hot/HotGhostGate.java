@@ -16,6 +16,9 @@ public final class HotGhostGate {
     }
 
     private static HotGhost service() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("ghost") || !HotModulesManager.isModuleEnabled("ghost")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.GHOST);
         } catch (Throwable ignore) {

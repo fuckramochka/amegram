@@ -272,7 +272,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public int chatListStyle() {
-        return readInt(KEY_CHAT_STYLE, CHAT_STYLE_CARDS);
+        return readInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
     }
 
     public boolean isChatPinnedAccent() {
@@ -288,11 +288,11 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public boolean isChatSquircleAvatars() {
-        return readBool(KEY_CHAT_SQUIRCLE_AVATARS, false);
+        return readBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
     }
 
     public boolean isChatCardOutline() {
-        return readBool(KEY_CHAT_CARD_OUTLINE, false);
+        return readBool(KEY_CHAT_CARD_OUTLINE, true);
     }
 
     public boolean isChatCardsTouch() {
@@ -1369,11 +1369,11 @@ public class UiModule implements HotModule, HotUi {
         } else if ("reset_defaults".equals(rowId)) {
             writeInt(KEY_STYLE, 1);
             writeInt("style", 1);
-            writeInt(KEY_CHAT_STYLE, CHAT_STYLE_CARDS);
+            writeInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
             writeBool(KEY_CHAT_CARDS_TOUCH, true);
             writeBool(KEY_CHAT_PINNED_ACCENT, true);
-            writeBool(KEY_CHAT_SQUIRCLE_AVATARS, false);
-            writeBool(KEY_CHAT_CARD_OUTLINE, false);
+            writeBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
+            writeBool(KEY_CHAT_CARD_OUTLINE, true);
             writeBool(KEY_STICKY_ENABLED, true);
             writeBool(KEY_STICKY_THEME_ADAPTIVE, true);
             writeBool(KEY_MINI_PLAYER, true);

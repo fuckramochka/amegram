@@ -27,7 +27,7 @@ import app.amegram.core.modules.ModuleManager;
 
 /**
  * «+» хаба: каталог модулів. Спочатку GitHub, при недоступності —
- * вбудований asset. Стиль карток — як у каталозі плагінів.
+ * віддалений каталог. Стиль карток — як у каталозі модулів.
  */
 public class ModuleCatalogSheet extends BottomSheet {
 

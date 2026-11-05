@@ -30,7 +30,7 @@ public class AmegramGhostController implements AmegramFeature {
 
     @Override
     public boolean isAvailable() {
-        return true; // built-in, no download needed
+        return app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("ghost");
     }
 
     @Override
@@ -74,6 +74,10 @@ public class AmegramGhostController implements AmegramFeature {
      */
     public static boolean isOn() {
         try {
+            if (!app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("ghost")
+                    || !app.amegram.hot.HotModulesManager.isModuleEnabled("ghost")) {
+                return false;
+            }
             return AmegramConfig.getBool("ghost_enabled", false);
         } catch (Throwable t) {
             return false;
@@ -87,8 +91,11 @@ public class AmegramGhostController implements AmegramFeature {
      */
     public static boolean isModuleActive() {
         try {
-            return AmegramConfig.getBool("ghost_enabled", false)
-                    || AmegramConfig.getBool("ghost_migrated", false);
+            if (!app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("ghost")
+                    || !app.amegram.hot.HotModulesManager.isModuleEnabled("ghost")) {
+                return false;
+            }
+            return AmegramConfig.getBool("ghost_enabled", false);
         } catch (Throwable t) {
             return false;
         }

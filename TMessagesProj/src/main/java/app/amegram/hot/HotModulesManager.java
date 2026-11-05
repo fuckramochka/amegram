@@ -206,38 +206,7 @@ public final class HotModulesManager {
      * Не потребують ручного завантаження та активуються автоматично.
      */
     public static void ensureSystemModulesInstalled() {
-        init(ApplicationLoader.applicationContext);
-        if (appContext == null) return;
-        try {
-            android.content.res.AssetManager am = appContext.getAssets();
-            String[] list = am.list("hotmodules");
-            if (list == null) return;
-            Map<String, String> latestAssetById = new HashMap<>();
-            Map<String, String> latestVersionById = new HashMap<>();
-            for (String f : list) {
-                if (!f.endsWith(".hmod")) continue;
-                String modId = f.contains("-") ? f.substring(0, f.indexOf("-")) : f.substring(0, f.length() - 5);
-                if ("settings_ui".equals(modId) || "badges".equals(modId) || "kpm".equals(modId) || "ui".equals(modId) || isSystem(modId) || f.contains("system")) {
-                    String version = bundledAssetVersion(f);
-                    String latestVersion = latestVersionById.get(modId);
-                    if (!version.isEmpty() && (latestVersion == null || compareVersions(version, latestVersion) >= 0)) {
-                        latestVersionById.put(modId, version);
-                        latestAssetById.put(modId, f);
-                    }
-                }
-            }
-            for (Map.Entry<String, String> entry : latestAssetById.entrySet()) {
-                String modId = entry.getKey();
-                if (!shouldSeedSystemModule(modId, entry.getValue())) continue;
-                try {
-                    installBundledModuleDirect(modId, true);
-                } catch (Throwable e) {
-                    FileLog.e("hotmods: auto-install system module failed: " + modId, e);
-                }
-            }
-        } catch (Throwable e) {
-            FileLog.e("hotmods: ensureSystemModulesInstalled error", e);
-        }
+        // No-op: 0 bundled modules in APK, everything is downloaded by the user.
     }
 
     /**
@@ -349,26 +318,11 @@ public final class HotModulesManager {
     }
 
     public static boolean hasBundledSeed(String moduleId) {
-        if (moduleId == null) return false;
-        if (appContext == null) init(ApplicationLoader.applicationContext);
-        if (appContext == null) return false;
-        try {
-            android.content.res.AssetManager am = appContext.getAssets();
-            String[] list = am.list("hotmodules");
-            if (list == null) return false;
-            for (String f : list) {
-                if (f.equals(moduleId + ".hmod") || f.startsWith(moduleId + "-")) {
-                    return true;
-                }
-            }
-        } catch (Throwable ignore) {
-        }
         return false;
     }
 
     public static boolean isModuleInstalled(String moduleId) {
-        if (isModuleInstalledOnDisk(moduleId)) return true;
-        return hasBundledSeed(moduleId);
+        return isModuleInstalledOnDisk(moduleId);
     }
 
     public static boolean isModuleInstalledOnDisk(String moduleId) {
@@ -394,8 +348,7 @@ public final class HotModulesManager {
     }
 
     public static boolean isSystem(String moduleId) {
-        if (moduleId == null) return false;
-        if ("settings_ui".equals(moduleId) || "badges".equals(moduleId)) return true;
+        if (moduleId == null || !isModuleInstalledOnDisk(moduleId)) return false;
         for (InstalledInfo info : listInstalled()) {
             if (moduleId.equals(info.manifest.id) && info.active) {
                 return info.manifest.isSystem;
@@ -418,6 +371,7 @@ public final class HotModulesManager {
 
     public static boolean isModuleEnabled(String moduleId) {
         if (moduleId == null) return false;
+        if (!isModuleInstalledOnDisk(moduleId)) return false;
         if (isSystem(moduleId)) return true;
         if (appContext == null) init(ApplicationLoader.applicationContext);
         if (appContext == null) return false;
@@ -439,18 +393,13 @@ public final class HotModulesManager {
     public static boolean isUiModuleOn() {
         if (appContext == null) init(ApplicationLoader.applicationContext);
         if (appContext == null) {
-            // До ініціалізації не форсуємо класику — інакше на старті буде flip-flop.
-            return true;
+            return false;
+        }
+        if (!isModuleInstalledOnDisk("ui")) {
+            return false;
         }
         if (prefs().getBoolean("uninstalled_ui", false)) {
             return false;
-        }
-        if (prefs().contains("enabled_ui")) {
-            return prefs().getBoolean("enabled_ui", false);
-        }
-        if (!isModuleInstalledOnDisk("ui")) {
-            // Модуль ще не посіяно з assets (перший запуск) — лишаємо типовий Expressive.
-            return true;
         }
         return prefs().getBoolean("enabled_ui", false);
     }
@@ -1586,13 +1535,6 @@ public final class HotModulesManager {
             }
         }
 
-        if (entryClass == null && hasBundledSeed(moduleId)) {
-            try {
-                installBundledModuleDirect(moduleId, false);
-                return getModuleForSettings(moduleId);
-            } catch (Throwable ignore) {
-            }
-        }
 
         if (entryClass == null) return null;
 

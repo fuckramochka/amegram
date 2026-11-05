@@ -20,6 +20,9 @@ public final class HotSettingsUiGate {
     }
 
     public static HotSettingsUi get() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("settings_ui") || !HotModulesManager.isModuleEnabled("settings_ui")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.SETTINGS_UI);
         } catch (Throwable ignore) {

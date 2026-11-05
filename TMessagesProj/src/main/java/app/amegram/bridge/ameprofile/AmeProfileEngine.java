@@ -184,10 +184,11 @@ public class AmeProfileEngine {
      */
     public static boolean isModuleEnabled() {
         try {
-            return app.amegram.hot.HotModulesManager.isModuleEnabled("ame");
+            return app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("ame")
+                    && app.amegram.hot.HotModulesManager.isModuleEnabled("ame");
         } catch (Throwable ignore) {
         }
-        return true;
+        return false;
     }
 
     public static boolean isCustomProfileEnabled() {

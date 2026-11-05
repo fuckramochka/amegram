@@ -22,9 +22,12 @@ public class MiogramEnterViewIosHelper {
     private static final String KEY_IOS_INPUT_PANEL = "ios_input_panel";
 
     public static boolean isIosInputPanelEnabled() {
+        if (app.exteraless.appearance.YougramExpressive.enabled()) {
+            return false;
+        }
         return ApplicationLoader.applicationContext
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-                .getBoolean(KEY_IOS_INPUT_PANEL, true);
+                .getBoolean(KEY_IOS_INPUT_PANEL, false);
     }
 
     public static void setIosInputPanelEnabled(boolean enabled) {
@@ -54,7 +57,8 @@ public class MiogramEnterViewIosHelper {
      * Applies native iOS Cupertino styling to ChatActivityEnterView.
      */
     public static void apply(ChatActivityEnterView enterView) {
-        if (enterView == null || !isIosInputPanelEnabled()) {
+        if (enterView == null || !isIosInputPanelEnabled()
+                || app.exteraless.appearance.YougramExpressive.enabled()) {
             return;
         }
 

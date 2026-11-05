@@ -82,7 +82,8 @@ public class BotCommandsMenuView extends View {
         backDrawable.setCallback(this);
         textPaint.setTypeface(AndroidUtilities.bold());
         backDrawable.setRoundCap();
-        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
+        boolean md3 = app.exteraless.appearance.YougramExpressive.enabled();
+        backgroundDrawable = Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(16), Color.TRANSPARENT, md3 ? app.exteraless.appearance.YumiMd3.accentRippleColor(app.exteraless.appearance.YumiMd3.primary()) : Theme.getColor(Theme.key_featuredStickers_addButtonPressed));
         backgroundDrawable.setCallback(this);
         webViewAnimation.setCallback(this);
         webViewAnimation.setMasterParent(this);
@@ -99,9 +100,10 @@ public class BotCommandsMenuView extends View {
         invalidate();
     }
 
-    private void updateColors() {
-        paint.setColor(Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
-        int textColor = Theme.getColor(Theme.key_chat_messagePanelVoiceDuration);
+    public void updateColors() {
+        boolean md3 = app.exteraless.appearance.YougramExpressive.enabled();
+        paint.setColor(md3 ? app.exteraless.appearance.YumiMd3.surfaceContainerHigh() : Theme.getColor(Theme.key_chat_messagePanelVoiceBackground));
+        int textColor = md3 ? app.exteraless.appearance.YumiMd3.onSurfaceVariant() : Theme.getColor(Theme.key_chat_messagePanelVoiceDuration);
         backDrawable.setBackColor(textColor);
         backDrawable.setIconColor(textColor);
         if (webViewAnimation != null) {

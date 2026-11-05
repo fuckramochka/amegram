@@ -2093,20 +2093,24 @@ public class ChatActivityEnterView extends FrameLayout implements
             if (micDrawable != null) {
                 return;
             }
+            boolean md3 = useYumiChatComposer();
+            int pressedColor = md3 ? YumiMd3.onPrimary() : getThemedColor(Theme.key_chat_messagePanelVoicePressed);
+            int outlineColor = md3 ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon);
+
             micDrawable = getResources().getDrawable(R.drawable.input_mic_pressed).mutate();
-            micDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelVoicePressed), PorterDuff.Mode.MULTIPLY));
+            micDrawable.setColorFilter(new PorterDuffColorFilter(pressedColor, PorterDuff.Mode.SRC_IN));
 
             cameraDrawable = getResources().getDrawable(R.drawable.input_video_pressed).mutate();
-            cameraDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelVoicePressed), PorterDuff.Mode.MULTIPLY));
+            cameraDrawable.setColorFilter(new PorterDuffColorFilter(pressedColor, PorterDuff.Mode.SRC_IN));
 
             sendDrawable = getResources().getDrawable(R.drawable.attach_send).mutate();
-            sendDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_messagePanelVoicePressed), PorterDuff.Mode.MULTIPLY));
+            sendDrawable.setColorFilter(new PorterDuffColorFilter(pressedColor, PorterDuff.Mode.SRC_IN));
 
             micOutline = getResources().getDrawable(R.drawable.input_mic).mutate();
-            micOutline.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+            micOutline.setColorFilter(new PorterDuffColorFilter(outlineColor, PorterDuff.Mode.SRC_IN));
 
             cameraOutline = getResources().getDrawable(R.drawable.input_video).mutate();
-            cameraOutline.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+            cameraOutline.setColorFilter(new PorterDuffColorFilter(outlineColor, PorterDuff.Mode.SRC_IN));
         }
 
         public void setAmplitude(double value) {
@@ -2312,9 +2316,10 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
 
             if (progressToSeekbarStep3 > 0) {
-                paint.setColor(ColorUtils.blendARGB(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), getThemedColor(Theme.key_chat_recordedVoiceBackground), progressToSeekbarStep3));
+                int defaultBg = useYumiChatComposer() ? YumiMd3.composerSend() : getThemedColor(Theme.key_chat_messagePanelVoiceBackground);
+                paint.setColor(ColorUtils.blendARGB(defaultBg, getThemedColor(Theme.key_chat_recordedVoiceBackground), progressToSeekbarStep3));
             } else {
-                paint.setColor(getThemedColor(Theme.key_chat_messagePanelVoiceBackground));
+                paint.setColor(useYumiChatComposer() ? YumiMd3.composerSend() : getThemedColor(Theme.key_chat_messagePanelVoiceBackground));
             }
 
             Drawable drawable;
@@ -2532,11 +2537,23 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
 
         public void updateColors() {
-            paint.setColor(getThemedColor(Theme.key_chat_messagePanelVoiceBackground));
-            tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
-            bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(getThemedColor(Theme.key_chat_messagePanelVoiceBackground), (int) (255 * WaveDrawable.CIRCLE_ALPHA_1)));
+            boolean md3 = useYumiChatComposer();
+            int voiceBg = md3 ? YumiMd3.composerSend() : getThemedColor(Theme.key_chat_messagePanelVoiceBackground);
+            paint.setColor(voiceBg);
+            tinyWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(voiceBg, (int) (255 * WaveDrawable.CIRCLE_ALPHA_2)));
+            bigWaveDrawable.paint.setColor(ColorUtils.setAlphaComponent(voiceBg, (int) (255 * WaveDrawable.CIRCLE_ALPHA_1)));
 
             paintAlpha = paint.getAlpha();
+
+            if (micDrawable != null) {
+                int pressedColor = md3 ? YumiMd3.onPrimary() : getThemedColor(Theme.key_chat_messagePanelVoicePressed);
+                int outlineColor = md3 ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon);
+                micDrawable.setColorFilter(new PorterDuffColorFilter(pressedColor, PorterDuff.Mode.SRC_IN));
+                cameraDrawable.setColorFilter(new PorterDuffColorFilter(pressedColor, PorterDuff.Mode.SRC_IN));
+                sendDrawable.setColorFilter(new PorterDuffColorFilter(pressedColor, PorterDuff.Mode.SRC_IN));
+                micOutline.setColorFilter(new PorterDuffColorFilter(outlineColor, PorterDuff.Mode.SRC_IN));
+                cameraOutline.setColorFilter(new PorterDuffColorFilter(outlineColor, PorterDuff.Mode.SRC_IN));
+            }
         }
 
         public void canceledByGesture() {
@@ -2642,15 +2659,95 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     private boolean useYumiChatComposer() {
-        return parentFragment != null && app.exteraless.appearance.YougramExpressive.enabled();
+        return app.exteraless.appearance.YougramExpressive.enabled();
     }
 
     private Drawable yumiComposerButton(int fillColor, int radiusDp) {
-        GradientDrawable shape = new GradientDrawable();
-        shape.setColor(fillColor);
-        shape.setCornerRadius(dp(radiusDp));
-        int rippleColor = (YumiMd3.primary() & 0x00FFFFFF) | 0x28000000;
-        return new RippleDrawable(ColorStateList.valueOf(rippleColor), shape, null);
+        float r = radiusDp > 40 ? radiusDp : dp(radiusDp);
+        GradientDrawable shape = null;
+        if (fillColor != 0) {
+            shape = new GradientDrawable();
+            shape.setColor(fillColor);
+            shape.setCornerRadius(r);
+        }
+        int rippleColor = YumiMd3.accentRippleColor(YumiMd3.primary());
+        GradientDrawable mask = new GradientDrawable();
+        mask.setColor(0xFFFFFFFF);
+        mask.setCornerRadius(r);
+        return new RippleDrawable(ColorStateList.valueOf(rippleColor), shape, mask);
+    }
+
+    private void applyMd3ComposerStyles() {
+        if (!useYumiChatComposer()) {
+            return;
+        }
+        if (emojiButton != null) {
+            setIconColorFilter(emojiButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            emojiButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 19));
+        }
+        if (attachButton != null) {
+            setIconColorFilter(attachButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+            attachButton.setBackground(yumiComposerButton(YumiMd3.primaryContainer(), 18));
+        }
+        if (botButton != null) {
+            if (botButtonDrawable != null) {
+                botButtonDrawable.setColorFilter(new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            } else {
+                setIconColorFilter(botButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            }
+            botButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+        }
+        if (notifyButton != null) {
+            notifyButton.setColorFilter(new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            notifyButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+        }
+        if (aiButton != null) {
+            setIconColorFilter(aiButton, new PorterDuffColorFilter(YumiMd3.onSecondaryContainer(), PorterDuff.Mode.SRC_IN));
+            aiButton.setBackground(yumiComposerButton(YumiMd3.secondaryContainer(), 16));
+        }
+        if (richButton != null) {
+            setIconColorFilter(richButton, new PorterDuffColorFilter(YumiMd3.onSurface(), PorterDuff.Mode.SRC_IN));
+            richButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainer(), 16));
+        }
+        if (deleteRichDraftButton != null) {
+            deleteRichDraftButton.setColorFilter(new PorterDuffColorFilter(YumiMd3.onErrorContainer(), PorterDuff.Mode.SRC_IN));
+            deleteRichDraftButton.setBackground(yumiComposerButton(YumiMd3.errorContainer(), 19));
+        }
+        if (scheduledButton != null) {
+            setIconColorFilter(scheduledButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+            scheduledButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+        }
+        if (giftButton != null) {
+            setIconColorFilter(giftButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+            giftButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+        }
+        if (suggestButton != null) {
+            setIconColorFilter(suggestButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+            suggestButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+        }
+        if (cancelBotButton != null) {
+            cancelBotButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+        }
+        if (expandStickersButton != null) {
+            setIconColorFilter(expandStickersButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            expandStickersButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+        }
+        if (sendButton != null) {
+            if (!isInScheduleMode()) {
+                sendButton.setResourceId(R.drawable.send_plane_24);
+            }
+            sendButton.updateColors();
+        }
+        if (botCommandsMenuButton != null) {
+            botCommandsMenuButton.updateColors();
+        }
+        if (recordCircle != null) {
+            recordCircle.updateColors();
+        }
+        if (recordDeleteImageView != null) {
+            recordDeleteImageView.setBackground(yumiComposerButton(YumiMd3.errorContainer(), 19));
+        }
+        updateAudioVideoSendButtonColor();
     }
 
     public ChatActivityEnterView(Activity context, SizeNotifierFrameLayout parent, ChatActivity fragment, final boolean isChat) {
@@ -2786,9 +2883,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         emojiButton.setFocusable(true);
         int padding = dp(7.5f);
         emojiButton.setPadding(padding, padding, padding, padding);
-        setIconColorFilter(emojiButton, new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
+        setIconColorFilter(emojiButton, new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
         emojiButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), dp(19))
+                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 19)
                 : Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(19), dp(1), dp(3)));
         emojiButton.setOnClickListener(v -> {
             if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress()) {
@@ -2829,8 +2926,10 @@ public class ChatActivityEnterView extends FrameLayout implements
         deleteRichDraftButton = new ImageView(context);
         deleteRichDraftButton.setScaleType(ImageView.ScaleType.CENTER);
         deleteRichDraftButton.setImageResource(R.drawable.menu_delete_old);
-        deleteRichDraftButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
-        deleteRichDraftButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(19), dp(1), dp(3)));
+        deleteRichDraftButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onErrorContainer() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
+        deleteRichDraftButton.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.errorContainer(), 19)
+                : Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(19), dp(1), dp(3)));
         deleteRichDraftButton.setVisibility(View.GONE);
         deleteRichDraftButton.setContentDescription(getString(R.string.ArticleDeleteDraft));
         deleteRichDraftButton.setOnClickListener(v -> {
@@ -2870,9 +2969,11 @@ public class ChatActivityEnterView extends FrameLayout implements
                 notifyButton.setImageDrawable(notifySilentDrawable);
                 notifySilentDrawable.setCrossOut(silent, false);
                 notifyButton.setContentDescription(silent ? getString("AccDescrChanSilentOn", R.string.AccDescrChanSilentOn) : getString("AccDescrChanSilentOff", R.string.AccDescrChanSilentOff));
-                notifyButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+                notifyButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
                 notifyButton.setScaleType(ImageView.ScaleType.CENTER);
-                notifyButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+                notifyButton.setBackgroundDrawable(useYumiChatComposer()
+                        ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                        : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
                 notifyButton.setVisibility(canWriteToChannel && (delegate == null || !delegate.hasScheduledMessages()) ? VISIBLE : GONE);
                 attachLayout.addView(notifyButton, LayoutHelper.createLinear(DEFAULT_HEIGHT, DEFAULT_HEIGHT));
                 notifyButton.setOnClickListener(new OnClickListener() {
@@ -2905,10 +3006,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             };
             attachButton.setScaleType(ImageView.ScaleType.CENTER);
-            attachButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+            attachButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
             attachButton.setImageResource(R.drawable.msg_input_attach2);
             attachButton.setBackground(useYumiChatComposer()
-                    ? yumiComposerButton(YumiMd3.primaryContainer(), dp(18))
+                    ? yumiComposerButton(YumiMd3.primaryContainer(), 18)
                     : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
             messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
             attachButton.setOnClickListener(v -> {
@@ -2936,9 +3037,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         aiButton = new ImageView(context);
         aiButton.setImageDrawable(aiButtonIcon = new AiButtonDrawable(context));
         aiButton.setScaleType(ImageView.ScaleType.CENTER);
-        aiButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        aiButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSecondaryContainer() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         aiButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.secondaryContainer(), dp(16))
+                ? yumiComposerButton(YumiMd3.secondaryContainer(), 16)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_CIRCLE_20DP, dp(16)));
         textFieldContainer.addView(aiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.TOP | Gravity.LEFT, 0, 1, 0, 0));
         aiButton.setContentDescription(getString(R.string.AIEditor));
@@ -3005,9 +3106,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         richButton = new ImageView(context);
         richButton.setImageResource(R.drawable.iv_fullscreen);
         richButton.setScaleType(ImageView.ScaleType.CENTER);
-        richButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        richButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurface() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         richButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainer(), dp(16))
+                ? yumiComposerButton(YumiMd3.surfaceContainer(), 16)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_CIRCLE_20DP, dp(16)));
         textFieldContainer.addView(richButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.TOP | Gravity.RIGHT, 0, 1, 0, 0));
         richButton.setContentDescription(getString(R.string.ArticleEditor));
@@ -3334,7 +3435,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     }
 
                     final float r = dpf2(19);
-                    paint.setColor(getThemedColor(Theme.key_chat_messagePanelSend));
+                    paint.setColor(useYumiChatComposer() ? YumiMd3.composerSend() : getThemedColor(Theme.key_chat_messagePanelSend));
                     final float margin = dpf2(3);
                     final float height = dpf2(38);
                     final float width = dpf2(38);
@@ -3610,7 +3711,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         cancelBotButton.setScaleX(0.1f);
         cancelBotButton.setScaleY(0.1f);
         cancelBotButton.setAlpha(0.0f);
-        cancelBotButton.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        cancelBotButton.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         sendButtonContainer.addView(cancelBotButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.BOTTOM));
         cancelBotButton.setOnClickListener(view -> {
             String text = messageEditText != null ? messageEditText.getText().toString() : "";
@@ -3622,7 +3725,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         });
 
-        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : (app.miogram.bridge.ui.ios.MiogramEnterViewIosHelper.isIosInputPanelEnabled() ? R.drawable.baseline_arrow_upward_24 : R.drawable.send_plane_24), resourcesProvider, true) {
+        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : (useYumiChatComposer() ? R.drawable.send_plane_24 : (app.miogram.bridge.ui.ios.MiogramEnterViewIosHelper.isIosInputPanelEnabled() ? R.drawable.baseline_arrow_upward_24 : R.drawable.send_plane_24)), resourcesProvider, true) {
             @Override
             public boolean isInScheduleMode() {
                 return ChatActivityEnterView.this.isInScheduleMode();
@@ -3715,6 +3818,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         checkChannelRights();
 
         createMessageEditText();
+        applyMd3ComposerStyles();
     }
 
     public void setViewParentForEmoji(ViewGroup viewParent) {
@@ -3831,7 +3935,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         final Drawable drawable1 = getContext().getResources().getDrawable(R.drawable.input_calendar1).mutate();
         final Drawable drawable2 = getContext().getResources().getDrawable(R.drawable.input_calendar2).mutate();
-        drawable1.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        drawable1.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         drawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_recordedVoiceDot), PorterDuff.Mode.MULTIPLY));
         CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
 
@@ -3856,7 +3960,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         scheduledButton.setVisibility(GONE);
         scheduledButton.setContentDescription(getString(R.string.ScheduledMessages));
         scheduledButton.setScaleType(ImageView.ScaleType.CENTER);
-        scheduledButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        scheduledButton.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         messageEditTextContainer.addView(scheduledButton, 2, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
         scheduledButton.setOnClickListener(v -> {
             if (delegate != null) {
@@ -3895,11 +4001,13 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         giftButton.setImageResource(R.drawable.msg_input_gift);
-        giftButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        giftButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         giftButton.setVisibility(GONE);
         giftButton.setContentDescription(getString(R.string.GiftPremium));
         giftButton.setScaleType(ImageView.ScaleType.CENTER);
-        giftButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        giftButton.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         attachLayout.addView(giftButton, 0, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.CENTER_VERTICAL | Gravity.RIGHT));
         giftButton.setOnClickListener(v -> {
             SharedPreferences.Editor edit = MessagesController.getInstance(currentAccount).getMainSettings().edit();
@@ -3945,9 +4053,11 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         suggestButton = new ImageView(getContext());
         suggestButton.setScaleType(ImageView.ScaleType.CENTER);
-        suggestButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        suggestButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         suggestButton.setImageResource(R.drawable.input_suggest_paid_24);
-        suggestButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        suggestButton.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         if (isLiveComment) {
             suggestButton.setTranslationX(dp(42));
             textFieldContainer.addView(suggestButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT, 0, 0, 6 + DEFAULT_HEIGHT, 0));
@@ -4037,10 +4147,12 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         botButton.setImageDrawable(botButtonDrawable = new ReplaceableIconDrawable(getContext()));
-        botButtonDrawable.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        botButtonDrawable.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         botButtonDrawable.setIcon(R.drawable.input_bot2, false);
         botButton.setScaleType(ImageView.ScaleType.CENTER);
-        botButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        botButton.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         botButton.setVisibility(GONE);
         AndroidUtilities.updateViewVisibilityAnimated(botButton, false, 0.1f, false);
         attachLayout.addView(botButton, 0, LayoutHelper.createLinear(DEFAULT_HEIGHT, DEFAULT_HEIGHT));
@@ -4129,12 +4241,14 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         expandStickersButton.setScaleType(ImageView.ScaleType.CENTER);
-        expandStickersButton.setImageDrawable(stickersArrow = new AnimatedArrowDrawable(getThemedColor(Theme.key_glass_defaultIcon), false));
+        expandStickersButton.setImageDrawable(stickersArrow = new AnimatedArrowDrawable(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), false));
         expandStickersButton.setVisibility(GONE);
         expandStickersButton.setScaleX(0.1f);
         expandStickersButton.setScaleY(0.1f);
         expandStickersButton.setAlpha(0.0f);
-        expandStickersButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        expandStickersButton.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         sendButtonContainer.addView(expandStickersButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.BOTTOM));
         expandStickersButton.setOnClickListener(v -> {
             if (expandStickersButton.getVisibility() != VISIBLE || expandStickersButton.getAlpha() != 1.0f || waitingForKeyboardOpen || (keyboardVisible && messageEditText != null && messageEditText.isFocused())) {
@@ -4196,7 +4310,9 @@ public class ChatActivityEnterView extends FrameLayout implements
         recordDeleteImageView.getAnimatedDrawable().setInvalidateOnProgressSet(true);
         updateRecordedDeleteIconColors();
         recordDeleteImageView.setContentDescription(getString("Delete", R.string.Delete));
-        recordDeleteImageView.setBackgroundDrawable(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+        recordDeleteImageView.setBackground(useYumiChatComposer()
+                ? yumiComposerButton(YumiMd3.errorContainer(), 19)
+                : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         recordedAudioPanel.addView(recordDeleteImageView, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT));
         recordDeleteImageView.setOnClickListener(v -> {
             if (runningAnimationAudio != null && runningAnimationAudio.isRunning()) {
@@ -11972,24 +12088,37 @@ public class ChatActivityEnterView extends FrameLayout implements
             botKeyboardView.updateColors();
         }
         updateAudioVideoSendButtonColor();
-        setIconColorFilter(emojiButton, new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
-        emojiButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
-        deleteRichDraftButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
-        deleteRichDraftButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(19), dp(1), dp(3)));
-        sendOutlineView.setColorFilter(getThemedColor(Theme.key_telegram_color), PorterDuff.Mode.SRC_IN);
+        if (useYumiChatComposer()) {
+            applyMd3ComposerStyles();
+        } else {
+            setIconColorFilter(emojiButton, new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
+            emojiButton.setBackground(Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
+            deleteRichDraftButton.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
+            deleteRichDraftButton.setBackground(Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(19), dp(1), dp(3)));
+        }
+        sendOutlineView.setColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_telegram_color), PorterDuff.Mode.SRC_IN);
+        if (botCommandsMenuButton != null) {
+            botCommandsMenuButton.updateColors();
+        }
     }
 
     private void updateAudioVideoSendButtonColor() {
         if (audioVideoSendButton == null || audioVideoButtonContainer == null) {
             return;
         }
+        boolean md3 = useYumiChatComposer();
         boolean isMenuState = isAudioVideoSendButtonInMenuState();
-        int color = audioVideoButtonContainerForbidden || isMenuState
-                ? getThemedColor(Theme.key_glass_defaultIcon)
-                : Color.WHITE;
+        int color;
+        if (audioVideoButtonContainerForbidden) {
+            color = md3 ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon);
+        } else if (isMenuState) {
+            color = md3 ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon);
+        } else {
+            color = md3 ? YumiMd3.onPrimary() : Color.WHITE;
+        }
         setIconColorFilter(audioVideoSendButton, new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
         audioVideoButtonContainer.setBackground(isMenuState
-                ? Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector))
+                ? (md3 ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 19) : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)))
                 : null);
     }
 
@@ -14535,6 +14664,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             ((ChatActivityEnterViewAnimatedIconView) view).setColorFilter(colorFilter);
         } else if (view instanceof ChatActivityEnterViewStaticIconView) {
             ((ChatActivityEnterViewStaticIconView) view).setColorFilter(colorFilter);
+        } else if (view instanceof ImageView) {
+            ((ImageView) view).setColorFilter(colorFilter);
         }
     }
 
@@ -17054,15 +17185,18 @@ public class ChatActivityEnterView extends FrameLayout implements
         private int drawableColor;
 
         public void updateColors() {
-            int color = isNewDesignSendButton ? Color.WHITE : Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
+            boolean md3 = app.exteraless.appearance.YougramExpressive.enabled();
+            int color = (md3 || isNewDesignSendButton) ? (md3 ? YumiMd3.onPrimary() : Color.WHITE) : Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
             if (color != drawableColor) {
                 drawableColor = color;
                 drawable.setColorFilter(new PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN));
-                int c = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
+                int c = md3 ? YumiMd3.onSurfaceVariant() : Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
                 inactiveDrawable.setColorFilter(new PorterDuffColorFilter(Color.argb(0xb4, Color.red(c), Color.green(c), Color.blue(c)), PorterDuff.Mode.SRC_IN));
-                drawableInverse.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelVoicePressed, resourcesProvider), PorterDuff.Mode.SRC_IN));
+                drawableInverse.setColorFilter(new PorterDuffColorFilter(md3 ? YumiMd3.primary() : Theme.getColor(Theme.key_chat_messagePanelVoicePressed, resourcesProvider), PorterDuff.Mode.SRC_IN));
             }
-            if (isNewDesignSendButton) {
+            if (md3) {
+                backgroundPaint.setColor(YumiMd3.composerSend());
+            } else if (isNewDesignSendButton) {
                 backgroundPaint.setColor(Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider));
             } else if (shouldDrawBackground()) {
                 backgroundPaint.setColor(getFillColor());

@@ -29,12 +29,12 @@ public class AmegramAmeProfileFeature implements AmegramFeature {
 
     @Override
     public boolean isAvailable() {
-        return true;
+        return app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("ame");
     }
 
     @Override
     public boolean isEnabled() {
-        return AmegramConfig.getBool("ameprofile_enabled", true);
+        return isAvailable() && AmegramConfig.getBool("ameprofile_enabled", false);
     }
 
     @Override

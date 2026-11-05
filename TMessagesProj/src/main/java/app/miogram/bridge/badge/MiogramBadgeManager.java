@@ -48,15 +48,19 @@ public class MiogramBadgeManager {
 
     public static boolean isModuleEnabled() {
         try {
+            if (!app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("badges")
+                    || !app.amegram.hot.HotModulesManager.isModuleEnabled("badges")) {
+                return false;
+            }
             android.content.Context ctx =
                     org.telegram.messenger.ApplicationLoader.applicationContext;
             if (ctx != null) {
                 return ctx.getSharedPreferences("amegram_module_prefs",
-                        android.content.Context.MODE_PRIVATE).getBoolean("badges_enabled", true);
+                        android.content.Context.MODE_PRIVATE).getBoolean("badges_enabled", false);
             }
         } catch (Throwable ignore) {
         }
-        return true;
+        return false;
     }
 
     public static void setModuleEnabled(boolean enabled) {

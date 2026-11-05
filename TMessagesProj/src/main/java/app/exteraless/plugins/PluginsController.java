@@ -118,9 +118,7 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         PluginGrantStore.get();
         watchdog = new PluginsWatchdog(preferences);
         getPluginsDir().mkdirs();
-        // Asset copies = file I/O, must not block cold start.
         fileExecutor.execute(() -> {
-            copyBuiltinPlugins();
             if (isEngineEnabled()) {
                 rescanAndLoadEnabled();
             }
@@ -147,58 +145,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
                 }
             }
         });
-    }
-
-    private void copyBuiltinPlugins() {
-        try {
-            File pluginsDir = getPluginsDir();
-            if (!pluginsDir.exists()) {
-                pluginsDir.mkdirs();
-            }
-
-            // Always ensure the official KPM plugin is deployed to pluginsDir
-            File kpmFile = new File(pluginsDir, "kangel_plugins_manager.eaf");
-            boolean kpmNeedsCopy = !kpmFile.exists() || kpmFile.length() == 0;
-            String lastCopiedVersion = preferences.getString("builtin_plugins_version", "");
-            boolean isAppUpdate = !org.telegram.messenger.BuildVars.BUILD_VERSION_STRING.equals(lastCopiedVersion);
-
-            if (kpmNeedsCopy || isAppUpdate) {
-                try (java.io.InputStream is = appContext.getAssets().open("plugins/kangel_plugins_manager.eaf");
-                     java.io.FileOutputStream fos = new java.io.FileOutputStream(kpmFile)) {
-                    byte[] buf = new byte[8192];
-                    int len;
-                    while ((len = is.read(buf)) != -1) {
-                        fos.write(buf, 0, len);
-                    }
-                } catch (Throwable t) {
-                    FileLog.e("PluginsController: failed to copy kangel_plugins_manager.eaf", t);
-                }
-            }
-
-            if (isAppUpdate) {
-                java.util.Set<String> deleted = preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet());
-                // On app update or first run, deploy and refresh builtin plugins that were not deleted
-                String[] assets = appContext.getAssets().list("plugins");
-                if (assets != null) {
-                    for (String name : assets) {
-                        if ("kangel_plugins_manager.eaf".equals(name)) continue;
-                        if (deleted != null && deleted.contains(name)) continue;
-                        File target = new File(pluginsDir, name);
-                        try (java.io.InputStream is = appContext.getAssets().open("plugins/" + name);
-                             java.io.FileOutputStream fos = new java.io.FileOutputStream(target)) {
-                            byte[] buf = new byte[8192];
-                            int len;
-                            while ((len = is.read(buf)) != -1) {
-                                fos.write(buf, 0, len);
-                            }
-                        }
-                    }
-                }
-                preferences.edit().putString("builtin_plugins_version", org.telegram.messenger.BuildVars.BUILD_VERSION_STRING).apply();
-            }
-        } catch (Throwable t) {
-            FileLog.e("PluginsController: failed to update builtin plugins", t);
-        }
     }
 
     public PluginsWatchdog getWatchdog() {
@@ -902,12 +848,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
                 }
                 p.enabled = enable;
                 preferences.edit().putBoolean(PluginsConstants.KEY_PLUGIN_ENABLED_PREFIX + id, enable).apply();
-                try {
-                    java.util.Set<String> deleted = new java.util.HashSet<>(preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet()));
-                    if (deleted.remove(dest.getName()) || deleted.remove(id) || (p.name != null && deleted.remove(p.name))) {
-                        preferences.edit().putStringSet("deleted_builtin_plugins", deleted).apply();
-                    }
-                } catch (Throwable ignore) {}
                 // Согласие пользователя записывает диалог установки (PluginPermissions.setGranted).
                 // Если он этого не сделал, запись всё равно должна появиться: без неё
                 // свежепоставленный плагин уедет в режим совместимости, где ему дают всё.
@@ -966,15 +906,6 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         if (prefsFile.exists()) {
             prefsFile.delete();
         }
-        try {
-            java.util.Set<String> deleted = new java.util.HashSet<>(preferences.getStringSet("deleted_builtin_plugins", java.util.Collections.emptySet()));
-            deleted.add(f.getName());
-            if (p.name != null) {
-                deleted.add(p.name);
-            }
-            deleted.add(id);
-            preferences.edit().putStringSet("deleted_builtin_plugins", deleted).apply();
-        } catch (Throwable ignore) {}
         return f.delete();
     }
 

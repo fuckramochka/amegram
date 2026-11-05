@@ -13,6 +13,9 @@ public final class HotGamingGate {
     }
 
     private static HotGaming service() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("gaming") || !HotModulesManager.isModuleEnabled("gaming")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.GAMING);
         } catch (Throwable ignore) {

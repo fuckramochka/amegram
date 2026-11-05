@@ -5700,7 +5700,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         avatarImage.setHasStories(needInsetForStories());
         avatarImage.setOnLongClickListener(v -> {
             if ((userId != 0 && userId == getUserConfig().getClientUserId()) || UserObject.isUserSelf(getMessagesController().getUser(userId))) {
-                boolean ameOn = true;
+                boolean ameOn = false;
                 try {
                     ameOn = app.amegram.hot.HotModulesManager.isModuleEnabled("ame");
                 } catch (Throwable ignore) {
@@ -12883,7 +12883,6 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         otherItem.addSubItem(13303816, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Оформлення профілю (Ame Studio)", "Оформление профиля (Ame Studio)", "Profile Design (Ame Studio)"));
                     }
                 } catch (Throwable ignore) {
-                    otherItem.addSubItem(13303816, R.drawable.msg_palette, app.miogram.bridge.MiogramLocale.get("Оформлення профілю (Ame Studio)", "Оформление профиля (Ame Studio)", "Profile Design (Ame Studio)"));
                 }
                 if (app.miogram.bridge.badge.MiogramBadgeGrantSheet.canGrantBadges()) {
                     otherItem.addSubItem(13303815, R.drawable.msg_premium_liststar, app.miogram.bridge.MiogramLocale.get("Видати бейдж", "Выдать бейдж", "Grant Badge"));

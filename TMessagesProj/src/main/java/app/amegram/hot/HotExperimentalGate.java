@@ -15,6 +15,9 @@ public final class HotExperimentalGate {
     }
 
     private static HotExperimental service() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("experimental") || !HotModulesManager.isModuleEnabled("experimental")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.EXPERIMENTAL);
         } catch (Throwable ignore) {

@@ -31,7 +31,7 @@ public final class HotKpmGate {
     }
 
     public static boolean isAvailable() {
-        return true;
+        return HotModulesManager.isModuleInstalledOnDisk("kpm");
     }
 
     public static boolean openStore(BaseFragment fragment, Context context) {

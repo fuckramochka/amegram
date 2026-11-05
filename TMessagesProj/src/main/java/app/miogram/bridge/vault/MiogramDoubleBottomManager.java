@@ -80,14 +80,18 @@ public class MiogramDoubleBottomManager {
      */
     public static boolean isModuleEnabled() {
         try {
+            if (!app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("vault")
+                    || !app.amegram.hot.HotModulesManager.isModuleEnabled("vault")) {
+                return false;
+            }
             Context ctx = ApplicationLoader.applicationContext;
             if (ctx != null) {
                 return ctx.getSharedPreferences("amegram_module_prefs", Context.MODE_PRIVATE)
-                        .getBoolean("doublebottom_enabled", true);
+                        .getBoolean("doublebottom_enabled", false);
             }
         } catch (Throwable ignore) {
         }
-        return true;
+        return false;
     }
 
     public static void setDuressActive(boolean active) {

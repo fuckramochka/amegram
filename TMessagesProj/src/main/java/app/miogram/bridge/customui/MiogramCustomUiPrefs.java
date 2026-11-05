@@ -179,7 +179,7 @@ public class MiogramCustomUiPrefs {
         try {
             return app.amegram.hot.HotModulesManager.isModuleEnabled("ame");
         } catch (Throwable ignore) {
-            return true;
+            return false;
         }
     }
 

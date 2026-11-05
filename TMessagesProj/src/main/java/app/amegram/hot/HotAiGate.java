@@ -16,6 +16,9 @@ public final class HotAiGate {
     private static volatile int nanoDownloadProgress = 0;
 
     public static HotAiText get() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("ai") || !HotModulesManager.isModuleEnabled("ai")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.AI_TEXT);
         } catch (Throwable ignore) {
@@ -38,6 +41,9 @@ public final class HotAiGate {
     }
 
     public static boolean isGeminiNano() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("ai") || !HotModulesManager.isModuleEnabled("ai")) {
+            return false;
+        }
         return HotModulesManager.getBool("ai", "gemini_nano", false);
     }
 

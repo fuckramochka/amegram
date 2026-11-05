@@ -12,6 +12,9 @@ public final class HotProfileGate {
     }
 
     private static HotProfile service() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("profile") || !HotModulesManager.isModuleEnabled("profile")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.PROFILE);
         } catch (Throwable ignore) {

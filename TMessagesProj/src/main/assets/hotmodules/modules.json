@@ -305,13 +305,13 @@
         "stable": {
           "version": "1.0.18",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ui-1.0.18.hmod",
-          "sha256": "7b956ab353c07959dbc0d2a027708fc27df940412cb0db4708be4bbf5f4f38ec",
+          "sha256": "acf7602ba44f3ee26795c30c8f26214bed11eebbe974063d784d86fda668f6d3",
           "minApp": 7112,
           "changelog": "Версія 1.0.18: компактний острівець музики (Dynamic Island) на екрані пін-коду з живим еквалайзером, що показується виключно під час відтворення треку, без зайвих заглушок.",
           "permissions": [
             "hook_ui"
           ],
-          "sizeBytes": 41244
+          "sizeBytes": 44496
         }
       },
       "history": [

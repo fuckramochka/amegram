@@ -147,12 +147,11 @@ markdown_utils/pip_controller/plugin_settings/dev_server` bridges;
 (99KB orchestrator: AST scan, perms, audit), `heroku_compat/module_runner`
 (userbot `.py` executor, module cache), `ui/` (dialog/bulletin/settings DSL).
 
-### 3.5 Bundled plugin + native shims
+### 3.5 Plugin shims & architecture (0 bundled plugins)
 
-- `assets/plugins/Custom Profile.plugin` (+ repo-root copy): Python shim
-  loading embedded zlib/base64 DEX (`cpb.CpbNative`) that installs LSPlant
-  hooks for profile decor. **Gated OFF on SDK≥36** (Android 16 hook NPEs);
-  works ≤35. Aliuhook 1.1.4 remains a dependency for the plugin engine.
+- Client uses 0 bundled plugins policy (no pre-packaged plugins in assets).
+- Plugins are downloaded/installed dynamically on-demand by the user.
+- Aliuhook 1.1.4 remains a dependency for the plugin engine.
 - `jni/miogram/`: `host_api.fbs` + `miogram_wasm.c` (compiled only if
   `third_party/wasm-micro-runtime` exists — it doesn't).
 - Repo-root `*.wasm` + `sdk/rust/miogram-plugin-sdk`: prebuilt/scaffold only.

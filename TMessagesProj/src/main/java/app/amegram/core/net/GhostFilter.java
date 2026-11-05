@@ -66,6 +66,10 @@ public final class GhostFilter {
 
     private static boolean ghostOn() {
         try {
+            if (!app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("ghost")
+                    || !app.amegram.hot.HotModulesManager.isModuleEnabled("ghost")) {
+                return false;
+            }
             return app.amegram.module.AmegramConfig.getBool("ghost_enabled", false);
         } catch (Throwable t) {
             return false;

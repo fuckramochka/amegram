@@ -20,6 +20,9 @@ public final class HotVaultGate {
     }
 
     private static HotVault service() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("vault") || !HotModulesManager.isModuleEnabled("vault")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.VAULT);
         } catch (Throwable ignore) {

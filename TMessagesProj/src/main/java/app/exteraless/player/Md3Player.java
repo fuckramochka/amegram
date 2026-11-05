@@ -18,11 +18,11 @@ public final class Md3Player {
     }
 
     public static boolean enabled() {
-        return true;
+        return app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("player") && app.amegram.hot.HotModulesManager.isModuleEnabled("player");
     }
 
     public static boolean miniEnabled() {
-        return AppearanceConfig.md3MiniPlayer();
+        return enabled() && AppearanceConfig.md3MiniPlayer();
     }
 
     private static boolean handles(MessageObject messageObject) {

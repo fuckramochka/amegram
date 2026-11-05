@@ -19,6 +19,9 @@ public final class HotTikTokGate {
     /** true = модуль обробив. */
     public static boolean tryOpen(String url) {
         if (!isTikTokUrl(url)) return false;
+        if (!HotModulesManager.isModuleInstalledOnDisk("tiktok") || !HotModulesManager.isModuleEnabled("tiktok")) {
+            return false;
+        }
         try {
             HotTikTok svc = HotModulesManager.getService(HotServices.TIKTOK);
             if (svc != null) return svc.openUrl(url);

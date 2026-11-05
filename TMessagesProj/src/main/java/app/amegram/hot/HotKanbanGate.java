@@ -12,6 +12,9 @@ public final class HotKanbanGate {
     }
 
     private static HotKanban service() {
+        if (!HotModulesManager.isModuleInstalledOnDisk("kanban") || !HotModulesManager.isModuleEnabled("kanban")) {
+            return null;
+        }
         try {
             return HotModulesManager.getService(HotServices.KANBAN);
         } catch (Throwable ignore) {

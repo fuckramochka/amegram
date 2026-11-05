@@ -612,7 +612,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         });
         actionBarLayout.setDelegate(this);
         Theme.loadWallpaper(true);
-        app.miogram.bridge.lyrics.MiogramFloatingLyricsTicker.getInstance().attach(this);
 
         checkCurrentAccount();
         updateCurrentConnectionState(currentAccount);
@@ -7128,7 +7127,6 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         isActive = false;
         activeInstanceCount--;
         unregisterReceiver(batteryReceiver);
-        app.miogram.bridge.lyrics.MiogramFloatingLyricsTicker.getInstance().detach();
 
         if (activeInstanceCount == 0) {
             onDestroyStaticResources();

@@ -1065,7 +1065,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             Bundle args = new Bundle();
             args.putLong("user_id", UserConfig.getInstance(currentAccount).getClientUserId());
             args.putBoolean("my_profile", true);
-            args.putBoolean("expandPhoto", true);
+            args.putBoolean("expandPhoto", false);
             args.putBoolean("hasMainTabs", true);
             return prepareTabFragment(new ProfileActivity(args));
         }

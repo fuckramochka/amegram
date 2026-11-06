@@ -2683,11 +2683,11 @@ public class ChatActivityEnterView extends FrameLayout implements
         }
         if (emojiButton != null) {
             setIconColorFilter(emojiButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
-            emojiButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 19));
+            emojiButton.setBackground(yumiComposerButton(0, 24));
         }
         if (attachButton != null) {
-            setIconColorFilter(attachButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
-            attachButton.setBackground(yumiComposerButton(YumiMd3.primaryContainer(), 18));
+            setIconColorFilter(attachButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            attachButton.setBackground(yumiComposerButton(0, 24));
         }
         if (botButton != null) {
             if (botButtonDrawable != null) {
@@ -2695,42 +2695,42 @@ public class ChatActivityEnterView extends FrameLayout implements
             } else {
                 setIconColorFilter(botButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
             }
-            botButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+            botButton.setBackground(yumiComposerButton(0, 24));
         }
         if (notifyButton != null) {
             notifyButton.setColorFilter(new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
-            notifyButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+            notifyButton.setBackground(yumiComposerButton(0, 24));
         }
         if (aiButton != null) {
             setIconColorFilter(aiButton, new PorterDuffColorFilter(YumiMd3.onSecondaryContainer(), PorterDuff.Mode.SRC_IN));
-            aiButton.setBackground(yumiComposerButton(YumiMd3.secondaryContainer(), 16));
+            aiButton.setBackground(yumiComposerButton(0, 16));
         }
         if (richButton != null) {
             setIconColorFilter(richButton, new PorterDuffColorFilter(YumiMd3.onSurface(), PorterDuff.Mode.SRC_IN));
-            richButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainer(), 16));
+            richButton.setBackground(yumiComposerButton(0, 16));
         }
         if (deleteRichDraftButton != null) {
             deleteRichDraftButton.setColorFilter(new PorterDuffColorFilter(YumiMd3.onErrorContainer(), PorterDuff.Mode.SRC_IN));
-            deleteRichDraftButton.setBackground(yumiComposerButton(YumiMd3.errorContainer(), 19));
+            deleteRichDraftButton.setBackground(yumiComposerButton(0, 19));
         }
         if (scheduledButton != null) {
-            setIconColorFilter(scheduledButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
-            scheduledButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+            setIconColorFilter(scheduledButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            scheduledButton.setBackground(yumiComposerButton(0, 24));
         }
         if (giftButton != null) {
-            setIconColorFilter(giftButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
-            giftButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+            setIconColorFilter(giftButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            giftButton.setBackground(yumiComposerButton(0, 24));
         }
         if (suggestButton != null) {
-            setIconColorFilter(suggestButton, new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
-            suggestButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+            setIconColorFilter(suggestButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
+            suggestButton.setBackground(yumiComposerButton(0, 24));
         }
         if (cancelBotButton != null) {
-            cancelBotButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+            cancelBotButton.setBackground(yumiComposerButton(0, 18));
         }
         if (expandStickersButton != null) {
             setIconColorFilter(expandStickersButton, new PorterDuffColorFilter(YumiMd3.onSurfaceVariant(), PorterDuff.Mode.SRC_IN));
-            expandStickersButton.setBackground(yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18));
+            expandStickersButton.setBackground(yumiComposerButton(0, 24));
         }
         if (sendButton != null) {
             if (!isInScheduleMode()) {
@@ -2885,7 +2885,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         emojiButton.setPadding(padding, padding, padding, padding);
         setIconColorFilter(emojiButton, new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
         emojiButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 19)
+                ? yumiComposerButton(0, 24)
                 : Theme.createInsetRoundRectDrawable(getThemedColor(Theme.key_listSelector), dp(19), dp(1), dp(3)));
         emojiButton.setOnClickListener(v -> {
             if (adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress()) {
@@ -3006,10 +3006,10 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             };
             attachButton.setScaleType(ImageView.ScaleType.CENTER);
-            attachButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+            attachButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.SRC_IN));
             attachButton.setImageResource(R.drawable.msg_input_attach2);
             attachButton.setBackground(useYumiChatComposer()
-                    ? yumiComposerButton(YumiMd3.primaryContainer(), 18)
+                    ? yumiComposerButton(0, 24)
                     : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
             messageEditTextContainer.addView(attachButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
             attachButton.setOnClickListener(v -> {
@@ -3434,17 +3434,26 @@ public class ChatActivityEnterView extends FrameLayout implements
                         }
                     }
 
-                    final float r = dpf2(19);
-                    paint.setColor(useYumiChatComposer() ? YumiMd3.composerSend() : getThemedColor(Theme.key_chat_messagePanelSend));
-                    final float margin = dpf2(3);
-                    final float height = dpf2(38);
-                    final float width = dpf2(38);
-                    backgroundRect.set(
-                            getMeasuredWidth() - width - margin,
-                            getMeasuredHeight() - height - margin,
-                            getMeasuredWidth() - margin,
-                            getMeasuredHeight() - margin
-                    );
+                    boolean md3 = useYumiChatComposer();
+                    final float size = dpf2(md3 ? 40 : 38);
+                    final float r = size / 2f;
+                    paint.setColor(md3 ? YumiMd3.composerSend() : getThemedColor(Theme.key_chat_messagePanelSend));
+
+                    if (md3) {
+                        final float cx = getMeasuredWidth() / 2f;
+                        final float cy = getMeasuredHeight() / 2f;
+                        backgroundRect.set(cx - r, cy - r, cx + r, cy + r);
+                    } else {
+                        final float margin = dpf2(3);
+                        final float height = dpf2(38);
+                        final float width = dpf2(38);
+                        backgroundRect.set(
+                                getMeasuredWidth() - width - margin,
+                                getMeasuredHeight() - height - margin,
+                                getMeasuredWidth() - margin,
+                                getMeasuredHeight() - margin
+                        );
+                    }
 
                     canvas.save();
                     canvas.scale(s, s, backgroundRect.centerX(), backgroundRect.centerY());
@@ -3935,7 +3944,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         final Drawable drawable1 = getContext().getResources().getDrawable(R.drawable.input_calendar1).mutate();
         final Drawable drawable2 = getContext().getResources().getDrawable(R.drawable.input_calendar2).mutate();
-        drawable1.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        drawable1.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         drawable2.setColorFilter(new PorterDuffColorFilter(getThemedColor(Theme.key_chat_recordedVoiceDot), PorterDuff.Mode.MULTIPLY));
         CombinedDrawable combinedDrawable = new CombinedDrawable(drawable1, drawable2);
 
@@ -3961,7 +3970,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         scheduledButton.setContentDescription(getString(R.string.ScheduledMessages));
         scheduledButton.setScaleType(ImageView.ScaleType.CENTER);
         scheduledButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                ? yumiComposerButton(0, 24)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         messageEditTextContainer.addView(scheduledButton, 2, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.RIGHT));
         scheduledButton.setOnClickListener(v -> {
@@ -4001,12 +4010,12 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         };
         giftButton.setImageResource(R.drawable.msg_input_gift);
-        giftButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        giftButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         giftButton.setVisibility(GONE);
         giftButton.setContentDescription(getString(R.string.GiftPremium));
         giftButton.setScaleType(ImageView.ScaleType.CENTER);
         giftButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                ? yumiComposerButton(0, 24)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         attachLayout.addView(giftButton, 0, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.CENTER_VERTICAL | Gravity.RIGHT));
         giftButton.setOnClickListener(v -> {
@@ -4053,10 +4062,10 @@ public class ChatActivityEnterView extends FrameLayout implements
 
         suggestButton = new ImageView(getContext());
         suggestButton.setScaleType(ImageView.ScaleType.CENTER);
-        suggestButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.primary() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
+        suggestButton.setColorFilter(new PorterDuffColorFilter(useYumiChatComposer() ? YumiMd3.onSurfaceVariant() : getThemedColor(Theme.key_glass_defaultIcon), PorterDuff.Mode.MULTIPLY));
         suggestButton.setImageResource(R.drawable.input_suggest_paid_24);
         suggestButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                ? yumiComposerButton(0, 24)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         if (isLiveComment) {
             suggestButton.setTranslationX(dp(42));
@@ -4151,7 +4160,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         botButtonDrawable.setIcon(R.drawable.input_bot2, false);
         botButton.setScaleType(ImageView.ScaleType.CENTER);
         botButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                ? yumiComposerButton(0, 24)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         botButton.setVisibility(GONE);
         AndroidUtilities.updateViewVisibilityAnimated(botButton, false, 0.1f, false);
@@ -4247,7 +4256,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         expandStickersButton.setScaleY(0.1f);
         expandStickersButton.setAlpha(0.0f);
         expandStickersButton.setBackground(useYumiChatComposer()
-                ? yumiComposerButton(YumiMd3.surfaceContainerHigh(), 18)
+                ? yumiComposerButton(0, 24)
                 : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector)));
         sendButtonContainer.addView(expandStickersButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.RIGHT | Gravity.BOTTOM));
         expandStickersButton.setOnClickListener(v -> {
@@ -16924,7 +16933,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             updateColors();
             checkBackgroundRect();
             if (isNewDesignSendButton) {
-                canvas.drawRoundRect(backgroundRect, dp(RADIUS), dp(RADIUS), backgroundPaint);
+                float rad = app.exteraless.appearance.YougramExpressive.enabled() ? backgroundRect.height() / 2f : dp(RADIUS);
+                canvas.drawRoundRect(backgroundRect, rad, rad, backgroundPaint);
             }
 
             final boolean inactive = isInactive();
@@ -17262,17 +17272,29 @@ public class ChatActivityEnterView extends FrameLayout implements
         private static final int RADIUS = 19;
 
         private void checkBackgroundRect() {
-            final float margin = dpf2(3);
-            final float height = dpf2(38);
+            boolean md3 = app.exteraless.appearance.YougramExpressive.enabled();
+            final float height = dpf2(md3 ? 40 : 38);
             final float width = lerp(
                 Math.max(height, dpf2(10 + 10) + priceText.getCurrentWidth()),
                 height, sameWidthFactor);
-            backgroundRect.set(
-                    getMeasuredWidth() - width - margin,
-                    getMeasuredHeight() - height - margin,
-                    getMeasuredWidth() - margin,
-                    getMeasuredHeight() - margin
-            );
+            if (md3) {
+                final float margin = dpf2(4);
+                final float top = (getMeasuredHeight() - height) / 2f;
+                backgroundRect.set(
+                        getMeasuredWidth() - width - margin,
+                        top,
+                        getMeasuredWidth() - margin,
+                        top + height
+                );
+            } else {
+                final float margin = dpf2(3);
+                backgroundRect.set(
+                        getMeasuredWidth() - width - margin,
+                        getMeasuredHeight() - height - margin,
+                        getMeasuredWidth() - margin,
+                        getMeasuredHeight() - margin
+                );
+            }
         }
     }
 

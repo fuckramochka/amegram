@@ -428,13 +428,13 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
         Context ctx = getParentActivity();
         if (ctx == null) return;
         String[] companions = {
-                "Ame-chan ໒꒱ (" + MiogramLocale.get("Отаку, депресивна, ніжна", "Отаку, депрессивная, нежная", "Otaku, moody, sweet") + ")",
-                "OMGkawaiiAngel (KAngel) ✧† (" + MiogramLocale.get("Інтернет-Ангел, енергійна", "Интернет-Ангел, энергичная", "Internet Angel, hyperactive") + ")"
+                "Юмі (Yumi ໒꒱) (" + MiogramLocale.get("Цундере-хакерка, гостра на язик", "Цундере-хакерша, острая на язык", "Tsundere hacker, sharp-tongued") + ")",
+                "Міо (Mio ☕) (" + MiogramLocale.get("Домашній затишок, лагідна, чай", "Домашний уют, мягкая, чай", "Cozy peace, gentle, brews tea") + ")"
         };
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        builder.setTitle(MiogramLocale.get("Оберіть ШІ Супутника", "Выберите ИИ Спутника", "Select AI Companion"));
+        builder.setTitle(MiogramLocale.get("Оберіть ШІ-Супутницю", "Выберите ИИ-Спутницу", "Select AI Companion"));
         builder.setItems(companions, (dialog, which) -> {
-            MiogramCompanionPrefs.setActiveCompanion(which == 0 ? MiogramCompanionPrefs.COMPANION_AME : MiogramCompanionPrefs.COMPANION_KANGEL);
+            MiogramCompanionPrefs.setActiveCompanion(which == 0 ? MiogramCompanionPrefs.COMPANION_YUMI : MiogramCompanionPrefs.COMPANION_MIO);
             rebuildRowsAndNotify();
         });
         builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
@@ -1014,7 +1014,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == headerCompanionRow) {
-                        cell.setText(MiogramLocale.get("ШІ-Супутниця (Ame & KAngel)", "ИИ-Спутница (Ame & KAngel)", "AI Companion (Ame & KAngel)"));
+                        cell.setText(MiogramLocale.get("ШІ-Супутниці (Юмі & Міо)", "ИИ-Спутницы (Юми & Мио)", "AI Companions (Yumi & Mio)"));
                     } else if (position == headerProviderRow) {
                         cell.setText(MiogramLocale.get("Провайдер та рушій ШІ", "Провайдер и движок ИИ", "AI Provider & Engine"));
                     } else if (position == headerKeysRow) {
@@ -1033,9 +1033,9 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                     cell.setDrawLoading(false, 20, false);
 
                     if (position == companionChoiceRow) {
-                        boolean isAme = MiogramCompanionPrefs.isAmeActive();
-                        String companionName = isAme ? "Ame-chan ໒꒱" : "KAngel ✧†";
-                        cell.setTextAndValue(MiogramLocale.get("Активний супутник", "Активный спутник", "Active Companion"), companionName, true);
+                        boolean isYumi = MiogramCompanionPrefs.isYumiActive();
+                        String companionName = isYumi ? "Юмі ໒꒱" : "Міо ☕";
+                        cell.setTextAndValue(MiogramLocale.get("Активна супутниця", "Активная спутница", "Active Companion"), companionName, true);
                     } else if (position == providerRow) {
                         cell.setTextAndValue(getString(R.string.OEAiProvider), providerTitle(), true);
                     } else if (position == modelRow) {

@@ -364,7 +364,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Material Design 3 та навігація", "Material Design 3 и навигация", "Material Design 3 & navigation"));
         addActiveModuleRow(modules, "ai", ROW_AI, R.drawable.yumi_ic_auto_awesome, YumiMd3.primary(),
                 MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial intelligence (AI)"),
-                MiogramLocale.get("Асистент Ame / KAngel, чат і генерація", "Ассистент Ame / KAngel, чат и генерация", "Ame / KAngel companion, chat & generation"));
+                MiogramLocale.get("ШІ-супутниці Yumi & Mio, чат і генерація", "ИИ-спутницы Yumi & Mio, чат и генерация", "Yumi & Mio companion, chat & generation"));
         addActiveModuleRow(modules, "player", ROW_PLAYER, R.drawable.yumi_ic_music, YumiMd3.primary(),
                 MiogramLocale.get("Пошук музики та тексти", "Поиск музыки и тексты", "Music search & lyrics"),
                 MiogramLocale.get("Пошук у сервісах, відтворення, LRC", "Поиск в сервисах, воспроизведение, LRC", "Music service search, playback & LRC"));

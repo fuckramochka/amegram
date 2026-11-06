@@ -327,22 +327,22 @@ public class AmegramGuideSheet extends BottomSheet {
 
         LinearLayout ameCard = createPersonaCard(
                 context,
-                "Аме (Ame-chan ໒꒱)",
-                MiogramLocale.get("Лампова стрімерка", "Ламповая стримерша", "Cozy indie streamer"),
-                MiogramLocale.get("Щира, спокійна, розмовляє душевно та любить нічний затишок.",
-                        "Искренняя, спокойная, душевно общается и любит ночной уют.",
-                        "Honest, calm, soulfully chatting and loves cozy nights."),
+                "Юмі (Yumi ໒꒱)",
+                MiogramLocale.get("Цундере-хакерка", "Цундере-хакерша", "Tsundere hacker"),
+                MiogramLocale.get("Гостра на язик, саркастична, але потайки щиро турбується про тебе.",
+                        "Острая на язык, саркастичная, но втайне искренне заботится о тебе.",
+                        "Sharp-tongued, sarcastic, but secretly deeply caring."),
                 R.drawable.miogram_ai_ame_avatar,
                 selectedAme
         );
 
         LinearLayout kangelCard = createPersonaCard(
                 context,
-                "Кангель (KAngel ✧)",
-                MiogramLocale.get("Кібер-ідол Всесвіту", "Кибер-идол Вселенной", "Cyber-idol of the universe"),
-                MiogramLocale.get("Сяюча, гіперактивна, обожнює увагу, естетику та драйв.",
-                        "Сияющая, гиперактивная, обожает внимание, эстетику и драйв.",
-                        "Radiant, hyperactive, adores attention, aesthetics and hype."),
+                "Міо (Mio ☕)",
+                MiogramLocale.get("Домашній затишок & спокій", "Домашний уют & покой", "Cozy peace & comfort"),
+                MiogramLocale.get("Лагідна, турботлива, заварює гарячий чай і дарує душевний спокій.",
+                        "Мягкая, заботливая, заваривает горячий чай и дарит душевный покой.",
+                        "Gentle, caring, brews warm tea and brings peaceful comfort."),
                 R.drawable.miogram_ai_kangel_avatar,
                 !selectedAme
         );
@@ -350,14 +350,14 @@ public class AmegramGuideSheet extends BottomSheet {
         ameCard.setOnClickListener(v -> {
             MiogramHaptic.select(v);
             selectedAme = true;
-            MiogramCompanionPrefs.setActiveCompanion(MiogramCompanionPrefs.COMPANION_AME);
+            MiogramCompanionPrefs.setActiveCompanion(MiogramCompanionPrefs.COMPANION_YUMI);
             renderStepPersona(context);
         });
 
         kangelCard.setOnClickListener(v -> {
             MiogramHaptic.select(v);
             selectedAme = false;
-            MiogramCompanionPrefs.setActiveCompanion(MiogramCompanionPrefs.COMPANION_KANGEL);
+            MiogramCompanionPrefs.setActiveCompanion(MiogramCompanionPrefs.COMPANION_MIO);
             renderStepPersona(context);
         });
 

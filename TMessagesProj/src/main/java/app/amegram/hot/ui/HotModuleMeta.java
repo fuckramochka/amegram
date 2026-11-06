@@ -212,9 +212,9 @@ public final class HotModuleMeta {
         }
         if ("ai".equals(id)) {
             return MiogramLocale.get(
-                    "ШІ-супутник Ame / KAngel з пам'яттю та чатом",
-                    "ИИ-спутник Ame / KAngel с памятью и чатом",
-                    "AI companion Ame / KAngel with memory & chat");
+                    "ШІ-супутниці Yumi & Mio з пам'яттю та чатом",
+                    "ИИ-спутницы Yumi & Mio с памятью и чатом",
+                    "AI companions Yumi & Mio with memory & chat");
         }
         if ("experimental".equals(id)) {
             return MiogramLocale.get(

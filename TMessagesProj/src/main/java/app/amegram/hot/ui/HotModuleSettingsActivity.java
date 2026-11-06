@@ -175,7 +175,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
                 }
                 if (!hasRowId("ai_companion_open")) {
                     rows.add(HotRow.button("ai_companion_open",
-                            MiogramLocale.get("ШІ-компаньйон (Ame / KAngel)", "ИИ-компаньон (Ame / KAngel)", "AI Companion (Ame / KAngel)"),
+                            MiogramLocale.get("ШІ-супутниці (Юмі & Міо)", "ИИ-спутницы (Юми & Мио)", "AI Companions (Yumi & Mio)"),
                             MiogramLocale.get("Персона, стиль відповідей та пам'ять", "Персона, стиль ответов и память", "Persona, tone and memory")));
                 }
             } catch (Throwable ignore) {

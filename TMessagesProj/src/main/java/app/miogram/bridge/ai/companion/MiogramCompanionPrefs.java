@@ -28,8 +28,12 @@ public class MiogramCompanionPrefs {
     private static final String KEY_FOLLOWERS = "stat_followers";
     private static final String KEY_HERO_COLLAPSED = "hero_card_collapsed";
 
-    public static final String COMPANION_AME = "ame";
-    public static final String COMPANION_KANGEL = "kangel";
+    public static final String COMPANION_YUMI = "yumi";
+    public static final String COMPANION_MIO = "mio";
+
+    // Legacy aliases for backward compatibility with older data/plugins
+    public static final String COMPANION_AME = COMPANION_YUMI;
+    public static final String COMPANION_KANGEL = COMPANION_MIO;
 
     private static SharedPreferences getPrefs() {
         Context ctx = ApplicationLoader.applicationContext;
@@ -37,15 +41,30 @@ public class MiogramCompanionPrefs {
     }
 
     public static String getActiveCompanion() {
-        return getPrefs().getString(KEY_COMPANION, COMPANION_AME);
+        String active = getPrefs().getString(KEY_COMPANION, COMPANION_YUMI);
+        if ("ame".equalsIgnoreCase(active)) return COMPANION_YUMI;
+        if ("kangel".equalsIgnoreCase(active)) return COMPANION_MIO;
+        return active;
     }
 
     public static void setActiveCompanion(String companion) {
-        getPrefs().edit().putString(KEY_COMPANION, companion).apply();
+        String normalized = companion;
+        if ("ame".equalsIgnoreCase(companion)) normalized = COMPANION_YUMI;
+        else if ("kangel".equalsIgnoreCase(companion)) normalized = COMPANION_MIO;
+        getPrefs().edit().putString(KEY_COMPANION, normalized).apply();
+    }
+
+    public static boolean isYumiActive() {
+        String active = getActiveCompanion();
+        return COMPANION_YUMI.equalsIgnoreCase(active) || "ame".equalsIgnoreCase(active);
+    }
+
+    public static boolean isMioActive() {
+        return !isYumiActive();
     }
 
     public static boolean isAmeActive() {
-        return COMPANION_AME.equalsIgnoreCase(getActiveCompanion());
+        return isYumiActive();
     }
 
     public static boolean isContactsReplacedWithAi() {
@@ -134,8 +153,12 @@ public class MiogramCompanionPrefs {
         }
     }
 
+    public static void brewTea() {
+        applyStatDeltas(6, -20, -15, 100);
+    }
+
     public static void takeMagicPill() {
-        applyStatDeltas(5, -20, -10, 0);
+        brewTea();
     }
 
     public static class ChatMessage {

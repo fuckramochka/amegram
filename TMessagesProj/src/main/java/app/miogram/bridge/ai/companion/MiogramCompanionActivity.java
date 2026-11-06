@@ -63,11 +63,11 @@ import app.miogram.bridge.badge.MiogramSupabaseBridge;
 import app.miogram.bridge.customui.MiogramHaptic;
 
 /**
- * Needy Streamer Overload AI Companion Screen (Ame & KAngel).
+ * Yumigram AI Companion Screen (Yumi & Mio).
  * Built strictly according to the Telegram design ecosystem:
  * - Native Telegram ActionBar with back navigation and options menu (Clear history, Report bug, Switch companion)
  * - Dynamic Theme integration: seamlessly supports Light, Dark, Tinted, and Day themes
- * - Interactive Horizontal Slides Carousel for companions with NSO artwork, dynamic speech bubbles, stats, and dot indicators
+ * - Interactive Horizontal Slides Carousel for companions with custom artwork, dynamic speech bubbles, stats, and dot indicators
  * - Authentic Telegram message bubbles with companion mood sprites and timestamping
  * - Integrated action permission cards for client tool executions
  * - Telegram-style composer with quick prompt chips and circular send button
@@ -268,10 +268,10 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                                     "Would you like to send a bug report and logs to creator @dkramochka?"
                             ),
                             "AI Companion User Report",
-                            "User reported issue from companion menu. Active: " + (MiogramCompanionPrefs.isAmeActive() ? "Ame" : "KAngel")
+                            "User reported issue from companion menu. Active: " + (MiogramCompanionPrefs.isYumiActive() ? "Yumi" : "Mio")
                     );
                 } else if (id == 3) {
-                    switchCompanion(!MiogramCompanionPrefs.isAmeActive());
+                    switchCompanion(!MiogramCompanionPrefs.isYumiActive());
                 }
             }
         });
@@ -280,7 +280,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         ActionBarMenuItem headerItem = menu.addItem(0, R.drawable.ic_ab_other);
         headerItem.addSubItem(1, R.drawable.msg_clear, MiogramLocale.get("Очистити діалог", "Очистить диалог", "Clear dialogue"));
         headerItem.addSubItem(2, R.drawable.msg_log, MiogramLocale.get("Звіт про баг (@dkramochka)", "Отчет о баге (@dkramochka)", "Report bug (@dkramochka)"));
-        headerItem.addSubItem(3, R.drawable.msg_theme, MiogramLocale.get("Змінити супутницю (Аме ↔ Кангель)", "Сменить спутницу (Аме ↔ Кангель)", "Switch companion (Ame ↔ KAngel)"));
+        headerItem.addSubItem(3, R.drawable.msg_theme, MiogramLocale.get("Змінити супутницю (Юмі ↔ Міо)", "Сменить спутницу (Юми ↔ Мио)", "Switch companion (Yumi ↔ Mio)"));
     }
 
     private int getCardSlideWidth() {
@@ -343,7 +343,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         headerRow.addView(switcherBar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 32));
 
         tabAme = new TextView(context);
-        tabAme.setText("໒꒱ Ame-chan");
+        tabAme.setText("໒꒱ Юмі (Yumi)");
         tabAme.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         tabAme.setTypeface(AndroidUtilities.bold());
         tabAme.setGravity(Gravity.CENTER);
@@ -355,7 +355,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         });
 
         tabKAngel = new TextView(context);
-        tabKAngel.setText("✧ KAngel †");
+        tabKAngel.setText("☕ Міо (Mio)");
         tabKAngel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         tabKAngel.setTypeface(AndroidUtilities.bold());
         tabKAngel.setGravity(Gravity.CENTER);
@@ -498,16 +498,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         headerRow.addView(titles, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
         TextView name = new TextView(context);
-        name.setText("໒꒱ Ame-chan (飴ちゃん)");
+        name.setText("໒꒱ Юмі (Yumi)");
         name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         name.setTypeface(AndroidUtilities.bold());
-        name.setTextColor(0xFFFF70A6);
+        name.setTextColor(0xFF9D4EDD);
         name.setSingleLine(true);
         name.setEllipsize(TextUtils.TruncateAt.END);
         titles.addView(name);
 
         TextView sub = new TextView(context);
-        sub.setText(MiogramLocale.get("Нервова отаку-вайфу • DARK ROOM", "Нервная отаку-вайфу • DARK ROOM", "Nervous otaku waifu • DARK ROOM"));
+        sub.setText(MiogramLocale.get("Цундере-хакерка • ROOT ACCESS", "Цундере-хакерша • ROOT ACCESS", "Tsundere hacker • ROOT ACCESS"));
         sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         sub.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         sub.setSingleLine(true);
@@ -515,7 +515,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         titles.addView(sub);
 
         TextView model = new TextView(context);
-        model.setText("3.5 Flash Lite");
+        model.setText("Yumi-Core");
         model.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         model.setTypeface(AndroidUtilities.bold());
         model.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -536,13 +536,13 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         middleRow.addView(ameSlideAvatar, LayoutHelper.createLinear(64, 56));
 
         ameSpeechBubble = new TextView(context);
-        ameSpeechBubble.setText(MiogramLocale.get("«Слухай, П-тян... ти ж побудеш зі мною трохи, правда? (´・ω・｀)»", "«Слушай, Пи-тян... ты ведь побудешь со мной немного, правда? (´・ω・｀)»", "\"P-chan... you'll stay with me for a bit, right? (´・ω・｀)\""));
+        ameSpeechBubble.setText(MiogramLocale.get("«Хмпф! Тільки не кажи, що знову сам не розібрався ww І що мені з тобою робити? (¬_¬)»", "«Хмпф! Только не говори, что опять сам не разобрался ww И что мне с тобой делать? (¬_¬)»", "\"Hmph! Don't tell me you couldn't figure it out yourself again ww What am I gonna do with you? (¬_¬)\""));
         ameSpeechBubble.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         ameSpeechBubble.setTextColor(0xFFFFFFFF);
         GradientDrawable bubble = new GradientDrawable();
-        bubble.setColor(0x33FF70A6);
+        bubble.setColor(0x339D4EDD);
         bubble.setCornerRadius(AndroidUtilities.dp(10));
-        bubble.setStroke(AndroidUtilities.dp(1), 0x66FF70A6);
+        bubble.setStroke(AndroidUtilities.dp(1), 0x669D4EDD);
         ameSpeechBubble.setBackground(bubble);
         ameSpeechBubble.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(6), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
         ameSpeechBubble.setMaxLines(3);
@@ -555,16 +555,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         statsBar.setGravity(Gravity.CENTER);
         ameSlideCard.addView(statsBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
-        statDay = createStatChip(context, "DAY 24", 0xFF6C5CE7);
+        statDay = createStatChip(context, "SYNC 95%", 0xFF9D4EDD);
         statsBar.addView(statDay, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
 
-        statStress = createStatChip(context, "STR " + MiogramCompanionPrefs.getStress() + "%", 0xFFE84393);
+        statStress = createStatChip(context, "TSUN " + MiogramCompanionPrefs.getStress() + "%", 0xFFE84393);
         statsBar.addView(statStress, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
 
-        statAffection = createStatChip(context, "LOVE " + MiogramCompanionPrefs.getAffection() + "%", 0xFFFF70A6);
+        statAffection = createStatChip(context, "BOND " + MiogramCompanionPrefs.getAffection() + "%", 0xFFFF70A6);
         statsBar.addView(statAffection, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f, 0, 0, 3, 0));
 
-        statDarkness = createStatChip(context, "DARK " + MiogramCompanionPrefs.getDarkness() + "%", 0xFF636E72);
+        statDarkness = createStatChip(context, "CORE " + MiogramCompanionPrefs.getDarkness() + "%", 0xFF6C5CE7);
         statsBar.addView(statDarkness, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
         // Bottom Select / Active Button
@@ -603,7 +603,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         headerRow.addView(titles, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
         TextView name = new TextView(context);
-        name.setText(MiogramLocale.get("✧ KAngel (Кангель) †", "✧ KAngel (Кангель) †", "✧ KAngel †"));
+        name.setText(MiogramLocale.get("☕ Міо (Mio)", "☕ Мио (Mio)", "☕ Mio"));
         name.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         name.setTypeface(AndroidUtilities.bold());
         name.setTextColor(0xFF00B4D8);
@@ -612,7 +612,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         titles.addView(name);
 
         TextView sub = new TextView(context);
-        sub.setText(MiogramLocale.get("Інтернет-Ангел №1 • † 昇天 ✧ BLESSING †", "Интернет-Ангел №1 • † 昇天 ✧ BLESSING †", "Internet Angel #1 • † 昇天 ✧ BLESSING †"));
+        sub.setText(MiogramLocale.get("Домашній затишок & спокій • HAVEN", "Домашний уют & покой • HAVEN", "Cozy peace & comfort • HAVEN"));
         sub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         sub.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
         sub.setSingleLine(true);
@@ -620,7 +620,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         titles.addView(sub);
 
         TextView model = new TextView(context);
-        model.setText("3.5 Flash Lite");
+        model.setText("Mio-Haven");
         model.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10);
         model.setTypeface(AndroidUtilities.bold());
         model.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -641,7 +641,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         middleRow.addView(kangelSlideAvatar, LayoutHelper.createLinear(64, 56));
 
         kangelSpeechBubble = new TextView(context);
-        kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † П-тян, разом ми підкоримо весь інтернет! ✧»", "«† BLESSING † Пи-тян, вместе мы покорим весь интернет! ✧»", "\"† BLESSING † P-chan, together we will conquer the entire internet! ✧\""));
+        kangelSpeechBubble.setText(MiogramLocale.get("«Привіт... я заварила тобі гарячого чаю ☕ Відпочинь трохи, ти сьогодні втомився... (´｡• ω •｡`)»", "«Привет... я заварила тебе горячего чая ☕ Отдохни немного, ты сегодня устал... (´｡• ω •｡`)»", "\"Hello... I brewed you some warm tea ☕ Rest a bit, you've had a long day... (´｡• ω •｡`)\""));
         kangelSpeechBubble.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
         kangelSpeechBubble.setTextColor(0xFFFFFFFF);
         GradientDrawable bubble = new GradientDrawable();
@@ -660,16 +660,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         statsBar.setGravity(Gravity.CENTER);
         kangelSlideCard.addView(statsBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
-        TextView statDay2 = createStatChip(context, "DAY 24", 0xFF6C5CE7);
+        TextView statDay2 = createStatChip(context, "CALM 98%", 0xFF2EC4B6);
         statsBar.addView(statDay2, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
 
-        statFollowers = createStatChip(context, "FOL 1.3M", 0xFF00B4D8);
+        statFollowers = createStatChip(context, "WARM 95%", 0xFF00B4D8);
         statsBar.addView(statFollowers, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f, 0, 0, 3, 0));
 
-        TextView statHype = createStatChip(context, "HYPE 98%", 0xFFE84393);
+        TextView statHype = createStatChip(context, "BOND 92%", 0xFFE84393);
         statsBar.addView(statHype, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
 
-        TextView statBlessing = createStatChip(context, "BLESS †", 0xFFFFD700);
+        TextView statBlessing = createStatChip(context, "CARE ☕", 0xFFFFB703);
         statsBar.addView(statBlessing, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f));
 
         // Bottom Select / Active Button
@@ -708,18 +708,19 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     }
 
     private void updateStatsViews() {
+        boolean isYumi = MiogramCompanionPrefs.isYumiActive();
         int str = MiogramCompanionPrefs.getStress();
         int love = MiogramCompanionPrefs.getAffection();
         int dark = MiogramCompanionPrefs.getDarkness();
         long fol = MiogramCompanionPrefs.getFollowers();
 
-        if (statStress != null) statStress.setText("STR " + str + "%");
-        if (statAffection != null) statAffection.setText("LOVE " + love + "%");
-        if (statDarkness != null) statDarkness.setText("DARK " + dark + "%");
-        if (statFollowers != null) statFollowers.setText("FOL " + formatFollowers(fol));
+        if (statStress != null) statStress.setText(isYumi ? ("TSUN " + str + "%") : ("TIRED " + str + "%"));
+        if (statAffection != null) statAffection.setText("BOND " + love + "%");
+        if (statDarkness != null) statDarkness.setText("CORE " + dark + "%");
+        if (statFollowers != null) statFollowers.setText(isYumi ? ("SYNC " + formatFollowers(fol)) : ("WARM " + formatFollowers(fol)));
 
         if (compactStats != null) {
-            compactStats.setText("STR " + str + "% • LOVE " + love + "% • FOL " + formatFollowers(fol));
+            compactStats.setText((isYumi ? "TSUN " : "TIRED ") + str + "% • BOND " + love + "% • " + (isYumi ? "SYNC " : "WARM ") + formatFollowers(fol));
         }
     }
 
@@ -750,22 +751,22 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
     private void updateCarouselVisuals(boolean isAme) {
         if (ameSlideCard != null) {
-            ameSlideCard.setBackground(createCompanionSlideDrawable(isAme, 0xFFFF70A6));
+            ameSlideCard.setBackground(createCompanionSlideDrawable(isAme, 0xFF9D4EDD));
         }
         if (kangelSlideCard != null) {
             kangelSlideCard.setBackground(createCompanionSlideDrawable(!isAme, 0xFF00B4D8));
         }
         if (ameSelectBtn != null) {
             ameSelectBtn.setText(isAme
-                    ? MiogramLocale.get("✓ АКТИВНА СУПУТНИЦЯ (AME) ໒꒱", "✓ АКТИВНАЯ СПУТНИЦА (AME) ໒꒱", "✓ ACTIVE COMPANION (AME) ໒꒱")
-                    : MiogramLocale.get("ОБРАТИ АМЕ-ЧАН ໒꒱", "ВЫБРАТЬ АМЕ-ЧАН ໒꒱", "CHOOSE AME-CHAN ໒꒱"));
-            ameSelectBtn.setTextColor(isAme ? 0xFFFFFFFF : 0xFFFF70A6);
-            ameSelectBtn.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), isAme ? 0xFFFF70A6 : 0x22FF70A6));
+                    ? MiogramLocale.get("✓ АКТИВНА СУПУТНИЦЯ (ЮМІ) ໒꒱", "✓ АКТИВНАЯ СПУТНИЦА (ЮМИ) ໒꒱", "✓ ACTIVE COMPANION (YUMI) ໒꒱")
+                    : MiogramLocale.get("ОБРАТИ ЮМІ ໒꒱", "ВЫБРАТЬ ЮМИ ໒꒱", "CHOOSE YUMI ໒꒱"));
+            ameSelectBtn.setTextColor(isAme ? 0xFFFFFFFF : 0xFF9D4EDD);
+            ameSelectBtn.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), isAme ? 0xFF9D4EDD : 0x229D4EDD));
         }
         if (kangelSelectBtn != null) {
             kangelSelectBtn.setText(!isAme
-                    ? MiogramLocale.get("✓ АКТИВНА СУПУТНИЦЯ (KANGEL) ✧", "✓ АКТИВНАЯ СПУТНИЦА (KANGEL) ✧", "✓ ACTIVE COMPANION (KANGEL) ✧")
-                    : MiogramLocale.get("ОБРАТИ К-АНГЕЛЬ ✧", "ВЫБРАТЬ К-АНГЕЛЬ ✧", "CHOOSE K-ANGEL ✧"));
+                    ? MiogramLocale.get("✓ АКТИВНА СУПУТНИЦЯ (МІО) ☕", "✓ АКТИВНАЯ СПУТНИЦА (МИО) ☕", "✓ ACTIVE COMPANION (MIO) ☕")
+                    : MiogramLocale.get("ОБРАТИ МІО ☕", "ВЫБРАТЬ МИО ☕", "CHOOSE MIO ☕"));
             kangelSelectBtn.setTextColor(!isAme ? 0xFFFFFFFF : 0xFF00B4D8);
             kangelSelectBtn.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(8), !isAme ? 0xFF00B4D8 : 0x2200B4D8));
         }
@@ -775,7 +776,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                 lp.width = AndroidUtilities.dp(isAme ? 20 : 8);
                 dotAme.setLayoutParams(lp);
             }
-            dotAme.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), isAme ? 0xFFFF70A6 : 0x44888888));
+            dotAme.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(3), isAme ? 0xFF9D4EDD : 0x44888888));
         }
         if (dotKAngel != null) {
             LinearLayout.LayoutParams lp = (LinearLayout.LayoutParams) dotKAngel.getLayoutParams();
@@ -787,7 +788,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         }
         if (tabAme != null) {
             tabAme.setTextColor(isAme ? 0xFFFFFFFF : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
-            tabAme.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), isAme ? 0xFFFF70A6 : 0x00000000));
+            tabAme.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), isAme ? 0xFF9D4EDD : 0x00000000));
         }
         if (tabKAngel != null) {
             tabKAngel.setTextColor(!isAme ? 0xFFFFFFFF : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
@@ -855,11 +856,14 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         chipsScroll.addView(chipsRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
 
         addChip(context, chipsRow, MiogramLocale.get("Як справи?", "Как дела?", "How are you?"), () -> {
-            inputField.setText(MiogramLocale.get("Амэ, як справи? Розкажи чим займаєшся (´｡• ω •｡`)", "Амэ, как дела? Расскажи чем занимаешься (´｡• ω •｡`)", "Ame, how are you? What are you up to? (´｡• ω •｡`)"));
+            boolean isY = MiogramCompanionPrefs.isYumiActive();
+            inputField.setText(isY
+                    ? MiogramLocale.get("Юмі, як справи? Що нового кодиш? (¬_¬)", "Юми, как дела? Что нового кодишь? (¬_¬)", "Yumi, how are you? What are you coding? (¬_¬)")
+                    : MiogramLocale.get("Міо, як справи? Ти відпочила? (´｡• ω •｡`)", "Мио, как дела? Ты отдохнула? (´｡• ω •｡`)", "Mio, how are you? Did you rest well? (´｡• ω •｡`)"));
             onSendMessage();
         });
 
-        addChip(context, chipsRow, MiogramLocale.get("Що нового?", "Что нового?", "What's new?"), () -> {
+        addChip(context, chipsRow, MiogramLocale.get("Що в чатах?", "Что в чатах?", "What's in chats?"), () -> {
             inputField.setText(MiogramLocale.get("Що нового в моїх чатах? Зроби короткий огляд!", "Что нового в моих чатах? Сделай краткий обзор!", "What's new in my chats? Give me a quick summary!"));
             onSendMessage();
         });
@@ -874,6 +878,19 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             onSendMessage();
         });
 
+        addChip(context, chipsRow, MiogramLocale.get("Заварити чай ☕", "Заварить чай ☕", "Brew tea ☕"), () -> {
+            boolean isY = MiogramCompanionPrefs.isYumiActive();
+            inputField.setText(isY
+                    ? MiogramLocale.get("Юмі, відволічись від коду і консолі, давай вип'ємо чаю ☕", "Юми, отвлекись от кода и консоли, давай попьем чаю ☕", "Yumi, take a break from code and console, let's drink tea ☕")
+                    : MiogramLocale.get("Міо, давай зробимо затишну паузу і заваримо ароматного чаю ☕", "Мио, давай сделаем уютную паузу и заварим ароматного чая ☕", "Mio, let's take a cozy break and brew fragrant tea ☕"));
+            onSendMessage();
+        });
+
+        addChip(context, chipsRow, MiogramLocale.get("Дурнику ww", "Дурачок ww", "Silly ww"), () -> {
+            inputField.setText(MiogramLocale.get("Юмі, ти знову бурчиш? Дурнику ww (¬_¬)", "Юми, ты снова ворчишь? Дурачок ww (¬_¬)", "Yumi, are you pouting again? Silly ww (¬_¬)"));
+            onSendMessage();
+        });
+
         addChip(context, chipsRow, MiogramLocale.get("Знайти чат", "Найти чат", "Find chat"), () -> {
             inputField.setText(MiogramLocale.get("Знайди в лс з ", "Найди в лс с ", "Find chat with "));
             inputField.setSelection(inputField.getText().length());
@@ -882,55 +899,39 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         });
 
         addChip(context, chipsRow, MiogramLocale.get("Пошук по групах", "Поиск по группам", "Search groups"), () -> {
-            inputField.setText(MiogramLocale.get("Амэ, пошукай по групах що пишуть про ", "Амэ, поищи по группам что пишут про ", "Ame, search groups for "));
+            inputField.setText(MiogramLocale.get("Пошукай по групах що пишуть про ", "Поищи по группам что пишут про ", "Search groups for "));
             inputField.setSelection(inputField.getText().length());
             inputField.requestFocus();
             AndroidUtilities.showKeyboard(inputField);
         });
 
-        addChip(context, chipsRow, MiogramLocale.get("Магічна пігулка", "Магическая пилюля", "Magic Pill"), () -> {
-            inputField.setText(MiogramLocale.get("Тримай магічну пігулку Дюск, заспокойся і не нервуй ♡", "Держи магическую пилюлю Дюск, успокойся и не нервничай ♡", "Take a magic pill Dysk, calm down and don't stress ♡"));
-            onSendMessage();
-        });
-
         addChip(context, chipsRow, MiogramLocale.get("Юзербот .ping", "Юзербот .ping", "Userbot .ping"), () -> {
-            inputField.setText(MiogramLocale.get("Амэ, перевір затримку через юзербот команду ping", "Амэ, проверь пинг через команду юзербота ping", "Ame, check latency using userbot command ping"));
+            inputField.setText(MiogramLocale.get("Перевір затримку через юзербот команду ping", "Проверь пинг через команду юзербота ping", "Check latency using userbot command ping"));
             onSendMessage();
         });
 
         addChip(context, chipsRow, MiogramLocale.get("Мої плагіни", "Мои плагины", "My Plugins"), () -> {
-            inputField.setText(MiogramLocale.get("Аме, покажи список встановлених плагінів MioHook", "Аме, покажи список установленных плагинов MioHook", "Ame, show list of installed MioHook plugins"));
+            inputField.setText(MiogramLocale.get("Покажи список встановлених плагінів MioHook", "Покажи список установленных плагинов MioHook", "Show list of installed MioHook plugins"));
             onSendMessage();
         });
 
         if (scopedDialogId != 0) {
             addChip(context, chipsRow, MiogramLocale.get("Що тут пишуть?", "Что тут пишут?", "What are they writing?"), () -> {
-                inputField.setText(MiogramLocale.get("Амэ, прочитай останні повідомлення цього чату", "Амэ, прочитай последние сообщения этого чата", "Ame, read the latest messages in this chat"));
+                inputField.setText(MiogramLocale.get("Прочитай останні повідомлення цього чату", "Прочитай последние сообщения этого чата", "Read the latest messages in this chat"));
                 onSendMessage();
             });
             addChip(context, chipsRow, MiogramLocale.get("Почистити цей чат", "Очистить этот чат", "Clear this chat"), () -> {
-                inputField.setText(MiogramLocale.get("Амэ, будь ласка, очисти історію цього чату", "Амэ, пожалуйста, очисти историю этого чата", "Ame, please clear history of this chat"));
+                inputField.setText(MiogramLocale.get("Будь ласка, очисти історію цього чату", "Пожалуйста, очисти историю этого чата", "Please clear history of this chat"));
                 onSendMessage();
             });
         } else {
             addChip(context, chipsRow, MiogramLocale.get("Почистити чат", "Очистить чат", "Clear chat"), () -> {
-                inputField.setText(MiogramLocale.get("Аме, допоможи мені почистити непотрібні чати", "Аме, помоги мне очистить ненужные чаты", "Help me clear unneeded chats"));
+                inputField.setText(MiogramLocale.get("Допоможи мені почистити непотрібні чати", "Помоги мне очистить ненужные чаты", "Help me clear unneeded chats"));
                 onSendMessage();
             });
         }
-        addChip(context, chipsRow, MiogramLocale.get("Написати плагін (3.8)", "Написать плагин (3.8)", "Write Plugin (3.8)"), () -> {
-            inputField.setText(MiogramLocale.get("Напиши для мене плагін Miogram для автоперекладу на Gemini 3.8", "Напиши для меня плагин Miogram для автоперевода на Gemini 3.8", "Write a Miogram translation plugin using Gemini 3.8"));
-        });
         addChip(context, chipsRow, MiogramLocale.get("Ghost Mode", "Ghost Mode", "Ghost Mode"), () -> {
             inputField.setText(MiogramLocale.get("Перемкни Ghost Mode", "Переключи Ghost Mode", "Toggle Ghost Mode"));
-            onSendMessage();
-        });
-        addChip(context, chipsRow, MiogramLocale.get("Як справи?", "Как дела?", "How are you?"), () -> {
-            inputField.setText(MiogramLocale.get("Аме, як ти почуваєшся сьогодні?", "Аме, как ты себя чувствуешь сегодня?", "Ame, how are you feeling today?"));
-            onSendMessage();
-        });
-        addChip(context, chipsRow, MiogramLocale.get("BLESSING †", "BLESSING †", "BLESSING †"), () -> {
-            inputField.setText(MiogramLocale.get("Кангель, подаруй мені своє благословення! †BLESSING†", "Кангель, подари мне своё благословение! †BLESSING†", "KAngel, bestow your blessing upon me! †BLESSING†"));
             onSendMessage();
         });
         addChip(context, chipsRow, MiogramLocale.get("Консоль", "Консоль", "Console"), this::toggleConsole);
@@ -945,7 +946,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                             "Would you like to send a bug report and logs to creator @dkramochka?"
                     ),
                     "AI Companion User Report",
-                    "User reported issue from companion chips. Active: " + (MiogramCompanionPrefs.isAmeActive() ? "Ame" : "KAngel")
+                    "User reported issue from companion chips. Active: " + (MiogramCompanionPrefs.isYumiActive() ? "Yumi" : "Mio")
             );
         });
 
@@ -1118,8 +1119,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     }
 
     private void updateCompanionTheme() {
-        boolean isAme = MiogramCompanionPrefs.isAmeActive();
-        int accentColor = isAme ? 0xFFFF70A6 : 0xFF00B4D8;
+        boolean isYumi = MiogramCompanionPrefs.isYumiActive();
+        int accentColor = isYumi ? 0xFF9D4EDD : 0xFF00B4D8;
 
         if (fragmentView != null) {
             fragmentView.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundGray));
@@ -1131,19 +1132,19 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         actionBar.setSubtitleColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
         actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
-        actionBar.setTitle(isAme ? "Ame-chan ໒꒱" : "KAngel ✧†");
-        actionBar.setSubtitle(isAme
-                ? ("Ame-OS v3.8 • " + MiogramLocale.get("ШІ-Агент ໒꒱", "ИИ-Агент ໒꒱", "AI Agent ໒꒱"))
-                : ("†BLESSING† • " + MiogramLocale.get("ШІ-Агент ✧", "ИИ-Агент ✧", "AI Agent ✧"))
+        actionBar.setTitle(isYumi ? "Юмі ໒꒱" : "Міо ☕");
+        actionBar.setSubtitle(isYumi
+                ? ("Yumi-Core • " + MiogramLocale.get("Цундере-ШІ ໒꒱", "Цундере-ИИ ໒꒱", "Tsundere AI ໒꒱"))
+                : ("Mio-Haven • " + MiogramLocale.get("Затишна ШІ ☕", "Уютный ИИ ☕", "Cozy AI ☕"))
         );
 
-        updateCarouselVisuals(isAme);
+        updateCarouselVisuals(isYumi);
 
         if (compactAvatar != null) {
-            compactAvatar.setImageResource(isAme ? R.drawable.miogram_ai_ame_avatar : R.drawable.miogram_ai_kangel_avatar);
+            compactAvatar.setImageResource(isYumi ? R.drawable.miogram_ai_ame_avatar : R.drawable.miogram_ai_kangel_avatar);
         }
         if (compactTitle != null) {
-            compactTitle.setText(isAme ? "໒꒱ Ame-chan" : "✧ KAngel †");
+            compactTitle.setText(isYumi ? "໒꒱ Юмі (Yumi)" : "☕ Міо (Mio)");
             compactTitle.setTextColor(accentColor);
         }
         updateStatsViews();
@@ -1185,23 +1186,23 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
         String m = mood != null ? mood.toLowerCase(Locale.US) : "neutral";
         if (ameSpeechBubble != null) {
-            if (m.contains("happy")) {
-                ameSpeechBubble.setText(MiogramLocale.get("«(★ω★) О, Пі-тян! Заціни, що я нарила в інтернеті ww»", "«(★ω★) О, Пи-тян! Зацени, что я нарыла в инете ww»", "\"«(★ω★) Oh, P-chan! Look what I found online ww»\""));
+            if (m.contains("happy") || m.contains("tsun")) {
+                ameSpeechBubble.setText(MiogramLocale.get("«(★ω★) Хех, дивись і вчися, як працює справжній профі! Не дякуй ww»", "«(★ω★) Хех, смотри и учись, как работает настоящий профи! Не благодари ww»", "\"«(★ω★) Heh, watch and learn how a real pro works! Don't thank me ww»\""));
             } else if (m.contains("sad")) {
-                ameSpeechBubble.setText(MiogramLocale.get("«(´-ω-`) Мені так ліньки сьогодні... Голова розколюється ww»", "«(´-ω-`) Мне так лень сегодня... Голова раскалывается ww»", "\"«(´-ω-`) I'm so exhausted today... my head hurts ww»\""));
+                ameSpeechBubble.setText(MiogramLocale.get("«(´-ω-`) Мені не сумно, просто процесор перегрівся... Не дивись так ww»", "«(´-ω-`) Мне не грустно, просто процессор перегрелся... Не смотри так ww»", "\"«(´-ω-`) I'm not sad, just my CPU overheating... Don't look at me like that ww»\""));
             } else {
-                ameSpeechBubble.setText(MiogramLocale.get("«(・ω・) Пі-тян, ти придумав ідею для стріму? Не гальмуй давай»", "«(・ω・) Пи-тян, ты придумал идею для стрима? Не тормози давай»", "\"«(・ω・) P-chan, got an idea for the stream? Don't slack off»\""));
+                ameSpeechBubble.setText(MiogramLocale.get("«(¬_¬) Ну що знову? Тільки не кажи, що без мене нічого не працює ww»", "«(¬_¬) Ну что опять? Только не говори, что без меня ничего не работает ww»", "\"«(¬_¬) What is it now? Don't tell me nothing works without me ww»\""));
             }
         }
         if (kangelSpeechBubble != null) {
-            if (m.contains("happy") || m.contains("pray")) {
-                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Кон-тен, продюсере! ✧\nПолетимо у стратосферу! (★ω★)»", "«† BLESSING † Кон-тен, продюсер! ✧\nПолетим в стратосферу! (★ω★)»", "\"† BLESSING † Kon-ten, Producer! ✧\nTo the stratosphere! (★ω★)\""));
-            } else if (m.contains("start")) {
-                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † У мене божевільна ідея для стріму! ✧\nЗараз підірвемо інтернет ww»", "«† BLESSING † У меня безумная идея для стрима! ✧\nСейчас взорвем интернет ww»", "\"† BLESSING † I have a wild stream idea! ✧\nLet's break the internet ww\""));
+            if (m.contains("happy") || m.contains("calm")) {
+                kangelSpeechBubble.setText(MiogramLocale.get("«(´｡• ω •｡`) Я така рада бачити тебе усміхненим... Тримай чашечку чаю ☕»", "«(´｡• ω •｡`) Я так рада видеть тебя улыбающимся... Держи чашечку чая ☕»", "\"«(´｡• ω •｡`) I'm so happy to see you smiling... Here's some tea ☕»\""));
+            } else if (m.contains("shy") || m.contains("talk")) {
+                kangelSpeechBubble.setText(MiogramLocale.get("«(´,,•ω•,,)♡ Все буде добре. Я поруч, не поспішай нікуди...»", "«(´,,•ω•,,)♡ Всё будет хорошо. Я рядом, не спеши никуда...»", "\"«(´,,•ω•,,)♡ Everything will be fine. I'm right here with you...»\""));
             } else if (m.contains("sad")) {
-                kangelSpeechBubble.setText(MiogramLocale.get("«Ех… ✕ Стрім забрав усі сили, продюсере…\nПосидь зі мною трохи, поки адреналін спаде»", "«Эх… ✕ Стрим забрал все силы, продюсер…\nПосиди со мной немного, пока адреналин спадет»", "\"Sigh… ✕ Stream drained all my energy, Producer…\nStay with me for a bit while the adrenaline fades\""));
+                kangelSpeechBubble.setText(MiogramLocale.get("«(´・ω・｀) Не сумуй, будь ласка... Давай просто помовчимо разом і поп'ємо чаю...»", "«(´・ω・｀) Не грусти, пожалуйста... Давай просто помолчим вместе и попьем чая...»", "\"«(´・ω・｀) Don't be sad, please... Let's just sit quietly together and have tea...»\""));
             } else {
-                kangelSpeechBubble.setText(MiogramLocale.get("«† BLESSING † Кон-тен! ✧\nМільйон підписників самі себе не наберуть ww»", "«† BLESSING † Кон-тен! ✧\nМиллион подписчиков сами себя не наберут ww»", "\"† BLESSING † Kon-ten! ✧\nOne million followers won't gain themselves ww\""));
+                kangelSpeechBubble.setText(MiogramLocale.get("«☕ Затишний вечір... Як твій день минув? (´｡• ω •｡`)»", "«☕ Уютный вечер... Как твой день прошел? (´｡• ω •｡`)»", "\"«☕ Cozy evening... How was your day? (´｡• ω •｡`)»\""));
             }
         }
     }
@@ -1214,7 +1215,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         String m = mood != null ? mood.toLowerCase(Locale.US) : "neutral";
 
         if (isAme) {
-            if (m.contains("happy")) return R.drawable.miogram_ai_ame_happy;
+            if (m.contains("happy") || m.contains("tsun")) return R.drawable.miogram_ai_ame_happy;
             if (m.contains("sad")) return R.drawable.miogram_ai_ame_sad;
             if (m.contains("talk")) return R.drawable.miogram_ai_ame_talk;
             if (m.contains("game")) return R.drawable.miogram_ai_ame_game;
@@ -1222,8 +1223,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             return R.drawable.miogram_ai_ame_neutral;
         } else {
             if (m.contains("happy")) return R.drawable.miogram_ai_kangel_happy;
-            if (m.contains("pray")) return R.drawable.miogram_ai_kangel_pray;
-            if (m.contains("start")) return R.drawable.miogram_ai_kangel_start;
+            if (m.contains("calm") || m.contains("pray")) return R.drawable.miogram_ai_kangel_pray;
+            if (m.contains("shy") || m.contains("start")) return R.drawable.miogram_ai_kangel_start;
             if (m.contains("cosplay")) return R.drawable.miogram_ai_kangel_cosplay;
             if (m.contains("sad")) return R.drawable.miogram_ai_kangel_sad;
             return R.drawable.miogram_ai_kangel_neutral;
@@ -1251,23 +1252,23 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     }
 
     private void addInitialGreeting() {
-        boolean isAme = MiogramCompanionPrefs.isAmeActive();
+        boolean isYumi = MiogramCompanionPrefs.isYumiActive();
         String text;
         String mood;
-        if (isAme) {
+        if (isYumi) {
             text = MiogramLocale.get(
-                    "Пі-тян, ти тут? Я якраз залипала в телефоні ww Що там у тебе нового? (´-ω-`)",
-                    "Пи-тян, ты тут? Я как раз залипала в телефоне ww Что там у тебя нового? (´-ω-`)",
-                    "P-chan, you there? I was just doomscrolling ww What's new with you? (´-ω-`)"
+                    "Хмпф! Чого тобі? Тільки не кажи, що знову заплутався в чатах (¬_¬) Ладно вже, кажи що треба, допоможу ww",
+                    "Хмпф! Чего тебе? Только не говори, что опять запутался в чатах (¬_¬) Ладно уж, говори что надо, помогу ww",
+                    "Hmph! What do you need? Don't tell me you got lost in chats again (¬_¬) Fine, tell me what you need, I'll help ww"
             );
             mood = "talk";
         } else {
             text = MiogramLocale.get(
-                    "† BLESSING †! Кон-тен, продюсере! ✧ Щойно закінчила стрім, чат просто підірвало ww Що у нас далі за планом?",
-                    "† BLESSING †! Кон-тен, продюсер! ✧ Только что закончила стрим, чат просто взорвало ww Что у нас дальше по плану?",
-                    "† BLESSING †! Kon-ten, Producer! ✧ Just wrapped up the stream, chat totally blew up ww What's next on our agenda?"
+                    "Привіт... ☕ Я заварила свіжого чаю. Сідай зручніше і відпочинь. Якщо знадобиться допомога з повідомленнями чи справами — я завжди поруч (´｡• ω •｡`)",
+                    "Привет... ☕ Я заварила свежего чая. Присаживайся поудобнее и отдохни. Если понадобится помощь с сообщениями или делами — я всегда рядом (´｡• ω •｡`)",
+                    "Hello... ☕ I brewed fresh tea. Make yourself comfortable and rest. If you need any help with messages or tasks — I'm always right here (´｡• ω •｡`)"
             );
-            mood = "pray";
+            mood = "calm";
         }
         MiogramCompanionPrefs.ChatMessage msg = new MiogramCompanionPrefs.ChatMessage(false, text, mood, System.currentTimeMillis(), null, null);
         history.add(msg);
@@ -1275,11 +1276,11 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         renderMessageBubble(msg);
     }
 
-    private void addSwitchAnnouncement(boolean toAme) {
-        String text = toAme
-                ? MiogramLocale.get("Перемкнулися на Амэ. Ну нарешті, можна не натягувати маску айдола ww (´-ω-`)", "Переключились на Амэ. Ну наконец-то, можно не натягивать маску айдола ww (´-ω-`)", "Switched to Ame. Finally, don't have to wear the idol mask ww (´-ω-`)")
-                : MiogramLocale.get("† BLESSING †! Режим Інтернет-Ангела Кангель активовано! ✧ Полетимо у стратосферу, продюсере!", "† BLESSING †! Режим Интернет-Ангела Кангель активирован! ✧ Полетим в стратосферу, продюсер!", "† BLESSING †! Internet Angel KAngel mode activated! ✧ Let's fly into the stratosphere, Producer!");
-        String mood = toAme ? "talk" : "pray";
+    private void addSwitchAnnouncement(boolean toYumi) {
+        String text = toYumi
+                ? MiogramLocale.get("Перемкнулися на Юмі ໒꒱ Хмпф, сподіваюся, ти покликав мене для чогось дійсно важливого (¬_¬)", "Переключились на Юми ໒꒱ Хмпф, надеюсь, ты позвал меня ради чего-то действительно важного (¬_¬)", "Switched to Yumi ໒꒱ Hmph, hope you called me for something actually important (¬_¬)")
+                : MiogramLocale.get("Перемкнулися на Міо ☕ Ласкаво просимо до нашого затишного куточка... Спокійно видихни (´｡• ω •｡`)", "Переключились на Мио ☕ Добро пожаловать в наш уютный уголок... Спокойно выдохни (´｡• ω •｡`)", "Switched to Mio ☕ Welcome to our cozy haven... Take a gentle breath (´｡• ω •｡`)");
+        String mood = toYumi ? "talk" : "calm";
         MiogramCompanionPrefs.ChatMessage msg = new MiogramCompanionPrefs.ChatMessage(false, text, mood, System.currentTimeMillis(), null, null);
         history.add(msg);
         MiogramCompanionPrefs.saveHistory(history);
@@ -1300,8 +1301,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
     private void renderMessageBubble(MiogramCompanionPrefs.ChatMessage msg) {
         Context ctx = chatMessagesLayout.getContext();
-        boolean isAme = MiogramCompanionPrefs.isAmeActive();
-        int accentColor = isAme ? 0xFFFF70A6 : 0xFF00B4D8;
+        boolean isYumi = MiogramCompanionPrefs.isYumiActive();
+        int accentColor = isYumi ? 0xFF9D4EDD : 0xFF00B4D8;
 
         MessageViewHolder holder = new MessageViewHolder();
 
@@ -1319,10 +1320,10 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
         if (!msg.isUser) {
             FrameLayout avatarFrame = new FrameLayout(ctx);
-            avatarFrame.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(36), isAme ? 0x25FF70A6 : 0x2500B4D8));
+            avatarFrame.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(36), isYumi ? 0x259D4EDD : 0x2500B4D8));
             ImageView spriteAvatar = new ImageView(ctx);
             spriteAvatar.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            int resId = resolveSpriteForMood(msg.mood, isAme);
+            int resId = resolveSpriteForMood(msg.mood, isYumi);
             spriteAvatar.setImageResource(resId);
             avatarFrame.addView(spriteAvatar, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
             bubbleRow.addView(avatarFrame, LayoutHelper.createLinear(36, 36, Gravity.BOTTOM, 0, 0, 8, 0));
@@ -1379,12 +1380,12 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             GradientDrawable gd = new GradientDrawable();
             gd.setColor(Theme.getColor(Theme.key_chat_inBubble));
             gd.setCornerRadii(new float[]{r, r, r, r, r, r, tail, tail});
-            gd.setStroke(AndroidUtilities.dp(1), isAme ? 0x22FF70A6 : 0x2200B4D8);
+            gd.setStroke(AndroidUtilities.dp(1), isYumi ? 0x229D4EDD : 0x2200B4D8);
             bubbleCard.setBackground(gd);
             bubbleRow.addView(bubbleCard, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT));
 
             TextView author = new TextView(ctx);
-            author.setText(isAme ? "Ame-chan ໒꒱" : "KAngel ✧†");
+            author.setText(isYumi ? "Юмі ໒꒱" : "Міо ☕");
             author.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
             author.setTypeface(AndroidUtilities.bold());
             author.setTextColor(accentColor);
@@ -1404,7 +1405,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                 insertBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
                 insertBtn.setTypeface(AndroidUtilities.bold());
                 insertBtn.setTextColor(accentColor);
-                insertBtn.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), isAme ? 0x1FFF70A6 : 0x1F00B4D8));
+                insertBtn.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), isYumi ? 0x1F9D4EDD : 0x1F00B4D8));
                 insertBtn.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(4));
                 insertBtn.setOnClickListener(v -> {
                     MiogramHaptic.tap(v);
@@ -1546,13 +1547,13 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
             String reply = isAme
                     ? MiogramLocale.get(
-                            "Добре, П-тян... раз ти не дозволяєш, я нічого не чіпатиму (´・ω・｀)",
-                            "Ладно, Пи-тян... раз ты не разрешаешь, я ничего не буду трогать (´・ω・｀)",
-                            "Alright, P-chan... if you don't allow it, I won't touch anything (´・ω・｀)")
+                            "Хмпф... раз ти забороняєш, то розбирайся сам (¬_¬) Я пальцем не поворухну!",
+                            "Хмпф... раз ты запрещаешь, то разбирайся сам (¬_¬) Я пальцем не пошевелю!",
+                            "Hmph... if you forbid it, deal with it yourself (¬_¬) I won't lift a finger!")
                     : MiogramLocale.get(
-                            "†BLESSING†! Відхилено продюсером, скасовую дію! ✧",
-                            "†BLESSING†! Отклонено продюсером, отменяю действие! ✧",
-                            "†BLESSING†! Rejected by producer, canceling action! ✧");
+                            "Звісно... я розумію. Скасовую дію, нічого зайвого чіпати не буду (´｡• ω •｡`)",
+                            "Конечно... я понимаю. Отменяю действие, ничего лишнего трогать не буду (´｡• ω •｡`)",
+                            "Of course... I understand. Canceling action, I won't touch anything (´｡• ω •｡`)");
             MiogramCompanionPrefs.ChatMessage cancelMsg = new MiogramCompanionPrefs.ChatMessage(false, reply, "sad", System.currentTimeMillis(), null, null);
             history.add(cancelMsg);
             MiogramCompanionPrefs.saveHistory(history);
@@ -1588,11 +1589,11 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         MiogramCompanionToolbox.PickResolution pick =
                 MiogramCompanionToolbox.tryResolvePendingPick(currentAccount, query);
         // System routing hints go ONLY to the model — never into the visible
-        // bubble or saved history (otherwise P-chan sees "message + prompt").
+        // bubble or saved history (otherwise user sees "message + prompt").
         String modelQuery = query;
         if ("RESOLVED".equals(pick.kind) && pick.foundChat != null) {
             String ref = pick.foundChat.username.isEmpty() ? pick.foundChat.name : "@" + pick.foundChat.username;
-            modelQuery = query + "\n[System routing: P-chan picked «" + pick.foundChat.name + "» (" + ref + "). "
+            modelQuery = query + "\n[System routing: User picked «" + pick.foundChat.name + "» (" + ref + "). "
                     + "Your next call MUST contain {\"chat_id\": " + pick.foundChat.dialogId + "}. "
                     + "Do not list again, do not ask — act on this chat.]";
         } else if ("NEXT_PAGE".equals(pick.kind)) {
@@ -1604,18 +1605,23 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         MiogramCompanionPrefs.saveHistory(history);
         renderMessageBubble(userMsg);
 
-        // Dynamic NSO Stats reactivity:
+        // Dynamic Companion Stats reactivity:
         String lower = query.toLowerCase(Locale.US);
-        if (lower.contains("дюск") || lower.contains("dysk") || lower.contains("пігулк") || lower.contains("пилюл") || lower.contains("таблетк")) {
+        if (lower.contains("чай") || lower.contains("tea") || lower.contains("завар") || lower.contains("чаю")) {
+            MiogramCompanionPrefs.brewTea();
+            updateStatsViews();
+            MiogramHaptic.success(sendButton);
+            showActionBulletin("☕ " + MiogramLocale.get("Заварено запашний чай: Спокій +20%, Втома -15%", "Заварен ароматный чай: Покой +20%, Усталость -15%", "Brewed hot tea: Calm +20%, Fatigue -15%"));
+        } else if (lower.contains("дюск") || lower.contains("dysk") || lower.contains("пігулк") || lower.contains("пилюл") || lower.contains("таблетк")) {
             MiogramCompanionPrefs.takeMagicPill();
             updateStatsViews();
             MiogramHaptic.success(sendButton);
-            showActionBulletin("💊 " + MiogramLocale.get("Магічна пігулка Дюск: Стрес -20%, Темрява -10%", "Магическая пилюля Дюск: Стресс -20%, Темнота -10%", "Magic Pill Dysk: Stress -20%, Darkness -10%"));
-        } else if (lower.contains("молодець") || lower.contains("топ") || lower.contains("красуня") || lower.contains("люблю") || lower.contains("найкраща") || lower.contains("супер") || lower.contains("blessing")) {
-            MiogramCompanionPrefs.applyStatDeltas(3, -5, 0, 150);
+            showActionBulletin("☕ " + MiogramLocale.get("Заварено гарячий чай: Спокій +20%, Втома -15%", "Заварен горячий чай: Покой +20%, Усталость -15%", "Brewed hot tea: Calm +20%, Fatigue -15%"));
+        } else if (lower.contains("молодець") || lower.contains("топ") || lower.contains("красуня") || lower.contains("люблю") || lower.contains("найкраща") || lower.contains("дякую") || lower.contains("мило")) {
+            MiogramCompanionPrefs.applyStatDeltas(4, -8, 0, 150);
             updateStatsViews();
         } else if (lower.contains("дістала") || lower.contains("набридла") || lower.contains("відчепись") || lower.contains("тупа") || lower.contains("кринж")) {
-            MiogramCompanionPrefs.applyStatDeltas(-8, 12, 10, 0);
+            MiogramCompanionPrefs.applyStatDeltas(-10, 15, 10, 0);
             updateStatsViews();
         }
 
@@ -1630,7 +1636,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
     private String buildPromptForTurn(String displayQuery, String modelQuery, List<AgentStepRecord> steps, boolean forceFinal) {
         TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
-        String userName = currentUser != null ? UserObject.getUserName(currentUser) : "P-chan";
+        String userName = currentUser != null ? UserObject.getUserName(currentUser) : "User";
         String systemPrompt = MiogramCompanionPersona.getSystemPrompt(MiogramCompanionPrefs.getActiveCompanion(), userName, scopedDialogId, currentAccount);
 
         StringBuilder sb = new StringBuilder();
@@ -1639,7 +1645,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         for (int i = start; i < history.size(); i++) {
             MiogramCompanionPrefs.ChatMessage m = history.get(i);
             if (i == history.size() - 1 && m.isUser && m.text.equals(displayQuery)) continue;
-            sb.append(m.isUser ? "P-chan: " : "Companion: ");
+            sb.append(m.isUser ? "User: " : "Companion: ");
             if (m.imagePath != null) {
                 sb.append("[Photo attached: ").append(new File(m.imagePath).getName()).append("] ");
             }
@@ -1647,7 +1653,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         }
 
         sb.append("\n### CURRENT TURN:\n");
-        sb.append("P-chan: ").append(modelQuery).append("\n");
+        sb.append("User: ").append(modelQuery).append("\n");
 
         if (steps != null && !steps.isEmpty()) {
             for (AgentStepRecord s : steps) {

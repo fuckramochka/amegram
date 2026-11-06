@@ -343,7 +343,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         headerRow.addView(switcherBar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 32));
 
         tabAme = new TextView(context);
-        tabAme.setText("໒꒱ Юмі (Yumi)");
+        tabAme.setText(MiogramLocale.get("໒꒱ Юмі", "໒꒱ Юми", "໒꒱ Yumi"));
         tabAme.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         tabAme.setTypeface(AndroidUtilities.bold());
         tabAme.setGravity(Gravity.CENTER);
@@ -355,7 +355,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         });
 
         tabKAngel = new TextView(context);
-        tabKAngel.setText("☕ Міо (Mio)");
+        tabKAngel.setText(MiogramLocale.get("☕ Міо", "☕ Мио", "☕ Mio"));
         tabKAngel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
         tabKAngel.setTypeface(AndroidUtilities.bold());
         tabKAngel.setGravity(Gravity.CENTER);
@@ -1132,7 +1132,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         actionBar.setSubtitleColor(Theme.getColor(Theme.key_actionBarDefaultSubtitle));
         actionBar.setItemsColor(Theme.getColor(Theme.key_actionBarDefaultIcon), false);
         actionBar.setItemsBackgroundColor(Theme.getColor(Theme.key_actionBarDefaultSelector), false);
-        actionBar.setTitle(isYumi ? "Юмі ໒꒱" : "Міо ☕");
+        actionBar.setTitle(isYumi ? MiogramLocale.get("Юмі ໒꒱", "Юми ໒꒱", "Yumi ໒꒱") : MiogramLocale.get("Міо ☕", "Мио ☕", "Mio ☕"));
         actionBar.setSubtitle(isYumi
                 ? ("Yumi-Core • " + MiogramLocale.get("Цундере-ШІ ໒꒱", "Цундере-ИИ ໒꒱", "Tsundere AI ໒꒱"))
                 : ("Mio-Haven • " + MiogramLocale.get("Затишна ШІ ☕", "Уютный ИИ ☕", "Cozy AI ☕"))
@@ -1144,7 +1144,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             compactAvatar.setImageResource(isYumi ? R.drawable.miogram_ai_ame_avatar : R.drawable.miogram_ai_kangel_avatar);
         }
         if (compactTitle != null) {
-            compactTitle.setText(isYumi ? "໒꒱ Юмі (Yumi)" : "☕ Міо (Mio)");
+            compactTitle.setText(isYumi ? MiogramLocale.get("໒꒱ Юмі", "໒꒱ Юми", "໒꒱ Yumi") : MiogramLocale.get("☕ Міо", "☕ Мио", "☕ Mio"));
             compactTitle.setTextColor(accentColor);
         }
         updateStatsViews();
@@ -1385,7 +1385,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             bubbleRow.addView(bubbleCard, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.LEFT));
 
             TextView author = new TextView(ctx);
-            author.setText(isYumi ? "Юмі ໒꒱" : "Міо ☕");
+            author.setText(isYumi ? MiogramLocale.get("Юмі ໒꒱", "Юми ໒꒱", "Yumi ໒꒱") : MiogramLocale.get("Міо ☕", "Мио ☕", "Mio ☕"));
             author.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
             author.setTypeface(AndroidUtilities.bold());
             author.setTextColor(accentColor);
@@ -1605,9 +1605,10 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         MiogramCompanionPrefs.saveHistory(history);
         renderMessageBubble(userMsg);
 
-        // Dynamic Companion Stats reactivity:
+        // Dynamic Companion Stats reactivity (Multilingual):
         String lower = query.toLowerCase(Locale.US);
-        if (lower.contains("чай") || lower.contains("tea") || lower.contains("завар") || lower.contains("чаю")) {
+        if (lower.contains("чай") || lower.contains("tea") || lower.contains("завар") || lower.contains("чаю")
+                || lower.contains("herbata") || lower.contains("tee") || lower.contains("té") || lower.contains("thé") || lower.contains("cha") || lower.contains("brew")) {
             MiogramCompanionPrefs.brewTea();
             updateStatsViews();
             MiogramHaptic.success(sendButton);
@@ -1617,10 +1618,15 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             updateStatsViews();
             MiogramHaptic.success(sendButton);
             showActionBulletin("☕ " + MiogramLocale.get("Заварено гарячий чай: Спокій +20%, Втома -15%", "Заварен горячий чай: Покой +20%, Усталость -15%", "Brewed hot tea: Calm +20%, Fatigue -15%"));
-        } else if (lower.contains("молодець") || lower.contains("топ") || lower.contains("красуня") || lower.contains("люблю") || lower.contains("найкраща") || lower.contains("дякую") || lower.contains("мило")) {
+        } else if (lower.contains("молодець") || lower.contains("топ") || lower.contains("красуня") || lower.contains("люблю") || lower.contains("найкраща") || lower.contains("дякую") || lower.contains("мило")
+                || lower.contains("good job") || lower.contains("cute") || lower.contains("love") || lower.contains("best") || lower.contains("thanks") || lower.contains("smart") || lower.contains("pretty")
+                || lower.contains("спасибо") || lower.contains("умница") || lower.contains("молодец") || lower.contains("милая") || lower.contains("люблю")
+                || lower.contains("dziękuję") || lower.contains("super") || lower.contains("danke") || lower.contains("gracias")) {
             MiogramCompanionPrefs.applyStatDeltas(4, -8, 0, 150);
             updateStatsViews();
-        } else if (lower.contains("дістала") || lower.contains("набридла") || lower.contains("відчепись") || lower.contains("тупа") || lower.contains("кринж")) {
+        } else if (lower.contains("дістала") || lower.contains("набридла") || lower.contains("відчепись") || lower.contains("тупа") || lower.contains("кринж")
+                || lower.contains("annoying") || lower.contains("stupid") || lower.contains("shut up") || lower.contains("cringe")
+                || lower.contains("достала") || lower.contains("надоела") || lower.contains("отвали") || lower.contains("тупая")) {
             MiogramCompanionPrefs.applyStatDeltas(-10, 15, 10, 0);
             updateStatsViews();
         }

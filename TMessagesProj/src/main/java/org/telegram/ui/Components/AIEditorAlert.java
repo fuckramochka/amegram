@@ -1334,7 +1334,37 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                 String apiKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
                 String rawText = this.text != null ? this.text.toString() : "";
                 if (!TextUtils.isEmpty(apiKey) && !TextUtils.isEmpty(rawText)) {
-                    String tone = (tab == TAB_FIX) ? "граматично правильний, природний" : (tab == TAB_STYLE ? "ввічливий, виразний" : "переклад");
+                    if (tab == TAB_TRANSLATE) {
+                        app.miogram.bridge.ai.MiogramAiService.translateText(rawText, to_lang, (translated, errTrans) -> {
+                            actionBarTitleTextView.setRightDrawable(null);
+                            loading = false;
+                            if (!TextUtils.isEmpty(translated)) {
+                                this.lastRequest[tab] = req;
+                                translatedTextLoading = false;
+                                translatedText = translated;
+                                adapter.update(true);
+                                updateButton();
+                            } else {
+                                errored = true;
+                                updateButton();
+                            }
+                        });
+                        return;
+                    }
+                    String tone = (tab == TAB_FIX) ? "граматично правильний, природний" : "ввічливий, виразний";
+                    if (tab == TAB_STYLE) {
+                        if (!TextUtils.isEmpty(promptText)) {
+                            tone = promptText;
+                        } else if (styleTabs != null) {
+                            TL_aicompose.AiComposeTone selTone = styleTabs.getSelectedTone();
+                            if (selTone instanceof TL_aicompose.TL_aiComposeToneDefault) {
+                                String t = ((TL_aicompose.TL_aiComposeToneDefault) selTone).tone;
+                                if (!TextUtils.isEmpty(t)) {
+                                    tone = t;
+                                }
+                            }
+                        }
+                    }
                     app.miogram.bridge.ai.MiogramAiService.rephraseText(rawText, tone, rephrased -> {
                         actionBarTitleTextView.setRightDrawable(null);
                         loading = false;
@@ -1478,7 +1508,38 @@ public class AIEditorAlert extends BottomSheetWithRecyclerListView implements No
                 String apiKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
                 String rawText = this.textRich != null ? MessageObject.formatRichMessage(this.textRich, false).toString() : (this.text != null ? this.text.toString() : "");
                 if (!TextUtils.isEmpty(apiKey) && !TextUtils.isEmpty(rawText)) {
-                    String tone = (tab == TAB_FIX) ? "граматично правильний, природний" : (tab == TAB_STYLE ? "ввічливий, виразний" : "переклад");
+                    if (tab == TAB_TRANSLATE) {
+                        app.miogram.bridge.ai.MiogramAiService.translateText(rawText, to_lang, (translated, errTrans) -> {
+                            actionBarTitleTextView.setRightDrawable(null);
+                            loading = false;
+                            if (!TextUtils.isEmpty(translated)) {
+                                TL_iv.RichMessage rich = org.telegram.ui.iv.RichMessageConvert.fromCharSequence(translated);
+                                this.lastRequestRich[tab] = req;
+                                translatedTextLoading = false;
+                                translatedTextRich = rich;
+                                adapter.update(true);
+                                updateButton();
+                            } else {
+                                errored = true;
+                                updateButton();
+                            }
+                        });
+                        return;
+                    }
+                    String tone = (tab == TAB_FIX) ? "граматично правильний, природний" : "ввічливий, виразний";
+                    if (tab == TAB_STYLE) {
+                        if (!TextUtils.isEmpty(promptText)) {
+                            tone = promptText;
+                        } else if (styleTabs != null) {
+                            TL_aicompose.AiComposeTone selTone = styleTabs.getSelectedTone();
+                            if (selTone instanceof TL_aicompose.TL_aiComposeToneDefault) {
+                                String t = ((TL_aicompose.TL_aiComposeToneDefault) selTone).tone;
+                                if (!TextUtils.isEmpty(t)) {
+                                    tone = t;
+                                }
+                            }
+                        }
+                    }
                     app.miogram.bridge.ai.MiogramAiService.rephraseText(rawText, tone, rephrased -> {
                         actionBarTitleTextView.setRightDrawable(null);
                         loading = false;

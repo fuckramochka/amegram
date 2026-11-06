@@ -169,6 +169,18 @@ public class MiogramAiService {
             addApiKeys(keys, NaConfig.INSTANCE.getTranscribeProviderGeminiApiKey().String());
             addApiKeys(keys, NaConfig.INSTANCE.getLlmProviderGeminiKey().String());
         } catch (Throwable ignored) {}
+
+        try {
+            for (app.exteraless.ai.data.Service svc : app.exteraless.ai.AiConfig.getServices()) {
+                if (svc != null && !TextUtils.isEmpty(svc.getKey())) {
+                    String k = svc.getKey().trim();
+                    if (k.startsWith("AIzaSy") || app.exteraless.ai.AiConfig.isGeminiService(svc)) {
+                        addApiKeys(keys, k);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+
         return new ArrayList<>(keys);
     }
 
@@ -213,6 +225,35 @@ public class MiogramAiService {
             }
             NaConfig.INSTANCE.getTranscribeProviderGeminiApiKey().setConfigString(primary);
             NaConfig.INSTANCE.getLlmProviderGeminiKey().setConfigString(primary);
+        } catch (Throwable ignored) {}
+
+        try {
+            if (!keys.isEmpty()) {
+                String firstKey = keys.get(0);
+                ArrayList<app.exteraless.ai.data.Service> services = app.exteraless.ai.AiConfig.getServices();
+                app.exteraless.ai.data.Service geminiService = null;
+                for (app.exteraless.ai.data.Service s : services) {
+                    if (s != null && app.exteraless.ai.AiConfig.isGeminiService(s)) {
+                        geminiService = s;
+                        break;
+                    }
+                }
+                if (geminiService != null) {
+                    geminiService.setKey(firstKey);
+                    app.exteraless.ai.AiConfig.saveServices(services);
+                } else if (services.isEmpty()) {
+                    geminiService = new app.exteraless.ai.data.Service(
+                            "gemini",
+                            app.exteraless.ai.data.Provider.PRESETS.get(0).getUrl(),
+                            getModel(),
+                            firstKey
+                    );
+                    geminiService.setName("Google Gemini");
+                    services.add(geminiService);
+                    app.exteraless.ai.AiConfig.saveServices(services);
+                    app.exteraless.ai.AiConfig.setSelectedServices(geminiService);
+                }
+            }
         } catch (Throwable ignored) {}
     }
 
@@ -385,14 +426,75 @@ public class MiogramAiService {
     /**
      * Rephrase / Improve / Grammar check text.
      */
-    public static void rephraseText(String text, String tone, Utilities.Callback<String> callback) {
-        String prompt = "Перепиши та покращ цей текст українською мовою у стилі '" + tone + "'. Виправ граматичні помилки та збережи суть:\n\n" + text;
+    public static final int QUICK_ACTION_FIX = 1;
+    public static final int QUICK_ACTION_REPHRASE = 2;
+    public static final int QUICK_ACTION_SHORTEN = 3;
+    public static final int QUICK_ACTION_CONTINUE = 4;
+
+    public static String cleanAiOutput(String text) {
+        if (text == null) return null;
+        String trimmed = text.trim();
+        if (trimmed.startsWith("\"") && trimmed.endsWith("\"") && trimmed.length() > 2) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        } else if (trimmed.startsWith("«") && trimmed.endsWith("»") && trimmed.length() > 2) {
+            trimmed = trimmed.substring(1, trimmed.length() - 1).trim();
+        }
+        return trimmed;
+    }
+
+    /**
+     * Rapid in-chat composer quick actions (Fix typos, Rephrase, Make concise, Continue thought).
+     */
+    public static void quickCompose(String text, int actionType, Utilities.Callback<String> callback) {
+        if (TextUtils.isEmpty(text)) {
+            AndroidUtilities.runOnUIThread(() -> callback.run(null));
+            return;
+        }
+        final String prompt;
+        switch (actionType) {
+            case QUICK_ACTION_FIX:
+                prompt = "Виправ усі граматичні, пунктуаційні та орфографічні помилки у цьому тексті мовою оригіналу. "
+                        + "Збережи зміст, смайлики та форматування. Поверни ТІЛЬКИ виправлений текст без вступу, пояснень та лапок:\n\n" + text;
+                break;
+            case QUICK_ACTION_SHORTEN:
+                prompt = "Зроби цей текст коротким і лаконічним (виділи головну суть без втрати сенсу) мовою оригіналу. "
+                        + "Поверни ТІЛЬКИ скорочений результат без лапок і вступу:\n\n" + text;
+                break;
+            case QUICK_ACTION_CONTINUE:
+                prompt = "Логічно та природно продовж цей текст на 1-2 речення в тому ж стилі та мовою оригіналу. "
+                        + "Поверни весь текст разом із продовженням без пояснень і лапок:\n\n" + text;
+                break;
+            case QUICK_ACTION_REPHRASE:
+            default:
+                prompt = "Перефразуй цей текст, зробивши його виразнішим, приємнішим та живішим, зберігаючи сенс і мову оригіналу. "
+                        + "Поверни ТІЛЬКИ результат без вступу, лапок та пояснень:\n\n" + text;
+                break;
+        }
+
         generateContent(prompt, getModel(), (res, err) -> {
             if (res != null) {
-                deliverProse("rephrase", callback, res);
+                deliverProse("quick_compose", callback, cleanAiOutput(res));
+            } else if (err != null && (err.contains("404") || err.contains("400") || err.contains("503")) && !FALLBACK_MODEL.equals(getModel())) {
+                generateContent(prompt, FALLBACK_MODEL, (fbRes, fbErr) -> {
+                    deliverProse("quick_compose", callback, fbRes != null ? cleanAiOutput(fbRes) : null);
+                });
+            } else {
+                AndroidUtilities.runOnUIThread(() -> callback.run(null));
+            }
+        });
+    }
+
+    /**
+     * Rephrase / Improve / Grammar check text.
+     */
+    public static void rephraseText(String text, String tone, Utilities.Callback<String> callback) {
+        String prompt = "Перепиши та покращ цей текст українською або мовою оригіналу у стилі '" + tone + "'. Виправ граматичні помилки та збережи суть:\n\n" + text;
+        generateContent(prompt, getModel(), (res, err) -> {
+            if (res != null) {
+                deliverProse("rephrase", callback, cleanAiOutput(res));
             } else if (err != null && err.contains("404") && !FALLBACK_MODEL.equals(getModel())) {
                 generateContent(prompt, FALLBACK_MODEL, (fallbackRes, fallbackErr) -> {
-                    deliverProse("rephrase", callback, fallbackRes);
+                    deliverProse("rephrase", callback, fallbackRes != null ? cleanAiOutput(fallbackRes) : null);
                 });
             } else {
                 AndroidUtilities.runOnUIThread(() -> callback.run(null));

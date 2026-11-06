@@ -43,6 +43,15 @@ public final class AiController {
         }
         AiConfig.saveServices(services);
         AiConfig.setSelectedServices(service);
+
+        if (!TextUtils.isEmpty(service.getKey())) {
+            String key = service.getKey().trim();
+            if (key.startsWith("AIzaSy") || AiConfig.isGeminiService(service)) {
+                try {
+                    app.miogram.bridge.ai.MiogramAiService.setApiKey(key);
+                } catch (Throwable ignored) {}
+            }
+        }
     }
 
     public static void removeService(Service service) {

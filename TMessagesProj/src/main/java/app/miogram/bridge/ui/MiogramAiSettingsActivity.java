@@ -48,6 +48,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
     private int keyRow;
     private int modelRow;
     private int getKeyRow;
+    private int customProvidersRow;
     private int aiInfoRow;
 
     private int headerFeaturesRow;
@@ -77,6 +78,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
         keyRow = addRow();
         modelRow = addRow();
         getKeyRow = addRow();
+        customProvidersRow = addRow();
         aiInfoRow = addRow();
 
         headerFeaturesRow = addRow();
@@ -153,6 +155,8 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                 Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse("https://aistudio.google.com/app/apikey"));
                 getParentActivity().startActivity(browserIntent);
             } catch (Exception ignored) {}
+        } else if (position == customProvidersRow) {
+            presentFragment(new app.exteraless.ai.ui.AiSettingsActivity());
         } else if (position == voiceTranscribeInfoRow) {
             showTranscribeProviderPicker();
         } else if (position == transcribePreferForPremiumRow) {
@@ -299,7 +303,7 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                 return TYPE_HEADER;
             } else if (position == companionChoiceRow || position == keyRow || position == modelRow || position == voiceTranscribeInfoRow || position == hardwareRow) {
                 return TYPE_SETTINGS;
-            } else if (position == openCompanionRow || position == getKeyRow) {
+            } else if (position == openCompanionRow || position == getKeyRow || position == customProvidersRow) {
                 return TYPE_TEXT;
             } else if (position == companionBottomTabRow || position == piiMaskRow || position == transcribePreferForPremiumRow) {
                 return TYPE_CHECK;
@@ -360,7 +364,9 @@ public class MiogramAiSettingsActivity extends BaseNekoSettingsActivity {
                     if (position == openCompanionRow) {
                         cell.setTextAndIcon(MiogramLocale.get("Відкрити чат зі супутником", "Открыть чат со спутником", "Open Companion Chat"), R.drawable.baseline_stars_24, true);
                     } else if (position == getKeyRow) {
-                        cell.setTextAndIcon(MiogramLocale.get("Отримати безкоштовний ключ на Google AI Studio", "Получить бесплатный ключ на Google AI Studio", "Get free API key on Google AI Studio"), R.drawable.msg_bot, false);
+                        cell.setTextAndIcon(MiogramLocale.get("Отримати безкоштовний ключ на Google AI Studio", "Получить бесплатный ключ на Google AI Studio", "Get free API key on Google AI Studio"), R.drawable.msg_bot, true);
+                    } else if (position == customProvidersRow) {
+                        cell.setTextAndIcon(MiogramLocale.get("Інші провайдери (OpenAI, DeepSeek, Custom)", "Другие провайдеры (OpenAI, DeepSeek, Custom)", "Other Providers (OpenAI, DeepSeek, Custom)"), R.drawable.msg_settings, false);
                     }
                     break;
                 }

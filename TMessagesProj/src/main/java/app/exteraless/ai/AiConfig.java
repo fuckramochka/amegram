@@ -167,27 +167,61 @@ public final class AiConfig {
         saveConversationHistory(history);
     }
 
+    public static boolean isGeminiService(Service service) {
+        if (service == null) return false;
+        String url = service.getUrl();
+        String id = service.getId();
+        String name = service.getName();
+        return (url != null && url.contains("generativelanguage.googleapis.com"))
+                || "default".equals(id) || "gemini".equalsIgnoreCase(id)
+                || (name != null && name.toLowerCase(java.util.Locale.ROOT).contains("gemini"));
+    }
+
     public static Service getSelectedService() {
         ArrayList<Service> services = getServices();
         if (services.isEmpty()) {
+            String mioKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
+            if (!TextUtils.isEmpty(mioKey)) {
+                String model = app.miogram.bridge.ai.MiogramAiService.getModel();
+                if (TextUtils.isEmpty(model)) {
+                    model = "gemini-3.5-flash";
+                }
+                Service service = new Service("gemini", Provider.PRESETS.get(0).getUrl(), model, mioKey);
+                service.setName("Google Gemini");
+                return service;
+            }
             return DEFAULT_SERVICE;
         }
+        Service selected = null;
         String selectedId = getSelectedServiceId();
         if (!TextUtils.isEmpty(selectedId)) {
             for (Service service : services) {
                 if (Objects.equals(service.getId(), selectedId)) {
-                    return service;
+                    selected = service;
+                    break;
                 }
             }
         }
-        int legacyHash = getSelectedServiceHash();
-        for (Service service : services) {
-            if (service.getLegacyHash() == legacyHash) {
-                setSelectedServiceId(service.getId());
-                return service;
+        if (selected == null) {
+            int legacyHash = getSelectedServiceHash();
+            for (Service service : services) {
+                if (service.getLegacyHash() == legacyHash) {
+                    setSelectedServiceId(service.getId());
+                    selected = service;
+                    break;
+                }
             }
         }
-        return services.get(0);
+        if (selected == null) {
+            selected = services.get(0);
+        }
+        if (selected != null && TextUtils.isEmpty(selected.getKey()) && isGeminiService(selected)) {
+            String mioKey = app.miogram.bridge.ai.MiogramAiService.getApiKey();
+            if (!TextUtils.isEmpty(mioKey)) {
+                selected.setKey(mioKey);
+            }
+        }
+        return selected;
     }
 
     public static void setSelectedServices(Service service) {

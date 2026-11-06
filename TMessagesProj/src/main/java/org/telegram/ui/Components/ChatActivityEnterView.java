@@ -3044,59 +3044,10 @@ public class ChatActivityEnterView extends FrameLayout implements
         textFieldContainer.addView(aiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.TOP | Gravity.LEFT, 0, 1, 0, 0));
         aiButton.setContentDescription(getString(R.string.AIEditor));
         ScaleStateListAnimator.apply(aiButton);
-        aiButton.setOnClickListener(v -> {
-            MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
-            final long dialogId = parentFragment != null ? parentFragment.getDialogId() : dialog_id;
-            if (richDraftActive) {
-                if (richDraftMessage == null) return;
-                new AIEditorAlert(getContext(), resourcesProvider)
-                    .setText(richDraftMessage)
-                    .setOnUseRich(this::saveRichDraft)
-                    .setOnSendRich(dialogId, (rich, scheduleDate, scheduleRepeatPeriod, notify) -> {
-                        saveRichDraft(rich);
-                        if (isInScheduleMode() && scheduleDate == 0) {
-                            AlertsCreator.createScheduleDatePickerDialog(parentActivity, dialogId, new AlertsCreator.ScheduleDatePickerDelegate() {
-                                @Override
-                                public void didSelectDate(boolean notify2, int scheduleDate2, int scheduleRepeatPeriod2) {
-                                    sendMessageInternal(notify2, scheduleDate2, scheduleRepeatPeriod2, 0, true);
-                                }
-                            }, resourcesProvider);
-                        } else {
-                            sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, 0, true);
-                        }
-                    })
-                    .show();
-                return;
-            }
-            if (messageEditText == null) return;
-            new AIEditorAlert(getContext(), resourcesProvider)
-                .setText(messageEditText.getText())
-                .setOnUse(text -> {
-                    messageEditText.setText(text);
-                    messageEditText.setSelection(text.length(), text.length());
-                })
-                .setOnSend(dialogId, editingMessageObject != null, (text, scheduleDate, scheduleRepeatPeriod, notify) -> {
-                    messageEditText.setText(text);
-                    if (editingMessageObject != null) {
-                        doneEditingMessage();
-                    } else {
-                        if (isInScheduleMode() && scheduleDate == 0) {
-                            AlertsCreator.createScheduleDatePickerDialog(parentActivity, dialogId, new AlertsCreator.ScheduleDatePickerDelegate() {
-                                @Override
-                                public void didSelectDate(boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
-                                    final boolean shownDialog = sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, 0, true);
-                                    if (messageSendPreview != null) {
-                                        messageSendPreview.dismiss(!shownDialog);
-                                        messageSendPreview = null;
-                                    }
-                                }
-                            }, resourcesProvider);
-                        } else {
-                            sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, 0, true);
-                        }
-                    }
-                })
-                .show();
+        aiButton.setOnClickListener(v -> showAiActionsMenu(false));
+        aiButton.setOnLongClickListener(v -> {
+            showAiActionsMenu(true);
+            return true;
         });
         aiButton.setVisibility(View.GONE);
         aiButton.setAlpha(0.0f);
@@ -6237,7 +6188,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
             if (isInitLineCount) {
                 lineCount = getLineCount();
-                showAiButton((lineCount > 2 || richDraftActive) && !TextUtils.isEmpty(getText().toString().trim()));
+                showAiButton((lineCount > 1 || (getText() != null && getText().length() >= 15) || richDraftActive) && !TextUtils.isEmpty(getText().toString().trim()));
                 showRichButton(lineCount > 2 && !TextUtils.isEmpty(getText().toString().trim()));
             }
             isInitLineCount = false;
@@ -6769,7 +6720,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
                 super.onMeasure(widthMeasureSpec, heightMeasureSpec);
                 if (lineCount != messageEditText.getLineCount()) {
-                    showAiButton((messageEditText.getLineCount() > 2 || richDraftActive) && messageEditText.getText() != null && !TextUtils.isEmpty(messageEditText.getText().toString().trim()));
+                    showAiButton((messageEditText.getLineCount() > 1 || (messageEditText.getText() != null && messageEditText.getText().length() >= 15) || richDraftActive) && messageEditText.getText() != null && !TextUtils.isEmpty(messageEditText.getText().toString().trim()));
                     showRichButton(messageEditText.getLineCount() > 2 && messageEditText.getText() != null && !TextUtils.isEmpty(messageEditText.getText().toString().trim()));
                 }
             }
@@ -6941,7 +6892,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                         onLineCountChanged(lineCount, messageEditText.getLineCount());
                     }
                     lineCount = messageEditText.getLineCount();
-                    showAiButton((lineCount > 2 || richDraftActive) && charSequence != null && !TextUtils.isEmpty(charSequence.toString().trim()));
+                    showAiButton((lineCount > 1 || (charSequence != null && charSequence.length() >= 15) || richDraftActive) && charSequence != null && !TextUtils.isEmpty(charSequence.toString().trim()));
                     showRichButton(lineCount > 2 && charSequence != null && !TextUtils.isEmpty(charSequence.toString().trim()));
                 } else {
                     heightShouldBeChanged = false;
@@ -7054,7 +7005,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                     }
                 }
 
-                showAiButton((lineCount > 2 || richDraftActive) && editable != null && !TextUtils.isEmpty(editable.toString().trim()));
+                showAiButton((lineCount > 1 || (editable != null && editable.length() >= 15) || richDraftActive) && editable != null && !TextUtils.isEmpty(editable.toString().trim()));
                 checkIsEphemeralMessage(true);
                 showRichButton(lineCount > 2 && editable != null && !TextUtils.isEmpty(editable.toString().trim()));
             }
@@ -7073,6 +7024,181 @@ public class ChatActivityEnterView extends FrameLayout implements
             parentFragment.applyDraftMaybe(false);
         }
         updateFieldRight(lastAttachVisible);
+    }
+
+    private void openAiEditorAlert() {
+        MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
+        final long dialogId = parentFragment != null ? parentFragment.getDialogId() : dialog_id;
+        if (richDraftActive) {
+            if (richDraftMessage == null) return;
+            new AIEditorAlert(getContext(), resourcesProvider)
+                .setText(richDraftMessage)
+                .setOnUseRich(this::saveRichDraft)
+                .setOnSendRich(dialogId, (rich, scheduleDate, scheduleRepeatPeriod, notify) -> {
+                    saveRichDraft(rich);
+                    if (isInScheduleMode() && scheduleDate == 0) {
+                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, dialogId, new AlertsCreator.ScheduleDatePickerDelegate() {
+                            @Override
+                            public void didSelectDate(boolean notify2, int scheduleDate2, int scheduleRepeatPeriod2) {
+                                sendMessageInternal(notify2, scheduleDate2, scheduleRepeatPeriod2, 0, true);
+                            }
+                        }, resourcesProvider);
+                    } else {
+                        sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, 0, true);
+                    }
+                })
+                .show();
+            return;
+        }
+        if (messageEditText == null) return;
+        new AIEditorAlert(getContext(), resourcesProvider)
+            .setText(messageEditText.getText())
+            .setOnUse(text -> {
+                messageEditText.setText(text);
+                messageEditText.setSelection(text.length(), text.length());
+            })
+            .setOnSend(dialogId, editingMessageObject != null, (text, scheduleDate, scheduleRepeatPeriod, notify) -> {
+                messageEditText.setText(text);
+                if (editingMessageObject != null) {
+                    doneEditingMessage();
+                } else {
+                    if (isInScheduleMode() && scheduleDate == 0) {
+                        AlertsCreator.createScheduleDatePickerDialog(parentActivity, dialogId, new AlertsCreator.ScheduleDatePickerDelegate() {
+                            @Override
+                            public void didSelectDate(boolean notify, int scheduleDate, int scheduleRepeatPeriod) {
+                                final boolean shownDialog = sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, 0, true);
+                                if (messageSendPreview != null) {
+                                    messageSendPreview.dismiss(!shownDialog);
+                                    messageSendPreview = null;
+                                }
+                            }
+                        }, resourcesProvider);
+                    } else {
+                        sendMessageInternal(notify, scheduleDate, scheduleRepeatPeriod, 0, true);
+                    }
+                }
+            })
+            .show();
+    }
+
+    private void showAiActionsMenu(boolean fromLongClick) {
+        MessagesController.getGlobalMainSettings().edit().putInt("aihintshown", 3).apply();
+        if (richDraftActive) {
+            openAiEditorAlert();
+            return;
+        }
+        if (messageEditText == null) return;
+
+        if (fromLongClick) {
+            openAiEditorAlert();
+            return;
+        }
+
+        final String currentText = messageEditText.getText() != null ? messageEditText.getText().toString() : "";
+        final boolean hasText = !TextUtils.isEmpty(currentText.trim());
+
+        ItemOptions options = ItemOptions.makeOptions(this, resourcesProvider, aiButton);
+        options.setGravity(Gravity.LEFT);
+
+        if (hasText) {
+            options.add(R.drawable.msg_edit, app.miogram.bridge.MiogramLocale.get("Виправити помилки", "Исправить ошибки", "Fix grammar & typos"), () -> {
+                runAiQuickAction(app.miogram.bridge.ai.MiogramAiService.QUICK_ACTION_FIX);
+            });
+            options.add(R.drawable.msg_retry, app.miogram.bridge.MiogramLocale.get("Перефразувати", "Перефразировать", "Rephrase"), () -> {
+                runAiQuickAction(app.miogram.bridge.ai.MiogramAiService.QUICK_ACTION_REPHRASE);
+            });
+            options.add(R.drawable.msg_translate, app.miogram.bridge.MiogramLocale.get("Зробити коротко", "Сделать кратко", "Make concise"), () -> {
+                runAiQuickAction(app.miogram.bridge.ai.MiogramAiService.QUICK_ACTION_SHORTEN);
+            });
+            options.add(R.drawable.msg_bot, app.miogram.bridge.MiogramLocale.get("Продовжити думку", "Продолжить мысль", "Continue writing"), () -> {
+                runAiQuickAction(app.miogram.bridge.ai.MiogramAiService.QUICK_ACTION_CONTINUE);
+            });
+            options.addGap();
+            options.add(R.drawable.input_ai, app.miogram.bridge.MiogramLocale.get("Повний редактор ШІ", "Полный редактор ИИ", "Full AI Editor"), this::openAiEditorAlert);
+        }
+        options.add(R.drawable.msg_discussion, app.miogram.bridge.MiogramLocale.get("Запитати ШІ…", "Спросить ИИ…", "Ask AI…"), () -> {
+            app.exteraless.ai.ui.AiResponseSheet.show(getContext(), resourcesProvider, hasText ? currentText : "", true, text -> {
+                if (messageEditText != null && !TextUtils.isEmpty(text)) {
+                    messageEditText.setText(text);
+                    messageEditText.setSelection(text.length(), text.length());
+                }
+            });
+        });
+        options.add(R.drawable.msg_settings, app.miogram.bridge.MiogramLocale.get("Налаштування ШІ", "Настройки ИИ", "AI Settings"), () -> {
+            if (parentFragment != null) {
+                parentFragment.presentFragment(new app.miogram.bridge.ui.MiogramAiSettingsActivity());
+            }
+        });
+        options.show();
+    }
+
+    private BulletinFactory aiBulletinFactory() {
+        return parentFragment != null ? BulletinFactory.of(parentFragment) : BulletinFactory.of(this, resourcesProvider);
+    }
+
+    private void runAiQuickAction(int actionType) {
+        if (messageEditText == null) return;
+        CharSequence charSeq = messageEditText.getText();
+        if (TextUtils.isEmpty(charSeq)) return;
+        final String originalText = charSeq.toString();
+
+        if (!app.miogram.bridge.ai.MiogramAiService.hasApiKey()) {
+            aiBulletinFactory()
+                    .createSimpleBulletin(
+                            R.raw.info,
+                            app.miogram.bridge.MiogramLocale.get("Вкажіть API ключ у налаштуваннях ШІ", "Укажите API ключ в настройках ИИ", "Configure API key in AI settings"),
+                            app.miogram.bridge.MiogramLocale.get("Налаштування", "Настройки", "Settings"),
+                            () -> {
+                                if (parentFragment != null) {
+                                    parentFragment.presentFragment(new app.miogram.bridge.ui.MiogramAiSettingsActivity());
+                                }
+                            }
+                    ).show();
+            return;
+        }
+
+        if (aiButtonIcon != null) {
+            aiButtonIcon.animate();
+        }
+
+        final Bulletin loadingBulletin = aiBulletinFactory()
+                .createSimpleBulletin(
+                        R.raw.star_premium_2,
+                        app.miogram.bridge.MiogramLocale.get("ШІ покращує текст…", "ИИ улучшает текст…", "AI is improving text…")
+                );
+        loadingBulletin.show();
+
+        app.miogram.bridge.ai.MiogramAiService.quickCompose(originalText, actionType, result -> {
+            try {
+                loadingBulletin.hide();
+            } catch (Throwable ignored) {}
+            if (aiButtonIcon != null) {
+                aiButtonIcon.animate();
+            }
+            if (!TextUtils.isEmpty(result)) {
+                if (messageEditText != null) {
+                    messageEditText.setText(result);
+                    messageEditText.setSelection(result.length(), result.length());
+                }
+                aiBulletinFactory()
+                        .createUndoBulletin(
+                                app.miogram.bridge.MiogramLocale.get("Текст оновлено через ШІ", "Текст обновлен через ИИ", "Text updated via AI"),
+                                () -> {
+                                    if (messageEditText != null) {
+                                        messageEditText.setText(originalText);
+                                        messageEditText.setSelection(originalText.length(), originalText.length());
+                                    }
+                                },
+                                null
+                        ).show();
+            } else {
+                aiBulletinFactory()
+                        .createSimpleBulletin(
+                                R.raw.error,
+                                app.miogram.bridge.MiogramLocale.get("Не вдалося отримати відповідь ШІ", "Не удалось получить ответ ИИ", "Failed to get AI response")
+                        ).show();
+            }
+        });
     }
 
     private boolean shownAiButton;
@@ -12484,7 +12610,7 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     private void updateButtons() {
-        showAiButton((messageEditText != null && messageEditText.getLineCount() > 2 || richDraftActive) && messageEditText != null && messageEditText.getText() != null && !TextUtils.isEmpty(messageEditText.getText().toString().trim()));
+        showAiButton((messageEditText != null && (messageEditText.getLineCount() > 1 || (messageEditText.getText() != null && messageEditText.getText().length() >= 15)) || richDraftActive) && messageEditText != null && messageEditText.getText() != null && !TextUtils.isEmpty(messageEditText.getText().toString().trim()));
         showRichButton(messageEditText != null && messageEditText.getLineCount() > 2 && messageEditText.getText() != null && !TextUtils.isEmpty(messageEditText.getText().toString().trim()));
     }
 

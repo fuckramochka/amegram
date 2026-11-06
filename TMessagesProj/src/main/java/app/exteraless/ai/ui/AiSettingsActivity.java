@@ -74,6 +74,7 @@ public class AiSettingsActivity extends BaseNekoSettingsActivity {
     private int reasoningRow;
     private int presetsRow;
     private int testRow;
+    private int yumiAiRow;
     private int serviceDividerRow;
 
     private int generationHeaderRow;
@@ -128,6 +129,7 @@ public class AiSettingsActivity extends BaseNekoSettingsActivity {
         reasoningRow = addRow("reasoning");
         presetsRow = addRow("presets");
         testRow = addRow("test");
+        yumiAiRow = addRow("yumiAi");
         serviceDividerRow = addRow();
 
         generationHeaderRow = addRow("generationHeader");
@@ -212,6 +214,8 @@ public class AiSettingsActivity extends BaseNekoSettingsActivity {
             showPresets();
         } else if (position == testRow) {
             testConnection();
+        } else if (position == yumiAiRow) {
+            presentFragment(new app.miogram.bridge.ui.MiogramAiSettingsActivity());
         } else if (position == roleRow) {
             showRoleSelector();
         } else if (position == streamingRow) {
@@ -856,13 +860,18 @@ public class AiSettingsActivity extends BaseNekoSettingsActivity {
                                 describe(service()), true);
                     } else if (position == testRow) {
                         cell.setTextAndValue(getString(R.string.OEAiTest),
-                                testStatus == null ? "" : testStatus, false);
+                                testStatus == null ? "" : testStatus, true);
                         if (testStatus != null) {
                             cell.setTextValueColor(getThemedColor(testFailed
                                     ? Theme.key_text_RedRegular
                                     : Theme.key_windowBackgroundWhiteGreenText));
                         }
                         cell.setDrawLoading(testRequestId != null, 20, true);
+                    } else if (position == yumiAiRow) {
+                        cell.setTextAndValue(
+                                app.miogram.bridge.MiogramLocale.get("Розпізнавання голосу, Компаньйон та зв'язка ключів", "Распознавание голоса, Спутник и связка ключей", "Voice STT, Companion & Keyring"),
+                                app.miogram.bridge.MiogramLocale.get("Відкрити", "Открыть", "Open"),
+                                false);
                     } else if (position == roleRow) {
                         cell.setTextAndValue(getString(R.string.OEAiRole),
                                 AiController.getSelectedRole().getName(), true);

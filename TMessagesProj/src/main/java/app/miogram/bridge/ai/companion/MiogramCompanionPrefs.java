@@ -26,6 +26,7 @@ public class MiogramCompanionPrefs {
     private static final String KEY_STRESS = "stat_stress";
     private static final String KEY_DARKNESS = "stat_darkness";
     private static final String KEY_FOLLOWERS = "stat_followers";
+    private static final String KEY_HERO_COLLAPSED = "hero_card_collapsed";
 
     public static final String COMPANION_AME = "ame";
     public static final String COMPANION_KANGEL = "kangel";
@@ -116,6 +117,27 @@ public class MiogramCompanionPrefs {
         getPrefs().edit().putLong(KEY_FOLLOWERS, Math.max(0, current + count)).apply();
     }
 
+    public static boolean isHeroCollapsed() {
+        return getPrefs().getBoolean(KEY_HERO_COLLAPSED, false);
+    }
+
+    public static void setHeroCollapsed(boolean collapsed) {
+        getPrefs().edit().putBoolean(KEY_HERO_COLLAPSED, collapsed).apply();
+    }
+
+    public static void applyStatDeltas(int deltaAffection, int deltaStress, int deltaDarkness, long deltaFollowers) {
+        setAffection(getAffection() + deltaAffection);
+        setStress(getStress() + deltaStress);
+        setDarkness(getDarkness() + deltaDarkness);
+        if (deltaFollowers != 0) {
+            addFollowers(deltaFollowers);
+        }
+    }
+
+    public static void takeMagicPill() {
+        applyStatDeltas(5, -20, -10, 0);
+    }
+
     public static class ChatMessage {
         public final boolean isUser;
         public String text;
@@ -125,14 +147,20 @@ public class MiogramCompanionPrefs {
         public final String toolParams;
         public boolean actionApproved;
         public boolean actionExecuted;
+        public String imagePath;
 
         public ChatMessage(boolean isUser, String text, String mood, long timestamp, String toolAction, String toolParams) {
+            this(isUser, text, mood, timestamp, toolAction, toolParams, null);
+        }
+
+        public ChatMessage(boolean isUser, String text, String mood, long timestamp, String toolAction, String toolParams, String imagePath) {
             this.isUser = isUser;
             this.text = text;
             this.mood = mood != null ? mood : "neutral";
             this.timestamp = timestamp;
             this.toolAction = toolAction;
             this.toolParams = toolParams;
+            this.imagePath = imagePath;
         }
 
         public JSONObject toJson() {
@@ -146,6 +174,7 @@ public class MiogramCompanionPrefs {
                 if (toolParams != null) obj.put("toolParams", toolParams);
                 obj.put("actionApproved", actionApproved);
                 obj.put("actionExecuted", actionExecuted);
+                if (imagePath != null) obj.put("imagePath", imagePath);
                 return obj;
             } catch (Throwable t) {
                 return null;
@@ -160,7 +189,8 @@ public class MiogramCompanionPrefs {
             long timestamp = obj.optLong("timestamp", System.currentTimeMillis());
             String toolAction = obj.optString("toolAction", null);
             String toolParams = obj.optString("toolParams", null);
-            ChatMessage msg = new ChatMessage(isUser, text, mood, timestamp, toolAction, toolParams);
+            String imagePath = obj.has("imagePath") ? obj.optString("imagePath", null) : null;
+            ChatMessage msg = new ChatMessage(isUser, text, mood, timestamp, toolAction, toolParams, imagePath);
             msg.actionApproved = obj.optBoolean("actionApproved", false);
             msg.actionExecuted = obj.optBoolean("actionExecuted", false);
             return msg;
@@ -187,7 +217,7 @@ public class MiogramCompanionPrefs {
         if (messages == null) return;
         try {
             JSONArray arr = new JSONArray();
-            int start = Math.max(0, messages.size() - 60);
+            int start = Math.max(0, messages.size() - 120);
             for (int i = start; i < messages.size(); i++) {
                 JSONObject obj = messages.get(i).toJson();
                 if (obj != null) arr.put(obj);

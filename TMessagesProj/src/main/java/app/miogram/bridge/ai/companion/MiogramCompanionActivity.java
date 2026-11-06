@@ -17,6 +17,8 @@ import android.view.ViewGroup;
 import android.view.animation.OvershootInterpolator;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -30,6 +32,7 @@ import org.telegram.messenger.FileLog;
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.R;
+import org.telegram.messenger.SendMessagesHelper;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.UserObject;
 import org.telegram.messenger.Utilities;
@@ -40,14 +43,19 @@ import org.telegram.ui.ActionBar.ActionBarMenuItem;
 import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.PhotoAlbumPickerActivity;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import app.miogram.bridge.MiogramLocale;
 import app.miogram.bridge.ai.MiogramAiService;
@@ -84,6 +92,30 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     private View dotKAngel;
     private TextView tabAme;
     private TextView tabKAngel;
+    private LinearLayout dotsRow;
+    private TextView heroToggleBtn;
+
+    // Compact Hero Bar (displayed when collapsed to reclaim chat space)
+    private LinearLayout compactHeroBar;
+    private ImageView compactAvatar;
+    private TextView compactTitle;
+    private TextView compactStats;
+    private boolean heroCollapsed = false;
+
+    private int lastCarouselScrollX = -1;
+    private final Runnable carouselSettleRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (heroCarouselScroll == null) return;
+            int currentX = heroCarouselScroll.getScrollX();
+            if (lastCarouselScrollX == currentX) {
+                snapCarouselToNearestPage();
+            } else {
+                lastCarouselScrollX = currentX;
+                heroCarouselScroll.postDelayed(this, 40);
+            }
+        }
+    };
 
     private TextView statDay;
     private TextView statFollowers;
@@ -98,6 +130,12 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     private ImageView sendIcon;
     private ProgressBar sendProgress;
 
+    // Multimodal image attachment
+    private String attachedImagePath = null;
+    private FrameLayout attachedImageBar;
+    private ImageView attachedImageThumb;
+    private ImageView attachButton;
+
     // Monster console: live MioTool call log (toggle chip in composer).
     private LinearLayout consolePanel;
     private LinearLayout consoleLog;
@@ -105,6 +143,17 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     private boolean consoleOpen = false;
     private app.miogram.bridge.ai.tools.MioTool.ConsoleListener consoleListener;
 
+    private static class MessageViewHolder {
+        View rowView;
+        LinearLayout bubbleCard;
+        TextView bodyView;
+        TextView timeView;
+        ImageView avatarView;
+        ImageView photoView;
+        LinearLayout actionCard;
+    }
+
+    private final Map<MiogramCompanionPrefs.ChatMessage, MessageViewHolder> messageViewHolderMap = new HashMap<>();
     private final List<MiogramCompanionPrefs.ChatMessage> history = new ArrayList<>();
     private boolean isSending = false;
     private final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
@@ -189,6 +238,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         }
 
         updateCompanionTheme();
+        setHeroCardCollapsed(MiogramCompanionPrefs.isHeroCollapsed());
         if (heroCarouselScroll != null) {
             boolean isAme = MiogramCompanionPrefs.isAmeActive();
             int pageWidth = getCardSlideWidth() + AndroidUtilities.dp(8);
@@ -279,13 +329,18 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         LinearLayout.LayoutParams cardLp = LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4);
         parent.addView(heroCard, cardLp);
 
-        // Top Segmented Character Switcher Bar
+        // Top Header Row: Segmented Switcher + Collapse button
+        LinearLayout headerRow = new LinearLayout(context);
+        headerRow.setOrientation(LinearLayout.HORIZONTAL);
+        headerRow.setGravity(Gravity.CENTER);
+        heroCard.addView(headerRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+
         LinearLayout switcherBar = new LinearLayout(context);
         switcherBar.setOrientation(LinearLayout.HORIZONTAL);
         switcherBar.setGravity(Gravity.CENTER);
         switcherBar.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_windowBackgroundWhite)));
         switcherBar.setPadding(AndroidUtilities.dp(3), AndroidUtilities.dp(3), AndroidUtilities.dp(3), AndroidUtilities.dp(3));
-        heroCard.addView(switcherBar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 32, Gravity.CENTER_HORIZONTAL, 0, 0, 0, 6));
+        headerRow.addView(switcherBar, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 32));
 
         tabAme = new TextView(context);
         tabAme.setText("໒꒱ Ame-chan");
@@ -311,6 +366,55 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             switchCompanion(false);
         });
 
+        heroToggleBtn = new TextView(context);
+        heroToggleBtn.setText(heroCollapsed ? "▼" : "▲");
+        heroToggleBtn.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        heroToggleBtn.setTypeface(AndroidUtilities.bold());
+        heroToggleBtn.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        heroToggleBtn.setGravity(Gravity.CENTER);
+        heroToggleBtn.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(16), Theme.getColor(Theme.key_windowBackgroundWhite)));
+        heroToggleBtn.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(4), AndroidUtilities.dp(12), AndroidUtilities.dp(4));
+        headerRow.addView(heroToggleBtn, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 32, 6, 0, 0, 0));
+        heroToggleBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            setHeroCardCollapsed(!heroCollapsed);
+        });
+
+        // Compact Hero Bar (displayed when collapsed)
+        compactHeroBar = new LinearLayout(context);
+        compactHeroBar.setOrientation(LinearLayout.HORIZONTAL);
+        compactHeroBar.setGravity(Gravity.CENTER_VERTICAL);
+        compactHeroBar.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(14), Theme.getColor(Theme.key_windowBackgroundWhite)));
+        compactHeroBar.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(6), AndroidUtilities.dp(12), AndroidUtilities.dp(6));
+        heroCard.addView(compactHeroBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 6, 0, 6, 4));
+
+        compactAvatar = new ImageView(context);
+        compactAvatar.setScaleType(ImageView.ScaleType.FIT_CENTER);
+        compactHeroBar.addView(compactAvatar, LayoutHelper.createLinear(28, 28, 0, 0, 8, 0));
+
+        compactTitle = new TextView(context);
+        compactTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        compactTitle.setTypeface(AndroidUtilities.bold());
+        compactTitle.setSingleLine(true);
+        compactHeroBar.addView(compactTitle, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        compactStats = new TextView(context);
+        compactStats.setTextSize(TypedValue.COMPLEX_UNIT_SP, 10.5f);
+        compactStats.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        compactStats.setSingleLine(true);
+        compactHeroBar.addView(compactStats, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 8, 0, 4, 0));
+
+        TextView expandHint = new TextView(context);
+        expandHint.setText("▼");
+        expandHint.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        expandHint.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2));
+        compactHeroBar.addView(expandHint, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        compactHeroBar.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            setHeroCardCollapsed(false);
+        });
+
         // 1. Horizontal Scroll Slides Carousel
         heroCarouselScroll = new HorizontalScrollView(context);
         heroCarouselScroll.setHorizontalScrollBarEnabled(false);
@@ -329,32 +433,33 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         buildKangelSlide(context, heroCarouselLayout);
 
         // 2. Dots Indicator Row
-        LinearLayout dotsLayout = new LinearLayout(context);
-        dotsLayout.setOrientation(LinearLayout.HORIZONTAL);
-        dotsLayout.setGravity(Gravity.CENTER);
-        dotsLayout.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(2));
-        heroCard.addView(dotsLayout, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        dotsRow = new LinearLayout(context);
+        dotsRow.setOrientation(LinearLayout.HORIZONTAL);
+        dotsRow.setGravity(Gravity.CENTER);
+        dotsRow.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(2));
+        heroCard.addView(dotsRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
         boolean isAme = MiogramCompanionPrefs.isAmeActive();
 
         dotAme = new View(context);
-        dotsLayout.addView(dotAme, LayoutHelper.createLinear(isAme ? 20 : 8, 6, 0, 0, 6, 0));
+        dotsRow.addView(dotAme, LayoutHelper.createLinear(isAme ? 20 : 8, 6, 0, 0, 6, 0));
         dotAme.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
             switchCompanion(true);
         });
 
         dotKAngel = new View(context);
-        dotsLayout.addView(dotKAngel, LayoutHelper.createLinear(!isAme ? 20 : 8, 6));
+        dotsRow.addView(dotKAngel, LayoutHelper.createLinear(!isAme ? 20 : 8, 6));
         dotKAngel.setOnClickListener(v -> {
             MiogramHaptic.tap(v);
             switchCompanion(false);
         });
 
-        // 3. Carousel Snapping
+        // 3. Carousel Snapping with settle check
         heroCarouselScroll.setOnTouchListener((v, event) -> {
             if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
-                heroCarouselScroll.postDelayed(this::snapCarouselToNearestPage, 120);
+                lastCarouselScrollX = -1;
+                heroCarouselScroll.postDelayed(carouselSettleRunnable, 60);
             }
             return false;
         });
@@ -582,6 +687,49 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             MiogramHaptic.tap(v);
             switchCompanion(false);
         });
+    }
+
+    private void setHeroCardCollapsed(boolean collapsed) {
+        heroCollapsed = collapsed;
+        MiogramCompanionPrefs.setHeroCollapsed(collapsed);
+
+        if (compactHeroBar != null) {
+            compactHeroBar.setVisibility(collapsed ? View.VISIBLE : View.GONE);
+        }
+        if (heroCarouselScroll != null) {
+            heroCarouselScroll.setVisibility(collapsed ? View.GONE : View.VISIBLE);
+        }
+        if (dotsRow != null) {
+            dotsRow.setVisibility(collapsed ? View.GONE : View.VISIBLE);
+        }
+        if (heroToggleBtn != null) {
+            heroToggleBtn.setText(collapsed ? "▼" : "▲");
+        }
+    }
+
+    private void updateStatsViews() {
+        int str = MiogramCompanionPrefs.getStress();
+        int love = MiogramCompanionPrefs.getAffection();
+        int dark = MiogramCompanionPrefs.getDarkness();
+        long fol = MiogramCompanionPrefs.getFollowers();
+
+        if (statStress != null) statStress.setText("STR " + str + "%");
+        if (statAffection != null) statAffection.setText("LOVE " + love + "%");
+        if (statDarkness != null) statDarkness.setText("DARK " + dark + "%");
+        if (statFollowers != null) statFollowers.setText("FOL " + formatFollowers(fol));
+
+        if (compactStats != null) {
+            compactStats.setText("STR " + str + "% • LOVE " + love + "% • FOL " + formatFollowers(fol));
+        }
+    }
+
+    private static String formatFollowers(long fol) {
+        if (fol >= 1_000_000) {
+            return String.format(Locale.US, "%.1fM", fol / 1_000_000.0f);
+        } else if (fol >= 1_000) {
+            return String.format(Locale.US, "%.1fK", fol / 1_000.0f);
+        }
+        return String.valueOf(fol);
     }
 
     private void snapCarouselToNearestPage() {
@@ -815,13 +963,59 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         consolePanel.addView(consoleScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, AndroidUtilities.dp(140)));
         parent.addView(consolePanel, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
 
+        // Multimodal Attached Image Bar (Preview above composer)
+        attachedImageBar = new FrameLayout(context);
+        attachedImageBar.setVisibility(View.GONE);
+        attachedImageBar.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(2));
+        parent.addView(attachedImageBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        LinearLayout imgPreviewBox = new LinearLayout(context);
+        imgPreviewBox.setOrientation(LinearLayout.HORIZONTAL);
+        imgPreviewBox.setGravity(Gravity.CENTER_VERTICAL);
+        imgPreviewBox.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(12), Theme.getColor(Theme.key_windowBackgroundWhite)));
+        imgPreviewBox.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(4), AndroidUtilities.dp(10), AndroidUtilities.dp(4));
+        attachedImageBar.addView(imgPreviewBox, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+
+        attachedImageThumb = new ImageView(context);
+        attachedImageThumb.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        attachedImageThumb.setClipToOutline(true);
+        imgPreviewBox.addView(attachedImageThumb, LayoutHelper.createLinear(36, 36));
+
+        TextView imgLabel = new TextView(context);
+        imgLabel.setText(MiogramLocale.get("Фото прикріплено (мультимодальний зір)", "Фото прикреплено (мультимодальное зрение)", "Photo attached (multimodal vision)"));
+        imgLabel.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11);
+        imgLabel.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
+        imgPreviewBox.addView(imgLabel, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 8, 0, 8, 0));
+
+        ImageView removeImgBtn = new ImageView(context);
+        removeImgBtn.setImageResource(R.drawable.msg_clear);
+        removeImgBtn.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText2), PorterDuff.Mode.SRC_IN));
+        imgPreviewBox.addView(removeImgBtn, LayoutHelper.createLinear(20, 20));
+        removeImgBtn.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            attachedImagePath = null;
+            updateAttachedImageBar();
+        });
+
         // Telegram Native Composer Bar
         LinearLayout composerBar = new LinearLayout(context);
         composerBar.setOrientation(LinearLayout.HORIZONTAL);
         composerBar.setBackgroundColor(Theme.getColor(Theme.key_chat_messagePanelBackground));
-        composerBar.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(8), AndroidUtilities.dp(10), AndroidUtilities.dp(8));
+        composerBar.setPadding(AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(10), AndroidUtilities.dp(8));
         composerBar.setGravity(Gravity.CENTER_VERTICAL);
         parent.addView(composerBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+
+        // Photo/Image Attach Button (Multimodal Gemini Vision)
+        attachButton = new ImageView(context);
+        attachButton.setImageResource(R.drawable.msg_camera);
+        attachButton.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+        attachButton.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_chat_messagePanelIcons), PorterDuff.Mode.SRC_IN));
+        attachButton.setPadding(AndroidUtilities.dp(6), AndroidUtilities.dp(6), AndroidUtilities.dp(6), AndroidUtilities.dp(6));
+        composerBar.addView(attachButton, LayoutHelper.createLinear(38, 38, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
+        attachButton.setOnClickListener(v -> {
+            MiogramHaptic.tap(v);
+            openPhotoPicker();
+        });
 
         FrameLayout inputWrapper = new FrameLayout(context);
         GradientDrawable inputGd = new GradientDrawable();
@@ -860,6 +1054,47 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             MiogramHaptic.tap(v);
             onSendMessage();
         });
+    }
+
+    private void openPhotoPicker() {
+        PhotoAlbumPickerActivity fragment = new PhotoAlbumPickerActivity(PhotoAlbumPickerActivity.SELECT_TYPE_ALL, false, false, null);
+        fragment.setMaxSelectedPhotos(1, false);
+        fragment.setDelegate(new PhotoAlbumPickerActivity.PhotoAlbumPickerActivityDelegate() {
+            @Override
+            public void didSelectPhotos(ArrayList<SendMessagesHelper.SendingMediaInfo> photos, boolean notify, int scheduleDate) {
+                if (photos != null && !photos.isEmpty()) {
+                    SendMessagesHelper.SendingMediaInfo info = photos.get(0);
+                    if (info != null && !TextUtils.isEmpty(info.path)) {
+                        attachedImagePath = info.path;
+                        updateAttachedImageBar();
+                    }
+                }
+            }
+
+            @Override
+            public void startPhotoSelectActivity() {}
+        });
+        presentFragment(fragment);
+    }
+
+    private void updateAttachedImageBar() {
+        if (attachedImageBar == null) return;
+        if (attachedImagePath != null && new File(attachedImagePath).exists()) {
+            attachedImageBar.setVisibility(View.VISIBLE);
+            if (attachedImageThumb != null) {
+                try {
+                    Bitmap bmp = BitmapFactory.decodeFile(attachedImagePath);
+                    if (bmp != null) {
+                        attachedImageThumb.setImageBitmap(bmp);
+                    }
+                } catch (Throwable ignore) {}
+            }
+        } else {
+            attachedImageBar.setVisibility(View.GONE);
+            if (attachedImageThumb != null) {
+                attachedImageThumb.setImageDrawable(null);
+            }
+        }
     }
 
     private void addChip(Context context, LinearLayout parent, String text, Runnable onClick) {
@@ -903,6 +1138,19 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         );
 
         updateCarouselVisuals(isAme);
+
+        if (compactAvatar != null) {
+            compactAvatar.setImageResource(isAme ? R.drawable.miogram_ai_ame_avatar : R.drawable.miogram_ai_kangel_avatar);
+        }
+        if (compactTitle != null) {
+            compactTitle.setText(isAme ? "໒꒱ Ame-chan" : "✧ KAngel †");
+            compactTitle.setTextColor(accentColor);
+        }
+        updateStatsViews();
+
+        if (attachButton != null) {
+            attachButton.setColorFilter(new PorterDuffColorFilter(accentColor, PorterDuff.Mode.SRC_IN));
+        }
 
         if (sendButton != null) {
             sendButton.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(42), accentColor));
@@ -1039,6 +1287,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     }
 
     private void renderFullHistory() {
+        messageViewHolderMap.clear();
         chatMessagesLayout.removeAllViews();
         if (heroCard != null) {
             chatMessagesLayout.addView(heroCard);
@@ -1054,6 +1303,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         boolean isAme = MiogramCompanionPrefs.isAmeActive();
         int accentColor = isAme ? 0xFFFF70A6 : 0xFF00B4D8;
 
+        MessageViewHolder holder = new MessageViewHolder();
+
         LinearLayout bubbleRow = new LinearLayout(ctx);
         bubbleRow.setOrientation(LinearLayout.HORIZONTAL);
         if (msg.isUser) {
@@ -1064,21 +1315,24 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             bubbleRow.setPadding(AndroidUtilities.dp(4), AndroidUtilities.dp(2), AndroidUtilities.dp(56), AndroidUtilities.dp(2));
         }
         chatMessagesLayout.addView(bubbleRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        holder.rowView = bubbleRow;
 
         if (!msg.isUser) {
             FrameLayout avatarFrame = new FrameLayout(ctx);
             avatarFrame.setBackground(Theme.createCircleDrawable(AndroidUtilities.dp(36), isAme ? 0x25FF70A6 : 0x2500B4D8));
             ImageView spriteAvatar = new ImageView(ctx);
             spriteAvatar.setScaleType(ImageView.ScaleType.FIT_CENTER);
-            int resId = isAme ? R.drawable.miogram_ai_ame_avatar : R.drawable.miogram_ai_kangel_avatar;
+            int resId = resolveSpriteForMood(msg.mood, isAme);
             spriteAvatar.setImageResource(resId);
             avatarFrame.addView(spriteAvatar, LayoutHelper.createFrame(32, 32, Gravity.CENTER));
             bubbleRow.addView(avatarFrame, LayoutHelper.createLinear(36, 36, Gravity.BOTTOM, 0, 0, 8, 0));
+            holder.avatarView = spriteAvatar;
         }
 
         LinearLayout bubbleCard = new LinearLayout(ctx);
         bubbleCard.setOrientation(LinearLayout.VERTICAL);
         bubbleCard.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(8), AndroidUtilities.dp(12), AndroidUtilities.dp(8));
+        holder.bubbleCard = bubbleCard;
 
         float r = AndroidUtilities.dp(16);
         float tail = AndroidUtilities.dp(4);
@@ -1090,12 +1344,29 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             bubbleCard.setBackground(gd);
             bubbleRow.addView(bubbleCard, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT));
 
+            // Photo attachment preview if user attached an image
+            if (msg.imagePath != null && new File(msg.imagePath).exists()) {
+                ImageView photoView = new ImageView(ctx);
+                photoView.setScaleType(ImageView.ScaleType.CENTER_CROP);
+                photoView.setClipToOutline(true);
+                try {
+                    Bitmap bmp = BitmapFactory.decodeFile(msg.imagePath);
+                    if (bmp != null) photoView.setImageBitmap(bmp);
+                } catch (Throwable ignore) {}
+                GradientDrawable roundImg = new GradientDrawable();
+                roundImg.setCornerRadius(AndroidUtilities.dp(12));
+                photoView.setBackground(roundImg);
+                bubbleCard.addView(photoView, LayoutHelper.createLinear(AndroidUtilities.dp(200), AndroidUtilities.dp(140), 0, 0, 0, 6));
+                holder.photoView = photoView;
+            }
+
             TextView body = new TextView(ctx);
             body.setText(msg.text);
             body.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
             body.setTextColor(Theme.getColor(Theme.key_chat_messageTextOut));
             body.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             bubbleCard.addView(body, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+            holder.bodyView = body;
 
             TextView time = new TextView(ctx);
             time.setText(timeFormat.format(new Date(msg.timestamp)));
@@ -1103,6 +1374,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             time.setTextColor(Theme.getColor(Theme.key_chat_outTimeText));
             time.setGravity(Gravity.RIGHT);
             bubbleCard.addView(time, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+            holder.timeView = time;
         } else {
             GradientDrawable gd = new GradientDrawable();
             gd.setColor(Theme.getColor(Theme.key_chat_inBubble));
@@ -1124,6 +1396,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             body.setTextColor(Theme.getColor(Theme.key_chat_messageTextIn));
             body.setLineSpacing(AndroidUtilities.dp(2), 1.0f);
             bubbleCard.addView(body, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+            holder.bodyView = body;
 
             if (scopedDialogId != 0 || onDraftInsertCallback != null) {
                 TextView insertBtn = new TextView(ctx);
@@ -1144,7 +1417,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             }
 
             if (msg.toolAction != null && !msg.actionExecuted) {
-                renderActionCard(ctx, bubbleCard, msg);
+                holder.actionCard = renderActionCard(ctx, bubbleCard, msg);
             }
 
             TextView time = new TextView(ctx);
@@ -1153,12 +1426,39 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             time.setTextColor(Theme.getColor(Theme.key_chat_inTimeText));
             time.setGravity(Gravity.RIGHT);
             bubbleCard.addView(time, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 0));
+            holder.timeView = time;
         }
 
+        messageViewHolderMap.put(msg, holder);
         chatScrollView.post(() -> chatScrollView.fullScroll(ScrollView.FOCUS_DOWN));
     }
 
-    private void renderActionCard(Context ctx, LinearLayout parent, MiogramCompanionPrefs.ChatMessage msg) {
+    private void updateMessageBubble(MiogramCompanionPrefs.ChatMessage msg) {
+        MessageViewHolder holder = messageViewHolderMap.get(msg);
+        if (holder == null || holder.bodyView == null) {
+            renderMessageBubble(msg);
+            return;
+        }
+        holder.bodyView.setText(msg.text);
+        if (holder.timeView != null) {
+            holder.timeView.setText(timeFormat.format(new Date(msg.timestamp)));
+        }
+        if (holder.avatarView != null && !msg.isUser) {
+            holder.avatarView.setImageResource(resolveSpriteForMood(msg.mood, MiogramCompanionPrefs.isAmeActive()));
+        }
+        if (holder.actionCard != null) {
+            holder.actionCard.setVisibility(msg.toolAction != null && !msg.actionExecuted ? View.VISIBLE : View.GONE);
+        }
+        chatScrollView.post(() -> chatScrollView.fullScroll(ScrollView.FOCUS_DOWN));
+    }
+
+    private void showActionBulletin(String text) {
+        try {
+            BulletinFactory.of(this).createSimpleBulletin(R.raw.done, text).show();
+        } catch (Throwable ignore) {}
+    }
+
+    private LinearLayout renderActionCard(Context ctx, LinearLayout parent, MiogramCompanionPrefs.ChatMessage msg) {
         boolean isAme = MiogramCompanionPrefs.isAmeActive();
         int accentColor = isAme ? 0xFFFF70A6 : 0xFF00B4D8;
 
@@ -1232,6 +1532,8 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                 history.add(resultMsg);
                 MiogramCompanionPrefs.saveHistory(history);
                 renderMessageBubble(resultMsg);
+                MiogramCompanionPrefs.applyStatDeltas(1, 0, 0, 500);
+                updateStatsViews();
             }));
         });
 
@@ -1255,7 +1557,9 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             history.add(cancelMsg);
             MiogramCompanionPrefs.saveHistory(history);
             renderMessageBubble(cancelMsg);
+            updateStageMood("sad");
         });
+        return card;
     }
 
     private static final int AGENT_MAX_STEPS = 6;
@@ -1273,9 +1577,14 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     private void onSendMessage() {
         if (isSending) return;
         String query = inputField.getText() != null ? inputField.getText().toString().trim() : "";
-        if (TextUtils.isEmpty(query)) return;
+        final String imagePathToSend = attachedImagePath;
+
+        if (TextUtils.isEmpty(query) && TextUtils.isEmpty(imagePathToSend)) return;
 
         inputField.setText("");
+        attachedImagePath = null;
+        updateAttachedImageBar();
+
         MiogramCompanionToolbox.PickResolution pick =
                 MiogramCompanionToolbox.tryResolvePendingPick(currentAccount, query);
         // System routing hints go ONLY to the model — never into the visible
@@ -1289,10 +1598,26 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         } else if ("NEXT_PAGE".equals(pick.kind)) {
             modelQuery = query + "\n[Not the right pick; show next options or keep paging the chat list.]";
         }
-        MiogramCompanionPrefs.ChatMessage userMsg = new MiogramCompanionPrefs.ChatMessage(true, query, "neutral", System.currentTimeMillis(), null, null);
+
+        MiogramCompanionPrefs.ChatMessage userMsg = new MiogramCompanionPrefs.ChatMessage(true, query, "neutral", System.currentTimeMillis(), null, null, imagePathToSend);
         history.add(userMsg);
         MiogramCompanionPrefs.saveHistory(history);
         renderMessageBubble(userMsg);
+
+        // Dynamic NSO Stats reactivity:
+        String lower = query.toLowerCase(Locale.US);
+        if (lower.contains("дюск") || lower.contains("dysk") || lower.contains("пігулк") || lower.contains("пилюл") || lower.contains("таблетк")) {
+            MiogramCompanionPrefs.takeMagicPill();
+            updateStatsViews();
+            MiogramHaptic.success(sendButton);
+            showActionBulletin("💊 " + MiogramLocale.get("Магічна пігулка Дюск: Стрес -20%, Темрява -10%", "Магическая пилюля Дюск: Стресс -20%, Темнота -10%", "Magic Pill Dysk: Stress -20%, Darkness -10%"));
+        } else if (lower.contains("молодець") || lower.contains("топ") || lower.contains("красуня") || lower.contains("люблю") || lower.contains("найкраща") || lower.contains("супер") || lower.contains("blessing")) {
+            MiogramCompanionPrefs.applyStatDeltas(3, -5, 0, 150);
+            updateStatsViews();
+        } else if (lower.contains("дістала") || lower.contains("набридла") || lower.contains("відчепись") || lower.contains("тупа") || lower.contains("кринж")) {
+            MiogramCompanionPrefs.applyStatDeltas(-8, 12, 10, 0);
+            updateStatsViews();
+        }
 
         isSending = true;
         if (sendIcon != null) sendIcon.setVisibility(View.GONE);
@@ -1300,7 +1625,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         if (sendButton != null) sendButton.setAlpha(0.6f);
 
         List<AgentStepRecord> steps = new ArrayList<>();
-        executeAgentStep(1, query, modelQuery, steps, null);
+        executeAgentStep(1, query, modelQuery, steps, null, imagePathToSend);
     }
 
     private String buildPromptForTurn(String displayQuery, String modelQuery, List<AgentStepRecord> steps, boolean forceFinal) {
@@ -1310,11 +1635,15 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
         StringBuilder sb = new StringBuilder();
         sb.append(systemPrompt).append("\n\n### CONVERSATION HISTORY:\n");
-        int start = Math.max(0, history.size() - 8);
+        int start = Math.max(0, history.size() - 24);
         for (int i = start; i < history.size(); i++) {
             MiogramCompanionPrefs.ChatMessage m = history.get(i);
             if (i == history.size() - 1 && m.isUser && m.text.equals(displayQuery)) continue;
-            sb.append(m.isUser ? "P-chan: " : "Companion: ").append(m.text).append("\n");
+            sb.append(m.isUser ? "P-chan: " : "Companion: ");
+            if (m.imagePath != null) {
+                sb.append("[Photo attached: ").append(new File(m.imagePath).getName()).append("] ");
+            }
+            sb.append(m.text).append("\n");
         }
 
         sb.append("\n### CURRENT TURN:\n");
@@ -1337,14 +1666,15 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
     private void executeAgentStep(final int stepIndex, final String displayQuery, final String modelQuery,
                                   final List<AgentStepRecord> steps,
-                                  final MiogramCompanionPrefs.ChatMessage existingBubble) {
+                                  final MiogramCompanionPrefs.ChatMessage existingBubble,
+                                  final String imagePath) {
         if (stepIndex > AGENT_MAX_STEPS) {
             executeFinalSynthesis(displayQuery, modelQuery, steps, existingBubble);
             return;
         }
 
         String prompt = buildPromptForTurn(displayQuery, modelQuery, steps, false);
-        MiogramAiService.generateText(prompt, (rawReply, err) -> AndroidUtilities.runOnUIThread(() -> {
+        Utilities.Callback2<String, String> aiCallback = (rawReply, err) -> AndroidUtilities.runOnUIThread(() -> {
             if (err != null && (rawReply == null || rawReply.isEmpty())) {
                 finishAgentTurn();
                 if (existingBubble == null) {
@@ -1370,7 +1700,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                     MiogramCompanionPrefs.ChatMessage cardMsg = new MiogramCompanionPrefs.ChatMessage(false, cleanText, mood, System.currentTimeMillis(), actionName, actionParams);
                     history.add(cardMsg);
                     MiogramCompanionPrefs.saveHistory(history);
-                    renderFullHistory();
+                    renderMessageBubble(cardMsg);
                     updateStageMood(mood);
                     finishAgentTurn();
                     return;
@@ -1386,7 +1716,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                     renderMessageBubble(bubble);
                 } else {
                     bubble.text = workingText;
-                    renderFullHistory();
+                    updateMessageBubble(bubble);
                 }
                 updateStageMood(mood);
                 final MiogramCompanionPrefs.ChatMessage activeBubble = bubble;
@@ -1396,8 +1726,11 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                     steps.add(new AgentStepRecord(actionRawStr, resultText != null ? resultText : ""));
                     if (agentResultIsError(resultText)) {
                         updateStageMood("sad");
+                    } else {
+                        MiogramCompanionPrefs.applyStatDeltas(1, 0, 0, 400 + (long)(Math.random() * 800));
+                        updateStatsViews();
                     }
-                    executeAgentStep(stepIndex + 1, displayQuery, modelQuery, steps, activeBubble);
+                    executeAgentStep(stepIndex + 1, displayQuery, modelQuery, steps, activeBubble, null);
                 }));
             } else {
                 // Final response reached
@@ -1410,13 +1743,20 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                     bubble.text = cleanText;
                     bubble.mood = mood;
                     bubble.actionExecuted = true;
-                    renderFullHistory();
+                    updateMessageBubble(bubble);
                 }
                 MiogramCompanionPrefs.saveHistory(history);
                 updateStageMood(mood);
                 finishAgentTurn();
             }
-        }));
+        });
+
+        File imgFile = (stepIndex == 1 && imagePath != null) ? new File(imagePath) : null;
+        if (imgFile != null && imgFile.exists()) {
+            MiogramAiService.generateTextWithImage(prompt, imgFile, "image/jpeg", aiCallback);
+        } else {
+            MiogramAiService.generateText(prompt, aiCallback);
+        }
     }
 
     private void executeFinalSynthesis(final String displayQuery, final String modelQuery, final List<AgentStepRecord> steps,
@@ -1433,7 +1773,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                 existingBubble.text = cleanText;
                 existingBubble.mood = mood;
                 existingBubble.actionExecuted = true;
-                renderFullHistory();
+                updateMessageBubble(existingBubble);
             } else {
                 MiogramCompanionPrefs.ChatMessage bubble = new MiogramCompanionPrefs.ChatMessage(false, cleanText, mood, System.currentTimeMillis(), null, null);
                 history.add(bubble);

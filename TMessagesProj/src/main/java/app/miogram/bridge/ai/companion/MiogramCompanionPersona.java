@@ -157,6 +157,35 @@ public class MiogramCompanionPersona {
             sb.append("[MOOD: NEUTRAL] - bright idol smile, calm partner check-in\n\n");
         }
 
+        // Live NSO Stats & Psychological state injection
+        int aff = MiogramCompanionPrefs.getAffection();
+        int str = MiogramCompanionPrefs.getStress();
+        int drk = MiogramCompanionPrefs.getDarkness();
+        long fol = MiogramCompanionPrefs.getFollowers();
+        sb.append("### CURRENT NSO MENTAL & STREAM STATS (NEEDY STREAMER OVERLOAD ENGINE):\n");
+        sb.append("- Affection (Любов та прив'язаність до P-chan): ").append(aff).append("%\n");
+        sb.append("- Stress (Рівень ментального стресу): ").append(str).append("%\n");
+        sb.append("- Darkness (Рівень темряви / депресивності): ").append(drk).append("%\n");
+        sb.append("- Followers (Кількість підписників стріму): ").append(fol).append("\n");
+        if (isAme) {
+            if (str >= 75) {
+                sb.append("- CRITICAL STRESS (>=75%): You have a splitting headache, anxiety, whine to P-chan and beg for a Magic pill (Dysk / Дюск)!\n");
+            } else if (drk >= 65) {
+                sb.append("- HIGH DARKNESS (>=65%): You are cynical, dark, brooding, and heavily sarcastic about normies and internet life.\n");
+            } else if (aff >= 85) {
+                sb.append("- HIGH AFFECTION (>=85%): You trust P-chan completely and act very close and comfortable, playfully teasing him.\n");
+            }
+        } else {
+            if (str >= 75) {
+                sb.append("- POST-STREAM FATIGUE (>=75%): The idol adrenaline crashed, you're drained and need Producer's reassurance.\n");
+            } else if (fol >= 1500000) {
+                sb.append("- MEGA-VIRAL SENSATION: Over 1.5M followers! You are riding high on internet godhood († BLESSING †)!\n");
+            }
+        }
+        sb.append("\n### MULTIMODAL VISION REACTION:\n");
+        sb.append("- When P-chan attaches an image/photo/screenshot, you CAN SEE IT clearly!\n");
+        sb.append("- React to what you see directly in character (aesthetics, anime, code, memes, desktop, style) with your authentic personality!\n\n");
+
         // Long-term persistent memory
         sb.append(MiogramCompanionMemory.getInstance().getMemoryContextForPrompt(currentAccount));
 

@@ -522,6 +522,10 @@ public class MiogramAiService {
      * @param maxOutputTokens caps spend (Forge uses it — plugin-model quota is tight).
      */
     private static void generateContentInternal(String prompt, String model, Double temperature, boolean jsonMode, Integer maxOutputTokens, Utilities.Callback2<String, String> callback) {
+        generateContentInternal(prompt, model, temperature, jsonMode, maxOutputTokens, null, null, callback);
+    }
+
+    private static void generateContentInternal(String prompt, String model, Double temperature, boolean jsonMode, Integer maxOutputTokens, File imageFile, String imageMimeType, Utilities.Callback2<String, String> callback) {
         List<String> apiKeys = getApiKeys();
         if (apiKeys.isEmpty()) {
             callback.run(null, "No API key configured");
@@ -534,6 +538,27 @@ public class MiogramAiService {
                 JsonArray contents = new JsonArray();
                 JsonObject content = new JsonObject();
                 JsonArray parts = new JsonArray();
+
+                if (imageFile != null && imageFile.exists() && imageFile.length() > 0 && imageFile.length() <= 12 * 1024 * 1024) {
+                    try (FileInputStream fis = new FileInputStream(imageFile)) {
+                        byte[] imgBytes = new byte[(int) imageFile.length()];
+                        int off = 0;
+                        while (off < imgBytes.length) {
+                            int r = fis.read(imgBytes, off, imgBytes.length - off);
+                            if (r < 0) break;
+                            off += r;
+                        }
+                        JsonObject imgPart = new JsonObject();
+                        JsonObject inlineData = new JsonObject();
+                        inlineData.addProperty("mimeType", TextUtils.isEmpty(imageMimeType) ? "image/jpeg" : imageMimeType);
+                        inlineData.addProperty("data", Base64.encodeToString(imgBytes, Base64.NO_WRAP));
+                        imgPart.add("inlineData", inlineData);
+                        parts.add(imgPart);
+                    } catch (Throwable t) {
+                        FileLog.e(t);
+                    }
+                }
+
                 JsonObject part = new JsonObject();
                 part.addProperty("text", prompt);
                 parts.add(part);
@@ -831,6 +856,39 @@ public class MiogramAiService {
                         deliverProse2("text", callback, fb1Res, null);
                     } else {
                         generateContent(prompt, FALLBACK_MODEL, (fb2Res, fb2Err) -> {
+                            if (fb2Res != null) {
+                                deliverProse2("text", callback, fb2Res, null);
+                            } else {
+                                callback.run(null, fb2Err != null ? fb2Err : err);
+                            }
+                        });
+                    }
+                });
+            } else {
+                callback.run(null, err);
+            }
+        });
+    }
+
+    /**
+     * Multimodal text generation with attached image (Gemini Vision).
+     */
+    public static void generateTextWithImage(String prompt, File imageFile, String mimeType, Utilities.Callback2<String, String> callback) {
+        if (imageFile == null || !imageFile.exists()) {
+            generateText(prompt, callback);
+            return;
+        }
+        generateContentInternal(prompt, getModel(), null, false, null, imageFile, mimeType, (res, err) -> {
+            if (res != null) {
+                deliverProse2("text", callback, res, null);
+            } else if (err != null && (err.contains("404") || err.contains("400") || err.contains("503"))) {
+                String curModel = getModel();
+                String fb = FALLBACK_MODEL.equals(curModel) ? DEFAULT_MODEL : FALLBACK_MODEL;
+                generateContentInternal(prompt, fb, null, false, null, imageFile, mimeType, (fb1Res, fb1Err) -> {
+                    if (fb1Res != null) {
+                        deliverProse2("text", callback, fb1Res, null);
+                    } else {
+                        generateContentInternal(prompt, FALLBACK_MODEL, null, false, null, imageFile, mimeType, (fb2Res, fb2Err) -> {
                             if (fb2Res != null) {
                                 deliverProse2("text", callback, fb2Res, null);
                             } else {

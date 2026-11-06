@@ -1746,7 +1746,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             presentFragment(new ThemeActivity(ThemeActivity.THEME_TYPE_BASIC));
             return;
         } else if (position == aiChatRow) {
-            presentFragment(new app.exteraless.ai.ui.AiSettingsActivity());
+            presentFragment(new app.miogram.bridge.ui.MiogramAiSettingsActivity());
             return;
         } else if (position == textStyleRow) {
             showDialog(TextStyleDialog.create(getParentActivity()));
@@ -2797,8 +2797,11 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                 cell.setTextAndIcon(getString(R.string.OEChatsMedia), R.drawable.msg_camera, true);
                 cell.setSubtitle(getString(R.string.OEChatsMediaInfo));
             } else if (position == aiChatRow) {
-                cell.setTextAndIcon(getString(R.string.OEChatsAiChat), aiChatIcon(), true);
-                cell.setSubtitle(getString(R.string.OEChatsAiChatInfo));
+                cell.setTextAndIcon("Yumi AI", aiChatIcon(), true);
+                cell.setSubtitle(app.miogram.bridge.MiogramLocale.get(
+                        "ШІ-асистент, Компаньйон, Голосові STT та Ключі",
+                        "ИИ-ассистент, Спутник, Голосовые STT и Ключи",
+                        "AI Assistant, Companion, Voice STT & Keys"));
             } else if (position == chatSettingsRow) {
                 cell.setTextAndIcon(getString(R.string.OEChatsChatSettings), R.drawable.msg_discussion, false);
                 cell.setSubtitle(getString(R.string.OEChatsChatSettingsInfo));

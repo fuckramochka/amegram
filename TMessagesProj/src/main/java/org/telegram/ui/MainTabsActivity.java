@@ -6,6 +6,7 @@ import static org.telegram.messenger.LocaleController.getString;
 import static org.telegram.ui.Components.Premium.LimitReachedBottomSheet.TYPE_ACCOUNTS;
 
 import android.animation.Animator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
@@ -46,6 +47,7 @@ import androidx.core.view.WindowInsetsCompat;
 import app.exteraless.appearance.AppearanceConfig;
 import app.exteraless.appearance.MainTabsUiHelper;
 import app.amegram.theme.YumiMd3;
+import app.miogram.ui.yumi.YumiBarCustomizerSheet;
 import app.miogram.ui.yumi.YumiUi;
 import app.exteraless.feed.FeedController;
 import app.exteraless.feed.ui.FeedActivity;
@@ -187,6 +189,80 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private FrameLayout searchButton;
     private Drawable searchButtonBackground;
     private ImageView searchIcon;
+    private ValueAnimator tabsMarginAnimator;
+    private boolean isBarCustomizerOpen;
+    private YumiBarCustomizerSheet barCustomizerSheet;
+
+    private class BarWrapperLayout extends FrameLayout {
+        private float initialSpan;
+        private boolean trackingTwoFingers;
+
+        public BarWrapperLayout(@NonNull Context context) {
+            super(context);
+        }
+
+        private float getSpan(MotionEvent ev) {
+            if (ev.getPointerCount() < 2) {
+                return 0f;
+            }
+            float dx = ev.getX(0) - ev.getX(1);
+            float dy = ev.getY(0) - ev.getY(1);
+            return (float) Math.hypot(dx, dy);
+        }
+
+        @Override
+        public boolean onInterceptTouchEvent(MotionEvent ev) {
+            if (!MainTabsUiHelper.isFloatingPill()) {
+                return super.onInterceptTouchEvent(ev);
+            }
+            int action = ev.getActionMasked();
+            if (action == MotionEvent.ACTION_POINTER_DOWN && ev.getPointerCount() == 2) {
+                initialSpan = getSpan(ev);
+                trackingTwoFingers = initialSpan > 0;
+            } else if (action == MotionEvent.ACTION_MOVE && trackingTwoFingers && ev.getPointerCount() >= 2) {
+                float currentSpan = getSpan(ev);
+                if (!isBarCustomizerOpen && (currentSpan - initialSpan) > AndroidUtilities.dp(28)) {
+                    trackingTwoFingers = false;
+                    performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                    openBarCustomizer();
+                    return true;
+                } else if (isBarCustomizerOpen && (initialSpan - currentSpan) > AndroidUtilities.dp(28)) {
+                    trackingTwoFingers = false;
+                    performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    closeBarCustomizer();
+                    return true;
+                }
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL || action == MotionEvent.ACTION_POINTER_UP) {
+                trackingTwoFingers = false;
+            }
+            return super.onInterceptTouchEvent(ev);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent ev) {
+            if (trackingTwoFingers) {
+                int action = ev.getActionMasked();
+                if (action == MotionEvent.ACTION_MOVE && ev.getPointerCount() >= 2) {
+                    float currentSpan = getSpan(ev);
+                    if (!isBarCustomizerOpen && (currentSpan - initialSpan) > AndroidUtilities.dp(28)) {
+                        trackingTwoFingers = false;
+                        performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                        openBarCustomizer();
+                        return true;
+                    } else if (isBarCustomizerOpen && (initialSpan - currentSpan) > AndroidUtilities.dp(28)) {
+                        trackingTwoFingers = false;
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                        closeBarCustomizer();
+                        return true;
+                    }
+                } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                    trackingTwoFingers = false;
+                }
+                return true;
+            }
+            return super.onTouchEvent(ev);
+        }
+    }
     private View fadeView;
     private boolean lastHideContacts = NaConfig.INSTANCE.getMainTabsHideContacts().Bool();
     private boolean lastHideCallsSettings = MainTabsHelper.isCallsOrSettingsTabHidden();
@@ -494,7 +570,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             fadeView.setAlpha(0f);
         }
 
-        tabsViewWrapper = new FrameLayout(context);
+        tabsViewWrapper = new BarWrapperLayout(context);
         // Amegram: the wrapper must NOT swallow touches — it is full-width and mostly
         // transparent around the pill, which created a "dead zone" above/beside the tabs.
         // Only the pill itself eats background taps (set below on tabsView).
@@ -502,7 +578,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsViewWrapper.setFocusable(false);
         tabsViewWrapper.setClipToPadding(false);
         if (MainTabsUiHelper.isFloatingPill()) {
-            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, Gravity.BOTTOM | Gravity.LEFT, 0, 0, 72, 0));
+            final boolean isChats = getStartPosition() == getPositionChats();
+            final int initialMargin = isChats ? dp(72) : 0;
+            final int leftMargin = LocaleController.isRTL ? initialMargin : 0;
+            final int rightMargin = LocaleController.isRTL ? 0 : initialMargin;
+            final int tabsGravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, tabsGravity, leftMargin, 0, rightMargin, 0));
 
             searchButton = new FrameLayout(context);
             if (app.exteraless.appearance.YougramExpressive.enabled()) {
@@ -538,7 +619,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                     dialogsActivity.openSearch();
                 }
             });
-            tabsViewWrapper.addView(searchButton, LayoutHelper.createFrame(60, 60, Gravity.BOTTOM | Gravity.RIGHT));
+            final int searchGravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.LEFT : Gravity.RIGHT);
+            tabsViewWrapper.addView(searchButton, LayoutHelper.createFrame(60, 60, searchGravity));
+            searchButton.setVisibility(isChats ? View.VISIBLE : View.GONE);
+            searchButton.setAlpha(isChats ? 1f : 0f);
+            if (!isChats) {
+                searchButton.setScaleX(0.7f);
+                searchButton.setScaleY(0.7f);
+            }
         } else {
             tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(MainTabsUiHelper.getTabsViewWidth(), MainTabsUiHelper.getTabsViewHeightDp(), Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL));
         }
@@ -1003,6 +1091,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     @Override
     public boolean onBackPressed(boolean invoked) {
+        if (isBarCustomizerOpen) {
+            closeBarCustomizer();
+            return false;
+        }
         final boolean result = super.onBackPressed(invoked);
         if (result) {
             final int startPosition = getStartPosition();
@@ -1101,6 +1193,19 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             lastHideProfile = hideProfile;
         }
 
+        if (tabsMarginAnimator != null) {
+            tabsMarginAnimator.cancel();
+            tabsMarginAnimator = null;
+        }
+
+        if (barCustomizerSheet != null) {
+            if (contentView != null) {
+                contentView.removeView(barCustomizerSheet);
+            }
+            barCustomizerSheet = null;
+        }
+        isBarCustomizerOpen = false;
+
         super.clearViews();
     }
 
@@ -1122,6 +1227,11 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final float targetAlpha = visible ? animatorTabsVisible.getFloatValue() : 0f;
         searchButton.setClickable(visible);
         searchButton.setEnabled(visible && animatorTabsVisible.getFloatValue() >= 0.99f);
+
+        final int targetMargin = visible ? dp(72) : 0;
+        final FrameLayout.LayoutParams lp = tabsView != null ? (FrameLayout.LayoutParams) tabsView.getLayoutParams() : null;
+        final int currentMargin = lp != null ? (LocaleController.isRTL ? lp.leftMargin : lp.rightMargin) : 0;
+
         if (animated) {
             searchButton.animate().cancel();
             if (visible) {
@@ -1137,12 +1247,160 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                         }
                     })
                     .start();
+
+            if (tabsMarginAnimator != null) {
+                tabsMarginAnimator.cancel();
+                tabsMarginAnimator = null;
+            }
+            if (tabsView != null && lp != null && currentMargin != targetMargin) {
+                tabsMarginAnimator = ValueAnimator.ofInt(currentMargin, targetMargin);
+                tabsMarginAnimator.setDuration(180L);
+                tabsMarginAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
+                tabsMarginAnimator.addUpdateListener(animation -> {
+                    if (tabsView == null) {
+                        return;
+                    }
+                    int val = (Integer) animation.getAnimatedValue();
+                    FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
+                    if (p != null) {
+                        if (LocaleController.isRTL) {
+                            p.leftMargin = val;
+                            p.rightMargin = 0;
+                        } else {
+                            p.leftMargin = 0;
+                            p.rightMargin = val;
+                        }
+                        tabsView.setLayoutParams(p);
+                    }
+                });
+                tabsMarginAnimator.start();
+            }
         } else {
             searchButton.animate().cancel();
             searchButton.setAlpha(targetAlpha);
             searchButton.setScaleX(visible ? 1f : 0.7f);
             searchButton.setScaleY(visible ? 1f : 0.7f);
             searchButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+
+            if (tabsMarginAnimator != null) {
+                tabsMarginAnimator.cancel();
+                tabsMarginAnimator = null;
+            }
+            if (tabsView != null && lp != null) {
+                if (LocaleController.isRTL) {
+                    lp.leftMargin = targetMargin;
+                    lp.rightMargin = 0;
+                } else {
+                    lp.leftMargin = 0;
+                    lp.rightMargin = targetMargin;
+                }
+                tabsView.setLayoutParams(lp);
+            }
+        }
+    }
+
+    public void openBarCustomizer() {
+        if (isBarCustomizerOpen || contentView == null || tabsViewWrapper == null || getParentActivity() == null) {
+            return;
+        }
+        isBarCustomizerOpen = true;
+        tabsViewWrapper.bringToFront();
+        tabsViewWrapper.setElevation(dp(28));
+
+        final int targetLift = (int) (contentView.getHeight() * 0.42f);
+        tabsViewWrapper.animate()
+                .translationY(-targetLift)
+                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .setDuration(340L)
+                .start();
+
+        barCustomizerSheet = new YumiBarCustomizerSheet(getParentActivity(), new YumiBarCustomizerSheet.Callback() {
+            @Override
+            public void onCompactModeChanged(boolean compact) {
+                NaConfig.INSTANCE.getMainTabsHideTitles().setConfigBool(compact);
+                if (tabs != null) {
+                    for (GlassTabView tab : tabs) {
+                        if (tab != null) {
+                            tab.setMainTabsCompact(compact);
+                        }
+                    }
+                }
+                if (tabsView != null) {
+                    MainTabsUiHelper.applyTabsLayoutStyle(tabsView, dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
+                    tabsView.requestLayout();
+                    tabsView.invalidate();
+                }
+            }
+
+            @Override
+            public void onSearchButtonToggled(boolean show) {
+                NaConfig.INSTANCE.getHideDialogsSearchField().setConfigBool(!show);
+                if (searchButton != null) {
+                    searchButton.setVisibility(show ? View.VISIBLE : View.GONE);
+                    searchButton.setAlpha(show ? 1f : 0f);
+                }
+                updateSearchButtonVisibility(viewPager != null ? viewPager.getCurrentPosition() : getPositionChats(), true);
+            }
+
+            @Override
+            public void onTabToggled(int index, boolean visible) {
+                if (index == 1) { // Contacts
+                    NaConfig.INSTANCE.getMainTabsHideContacts().setConfigBool(!visible);
+                    rebuildContactsSlot();
+                } else if (index == 2) { // Calls
+                    NaConfig.INSTANCE.getMainTabsHideCallsSettings().setConfigBool(!visible);
+                    checkUi_callTabVisible(getUserConfig().showCallsTab, true);
+                } else if (index == 3) { // Profile
+                    NaConfig.INSTANCE.getMainTabsHideProfile().setConfigBool(!visible);
+                    checkUi_callTabVisible(getUserConfig().showCallsTab, true);
+                } else if (index == 4) { // Feed
+                    AppearanceConfig.showFeedTab.setConfigBool(visible);
+                    checkUi_contactsOrFeedTabVisible(true);
+                }
+                if (viewPager != null) {
+                    viewPager.rebuild(false);
+                }
+                if (tabsView != null) {
+                    tabsView.requestLayout();
+                    tabsView.invalidate();
+                }
+            }
+
+            @Override
+            public void onClose() {
+                closeBarCustomizer();
+            }
+        });
+
+        contentView.addView(barCustomizerSheet, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+        tabsViewWrapper.bringToFront();
+    }
+
+    public void closeBarCustomizer() {
+        if (!isBarCustomizerOpen || tabsViewWrapper == null) {
+            return;
+        }
+        tabsViewWrapper.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+        tabsViewWrapper.animate()
+                .translationY(0f)
+                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                .setDuration(280L)
+                .withEndAction(() -> {
+                    if (tabsViewWrapper != null) {
+                        tabsViewWrapper.setElevation(dp(8));
+                    }
+                    isBarCustomizerOpen = false;
+                })
+                .start();
+
+        if (barCustomizerSheet != null) {
+            final YumiBarCustomizerSheet sheet = barCustomizerSheet;
+            barCustomizerSheet = null;
+            sheet.animateExit(() -> {
+                if (contentView != null) {
+                    contentView.removeView(sheet);
+                }
+            });
         }
     }
 
@@ -1373,6 +1631,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
     @Override
     public void onFragmentDestroy() {
+        if (tabsMarginAnimator != null) {
+            tabsMarginAnimator.cancel();
+            tabsMarginAnimator = null;
+        }
+        if (barCustomizerSheet != null) {
+            if (contentView != null) {
+                contentView.removeView(barCustomizerSheet);
+            }
+            barCustomizerSheet = null;
+        }
+        isBarCustomizerOpen = false;
         Bulletin.removeDelegate(this);
         Bulletin.removeDelegate(contentView);
 
@@ -1414,7 +1683,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     }
 
     private void checkUi_tabsPosition() {
-        if (tabsView == null) return;
+        if (tabsView == null || isBarCustomizerOpen) return;
         final boolean hideTabs = NaConfig.INSTANCE.getHideBottomNavigationBar().Bool();
         if (hideTabs) {
             tabsView.setVisibility(View.GONE);
@@ -1450,6 +1719,23 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             searchButton.setEnabled(visible && factor >= 0.99f);
             searchButton.setAlpha(visible ? factor : 0f);
             searchButton.setVisibility(visible ? View.VISIBLE : View.GONE);
+            if (tabsMarginAnimator == null && tabsView != null) {
+                final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
+                if (lp != null) {
+                    final int targetMargin = onChats ? dp(72) : 0;
+                    final int curMargin = LocaleController.isRTL ? lp.leftMargin : lp.rightMargin;
+                    if (curMargin != targetMargin) {
+                        if (LocaleController.isRTL) {
+                            lp.leftMargin = targetMargin;
+                            lp.rightMargin = 0;
+                        } else {
+                            lp.leftMargin = 0;
+                            lp.rightMargin = targetMargin;
+                        }
+                        tabsView.setLayoutParams(lp);
+                    }
+                }
+            }
         }
 
         if (updateLayoutWrapper != null) {

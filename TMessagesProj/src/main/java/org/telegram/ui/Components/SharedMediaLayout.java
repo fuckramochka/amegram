@@ -5810,7 +5810,11 @@ public class SharedMediaLayout extends FrameLayout implements NotificationCenter
                     fwdRestrictedHint.hide();
                 }
             }
-            if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking && ev.getY() >= dp(48 + 42)) {
+            int topLimit = scrollSlidingTextTabStrip != null && scrollSlidingTextTabStrip.getMeasuredHeight() > 0 ? scrollSlidingTextTabStrip.getMeasuredHeight() : dp(48);
+            if (topPanelLayout != null && topPanelLayout.getVisibility() == View.VISIBLE) {
+                topLimit += topPanelLayout.getMeasuredHeight();
+            }
+            if (ev != null && ev.getAction() == MotionEvent.ACTION_DOWN && !startedTracking && !maybeStartTracking && ev.getY() >= topLimit) {
                 startedTrackingPointerId = ev.getPointerId(0);
                 maybeStartTracking = true;
                 startedTrackingX = (int) ev.getX();

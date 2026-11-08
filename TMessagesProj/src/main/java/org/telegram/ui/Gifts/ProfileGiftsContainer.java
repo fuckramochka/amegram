@@ -990,6 +990,9 @@ public class ProfileGiftsContainer extends FrameLayout implements NotificationCe
     }
 
     public boolean canScroll(boolean forward) {
+        if (viewPager == null || collections == null) {
+            return true;
+        }
         if (forward)
             return viewPager.getCurrentPosition() >= collections.getCollections().size();
         return viewPager.getCurrentPosition() <= 0;

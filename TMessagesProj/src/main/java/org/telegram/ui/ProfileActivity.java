@@ -1800,19 +1800,26 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         @Override
         public void onNestedScroll(View target, int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int type, int[] consumed) {
             try {
-                if (target == listView && sharedMediaLayoutAttached) {
+                if (sharedMediaLayoutAttached && sharedMediaLayout != null) {
                     RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
-                    int top = sharedMediaLayout.getTop();
-                    if (top == 0) {
-                        consumed[1] = dyUnconsumed;
-                        innerListView.scrollBy(0, dyUnconsumed);
+                    if (target == listView) {
+                        int top = sharedMediaLayout.getTop();
+                        if (top <= 0 && innerListView != null) {
+                            consumed[1] = dyUnconsumed;
+                            innerListView.scrollBy(0, dyUnconsumed);
+                        }
+                    } else if (target != null && (target == innerListView || isChildOf(target, sharedMediaLayout))) {
+                        if (dyUnconsumed < 0 && listView != null) {
+                            consumed[1] = dyUnconsumed;
+                            listView.scrollBy(0, dyUnconsumed);
+                        }
                     }
                 }
             } catch (Throwable e) {
                 FileLog.e(e);
                 AndroidUtilities.runOnUIThread(() -> {
                     try {
-                        RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
+                        RecyclerListView innerListView = sharedMediaLayout != null ? sharedMediaLayout.getCurrentListView() : null;
                         if (innerListView != null && innerListView.getAdapter() != null) {
                             innerListView.getAdapter().notifyDataSetChanged();
                         }
@@ -1835,44 +1842,64 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         @Override
         public void onNestedPreScroll(View target, int dx, int dy, int[] consumed, int type) {
-            if (target == listView && sharedMediaRow != -1 && sharedMediaLayoutAttached) {
+            if (sharedMediaRow != -1 && sharedMediaLayoutAttached && sharedMediaLayout != null) {
                 boolean searchVisible = actionBar.isSearchFieldVisible();
                 int t = sharedMediaLayout.getTop();
-                if (dy < 0) {
-                    boolean scrolledInner = false;
-                    if (t <= 0) {
-                        RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
-                        if (innerListView != null) {
-                            LinearLayoutManager linearLayoutManager = (LinearLayoutManager) innerListView.getLayoutManager();
-                            int pos = linearLayoutManager.findFirstVisibleItemPosition();
-                            if (pos != RecyclerView.NO_POSITION) {
-                                RecyclerView.ViewHolder holder = innerListView.findViewHolderForAdapterPosition(pos);
-                                int top = holder != null ? holder.itemView.getTop() : -1;
-                                int paddingTop = innerListView.getPaddingTop();
-                                if (top != paddingTop || pos != 0) {
-                                    consumed[1] = pos != 0 ? dy : Math.max(dy, (top - paddingTop));
+                RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
+                if (target == listView) {
+                    if (dy < 0) {
+                        boolean scrolledInner = false;
+                        if (t <= 0) {
+                            if (innerListView != null) {
+                                LinearLayoutManager linearLayoutManager = innerListView.getLayoutManager() instanceof LinearLayoutManager ? (LinearLayoutManager) innerListView.getLayoutManager() : null;
+                                if (linearLayoutManager != null) {
+                                    int pos = linearLayoutManager.findFirstVisibleItemPosition();
+                                    if (pos != RecyclerView.NO_POSITION) {
+                                        RecyclerView.ViewHolder holder = innerListView.findViewHolderForAdapterPosition(pos);
+                                        int top = holder != null ? holder.itemView.getTop() : -1;
+                                        int paddingTop = innerListView.getPaddingTop();
+                                        if (top != paddingTop || pos != 0 || innerListView.canScrollVertically(-1)) {
+                                            consumed[1] = pos != 0 ? dy : Math.max(dy, (top - paddingTop));
+                                            innerListView.scrollBy(0, dy);
+                                            scrolledInner = true;
+                                        }
+                                    }
+                                } else if (innerListView.canScrollVertically(-1)) {
+                                    consumed[1] = dy;
                                     innerListView.scrollBy(0, dy);
                                     scrolledInner = true;
                                 }
                             }
                         }
-                    }
-                    if (searchVisible) {
-                        if (!scrolledInner && t < 0) {
-                            consumed[1] = dy - Math.max(t, dy);
-                        } else {
+                        if (searchVisible) {
+                            if (!scrolledInner && t < 0) {
+                                consumed[1] = dy - Math.max(t, dy);
+                            } else {
+                                consumed[1] = dy;
+                            }
+                        }
+                    } else {
+                        if (searchVisible) {
                             consumed[1] = dy;
+                            if (t > 0) {
+                                consumed[1] -= dy;
+                            }
+                            if (innerListView != null && consumed[1] > 0) {
+                                innerListView.scrollBy(0, consumed[1]);
+                            }
                         }
                     }
-                } else {
-                    if (searchVisible) {
-                        RecyclerListView innerListView = sharedMediaLayout.getCurrentListView();
-                        consumed[1] = dy;
-                        if (t > 0) {
-                            consumed[1] -= dy;
+                } else if (target != null && (target == innerListView || isChildOf(target, sharedMediaLayout))) {
+                    if (dy > 0) {
+                        if (t > 0 && listView != null) {
+                            int canScroll = Math.min(dy, t);
+                            consumed[1] = canScroll;
+                            listView.scrollBy(0, canScroll);
                         }
-                        if (innerListView != null && consumed[1] > 0) {
-                            innerListView.scrollBy(0, consumed[1]);
+                    } else if (dy < 0) {
+                        if (innerListView != null && !innerListView.canScrollVertically(-1) && listView != null) {
+                            consumed[1] = dy;
+                            listView.scrollBy(0, dy);
                         }
                     }
                 }
@@ -1907,6 +1934,20 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             sharedMediaLayout.drawListForBlur(blurCanvas, views);
             blurCanvas.restore();
         }
+    }
+
+    private static boolean isChildOf(View child, View parent) {
+        if (child == null || parent == null) {
+            return false;
+        }
+        android.view.ViewParent p = child.getParent();
+        while (p instanceof View) {
+            if (p == parent) {
+                return true;
+            }
+            p = p.getParent();
+        }
+        return false;
     }
 
     private class PagerIndicatorView extends View {

@@ -323,6 +323,7 @@ dependencies {
     // official
     implementation 'androidx.core:core-ktx:1.19.0'
     implementation 'androidx.palette:palette-ktx:1.0.0'
+    implementation 'androidx.webkit:webkit:1.14.0'
     implementation 'com.google.android.material:material:1.14.0'
     implementation 'androidx.exifinterface:exifinterface:1.4.2'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'

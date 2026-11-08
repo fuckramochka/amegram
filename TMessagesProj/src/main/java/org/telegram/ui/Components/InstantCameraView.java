@@ -3229,8 +3229,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         videoEditedInfo.key = key;
                         videoEditedInfo.iv = iv;
                         videoEditedInfo.framerate = encoderFrameRate;
-                        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = 360;
-                        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = 360;
+                        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = videoWidth > 0 ? videoWidth : 480;
+                        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = videoHeight > 0 ? videoHeight : 480;
                         videoEditedInfo.originalPath = videoFile.getAbsolutePath();
                         videoEditedInfo.notReadyYet = true;
                         videoEditedInfo.thumb = firstFrameThumb;
@@ -3382,8 +3382,8 @@ public class InstantCameraView extends FrameLayout implements NotificationCenter
                         videoEditedInfo.key = key;
                         videoEditedInfo.iv = iv;
                         videoEditedInfo.framerate = encoderFrameRate;
-                        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = 360;
-                        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = 360;
+                        videoEditedInfo.resultWidth = videoEditedInfo.originalWidth = videoWidth > 0 ? videoWidth : 480;
+                        videoEditedInfo.resultHeight = videoEditedInfo.originalHeight = videoHeight > 0 ? videoHeight : 480;
                         videoEditedInfo.originalPath = videoFile.getAbsolutePath();
                         final VideoEditedInfo info = videoEditedInfo;
                         if (send == ENCODER_SEND_SEND) {

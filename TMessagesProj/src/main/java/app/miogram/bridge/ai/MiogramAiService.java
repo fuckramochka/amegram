@@ -59,6 +59,13 @@ public class MiogramAiService {
     /** Dedicated model for plugin code generation (Miogram Plugin Forge). */
     public static final String PLUGIN_MODEL = "gemini-3.8-flash";
 
+    /** Cancels all in-flight and queued AI generation requests immediately. */
+    public static void cancelActiveGenerations() {
+        try {
+            client.dispatcher().cancelAll();
+        } catch (Throwable ignore) {}
+    }
+
     public static class DeviceHardwareInfo {
         public float totalRamGb;
         public float availRamGb;

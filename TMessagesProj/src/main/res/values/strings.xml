@@ -2687,6 +2687,7 @@
     <string name="UseProxyUsername">Username</string>
     <string name="UseProxySocks5">SOCKS5 Proxy</string>
     <string name="UseProxyTelegram">MTProto Proxy</string>
+    <string name="UseProxyWebInfo">WEB proxy uses an HTTPS page inside a private WebView. Enter a hostname without a scheme or path and a 16-byte MTProxy secret. This proof of concept requires a current Android System WebView and is intended for foreground testing.</string>
     <string name="UseProxyTelegramError">The proxy you are using is not configured correctly and will be disabled. Please find another one.</string>
     <string name="UseProxySponsor">Proxy sponsor</string>
     <string name="UseProxySponsorInfo">This channel is shown by your proxy server. To remove this channel from your chat list, disable the proxy in Telegram Settings.</string>
@@ -9974,6 +9975,7 @@
     <string name="TopicsLayoutInfo">Choose how topics appear for all members.</string>
     <string name="TopicsLayoutList">List</string>
     <string name="TopicsLayoutTabs">Tabs</string>
+    <string name="TopicsSidebar">Sidebar</string>
     <string name="SendInStandardQuality">Send in standard quality</string>
     <string name="SendInHighQuality">Send in high quality</string>
     <string name="ShortHighQuality">HD</string>

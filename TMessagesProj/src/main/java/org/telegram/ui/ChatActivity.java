@@ -2478,6 +2478,9 @@ public class ChatActivity extends BaseFragment implements
         @Override
         public void didPressStreamingStop() {
             BotForumHelper.getInstance(currentAccount).stopStreaming(dialog_id, (int) getTopicId());
+            try {
+                app.miogram.bridge.ai.MiogramAiService.cancelActiveGenerations();
+            } catch (Throwable ignore) {}
             checkSendButtonBlockedByTyping(true);
         }
 

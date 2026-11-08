@@ -85,4 +85,6 @@
     <string name="OEEnergyProfilerShareCurrent">Поділитися поточним звітом</string>
     <string name="OEEnergyProfilerShareLast">Поділитися останнім енергозвітом</string>
     <string name="OEPluginToggleLogShare">Поділитися журналом перемикання плагінів</string>
+    <string name="TopicsSidebar">Бічна панель</string>
+    <string name="UseProxyWebInfo">WEB проксі використовує HTTPS сторінку всередині приватного WebView. Введіть ім\'я хоста без схеми чи шляху та 16-байтний секрет MTProxy.</string>
 </resources>

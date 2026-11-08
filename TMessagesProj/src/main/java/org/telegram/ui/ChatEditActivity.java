@@ -218,6 +218,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 
     private boolean forum, canForum;
     private boolean forumTabs;
+    private boolean forumSidebar;
 
     private boolean isChannel;
 
@@ -391,6 +392,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 //            signMessages = currentChat.signatures;
             forum = currentChat.forum;
             forumTabs = currentChat.forum_tabs;
+            forumSidebar = currentChat.forum_sidebar;
             canForum = userId == 0 && (forum || Math.max(info == null ? 0 : info.participants_count, currentChat.participants_count) >= getMessagesController().forumUpgradeParticipantsMin) && (info == null || info.linked_chat_id == 0);
             getNotificationCenter().addObserver(this, NotificationCenter.chatInfoDidLoad);
             getNotificationCenter().addObserver(this, NotificationCenter.chatSwitchedForum);
@@ -402,6 +404,7 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
 //            signMessages = false;
             forum = false;
             forumTabs = false;
+            forumSidebar = false;
             canForum = false;
             getNotificationCenter().addObserver(this, NotificationCenter.userInfoDidLoad);
             if (currentUser.bot) {
@@ -1150,14 +1153,15 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                     }
                     EnableTopicsActivity fragment = new EnableTopicsActivity(-chatId);
                     fragment.setResourceProvider(resourceProvider);
-                    fragment.setOnForumChanged(forum, forumTabs, (newForum, newTabs) -> {
+                    fragment.setOnForumChanged(forum, forumTabs, forumSidebar, (newForum, newTabs, newSidebar) -> {
                         forum = newForum;
                         forumTabs = newTabs;
+                        forumSidebar = newSidebar;
                         avatarImage.animateToRoundRadius(forum ? dp(16) : dp(32));
                         ((TextCell) v).setChecked(forum);
                         updateFields(false, true);
 
-                        if (!donePressed && (currentChat.forum != forum || currentChat.forum_tabs != forumTabs)) {
+                        if (!donePressed && (currentChat.forum != forum || currentChat.forum_tabs != forumTabs || currentChat.forum_sidebar != forumSidebar)) {
                             if (!ChatObject.isChannel(currentChat) && forum) {
                                 Context context2 = getContext();
                                 if (context2 == null) {
@@ -1182,19 +1186,23 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
                                         info.hidden_prehistory = true;
                                     }
                                     final boolean changedTabs = currentChat.forum_tabs != forumTabs;
-                                    getMessagesController().toggleChannelForum(chatId, forum, forumTabs);
+                                    final boolean changedSidebar = currentChat.forum_sidebar != forumSidebar;
+                                    getMessagesController().toggleChannelForum(chatId, forum, forumTabs, forumSidebar);
                                     currentChat.forum = forum;
                                     currentChat.forum_tabs = forumTabs;
-                                    if (changedTabs) {
+                                    currentChat.forum_sidebar = forumSidebar;
+                                    if (changedTabs || changedSidebar) {
                                         updatePastFragmentsOnTabs();
                                     }
                                 });
                             } else {
                                 final boolean changedTabs = currentChat.forum_tabs != forumTabs;
-                                getMessagesController().toggleChannelForum(chatId, forum, forumTabs);
+                                final boolean changedSidebar = currentChat.forum_sidebar != forumSidebar;
+                                getMessagesController().toggleChannelForum(chatId, forum, forumTabs, forumSidebar);
                                 currentChat.forum = forum;
                                 currentChat.forum_tabs = forumTabs;
-                                if (changedTabs) {
+                                currentChat.forum_sidebar = forumSidebar;
+                                if (changedTabs || changedSidebar) {
                                     updatePastFragmentsOnTabs();
                                 }
                             }
@@ -1872,9 +1880,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
             long chatId = (long) args[0];
             boolean enabledForum = (boolean) args[1];
             boolean enabledTabs = (boolean) args[2];
+            boolean enabledSidebar = args.length > 3 && (boolean) args[3];
             if (this.chatId != chatId) return;
             forum = enabledForum;
             forumTabs = enabledTabs;
+            forumSidebar = enabledSidebar;
             if (forumsCell != null) {
                 forumsCell.setChecked(forum);
             }
@@ -2253,10 +2263,11 @@ public class ChatEditActivity extends BaseFragment implements ImageUpdater.Image
         if (descriptionTextView != null && !about.equals(descriptionTextView.getText().toString())) {
             getMessagesController().updateChatAbout(chatId, descriptionTextView.getText().toString(), info);
         }
-        if (forum != currentChat.forum || forumTabs != currentChat.forum_tabs) {
+        if (forum != currentChat.forum || forumTabs != currentChat.forum_tabs || forumSidebar != currentChat.forum_sidebar) {
             final boolean changedTabs = forumTabs != currentChat.forum_tabs;
-            getMessagesController().toggleChannelForum(chatId, forum, forumTabs);
-            if (forum && !forumTabs) {
+            final boolean changedSidebar = forumSidebar != currentChat.forum_sidebar;
+            getMessagesController().toggleChannelForum(chatId, forum, forumTabs, forumSidebar);
+            if (forum && !forumTabs && !forumSidebar) {
                 List<BaseFragment> fragments = getParentLayout().getFragmentStack();
                 for (int i = 0; i < fragments.size(); i++) {
                     if (fragments.get(i) instanceof ChatActivity) {

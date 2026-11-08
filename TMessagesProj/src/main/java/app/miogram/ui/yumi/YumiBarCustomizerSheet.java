@@ -9,7 +9,7 @@ import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.GradientDrawable;
 import android.util.TypedValue;
 import android.view.Gravity;
-import android.view.MotionEvent;
+import android.view.HapticFeedbackConstants;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -23,9 +23,12 @@ import androidx.annotation.NonNull;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.Theme;
+import org.telegram.messenger.UserConfig;
 import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
+import org.telegram.ui.MainTabsActivity;
+
+import java.util.List;
 
 import app.amegram.theme.YumiMd3;
 import app.exteraless.appearance.AppearanceConfig;
@@ -38,20 +41,25 @@ import xyz.nextalone.nagram.NaConfig;
 public class YumiBarCustomizerSheet extends FrameLayout {
 
     public interface Callback {
+        void onStretchModeChanged(boolean stretch);
         void onCompactModeChanged(boolean compact);
-        void onSearchButtonToggled(boolean show);
         void onTabToggled(int index, boolean visible);
+        void onCallsModeChanged(boolean showCalls);
+        void onSwapVisibleTabs(int indexA, int indexB);
         void onClose();
     }
 
     private final View scrimView;
     private final TextView hintPill;
     private final LinearLayout sheetCard;
+    private final LinearLayout orderContainer;
+    private final MainTabsActivity activity;
     private final Callback callback;
     private boolean isDismissing;
 
-    public YumiBarCustomizerSheet(@NonNull Context context, @NonNull Callback callback) {
+    public YumiBarCustomizerSheet(@NonNull Context context, @NonNull MainTabsActivity activity, @NonNull Callback callback) {
         super(context);
+        this.activity = activity;
         this.callback = callback;
         setClickable(true);
         setFocusable(true);
@@ -108,8 +116,8 @@ public class YumiBarCustomizerSheet extends FrameLayout {
         cardBg.setStroke(Math.max(1, AndroidUtilities.dp(0.8f)), YumiMd3.outlineVariant());
         sheetCard.setBackground(cardBg);
         sheetCard.setElevation(AndroidUtilities.dp(16));
-        sheetCard.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(10), AndroidUtilities.dp(20),
-                AndroidUtilities.dp(20) + AndroidUtilities.navigationBarHeight);
+        sheetCard.setPadding(AndroidUtilities.dp(18), AndroidUtilities.dp(10), AndroidUtilities.dp(18),
+                AndroidUtilities.dp(16) + AndroidUtilities.navigationBarHeight);
 
         // Top drag handle
         View dragHandle = new View(context);
@@ -117,7 +125,7 @@ public class YumiBarCustomizerSheet extends FrameLayout {
         handleBg.setColor(YumiMd3.withAlpha(YumiMd3.onSurfaceVariant(), 0.35f));
         handleBg.setCornerRadius(AndroidUtilities.dp(2));
         dragHandle.setBackground(handleBg);
-        sheetCard.addView(dragHandle, LayoutHelper.createLinear(36, 4, Gravity.CENTER_HORIZONTAL, 0, 2, 0, 12));
+        sheetCard.addView(dragHandle, LayoutHelper.createLinear(36, 4, Gravity.CENTER_HORIZONTAL, 0, 2, 0, 10));
 
         // Header row
         LinearLayout headerRow = new LinearLayout(context);
@@ -159,23 +167,67 @@ public class YumiBarCustomizerSheet extends FrameLayout {
             }
         });
         headerRow.addView(closeBtn, LayoutHelper.createLinear(36, 36, Gravity.CENTER_VERTICAL));
-        sheetCard.addView(headerRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+        sheetCard.addView(headerRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 12));
 
-        // Section 1: Display style (Labels / Icons only)
+        // Scrollable content layout so nothing is cut off
+        ScrollView scrollView = new ScrollView(context);
+        scrollView.setOverScrollMode(OVER_SCROLL_NEVER);
+        scrollView.setVerticalScrollBarEnabled(false);
+        scrollView.setClipToPadding(false);
+
+        LinearLayout contentLayout = new LinearLayout(context);
+        contentLayout.setOrientation(LinearLayout.VERTICAL);
+
+        // Section 1: Bar Width (Stretch vs Compact)
+        TextView widthHeader = createSectionHeader(context, "ШИРИНА ПАНЕЛІ");
+        contentLayout.addView(widthHeader);
+
+        TextView widthSub = createSubHeader(context, "1: розтягувати бар навіть якщо мало кнопок; 2: не розтягувати");
+        contentLayout.addView(widthSub);
+
+        LinearLayout widthRow = new LinearLayout(context);
+        widthRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        boolean initialStretch = AppearanceConfig.isYumiBarStretch();
+        YumiChip chipStretch = new YumiChip(context);
+        chipStretch.setText("↔ Розтягувати бар");
+        chipStretch.setChecked(initialStretch, false);
+
+        YumiChip chipCompact = new YumiChip(context);
+        chipCompact.setText("⇤⇥ Не розтягувати");
+        chipCompact.setChecked(!initialStretch, false);
+
+        chipStretch.setOnClickListener(v -> {
+            chipStretch.setChecked(true);
+            chipCompact.setChecked(false);
+            callback.onStretchModeChanged(true);
+        });
+
+        chipCompact.setOnClickListener(v -> {
+            chipCompact.setChecked(true);
+            chipStretch.setChecked(false);
+            callback.onStretchModeChanged(false);
+        });
+
+        widthRow.addView(chipStretch, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+        widthRow.addView(chipCompact, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        contentLayout.addView(widthRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+
+        // Section 2: Display style (Labels / Icons only)
         TextView styleHeader = createSectionHeader(context, "ВІДОБРАЖЕННЯ ТА ПІДПИСИ");
-        sheetCard.addView(styleHeader);
+        contentLayout.addView(styleHeader);
 
         LinearLayout styleRow = new LinearLayout(context);
         styleRow.setOrientation(LinearLayout.HORIZONTAL);
 
-        boolean initialCompact = NaConfig.INSTANCE.getMainTabsHideTitles().Bool();
+        boolean initialCompactTitles = NaConfig.INSTANCE.getMainTabsHideTitles().Bool();
         YumiChip chipCapsules = new YumiChip(context);
         chipCapsules.setText("Капсули з текстом");
-        chipCapsules.setChecked(!initialCompact, false);
+        chipCapsules.setChecked(!initialCompactTitles, false);
 
         YumiChip chipIconsOnly = new YumiChip(context);
         chipIconsOnly.setText("Тільки іконки");
-        chipIconsOnly.setChecked(initialCompact, false);
+        chipIconsOnly.setChecked(initialCompactTitles, false);
 
         chipCapsules.setOnClickListener(v -> {
             chipCapsules.setChecked(true);
@@ -191,24 +243,22 @@ public class YumiBarCustomizerSheet extends FrameLayout {
 
         styleRow.addView(chipCapsules, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
         styleRow.addView(chipIconsOnly, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-        sheetCard.addView(styleRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+        contentLayout.addView(styleRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
 
-        // Section 2: Floating search button toggle
-        TextView searchHeader = createSectionHeader(context, "ПЛАВАЮЧА КНОПКА ПОШУКУ");
-        sheetCard.addView(searchHeader);
+        // Section 3: Reorder buttons
+        TextView orderHeader = createSectionHeader(context, "ПОРЯДОК КНОПОК У БАРІ");
+        contentLayout.addView(orderHeader);
 
-        boolean searchEnabled = !NaConfig.INSTANCE.getHideDialogsSearchField().Bool();
-        YumiChip chipSearch = new YumiChip(context);
-        chipSearch.setText("Окрема плаваюча кнопка пошуку 🔍");
-        chipSearch.setChecked(searchEnabled, false);
-        chipSearch.setOnCheckedChangeListener((chip, checked) -> {
-            callback.onSearchButtonToggled(checked);
-        });
-        sheetCard.addView(chipSearch, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+        TextView orderSub = createSubHeader(context, "Тисніть ◀ або ▶, щоб поміняти місцями кнопки на льоту");
+        contentLayout.addView(orderSub);
 
-        // Section 3: Active tabs
+        orderContainer = new LinearLayout(context);
+        orderContainer.setOrientation(LinearLayout.VERTICAL);
+        contentLayout.addView(orderContainer, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 14));
+
+        // Section 4: Active tabs
         TextView tabsHeader = createSectionHeader(context, "АКТИВНІ ВКЛАДКИ");
-        sheetCard.addView(tabsHeader);
+        contentLayout.addView(tabsHeader);
 
         HorizontalScrollView tabScroll = new HorizontalScrollView(context);
         tabScroll.setHorizontalScrollBarEnabled(false);
@@ -226,39 +276,101 @@ public class YumiBarCustomizerSheet extends FrameLayout {
         tabsRow.addView(chipChats, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
 
         // Contacts
+        boolean contactsActive = !NaConfig.INSTANCE.getMainTabsHideContacts().Bool() && !AppearanceConfig.showFeedTab();
         YumiChip chipContacts = new YumiChip(context);
         chipContacts.setText("Контакти");
         chipContacts.setChipIcon(R.drawable.yumi_ic_contacts);
-        chipContacts.setChecked(!NaConfig.INSTANCE.getMainTabsHideContacts().Bool(), false);
-        chipContacts.setOnCheckedChangeListener((chip, checked) -> callback.onTabToggled(1, checked));
-        tabsRow.addView(chipContacts, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+        chipContacts.setChecked(contactsActive, false);
 
-        // Calls
-        YumiChip chipCalls = new YumiChip(context);
-        chipCalls.setText("Дзвінки");
-        chipCalls.setChipIcon(R.drawable.yumi_ic_call);
-        chipCalls.setChecked(!NaConfig.INSTANCE.getMainTabsHideCallsSettings().Bool(), false);
-        chipCalls.setOnCheckedChangeListener((chip, checked) -> callback.onTabToggled(2, checked));
-        tabsRow.addView(chipCalls, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+        // Feed
+        boolean feedActive = AppearanceConfig.showFeedTab();
+        YumiChip chipFeed = new YumiChip(context);
+        chipFeed.setText("Стрічка");
+        chipFeed.setChipIcon(R.drawable.yumi_ic_feed);
+        chipFeed.setChecked(feedActive, false);
+
+        chipContacts.setOnCheckedChangeListener((chip, checked) -> {
+            callback.onTabToggled(MainTabsActivity.INDEX_CONTACTS, checked);
+            if (checked && chipFeed.isChecked()) {
+                chipFeed.setChecked(false, false);
+            }
+            refreshOrderList(context);
+        });
+
+        chipFeed.setOnCheckedChangeListener((chip, checked) -> {
+            callback.onTabToggled(MainTabsActivity.INDEX_FEED, checked);
+            if (checked && chipContacts.isChecked()) {
+                chipContacts.setChecked(false, false);
+            }
+            refreshOrderList(context);
+        });
+
+        tabsRow.addView(chipContacts, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+        tabsRow.addView(chipFeed, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+
+        // Settings / Calls Slot
+        boolean callsOrSettingsActive = !NaConfig.INSTANCE.getMainTabsHideCallsSettings().Bool();
+        boolean isCallsMode = UserConfig.getInstance(UserConfig.selectedAccount).showCallsTab;
+        YumiChip chipCallsSettings = new YumiChip(context);
+        chipCallsSettings.setText(isCallsMode ? "Дзвінки" : "Налаштування");
+        chipCallsSettings.setChipIcon(isCallsMode ? R.drawable.yumi_ic_call : R.drawable.yumi_ic_settings);
+        chipCallsSettings.setChecked(callsOrSettingsActive, false);
+        chipCallsSettings.setOnCheckedChangeListener((chip, checked) -> {
+            callback.onTabToggled(MainTabsActivity.INDEX_SETTINGS, checked);
+            refreshOrderList(context);
+        });
+        tabsRow.addView(chipCallsSettings, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
 
         // Profile
         YumiChip chipProfile = new YumiChip(context);
         chipProfile.setText("Профіль");
         chipProfile.setChipIcon(R.drawable.yumi_ic_person);
         chipProfile.setChecked(!NaConfig.INSTANCE.getMainTabsHideProfile().Bool(), false);
-        chipProfile.setOnCheckedChangeListener((chip, checked) -> callback.onTabToggled(3, checked));
+        chipProfile.setOnCheckedChangeListener((chip, checked) -> {
+            callback.onTabToggled(MainTabsActivity.INDEX_PROFILE, checked);
+            refreshOrderList(context);
+        });
         tabsRow.addView(chipProfile, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
 
-        // Feed
-        YumiChip chipFeed = new YumiChip(context);
-        chipFeed.setText("Стрічка");
-        chipFeed.setChipIcon(R.drawable.yumi_ic_feed);
-        chipFeed.setChecked(AppearanceConfig.showFeedTab(), false);
-        chipFeed.setOnCheckedChangeListener((chip, checked) -> callback.onTabToggled(4, checked));
-        tabsRow.addView(chipFeed, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
-
         tabScroll.addView(tabsRow, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
-        sheetCard.addView(tabScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 18));
+        contentLayout.addView(tabScroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 10));
+
+        // Sub-selector: Choose Settings vs Calls
+        TextView slotSub = createSubHeader(context, "Вміст вкладки налаштувань / дзвінків:");
+        contentLayout.addView(slotSub);
+
+        LinearLayout slotRow = new LinearLayout(context);
+        slotRow.setOrientation(LinearLayout.HORIZONTAL);
+
+        YumiChip chipSlotSettings = new YumiChip(context);
+        chipSlotSettings.setText("⚙️ Налаштування");
+        chipSlotSettings.setChecked(!isCallsMode, false);
+
+        YumiChip chipSlotCalls = new YumiChip(context);
+        chipSlotCalls.setText("📞 Дзвінки");
+        chipSlotCalls.setChecked(isCallsMode, false);
+
+        chipSlotSettings.setOnClickListener(v -> {
+            chipSlotSettings.setChecked(true);
+            chipSlotCalls.setChecked(false);
+            chipCallsSettings.setText("Налаштування");
+            chipCallsSettings.setChipIcon(R.drawable.yumi_ic_settings);
+            callback.onCallsModeChanged(false);
+            refreshOrderList(context);
+        });
+
+        chipSlotCalls.setOnClickListener(v -> {
+            chipSlotCalls.setChecked(true);
+            chipSlotSettings.setChecked(false);
+            chipCallsSettings.setText("Дзвінки");
+            chipCallsSettings.setChipIcon(R.drawable.yumi_ic_call);
+            callback.onCallsModeChanged(true);
+            refreshOrderList(context);
+        });
+
+        slotRow.addView(chipSlotSettings, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, 0, 0, 8, 0));
+        slotRow.addView(chipSlotCalls, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
+        contentLayout.addView(slotRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 16));
 
         // Done button
         YumiButton doneBtn = new YumiButton(context, YumiButton.STYLE_FILLED);
@@ -269,10 +381,19 @@ public class YumiBarCustomizerSheet extends FrameLayout {
                 callback.onClose();
             }
         });
-        sheetCard.addView(doneBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        contentLayout.addView(doneBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 4));
 
+        scrollView.addView(contentLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        sheetCard.addView(scrollView, new LinearLayout.LayoutParams(LayoutHelper.MATCH_PARENT, 0, 1f));
+
+        // Restrict maximum sheet card height so lifted dock stays fully visible
+        int maxSheetHeight = (int) (AndroidUtilities.displaySize.y * 0.52f);
         LayoutParams cardLp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM);
-        addView(sheetCard, cardLp);
+        cardLp.height = Math.min(cardLp.height, maxSheetHeight);
+        addView(sheetCard, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+
+        // Populate reorder list initially
+        refreshOrderList(context);
 
         // Start entrance animation
         sheetCard.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
@@ -285,6 +406,128 @@ public class YumiBarCustomizerSheet extends FrameLayout {
         });
     }
 
+    public void refreshOrderList(Context context) {
+        if (orderContainer == null || activity == null) {
+            return;
+        }
+        orderContainer.removeAllViews();
+        List<Integer> visibleTabs = activity.getVisibleTabIndices();
+        if (visibleTabs == null || visibleTabs.isEmpty()) {
+            TextView emptyTv = new TextView(context);
+            emptyTv.setText("Немає активних вкладок для впорядкування");
+            emptyTv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12f);
+            emptyTv.setTextColor(YumiMd3.onSurfaceVariant());
+            emptyTv.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(4));
+            orderContainer.addView(emptyTv);
+            return;
+        }
+
+        for (int i = 0; i < visibleTabs.size(); i++) {
+            final int tabId = visibleTabs.get(i);
+            final int pos = i;
+            final boolean canMoveLeft = i > 0;
+            final boolean canMoveRight = i < visibleTabs.size() - 1;
+
+            LinearLayout row = new LinearLayout(context);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+            row.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(6), AndroidUtilities.dp(8), AndroidUtilities.dp(6));
+
+            GradientDrawable itemBg = new GradientDrawable();
+            itemBg.setColor(YumiMd3.surfaceContainerHighest());
+            itemBg.setCornerRadius(AndroidUtilities.dp(16));
+            itemBg.setStroke(Math.max(1, AndroidUtilities.dp(0.6f)), YumiMd3.withAlpha(YumiMd3.outlineVariant(), 0.6f));
+            row.setBackground(itemBg);
+
+            // Badge number: "1", "2", ...
+            TextView badge = new TextView(context);
+            badge.setText(String.valueOf(i + 1));
+            badge.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11f);
+            badge.setTextColor(YumiMd3.onPrimary());
+            badge.setTypeface(AndroidUtilities.bold());
+            badge.setGravity(Gravity.CENTER);
+            GradientDrawable badgeBg = new GradientDrawable();
+            badgeBg.setShape(GradientDrawable.OVAL);
+            badgeBg.setColor(YumiMd3.primary());
+            badge.setBackground(badgeBg);
+            row.addView(badge, LayoutHelper.createLinear(20, 20, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+
+            // Tab icon
+            ImageView icon = new ImageView(context);
+            icon.setImageResource(getTabIcon(tabId));
+            icon.setColorFilter(new PorterDuffColorFilter(YumiMd3.primary(), PorterDuff.Mode.SRC_IN));
+            row.addView(icon, LayoutHelper.createLinear(20, 20, Gravity.CENTER_VERTICAL, 0, 0, 10, 0));
+
+            // Tab title
+            TextView title = new TextView(context);
+            title.setText(getTabTitle(tabId));
+            title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14f);
+            title.setTextColor(YumiMd3.onSurface());
+            title.setTypeface(AndroidUtilities.bold());
+            row.addView(title, new LinearLayout.LayoutParams(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+            // Move left button ◀
+            ImageView btnLeft = new ImageView(context);
+            btnLeft.setImageResource(R.drawable.yumi_ic_arrow_back);
+            btnLeft.setScaleType(ImageView.ScaleType.CENTER);
+            btnLeft.setColorFilter(new PorterDuffColorFilter(
+                    canMoveLeft ? YumiMd3.primary() : YumiMd3.withAlpha(YumiMd3.onSurfaceVariant(), 0.3f), PorterDuff.Mode.SRC_IN));
+            if (canMoveLeft) {
+                btnLeft.setBackground(YumiUi.selectable(YumiMd3.surfaceContainerLow(), YumiMd3.RADIUS_FULL_DP));
+                btnLeft.setOnClickListener(v -> {
+                    v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    int prevTabId = visibleTabs.get(pos - 1);
+                    callback.onSwapVisibleTabs(tabId, prevTabId);
+                    refreshOrderList(context);
+                });
+            } else {
+                btnLeft.setAlpha(0.35f);
+            }
+            row.addView(btnLeft, LayoutHelper.createLinear(32, 32, Gravity.CENTER_VERTICAL, 0, 0, 6, 0));
+
+            // Move right button ▶
+            ImageView btnRight = new ImageView(context);
+            btnRight.setImageResource(R.drawable.yumi_ic_forward);
+            btnRight.setScaleType(ImageView.ScaleType.CENTER);
+            btnRight.setColorFilter(new PorterDuffColorFilter(
+                    canMoveRight ? YumiMd3.primary() : YumiMd3.withAlpha(YumiMd3.onSurfaceVariant(), 0.3f), PorterDuff.Mode.SRC_IN));
+            if (canMoveRight) {
+                btnRight.setBackground(YumiUi.selectable(YumiMd3.surfaceContainerLow(), YumiMd3.RADIUS_FULL_DP));
+                btnRight.setOnClickListener(v -> {
+                    v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    int nextTabId = visibleTabs.get(pos + 1);
+                    callback.onSwapVisibleTabs(tabId, nextTabId);
+                    refreshOrderList(context);
+                });
+            } else {
+                btnRight.setAlpha(0.35f);
+            }
+            row.addView(btnRight, LayoutHelper.createLinear(32, 32, Gravity.CENTER_VERTICAL));
+
+            orderContainer.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
+        }
+    }
+
+    private int getTabIcon(int tabId) {
+        if (tabId == MainTabsActivity.INDEX_CHATS) return R.drawable.yumi_ic_chat;
+        if (tabId == MainTabsActivity.INDEX_FEED) return R.drawable.yumi_ic_feed;
+        if (tabId == MainTabsActivity.INDEX_CONTACTS) return R.drawable.yumi_ic_contacts;
+        if (tabId == MainTabsActivity.INDEX_CALLS) return R.drawable.yumi_ic_call;
+        if (tabId == MainTabsActivity.INDEX_SETTINGS) return R.drawable.yumi_ic_settings;
+        if (tabId == MainTabsActivity.INDEX_PROFILE) return R.drawable.yumi_ic_person;
+        return R.drawable.yumi_ic_apps;
+    }
+
+    private String getTabTitle(int tabId) {
+        if (tabId == MainTabsActivity.INDEX_CHATS) return "Чати";
+        if (tabId == MainTabsActivity.INDEX_FEED) return "Стрічка";
+        if (tabId == MainTabsActivity.INDEX_CONTACTS) return "Контакти";
+        if (tabId == MainTabsActivity.INDEX_CALLS) return "Дзвінки";
+        if (tabId == MainTabsActivity.INDEX_SETTINGS) return "Налаштування";
+        if (tabId == MainTabsActivity.INDEX_PROFILE) return "Профіль";
+        return "Вкладка";
+    }
+
     private TextView createSectionHeader(Context context, String title) {
         TextView tv = new TextView(context);
         tv.setText(title);
@@ -292,6 +535,15 @@ public class YumiBarCustomizerSheet extends FrameLayout {
         tv.setTextColor(YumiMd3.primary());
         tv.setTypeface(AndroidUtilities.bold());
         tv.setLetterSpacing(0.06f);
+        tv.setPadding(0, AndroidUtilities.dp(4), 0, AndroidUtilities.dp(2));
+        return tv;
+    }
+
+    private TextView createSubHeader(Context context, String sub) {
+        TextView tv = new TextView(context);
+        tv.setText(sub);
+        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 11.5f);
+        tv.setTextColor(YumiMd3.onSurfaceVariant());
         tv.setPadding(0, 0, 0, AndroidUtilities.dp(6));
         return tv;
     }

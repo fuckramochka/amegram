@@ -140,10 +140,11 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
             final int width = right - left;
             final int height = bottom - top;
             final boolean selected = isTabSelected();
+            final boolean hideTitles = xyz.nextalone.nagram.NaConfig.INSTANCE.getMainTabsHideTitles().Bool();
             final View icon = backupImageView != null ? backupImageView : imageView;
             final int iconSize = dp(24);
             if (icon != null && icon.getParent() == this) {
-                if (selected) {
+                if (selected && !hideTitles) {
                     textView.setVisibility(VISIBLE);
                     textView.measure(
                             MeasureSpec.makeMeasureSpec(width, MeasureSpec.AT_MOST),
@@ -220,10 +221,17 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
             final float r;
             if (MainTabsUiHelper.isFloatingPill()) {
-                final float h = dp(48);
+                final float h = dp(44);
                 final float top = (getHeight() - h) / 2f;
-                tmpRectF.set(dp(2), top, viewWidth - dp(2), top + h);
-                r = dp(24);
+                final boolean hideTitles = xyz.nextalone.nagram.NaConfig.INSTANCE.getMainTabsHideTitles().Bool();
+                if (hideTitles) {
+                    final float pillW = dp(44);
+                    final float pillLeft = (viewWidth - pillW) / 2f;
+                    tmpRectF.set(pillLeft, top, pillLeft + pillW, top + h);
+                } else {
+                    tmpRectF.set(dp(2), top, viewWidth - dp(2), top + h);
+                }
+                r = dp(22);
                 paintCounterBackground.setColor(Theme.multAlpha(colorSelected, alpha));
             } else if (mainTabMaterial3) {
                 MainTabsUiHelper.setMainTabSelectedIndicatorBounds(tmpRectF, viewWidth, getHeight());
@@ -629,7 +637,7 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
 
     @Override
     public float measureTextWidth() {
-        if (textView.getVisibility() != VISIBLE) {
+        if (textView.getVisibility() != VISIBLE || xyz.nextalone.nagram.NaConfig.INSTANCE.getMainTabsHideTitles().Bool()) {
             return 0;
         }
         return defaultTextPaint.measureText(textView.getText().toString());
@@ -814,10 +822,6 @@ public class GlassTabView extends FrameLayout implements MainTabsLayout.Tab, Fac
     }
 
     public void setMainTabsCompact(boolean compact) {
-        if (textView.getVisibility() == (compact ? GONE : VISIBLE)) {
-            return;
-        }
-
         textView.setVisibility(compact ? GONE : VISIBLE);
 
         if (compact) {

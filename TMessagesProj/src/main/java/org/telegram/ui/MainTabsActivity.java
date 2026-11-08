@@ -124,12 +124,12 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private static final int POSITION_CALLS_OR_SETTINGS = 2;
     private static final int POSITION_PROFILE = 3;
 
-    private static final int INDEX_CHATS = 0;
-    private static final int INDEX_CONTACTS = 1;
-    private static final int INDEX_SETTINGS = 2;
-    private static final int INDEX_CALLS = 3;
-    private static final int INDEX_PROFILE = 4;
-    private static final int INDEX_FEED = 5;
+    public static final int INDEX_CHATS = 0;
+    public static final int INDEX_CONTACTS = 1;
+    public static final int INDEX_SETTINGS = 2;
+    public static final int INDEX_CALLS = 3;
+    public static final int INDEX_PROFILE = 4;
+    public static final int INDEX_FEED = 5;
 
     private int indexToPosition(int index) {
         // return index > 2 ? index - 1 : index;
@@ -192,6 +192,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
     private ValueAnimator tabsMarginAnimator;
     private boolean isBarCustomizerOpen;
     private YumiBarCustomizerSheet barCustomizerSheet;
+    private int[] displayOrder;
 
     private class BarWrapperLayout extends FrameLayout {
         private float initialSpan;
@@ -496,7 +497,7 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsView.addTabToIgnoreClick(tabs[INDEX_CALLS]);
         tabsView.addTabToIgnoreClick(tabs[INDEX_FEED]);
 
-        final int[] displayOrder = {INDEX_CHATS, INDEX_FEED, INDEX_CONTACTS, INDEX_SETTINGS, INDEX_CALLS, INDEX_PROFILE};
+        displayOrder = parseDisplayOrder(AppearanceConfig.getYumiBarTabsOrder());
         for (int index : displayOrder) {
             final GlassTabView view = tabs[index];
             final int tabIndex = index;
@@ -579,11 +580,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsViewWrapper.setClipToPadding(false);
         if (MainTabsUiHelper.isFloatingPill()) {
             final boolean isChats = getStartPosition() == getPositionChats();
-            final int initialMargin = isChats ? dp(72) : 0;
+            final boolean isStretch = AppearanceConfig.isYumiBarStretch();
+            final int fullMargin = isChats ? dp(72) : 0;
+            final int initialMargin = isStretch ? fullMargin : (fullMargin / 2);
             final int leftMargin = LocaleController.isRTL ? initialMargin : 0;
             final int rightMargin = LocaleController.isRTL ? 0 : initialMargin;
-            final int tabsGravity = Gravity.BOTTOM | (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
-            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 60, tabsGravity, leftMargin, 0, rightMargin, 0));
+            final int tabsGravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
+            final int tabsWidth = isStretch ? LayoutHelper.MATCH_PARENT : LayoutHelper.WRAP_CONTENT;
+            tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(tabsWidth, 60, tabsGravity, leftMargin, 0, rightMargin, 0));
 
             searchButton = new FrameLayout(context);
             if (app.exteraless.appearance.YougramExpressive.enabled()) {
@@ -1228,7 +1232,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         searchButton.setClickable(visible);
         searchButton.setEnabled(visible && animatorTabsVisible.getFloatValue() >= 0.99f);
 
-        final int targetMargin = visible ? dp(72) : 0;
+        final int fullTargetMargin = visible ? dp(72) : 0;
+        final boolean isStretch = AppearanceConfig.isYumiBarStretch();
+        final int targetMargin = isStretch ? fullTargetMargin : (fullTargetMargin / 2);
         final FrameLayout.LayoutParams lp = tabsView != null ? (FrameLayout.LayoutParams) tabsView.getLayoutParams() : null;
         final int currentMargin = lp != null ? (LocaleController.isRTL ? lp.leftMargin : lp.rightMargin) : 0;
 
@@ -1263,6 +1269,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                     int val = (Integer) animation.getAnimatedValue();
                     FrameLayout.LayoutParams p = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
                     if (p != null) {
+                        p.width = isStretch ? FrameLayout.LayoutParams.MATCH_PARENT : FrameLayout.LayoutParams.WRAP_CONTENT;
+                        p.gravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
                         if (LocaleController.isRTL) {
                             p.leftMargin = val;
                             p.rightMargin = 0;
@@ -1287,6 +1295,8 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 tabsMarginAnimator = null;
             }
             if (tabsView != null && lp != null) {
+                lp.width = isStretch ? FrameLayout.LayoutParams.MATCH_PARENT : FrameLayout.LayoutParams.WRAP_CONTENT;
+                lp.gravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
                 if (LocaleController.isRTL) {
                     lp.leftMargin = targetMargin;
                     lp.rightMargin = 0;
@@ -1297,6 +1307,113 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 tabsView.setLayoutParams(lp);
             }
         }
+    }
+
+    public static int[] parseDisplayOrder(String orderStr) {
+        final int[] defaultOrder = {INDEX_CHATS, INDEX_FEED, INDEX_CONTACTS, INDEX_SETTINGS, INDEX_CALLS, INDEX_PROFILE};
+        if (TextUtils.isEmpty(orderStr)) {
+            return defaultOrder;
+        }
+        try {
+            String[] parts = orderStr.split(",");
+            ArrayList<Integer> list = new ArrayList<>();
+            for (String p : parts) {
+                int id = Integer.parseInt(p.trim());
+                if (id >= 0 && id <= INDEX_FEED && !list.contains(id)) {
+                    list.add(id);
+                }
+            }
+            for (int def : defaultOrder) {
+                if (!list.contains(def)) {
+                    list.add(def);
+                }
+            }
+            int[] res = new int[list.size()];
+            for (int i = 0; i < list.size(); i++) {
+                res[i] = list.get(i);
+            }
+            return res;
+        } catch (Exception e) {
+            return defaultOrder;
+        }
+    }
+
+    public static String formatDisplayOrder(int[] order) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < order.length; i++) {
+            if (i > 0) sb.append(",");
+            sb.append(order[i]);
+        }
+        return sb.toString();
+    }
+
+    public void applyDisplayOrder() {
+        if (tabsView == null || tabs == null || displayOrder == null) return;
+        boolean[] isVisible = new boolean[tabs.length];
+        for (int i = 0; i < tabs.length; i++) {
+            isVisible[i] = tabs[i] != null && tabsView.isViewVisible(tabs[i]);
+        }
+        tabsView.removeAllViews();
+        for (int index : displayOrder) {
+            if (index >= 0 && index < tabs.length && tabs[index] != null) {
+                tabsView.addView(tabs[index]);
+                tabsView.setViewVisible(tabs[index], isVisible[index], false);
+            }
+        }
+        updateTabsViewLayout();
+    }
+
+    public void swapVisibleTabs(int indexA, int indexB) {
+        if (displayOrder == null) return;
+        int posA = -1;
+        int posB = -1;
+        for (int i = 0; i < displayOrder.length; i++) {
+            if (displayOrder[i] == indexA) posA = i;
+            if (displayOrder[i] == indexB) posB = i;
+        }
+        if (posA >= 0 && posB >= 0 && posA != posB) {
+            int temp = displayOrder[posA];
+            displayOrder[posA] = displayOrder[posB];
+            displayOrder[posB] = temp;
+            AppearanceConfig.yumiBarTabsOrder.setConfigString(formatDisplayOrder(displayOrder));
+            applyDisplayOrder();
+        }
+    }
+
+    public ArrayList<Integer> getVisibleTabIndices() {
+        ArrayList<Integer> list = new ArrayList<>();
+        if (displayOrder != null && tabsView != null && tabs != null) {
+            for (int index : displayOrder) {
+                if (index >= 0 && index < tabs.length && tabs[index] != null && tabsView.isViewVisible(tabs[index])) {
+                    list.add(index);
+                }
+            }
+        }
+        return list;
+    }
+
+    public void updateTabsViewLayout() {
+        if (tabsView == null) return;
+        final boolean isStretch = AppearanceConfig.isYumiBarStretch();
+        final boolean isChats = viewPager != null ? viewPager.getCurrentPosition() == getPositionChats() : true;
+        final int fullMargin = isChats ? dp(72) : 0;
+        final int targetMargin = isStretch ? fullMargin : (fullMargin / 2);
+
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
+        if (lp != null) {
+            lp.width = isStretch ? FrameLayout.LayoutParams.MATCH_PARENT : FrameLayout.LayoutParams.WRAP_CONTENT;
+            lp.gravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
+            if (LocaleController.isRTL) {
+                lp.leftMargin = targetMargin;
+                lp.rightMargin = 0;
+            } else {
+                lp.leftMargin = 0;
+                lp.rightMargin = targetMargin;
+            }
+            tabsView.setLayoutParams(lp);
+        }
+        tabsView.requestLayout();
+        tabsView.invalidate();
     }
 
     public void openBarCustomizer() {
@@ -1314,7 +1431,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 .setDuration(340L)
                 .start();
 
-        barCustomizerSheet = new YumiBarCustomizerSheet(getParentActivity(), new YumiBarCustomizerSheet.Callback() {
+        barCustomizerSheet = new YumiBarCustomizerSheet(getParentActivity(), this, new YumiBarCustomizerSheet.Callback() {
+            @Override
+            public void onStretchModeChanged(boolean stretch) {
+                AppearanceConfig.yumiBarStretch.setConfigBool(stretch);
+                updateTabsViewLayout();
+            }
+
             @Override
             public void onCompactModeChanged(boolean compact) {
                 NaConfig.INSTANCE.getMainTabsHideTitles().setConfigBool(compact);
@@ -1325,45 +1448,50 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                         }
                     }
                 }
-                if (tabsView != null) {
-                    MainTabsUiHelper.applyTabsLayoutStyle(tabsView, dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
-                    tabsView.requestLayout();
-                    tabsView.invalidate();
-                }
-            }
-
-            @Override
-            public void onSearchButtonToggled(boolean show) {
-                NaConfig.INSTANCE.getHideDialogsSearchField().setConfigBool(!show);
-                if (searchButton != null) {
-                    searchButton.setVisibility(show ? View.VISIBLE : View.GONE);
-                    searchButton.setAlpha(show ? 1f : 0f);
-                }
-                updateSearchButtonVisibility(viewPager != null ? viewPager.getCurrentPosition() : getPositionChats(), true);
+                updateTabsViewLayout();
             }
 
             @Override
             public void onTabToggled(int index, boolean visible) {
-                if (index == 1) { // Contacts
+                if (index == INDEX_CONTACTS) {
                     NaConfig.INSTANCE.getMainTabsHideContacts().setConfigBool(!visible);
+                    if (visible && AppearanceConfig.showFeedTab()) {
+                        AppearanceConfig.showFeedTab.setConfigBool(false);
+                    }
                     rebuildContactsSlot();
-                } else if (index == 2) { // Calls
+                } else if (index == INDEX_FEED) {
+                    AppearanceConfig.showFeedTab.setConfigBool(visible);
+                    if (visible) {
+                        NaConfig.INSTANCE.getMainTabsHideContacts().setConfigBool(false);
+                    }
+                    rebuildContactsSlot();
+                } else if (index == INDEX_SETTINGS || index == INDEX_CALLS) {
                     NaConfig.INSTANCE.getMainTabsHideCallsSettings().setConfigBool(!visible);
                     checkUi_callTabVisible(getUserConfig().showCallsTab, true);
-                } else if (index == 3) { // Profile
+                } else if (index == INDEX_PROFILE) {
                     NaConfig.INSTANCE.getMainTabsHideProfile().setConfigBool(!visible);
                     checkUi_callTabVisible(getUserConfig().showCallsTab, true);
-                } else if (index == 4) { // Feed
-                    AppearanceConfig.showFeedTab.setConfigBool(visible);
-                    checkUi_contactsOrFeedTabVisible(true);
                 }
                 if (viewPager != null) {
                     viewPager.rebuild(false);
                 }
-                if (tabsView != null) {
-                    tabsView.requestLayout();
-                    tabsView.invalidate();
+                updateTabsViewLayout();
+            }
+
+            @Override
+            public void onCallsModeChanged(boolean showCalls) {
+                getUserConfig().setShowCallsTab(showCalls);
+                NotificationCenter.getInstance(currentAccount).postNotificationName(NotificationCenter.callTabsVisibleToggled);
+                checkUi_callTabVisible(showCalls, true);
+                if (viewPager != null) {
+                    viewPager.rebuild(false);
                 }
+                updateTabsViewLayout();
+            }
+
+            @Override
+            public void onSwapVisibleTabs(int indexA, int indexB) {
+                swapVisibleTabs(indexA, indexB);
             }
 
             @Override

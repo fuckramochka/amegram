@@ -447,6 +447,27 @@ object AppearanceConfig {
     val mainMenuLayout =
         addConfig("OEAppearanceMainMenuLayout", ConfigItem.configTypeString, "")
 
+    /** Чи розтягувати Yumi бар на всю ширину (true), чи тримати компактним за вмістом кнопок (false). */
+    @JvmField
+    val yumiBarStretch = addConfig("OEAppearanceYumiBarStretch", ConfigItem.configTypeBool, true)
+
+    @JvmStatic
+    fun isYumiBarStretch(): Boolean {
+        ensureLoaded()
+        return yumiBarStretch.Bool()
+    }
+
+    /** Порядок кнопок у Yumi барі у вигляді списку індексів через кому (наприклад "0,5,1,2,3,4"). */
+    @JvmField
+    val yumiBarTabsOrder = addConfig("OEAppearanceYumiBarTabsOrder", ConfigItem.configTypeString, "0,5,1,2,3,4")
+
+    @JvmStatic
+    fun getYumiBarTabsOrder(): String {
+        ensureLoaded()
+        val str = yumiBarTabsOrder.String()
+        return if (str.isNullOrEmpty()) "0,5,1,2,3,4" else str
+    }
+
     // ---- Лента ----
 
     /**

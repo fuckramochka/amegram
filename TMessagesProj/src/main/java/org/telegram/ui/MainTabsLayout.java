@@ -164,20 +164,41 @@ public class MainTabsLayout extends AnimatedLinearLayout {
                 }
             }
             visibleChildCount = visibleCount;
+            final boolean hideTitles = xyz.nextalone.nagram.NaConfig.INSTANCE.getMainTabsHideTitles().Bool();
             float selectedTabWidth = 0;
             if (selectedIndex >= 0 && getChildAt(selectedIndex) instanceof GlassTabView) {
                 GlassTabView selectedTab = (GlassTabView) getChildAt(selectedIndex);
-                selectedTabWidth = dp(24 + 6 + 28) + selectedTab.measureTextWidth();
+                if (hideTitles) {
+                    selectedTabWidth = dp(52);
+                } else {
+                    selectedTabWidth = dp(24 + 6 + 28) + selectedTab.measureTextWidth();
+                }
             }
             int unselectedCount = Math.max(1, visibleCount - (selectedIndex >= 0 ? 1 : 0));
-            float remainingWidth = maxTotalWidthForTabs - selectedTabWidth;
-            float unselectedTabWidth = Math.max(dp(40), remainingWidth / unselectedCount);
-            if (selectedTabWidth + unselectedTabWidth * unselectedCount > maxTotalWidthForTabs) {
-                float scale = maxTotalWidthForTabs / (selectedTabWidth + unselectedTabWidth * unselectedCount);
-                selectedTabWidth *= scale;
-                unselectedTabWidth *= scale;
+            final boolean isStretch = app.exteraless.appearance.AppearanceConfig.isYumiBarStretch();
+            float unselectedTabWidth;
+
+            if (isStretch) {
+                float remainingWidth = maxTotalWidthForTabs - selectedTabWidth;
+                unselectedTabWidth = Math.max(dp(40), remainingWidth / unselectedCount);
+                if (selectedTabWidth + unselectedTabWidth * unselectedCount > maxTotalWidthForTabs) {
+                    float scale = maxTotalWidthForTabs / (selectedTabWidth + unselectedTabWidth * unselectedCount);
+                    selectedTabWidth *= scale;
+                    unselectedTabWidth *= scale;
+                } else {
+                    unselectedTabWidth = (maxTotalWidthForTabs - selectedTabWidth) / unselectedCount;
+                }
             } else {
-                unselectedTabWidth = (maxTotalWidthForTabs - selectedTabWidth) / unselectedCount;
+                unselectedTabWidth = dp(52);
+                if (hideTitles) {
+                    selectedTabWidth = dp(52);
+                }
+                float totalNeeded = selectedTabWidth + unselectedTabWidth * unselectedCount;
+                if (totalNeeded > maxTotalWidthForTabs) {
+                    float scale = maxTotalWidthForTabs / totalNeeded;
+                    selectedTabWidth *= scale;
+                    unselectedTabWidth *= scale;
+                }
             }
 
             int l = 0;

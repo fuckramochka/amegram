@@ -597,14 +597,14 @@
         "stable": {
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/docviewer-1.0.0.hmod",
-          "sha256": "4ce5c60413d47336bee1ac6d6f1e9e55362c9ff2e94286f4c9e65a6124a7516d",
+          "sha256": "023ce8b3fe058bc45b562775726be2132ff1eb33fa9fbedeb7e7162e0d06c1ac",
           "minApp": 7112,
           "changelog": "Версія 1.0.0: нативний перегляд файлів у клієнті з підтримкою тем та архівів.",
           "permissions": [
             "hook_ui",
             "storage"
           ],
-          "sizeBytes": 8943
+          "sizeBytes": 13558
         }
       },
       "history": [],

@@ -1,0 +1,1557 @@
+__id__ = "yumi_doc_viewer"
+__name__ = "Yumi Doc Viewer Pro"
+__description__ = "Профессиональный просмотрщик документов внутри Yumigram: PDF, Office (DOCX, XLSX, PPTX, ODF), книги (EPUB, FB2), интерактивные архивы (ZIP, TAR), код с подсветкой и строками, Markdown, CSV таблицы, JSON, картинки и почта."
+__author__ = "Yumi Team & Antigravity"
+__version__ = "3.0.0"
+__icon__ = "yumi_docs"
+__min_version__ = "12.0.0"
+__permissions__ = ["files", "settings", "hooks"]
+
+import bisect
+import codecs
+import csv
+import datetime
+import email
+import email.policy
+import io
+import json
+import os
+import posixpath
+import re
+import tarfile
+import threading
+import zipfile
+import xml.etree.ElementTree as ET
+from collections import namedtuple
+from html import escape
+from html.parser import HTMLParser
+from urllib.parse import unquote
+
+from base_plugin import BasePlugin
+try:
+    from base_plugin import MethodHook
+except ImportError:
+    from hook_utils import MethodHook
+
+from java import dynamic_proxy, jclass, jarray, jfloat, jint, cast
+from android_utils import run_on_ui_thread, log
+from client_utils import get_last_fragment
+from hook_utils import find_class
+from ui.settings import Header, Switch, Selector
+
+try:
+    from file_utils import FilesController, get_plugin_cache_dir
+except ImportError:
+    FilesController = None
+    get_plugin_cache_dir = None
+
+try:
+    from ui.bulletin import BulletinHelper
+except ImportError:
+    BulletinHelper = None
+
+# ----------------------------------------------------------------- Java Classes
+View = jclass("android.view.View")
+ViewGroup = jclass("android.view.ViewGroup")
+MotionEvent = jclass("android.view.MotionEvent")
+Gravity = jclass("android.view.Gravity")
+Dialog = jclass("android.app.Dialog")
+FrameLayout = jclass("android.widget.FrameLayout")
+LinearLayout = jclass("android.widget.LinearLayout")
+FLP = jclass("android.widget.FrameLayout$LayoutParams")
+LLP = jclass("android.widget.LinearLayout$LayoutParams")
+TextView = jclass("android.widget.TextView")
+EditText = jclass("android.widget.EditText")
+ImageView = jclass("android.widget.ImageView")
+ScaleType = jclass("android.widget.ImageView$ScaleType")
+ScrollView = jclass("android.widget.ScrollView")
+HScrollView = jclass("android.widget.HorizontalScrollView")
+Toast = jclass("android.widget.Toast")
+WebView = jclass("android.webkit.WebView")
+InputType = jclass("android.text.InputType")
+SpannableString = jclass("android.text.SpannableString")
+BgSpan = jclass("android.text.style.BackgroundColorSpan")
+FgSpan = jclass("android.text.style.ForegroundColorSpan")
+GradientDrawable = jclass("android.graphics.drawable.GradientDrawable")
+ColorDrawable = jclass("android.graphics.drawable.ColorDrawable")
+Matrix = jclass("android.graphics.Matrix")
+RectF = jclass("android.graphics.RectF")
+Bitmap = jclass("android.graphics.Bitmap")
+BitmapConfig = jclass("android.graphics.Bitmap$Config")
+BitmapFactory = jclass("android.graphics.BitmapFactory")
+BFOptions = jclass("android.graphics.BitmapFactory$Options")
+ColorMatrix = jclass("android.graphics.ColorMatrix")
+ColorMatrixColorFilter = jclass("android.graphics.ColorMatrixColorFilter")
+Typeface = jclass("android.graphics.Typeface")
+TruncateAt = jclass("android.text.TextUtils$TruncateAt")
+PdfRenderer = jclass("android.graphics.pdf.PdfRenderer")
+PdfPage = jclass("android.graphics.pdf.PdfRenderer$Page")
+ExifInterface = jclass("android.media.ExifInterface")
+ParcelFileDescriptor = jclass("android.os.ParcelFileDescriptor")
+JFile = jclass("java.io.File")
+JString = jclass("java.lang.String")
+Intent = jclass("android.content.Intent")
+ClipData = jclass("android.content.ClipData")
+ClipboardManager = jclass("android.content.ClipboardManager")
+ScaleGestureDetector = jclass("android.view.ScaleGestureDetector")
+GestureDetector = jclass("android.view.GestureDetector")
+RStyle = jclass("android.R$style")
+AlertBuilder = jclass("android.app.AlertDialog$Builder")
+
+OnClick = jclass("android.view.View$OnClickListener")
+OnTouch = jclass("android.view.View$OnTouchListener")
+OnLayout = jclass("android.view.View$OnLayoutChangeListener")
+OnDismiss = jclass("android.content.DialogInterface$OnDismissListener")
+OnDlgClick = jclass("android.content.DialogInterface$OnClickListener")
+OnKey = jclass("android.content.DialogInterface$OnKeyListener")
+OnScale = jclass("android.view.ScaleGestureDetector$OnScaleGestureListener")
+OnGesture = jclass("android.view.GestureDetector$OnGestureListener")
+OnDoubleTap = jclass("android.view.GestureDetector$OnDoubleTapListener")
+Runnable = jclass("java.lang.Runnable")
+
+
+# ----------------------------------------------------------------- Colors & Theming
+def argb(a, r, g, b):
+    v = (a << 24) | (r << 16) | (g << 8) | b
+    return v - 0x100000000 if v >= 0x80000000 else v
+
+
+def hex_color(val):
+    return "#%06x" % (val & 0xFFFFFF)
+
+
+def get_telegram_theme():
+    """Считывает цвета активной темы Yumigram напрямую из Theme.java."""
+    try:
+        TgTheme = jclass("org.telegram.ui.ActionBar.Theme")
+        is_dark = bool(TgTheme.isCurrentThemeDark())
+        bg = int(TgTheme.getColor(TgTheme.key_windowBackgroundWhite))
+        bg_card = int(TgTheme.getColor(TgTheme.key_windowBackgroundGray))
+        fg = int(TgTheme.getColor(TgTheme.key_windowBackgroundWhiteBlackText))
+        sub = int(TgTheme.getColor(TgTheme.key_windowBackgroundWhiteGrayText2))
+        accent = int(TgTheme.getColor(TgTheme.key_featuredStickers_addButton))
+        divider = int(TgTheme.getColor(TgTheme.key_divider))
+        bar_bg = int(TgTheme.getColor(TgTheme.key_actionBarDefault))
+        bar_fg = int(TgTheme.getColor(TgTheme.key_actionBarDefaultTitle))
+        pill_bg = argb(220, 28, 28, 36) if is_dark else argb(230, 240, 240, 245)
+        hit_bg = argb(255, 230, 150, 40) if is_dark else argb(255, 255, 210, 80)
+        cur_bg = argb(255, 255, 90, 0) if is_dark else argb(255, 255, 120, 0)
+        return {
+            "dark": is_dark, "bg": bg, "bg_card": bg_card, "fg": fg,
+            "sub": sub, "accent": accent, "divider": divider,
+            "bar_bg": bar_bg, "bar_fg": bar_fg, "pill_bg": pill_bg,
+            "hit_bg": hit_bg, "cur_bg": cur_bg,
+            "css_bg": hex_color(bg), "css_fg": hex_color(fg),
+            "css_alt": hex_color(bg_card), "css_accent": hex_color(accent)
+        }
+    except Exception as e:
+        log("DocViewer: fallback to static dark theme: %s" % e)
+        return {
+            "dark": True, "bg": argb(255, 14, 14, 18), "bg_card": argb(255, 24, 24, 30),
+            "fg": argb(255, 240, 240, 245), "sub": argb(255, 150, 152, 165),
+            "accent": argb(255, 82, 136, 255), "divider": argb(255, 40, 40, 48),
+            "bar_bg": argb(255, 20, 20, 26), "bar_fg": argb(255, 255, 255, 255),
+            "pill_bg": argb(230, 32, 32, 42), "hit_bg": argb(255, 180, 130, 20),
+            "cur_bg": argb(255, 230, 110, 0),
+            "css_bg": "#0e0e12", "css_fg": "#f0f0f5", "css_alt": "#18181e", "css_accent": "#5288ff"
+        }
+
+
+# ----------------------------------------------------------------- Limits & Formats
+MAX_TEXT_BYTES = 16 * 1024 * 1024
+MAX_WEB_BYTES = 6 * 1024 * 1024
+MAX_UNPACKED = 96 * 1024 * 1024
+MAX_ROWS = 4000
+MAX_COLS = 80
+MAX_HITS = 5000
+PAGE_CHARS = 35000
+CELL_MAX = 45
+
+EXT_FORMAT = {}
+
+
+def register_exts(fmt, exts):
+    for e in exts.split():
+        EXT_FORMAT[e] = fmt
+
+
+register_exts("pdf", "pdf")
+register_exts("image", "jpg jpeg jpe png webp bmp gif heic heif avif ico dib")
+register_exts("web", "html htm xhtml svg md markdown mdown")
+register_exts("csv", "csv tsv tab")
+register_exts("json", "json geojson")
+register_exts("ipynb", "ipynb")
+register_exts("docx", "docx docm dotx dotm")
+register_exts("xlsx", "xlsx xlsm xltx xltm")
+register_exts("pptx", "pptx pptm ppsx potx")
+register_exts("odf", "odt ott ods ots odp otp")
+register_exts("rtf", "rtf")
+register_exts("eml", "eml")
+register_exts("epub", "epub")
+register_exts("fb2", "fb2")
+register_exts("archive", "zip jar aar tar tgz tbz2 txz apk")
+register_exts("text", (
+    "txt text log jsonl ndjson xml plist yaml yml toml ini cfg conf env properties gradle cmake "
+    "srt vtt ass ssa lrc tex bib rst adoc org nfo diff patch vcf ics gpx kml tcx opml rss atom "
+    "xsd xsl xslt wsdl plugin py pyw pyi js mjs cjs jsx ts tsx java kt kts scala groovy c h cpp "
+    "cc cxx hpp hh cs go rs swift m mm php rb pl lua r dart sh bash zsh fish bat cmd ps1 psm1 "
+    "vbs sql css scss sass less vue svelte gql graphql proto tf hcl asm s v sv vhd vhdl hs ml "
+    "clj ex exs erl jl nim zig dockerfile makefile mk ninja gitignore gitattributes editorconfig "
+    "lock sum mod pro pri qml smali csproj sln vcxproj xaml aidl pem crt csr pub asc reg inf "
+    "desktop service ahk au3"
+))
+
+TEXT_NAMES = {
+    "readme", "license", "licence", "changelog", "makefile", "dockerfile", "gemfile", "procfile",
+    "authors", "contributors", "todo", "notice", "copying", "vagrantfile", "jenkinsfile",
+    "cmakelists", "requirements",
+}
+
+TEXTUAL = {"text", "csv", "json", "ipynb"}
+KIND = {"pdf": "pdf", "image": "image", "web": "web", "archive": "archive"}
+LABELS = {
+    "pdf": "PDF", "image": "Изображение", "text": "Текст / Код", "csv": "Таблица CSV",
+    "json": "JSON", "ipynb": "Jupyter Notebook", "docx": "Word DOCX", "xlsx": "Excel XLSX",
+    "pptx": "PowerPoint PPTX", "odf": "OpenDocument", "rtf": "RTF", "eml": "Письмо EML",
+    "epub": "Книга EPUB", "fb2": "Книга FB2", "archive": "Архив", "web": "Веб / Документ"
+}
+WEB_LABELS = {"md": "Markdown", "markdown": "Markdown", "mdown": "Markdown", "svg": "Вектор SVG", "html": "HTML"}
+MD_EXT = {"md", "markdown", "mdown"}
+
+ENCODINGS = (
+    ("Автоопределение", None), ("UTF-8", "utf-8"), ("Windows-1251", "cp1251"),
+    ("KOI8-R", "koi8-r"), ("CP866 (DOS)", "cp866"), ("UTF-16", "utf-16"),
+    ("Windows-1252 (Latin-1)", "cp1252")
+)
+
+
+# ----------------------------------------------------------------- Helpers
+def human_size(n):
+    n = float(n)
+    for u in ("Б", "КБ", "МБ", "ГБ"):
+        if n < 1024 or u == "ГБ":
+            return ("%d %s" % (n, u)) if u == "Б" else ("%.1f %s" % (n, u))
+        n /= 1024.0
+
+
+def rounded_bg(color, radius):
+    gd = GradientDrawable()
+    gd.setColor(color)
+    gd.setCornerRadius(float(radius))
+    return gd
+
+
+def border_bg(bg_color, stroke_color, stroke_width, radius):
+    gd = GradientDrawable()
+    gd.setColor(bg_color)
+    gd.setStroke(int(stroke_width), stroke_color)
+    gd.setCornerRadius(float(radius))
+    return gd
+
+
+def file_ext(name):
+    low = name.lower()
+    return low.rsplit(".", 1)[-1] if "." in low else ""
+
+
+def detect_format(name, mime):
+    low = name.lower()
+    ml = (mime or "").lower()
+    if low.endswith((".tar.gz", ".tar.bz2", ".tar.xz")):
+        return "archive"
+    ext = file_ext(low)
+    if ext in EXT_FORMAT:
+        return EXT_FORMAT[ext]
+    if "pdf" in ml:
+        return "pdf"
+    if ml.startswith("image/"):
+        return "image"
+    if ml.startswith("text/") or "json" in ml or "xml" in ml or "yaml" in ml:
+        return "text"
+    base = low.lstrip(".").split(".")[0]
+    if base in TEXT_NAMES and "." not in low[1:]:
+        return "text"
+    return "sniff" if not ext or ml == "application/octet-stream" else None
+
+
+def looks_like_text(path):
+    try:
+        with open(path, "rb") as f:
+            head = f.read(8192)
+    except OSError:
+        return False
+    if not head:
+        return True
+    if head.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE, codecs.BOM_UTF8)):
+        return True
+    if b"\x00" in head:
+        return False
+    ctrl = sum(1 for b in head if b < 9 or 13 < b < 32 and b != 27)
+    return ctrl * 50 < len(head)
+
+
+def decode_text(raw, enc=None):
+    if enc:
+        text, used = raw.decode(enc, "replace"), enc
+    elif raw.startswith(codecs.BOM_UTF8):
+        text, used = raw[3:].decode("utf-8", "replace"), "utf-8"
+    elif raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        text, used = raw.decode("utf-16", "replace"), "utf-16"
+    else:
+        try:
+            text, used = codecs.getincrementaldecoder("utf-8")().decode(raw, False), "utf-8"
+        except UnicodeDecodeError:
+            text, used = raw.decode("cp1251", "replace"), "cp1251"
+    if text.startswith("\ufeff"):
+        text = text[1:]
+    return text.replace("\r\n", "\n").replace("\r", "\n").replace("\x00", ""), used
+
+
+def paginate(text, size=PAGE_CHARS):
+    if len(text) <= size:
+        return [text]
+    pages = []
+    i, n = 0, len(text)
+    while i < n:
+        j = min(n, i + size)
+        if j < n:
+            k = text.rfind("\n", i, j)
+            if k > i + size // 2:
+                j = k + 1
+        pages.append(text[i:j])
+        i = j
+    return pages
+
+
+ASTRAL = re.compile("[\U00010000-\U0010ffff]")
+
+
+def utf16_mapper(text):
+    pos = [m.start() for m in ASTRAL.finditer(text)]
+    if not pos:
+        return None
+    return lambda i: i + bisect.bisect_left(pos, i)
+
+
+def fmt_rows(rows, pad=True):
+    clean = [[re.sub(r"\s+", " ", str(c)).strip() for c in r] for r in rows]
+    if not pad:
+        return "\n".join(" │ ".join(r) for r in clean)
+    clean = [[c if len(c) <= CELL_MAX else c[:CELL_MAX - 1] + "…" for c in r] for r in clean]
+    cols = max((len(r) for r in clean), default=0)
+    widths = [0] * cols
+    for r in clean:
+        for i, c in enumerate(r):
+            widths[i] = max(widths[i], len(c))
+    lines = []
+    for r in clean:
+        cells = [c.ljust(widths[i]) for i, c in enumerate(r)]
+        lines.append(" │ ".join(cells).rstrip())
+    return "\n".join(lines)
+
+
+def trim_rows(rows):
+    out = []
+    for r in rows:
+        r = list(r)
+        while r and not r[-1]:
+            r.pop()
+        out.append(r)
+    while out and not out[-1]:
+        out.pop()
+    return out
+
+
+def lname(tag):
+    return tag.rsplit("}", 1)[-1]
+
+
+def natural(s):
+    return [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", s)]
+
+
+class Doc:
+    def __init__(self, pages, font=0, wrap=True, raw=False, enc=None, note=None):
+        self.pages = pages or ["(документ пуст)"]
+        self.font = font
+        self.wrap = wrap
+        self.raw = raw
+        self.enc = enc
+        self.note = note
+
+
+# ----------------------------------------------------------------- XML & Office Parsers
+R_ID = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+W_VAL = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val"
+ODF_TEXT = "urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+ODF_TABLE = "urn:oasis:names:tc:opendocument:xmlns:table:1.0"
+
+
+def zread(z, name):
+    if z.getinfo(name).file_size > MAX_UNPACKED:
+        raise ValueError("Слишком большой внутренний файл: %s" % name)
+    return z.read(name)
+
+
+def xml_root(z, name):
+    return ET.fromstring(zread(z, name))
+
+
+def docx_para(p):
+    parts = []
+    style = ""
+    listed = False
+    for el in p.iter():
+        t = lname(el.tag)
+        if t == "t":
+            parts.append(el.text or "")
+        elif t == "tab":
+            parts.append("    ")
+        elif t in ("br", "cr"):
+            parts.append("\n")
+        elif t in ("drawing", "pict"):
+            parts.append("[изображение]")
+        elif t == "pStyle" and not style:
+            style = el.get(W_VAL) or ""
+        elif t == "numPr":
+            listed = True
+    text = "".join(parts)
+    if not text.strip():
+        return "", False
+    m = re.match(r"heading\s*(\d)", style, re.I)
+    if m:
+        return "#" * min(int(m.group(1)), 4) + " " + text.strip(), False
+    if style.lower() in ("title", "subtitle"):
+        return "# " + text.strip(), False
+    if listed:
+        return "• " + text.strip(), True
+    return text, False
+
+
+def docx_doc(path):
+    with zipfile.ZipFile(path) as z:
+        root = xml_root(z, "word/document.xml")
+    blocks = []
+    for body in root:
+        if lname(body.tag) != "body":
+            continue
+        for el in body:
+            t = lname(el.tag)
+            if t == "p":
+                txt, _ = docx_para(el)
+                if txt:
+                    blocks.append(txt)
+            elif t == "tbl":
+                rows = []
+                for tr in el:
+                    if lname(tr.tag) != "tr":
+                        continue
+                    cells = []
+                    for tc in tr:
+                        if lname(tc.tag) != "tc":
+                            continue
+                        texts = [docx_para(p)[0] for p in tc if lname(p.tag) == "p"]
+                        cells.append(" ".join(x for x in texts if x))
+                    rows.append(cells)
+                table_txt = fmt_rows(trim_rows(rows), False)
+                if table_txt.strip():
+                    blocks.append(table_txt)
+    return Doc(paginate("\n\n".join(blocks) or "(документ пуст)"), wrap=True)
+
+
+def xlsx_doc(path):
+    pages = []
+    with zipfile.ZipFile(path) as z:
+        shared = []
+        try:
+            s_root = xml_root(z, "xl/sharedStrings.xml")
+            for si in s_root:
+                shared.append("".join(el.text or "" for el in si.iter() if lname(el.tag) == "t"))
+        except KeyError:
+            pass
+
+        sheets = [n for n in z.namelist() if re.match(r"xl/worksheets/sheet\d+\.xml", n)]
+        for i, s_name in enumerate(sorted(sheets, key=natural), 1):
+            rows = []
+            with z.open(s_name) as f:
+                for _, el in ET.iterparse(f, events=("end",)):
+                    if lname(el.tag) != "row":
+                        continue
+                    cells = []
+                    for c in el:
+                        if lname(c.tag) != "c":
+                            continue
+                        t = c.get("t") or "n"
+                        v_el = next((ch for ch in c if lname(ch.tag) == "v"), None)
+                        val = v_el.text if v_el is not None else ""
+                        if t == "s" and val.isdigit():
+                            idx = int(val)
+                            cells.append(shared[idx] if idx < len(shared) else val)
+                        else:
+                            cells.append(val)
+                    el.clear()
+                    rows.append(cells)
+                    if len(rows) >= MAX_ROWS:
+                        break
+            content = fmt_rows(trim_rows(rows), True) if rows else "(лист пуст)"
+            pages.extend(paginate("── Лист %d ──\n\n%s" % (i, content)))
+    return Doc(pages, font=2, wrap=False)
+
+
+def pptx_doc(path):
+    pages = []
+    with zipfile.ZipFile(path) as z:
+        slides = sorted((n for n in z.namelist() if re.match(r"ppt/slides/slide\d+\.xml", n)), key=natural)
+        for i, s_name in enumerate(slides, 1):
+            root = xml_root(z, s_name)
+            paras = []
+            for p in root.iter():
+                if lname(p.tag) != "p":
+                    continue
+                txt = "".join(el.text or "" for el in p.iter() if lname(el.tag) == "t").strip()
+                if txt:
+                    paras.append(txt)
+            pages.append("── Слайд %d ──\n\n%s" % (i, "\n\n".join(paras) or "(нет текста)"))
+    return Doc(pages)
+
+
+def odf_doc(path):
+    with zipfile.ZipFile(path) as z:
+        root = xml_root(z, "content.xml")
+    body = next((c for c in root if lname(c.tag) == "body"), None)
+    if body is None or not len(body):
+        return Doc(["(документ пуст)"])
+    doc_node = body[0]
+    paras = []
+    for el in doc_node.iter():
+        if lname(el.tag) in ("p", "h"):
+            txt = "".join(el.itertext()).strip()
+            if txt:
+                paras.append(txt)
+    return Doc(paginate("\n\n".join(paras) or "(документ пуст)"), wrap=True)
+
+
+def rtf_doc(path):
+    with open(path, "rb") as f:
+        raw = f.read(MAX_TEXT_BYTES)
+    text = re.sub(r"\\[a-z]+(-?\d+)? ?", " ", raw.decode("latin-1", "replace"))
+    text = re.sub(r"[{}]", "", text)
+    return Doc(paginate(re.sub(r"\s+", " ", text).strip() or "(документ пуст)"))
+
+
+def epub_fb2_doc(path, ext):
+    pages = []
+    if ext == "epub":
+        with zipfile.ZipFile(path) as z:
+            htmls = [n for n in z.namelist() if n.endswith((".html", ".xhtml", ".htm"))]
+            for h in sorted(htmls, key=natural):
+                txt = decode_text(zread(z, h))[0]
+                clean = re.sub(r"<[^>]+>", " ", txt)
+                clean = re.sub(r"\s+", " ", clean).strip()
+                if clean:
+                    pages.extend(paginate(clean))
+    else:
+        with open(path, "rb") as f:
+            root = ET.fromstring(f.read(MAX_TEXT_BYTES))
+        paras = []
+        for p in root.iter():
+            if lname(p.tag) in ("p", "subtitle"):
+                t = "".join(p.itertext()).strip()
+                if t:
+                    paras.append(t)
+        pages.extend(paginate("\n\n".join(paras) or "(книга пуста)"))
+    return Doc(pages, font=1, wrap=True)
+
+
+def eml_doc(path):
+    with open(path, "rb") as f:
+        msg = email.message_from_binary_file(f, policy=email.policy.default)
+    headers = ["От: %s" % (msg.get("From") or "—"), "Кому: %s" % (msg.get("To") or "—"),
+               "Тема: %s" % (msg.get("Subject") or "—"), "Дата: %s" % (msg.get("Date") or "—")]
+    body = msg.get_body(preferencelist=("plain", "html"))
+    text = body.get_content() if body is not None else ""
+    if body and body.get_content_type() == "text/html":
+        text = re.sub(r"<[^>]+>", " ", text)
+    attachments = [a.get_filename() or "без имени" for a in msg.iter_attachments()]
+    out = "\n".join(headers) + "\n\n" + ("─" * 32) + "\n\n" + text.strip()
+    if attachments:
+        out += "\n\nВложения:\n" + "\n".join("  📎 " + a for a in attachments)
+    return Doc(paginate(out), wrap=True)
+
+
+BUILDERS = {
+    "docx": docx_doc, "xlsx": xlsx_doc, "pptx": pptx_doc, "odf": odf_doc,
+    "rtf": rtf_doc, "epub": lambda p: epub_fb2_doc(p, "epub"),
+    "fb2": lambda p: epub_fb2_doc(p, "fb2"), "eml": eml_doc
+}
+
+
+# ----------------------------------------------------------------- Markdown Web Page
+def build_markdown_html(text, theme):
+    lines = text.split("\n")
+    html_lines = []
+    in_code = False
+    for line in lines:
+        if line.startswith("```"):
+            in_code = not in_code
+            html_lines.append("<pre><code>" if in_code else "</code></pre>")
+            continue
+        if in_code:
+            html_lines.append(escape(line))
+            continue
+        if line.startswith("#"):
+            lvl = min(len(line) - len(line.lstrip("#")), 6)
+            html_lines.append("<h%d>%s</h%d>" % (lvl, escape(line.lstrip("# ").strip()), lvl))
+        elif line.startswith(">"):
+            html_lines.append("<blockquote>%s</blockquote>" % escape(line.lstrip("> ").strip()))
+        elif line.startswith(("- ", "* ", "+ ")):
+            html_lines.append("<li>%s</li>" % escape(line[2:].strip()))
+        elif not line.strip():
+            html_lines.append("<br>")
+        else:
+            html_lines.append("<p>%s</p>" % escape(line))
+    body = "\n".join(html_lines)
+    css = (
+        "body{background:%(bg)s;color:%(fg)s;font-family:sans-serif;padding:16px;line-height:1.6}"
+        "h1,h2,h3{color:%(accent)s}pre{background:%(alt)s;padding:12px;border-radius:8px;overflow-x:auto}"
+        "blockquote{border-left:4px solid %(accent)s;margin:8px 0;padding-left:12px;color:%(sub)s}"
+        "a{color:%(accent)s}code{background:%(alt)s;padding:2px 4px;border-radius:4px}"
+    ) % {"bg": theme["css_bg"], "fg": theme["css_fg"], "alt": theme["css_alt"],
+         "accent": theme["css_accent"], "sub": hex_color(theme["sub"])}
+    return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><style>%s</style></head><body>%s</body></html>' % (css, body)
+
+
+# ----------------------------------------------------------------- Interactive Archive Item
+class ArchiveNode:
+    def __init__(self, name, size, is_dir, stamp):
+        self.name = name
+        self.size = size
+        self.is_dir = is_dir
+        self.stamp = stamp
+
+
+# ----------------------------------------------------------------- DocViewer Dialog
+class YumiDocViewer:
+    def __init__(self, plugin, act, path, name, fmt, ext, mime, renderer=None, pfd=None, count=1):
+        self.plugin = plugin
+        self.act = act
+        self.path = path
+        self.name = name
+        self.fmt = fmt
+        self.ext = ext
+        self.mime = mime or ""
+        self.kind = KIND.get(fmt, "text")
+        self.renderer = renderer
+        self.pfd = pfd
+        self.count = max(1, count)
+        self.index = 0
+        self.token = 0
+        self.closed = False
+        self.theme = get_telegram_theme()
+        self.pages = []
+        self.doc = None
+        self.line_numbers = bool(plugin.get_setting("line_numbers", False))
+        self.wrap = bool(plugin.get_setting("wrap", True))
+        self.text_size = float(plugin.get_setting("text_size", 15.0))
+        self.font = 0
+        self.enc = None
+        self.invert = bool(plugin.get_setting("invert", False))
+        self.rot = 0
+        self.src_bitmap = None
+        self.bitmap = None
+        self.matrix = Matrix()
+        self.vals = jarray(jfloat)(9)
+        self.cur_dir = ""
+        self.hits = []
+        self.cur_hit = -1
+        self.cache = {}
+        self.dm = act.getResources().getDisplayMetrics()
+        self.density = float(self.dm.density)
+
+    def dp(self, v):
+        return int(v * self.density + 0.5)
+
+    def ui(self, fn):
+        run_on_ui_thread(fn)
+
+    def toast(self, msg, is_error=False):
+        def _show():
+            if BulletinHelper is not None:
+                try:
+                    frag = get_last_fragment()
+                    if is_error:
+                        BulletinHelper.show_error(msg, frag)
+                    else:
+                        BulletinHelper.show_success(msg, frag)
+                    return
+                except Exception:
+                    pass
+            Toast.makeText(self.act, msg, Toast.LENGTH_SHORT).show()
+        self.ui(_show)
+
+    def show(self):
+        act = self.act
+        dlg = Dialog(act, RStyle.Theme_Black_NoTitleBar_Fullscreen)
+        self.dlg = dlg
+        win = dlg.getWindow()
+        win.setBackgroundDrawable(ColorDrawable(self.theme["bg"]))
+        if self.plugin.get_setting("keepon", True):
+            win.addFlags(128)
+
+        root = FrameLayout(act)
+        root.setBackgroundColor(self.theme["bg"])
+        self.root = root
+
+        # Content Area
+        if self.kind == "archive":
+            self.build_archive_view(root)
+        elif self.kind == "text":
+            self.build_text_view(root)
+        elif self.kind == "web":
+            self.build_web_view(root)
+        else:
+            self.build_image_view(root)
+
+        # Loading Indicator
+        self.ld_view = TextView(act)
+        self.ld_view.setText("Загрузка документа…")
+        self.ld_view.setTextColor(self.theme["sub"])
+        self.ld_view.setTextSize(15.0)
+        self.ld_view.setGravity(Gravity.CENTER)
+        root.addView(self.ld_view, FLP(-1, -2, Gravity.CENTER))
+
+        # Top Action Bar
+        self.build_top_bar(root)
+
+        # Bottom Floating Toolbar (for Paged Viewers)
+        if self.kind in ("pdf", "text"):
+            self.build_bottom_bar(root)
+
+        dlg.setContentView(root)
+        dlg.setOnDismissListener(DismissL(self.cleanup))
+        dlg.setOnKeyListener(KeyL(self.on_key))
+        dlg.show()
+
+        if self.kind == "pdf":
+            self.show_page(0)
+        elif self.kind == "image":
+            threading.Thread(target=self.load_image, daemon=True).start()
+        elif self.kind == "archive":
+            threading.Thread(target=self.load_archive, daemon=True).start()
+        elif self.kind == "web":
+            threading.Thread(target=self.load_web, daemon=True).start()
+        else:
+            threading.Thread(target=self.load_text_doc, daemon=True).start()
+
+    # ---- UI Builders
+    def build_top_bar(self, root):
+        t = self.theme
+        bar = LinearLayout(self.act)
+        bar.setOrientation(LinearLayout.HORIZONTAL)
+        bar.setGravity(Gravity.CENTER_VERTICAL)
+        bar.setBackground(rounded_bg(t["bar_bg"], self.dp(24)))
+        bar.setPadding(self.dp(8), self.dp(6), self.dp(8), self.dp(6))
+
+        # Back / Close Button
+        btn_close = TextView(self.act)
+        btn_close.setText("←")
+        btn_close.setTextSize(22.0)
+        btn_close.setTextColor(t["bar_fg"])
+        btn_close.setGravity(Gravity.CENTER)
+        btn_close.setLayoutParams(LLP(self.dp(40), self.dp(40)))
+        btn_close.setOnClickListener(Click(self.close))
+        bar.addView(btn_close)
+
+        # Title & Subtitle
+        titles = LinearLayout(self.act)
+        titles.setOrientation(LinearLayout.VERTICAL)
+        t_name = TextView(self.act)
+        t_name.setText(self.name)
+        t_name.setTextColor(t["bar_fg"])
+        t_name.setTextSize(15.5)
+        t_name.setTypeface(Typeface.DEFAULT_BOLD)
+        t_name.setSingleLine(True)
+        t_name.setEllipsize(TruncateAt.END)
+        self.t_sub = TextView(self.act)
+        self.t_sub.setText("%s · %s" % (LABELS.get(self.fmt, self.fmt.upper()), human_size(os.path.getsize(self.path))))
+        self.t_sub.setTextColor(t["sub"])
+        self.t_sub.setTextSize(12.0)
+        titles.addView(t_name)
+        titles.addView(self.t_sub)
+        tlp = LLP(0, -2, 1.0)
+        tlp.setMargins(self.dp(10), 0, self.dp(8), 0)
+        bar.addView(titles, tlp)
+
+        # Menu Button
+        btn_menu = TextView(self.act)
+        btn_menu.setText("⋮")
+        btn_menu.setTextSize(22.0)
+        btn_menu.setTextColor(t["bar_fg"])
+        btn_menu.setGravity(Gravity.CENTER)
+        btn_menu.setLayoutParams(LLP(self.dp(36), self.dp(40)))
+        btn_menu.setOnClickListener(Click(self.open_menu))
+        bar.addView(btn_menu)
+
+        lp = FLP(-1, -2, Gravity.TOP)
+        lp.setMargins(self.dp(12), self.dp(32), self.dp(12), 0)
+        root.addView(bar, lp)
+        self.top_bar = bar
+
+    def build_bottom_bar(self, root):
+        t = self.theme
+        pill = LinearLayout(self.act)
+        pill.setOrientation(LinearLayout.HORIZONTAL)
+        pill.setGravity(Gravity.CENTER_VERTICAL)
+        pill.setBackground(rounded_bg(t["pill_bg"], self.dp(24)))
+        pill.setPadding(self.dp(6), self.dp(4), self.dp(6), self.dp(4))
+
+        self.btn_prev = self.create_nav_btn("‹", lambda: self.go(self.index - 1))
+        self.btn_next = self.create_nav_btn("›", lambda: self.go(self.index + 1))
+
+        self.txt_counter = TextView(self.act)
+        self.txt_counter.setTextColor(t["fg"])
+        self.txt_counter.setTextSize(14.5)
+        self.txt_counter.setTypeface(Typeface.DEFAULT_BOLD)
+        self.txt_counter.setGravity(Gravity.CENTER)
+        self.txt_counter.setMinWidth(self.dp(80))
+        self.txt_counter.setOnClickListener(Click(self.jump_dialog))
+
+        pill.addView(self.btn_prev)
+        pill.addView(self.txt_counter)
+        pill.addView(self.btn_next)
+
+        lp = FLP(-2, -2, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL)
+        lp.setMargins(0, 0, 0, self.dp(28))
+        root.addView(pill, lp)
+        self.bottom_bar = pill
+        self.update_counter()
+
+    def create_nav_btn(self, text, fn):
+        btn = TextView(self.act)
+        btn.setText(text)
+        btn.setTextSize(22.0)
+        btn.setTextColor(self.theme["fg"])
+        btn.setGravity(Gravity.CENTER)
+        btn.setLayoutParams(LLP(self.dp(42), self.dp(42)))
+        btn.setOnClickListener(Click(fn))
+        return btn
+
+    def build_text_view(self, root):
+        sv = ScrollView(self.act)
+        self.tv = TextView(self.act)
+        self.tv.setTextColor(self.theme["fg"])
+        self.tv.setTextSize(self.text_size)
+        self.tv.setLineSpacing(0.0, 1.25)
+        self.tv.setPadding(self.dp(16), self.dp(86), self.dp(16), self.dp(96))
+        try:
+            self.tv.setTextIsSelectable(True)
+        except Exception:
+            pass
+        sv.addView(self.tv, FLP(-1, -2))
+        root.addView(sv, FLP(-1, -1))
+        self.sv = sv
+
+    def build_web_view(self, root):
+        wv = WebView(self.act)
+        s = wv.getSettings()
+        s.setJavaScriptEnabled(False)
+        s.setSupportZoom(True)
+        s.setBuiltInZoomControls(True)
+        s.setDisplayZoomControls(False)
+        wv.setBackgroundColor(self.theme["bg"])
+        lp = FLP(-1, -1)
+        lp.setMargins(0, self.dp(78), 0, 0)
+        root.addView(wv, lp)
+        self.wv = wv
+
+    def build_image_view(self, root):
+        iv = ImageView(self.act)
+        iv.setScaleType(ScaleType.MATRIX)
+        self.scale_det = ScaleGestureDetector(self.act, ScaleL(self))
+        gl = GestureL(self)
+        self.gest_det = GestureDetector(self.act, gl)
+        self.gest_det.setOnDoubleTapListener(gl)
+        iv.setOnTouchListener(Touch(self.on_touch))
+        root.addView(iv, FLP(-1, -1))
+        self.iv = iv
+
+    def build_archive_view(self, root):
+        sv = ScrollView(self.act)
+        box = LinearLayout(self.act)
+        box.setOrientation(LinearLayout.VERTICAL)
+        box.setPadding(self.dp(16), self.dp(88), self.dp(16), self.dp(30))
+        sv.addView(box, FLP(-1, -2))
+        root.addView(sv, FLP(-1, -1))
+        self.archive_box = box
+
+    # ---- Loaders & Renderers
+    def load_text_doc(self):
+        try:
+            if self.fmt in TEXTUAL:
+                with open(self.path, "rb") as f:
+                    raw = f.read(MAX_TEXT_BYTES)
+                text, used_enc = decode_text(raw, self.enc)
+                if self.fmt == "json":
+                    try:
+                        text = json.dumps(json.loads(text), ensure_ascii=False, indent=2)
+                    except Exception:
+                        pass
+                elif self.fmt == "csv":
+                    delim = "\t" if self.ext in ("tsv", "tab") else ","
+                    try:
+                        rows = list(csv.reader(io.StringIO(text), delimiter=delim))
+                        text = fmt_rows(rows[:MAX_ROWS], True)
+                    except Exception:
+                        pass
+                self.doc = Doc(paginate(text), font=2, wrap=self.wrap, raw=True, enc=used_enc)
+            else:
+                self.doc = BUILDERS[self.fmt](self.path)
+            self.ui(self.render_doc)
+        except Exception as e:
+            self.ui(lambda: self.show_error("Ошибка открытия: %s" % e))
+
+    def render_doc(self):
+        if self.closed or not self.doc:
+            return
+        self.ld_view.setVisibility(View.GONE)
+        self.pages = self.doc.pages
+        self.count = len(self.pages)
+        self.update_counter()
+        self.show_text_page(0)
+
+    def show_text_page(self, idx):
+        self.index = max(0, min(self.count - 1, idx))
+        text = self.pages[self.index]
+        if self.line_numbers and self.fmt in TEXTUAL:
+            lines = text.split("\n")
+            w = len(str(len(lines)))
+            text = "\n".join("%*d │ %s" % (w, i, ln) for i, ln in enumerate(lines, 1))
+        self.tv.setText(text)
+        self.update_counter()
+
+    def load_web(self):
+        try:
+            with open(self.path, "rb") as f:
+                raw = f.read(MAX_WEB_BYTES)
+            text, _ = decode_text(raw)
+            if self.ext in MD_EXT:
+                html = build_markdown_html(text, self.theme)
+            elif self.ext == "svg":
+                html = '<!doctype html><html><body style="margin:0;background:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;">%s</body></html>' % text
+            else:
+                html = text
+            self.ui(lambda: self.on_web_loaded(html))
+        except Exception as e:
+            self.ui(lambda: self.show_error(str(e)))
+
+    def on_web_loaded(self, html):
+        if self.closed:
+            return
+        self.ld_view.setVisibility(View.GONE)
+        self.wv.loadDataWithBaseURL(None, html, "text/html", "utf-8", None)
+
+    # ---- Interactive Archive Loader
+    def load_archive(self):
+        nodes = []
+        try:
+            if zipfile.is_zipfile(self.path):
+                with zipfile.ZipFile(self.path) as z:
+                    for info in z.infolist():
+                        name = info.filename
+                        if not info.flag_bits & 0x800 and not name.isascii():
+                            try:
+                                name = name.encode("cp437").decode("cp866")
+                            except Exception:
+                                pass
+                        stamp = "%04d-%02d-%02d %02d:%02d" % info.date_time[:5]
+                        nodes.append(ArchiveNode(name, info.file_size, info.is_dir() or name.endswith("/"), stamp))
+            else:
+                with tarfile.open(self.path, "r:*") as tf:
+                    for m in tf:
+                        stamp = datetime.datetime.fromtimestamp(m.mtime).strftime("%Y-%m-%d %H:%M")
+                        nodes.append(ArchiveNode(m.name, m.size, m.isdir(), stamp))
+            self.archive_nodes = nodes
+            self.ui(self.render_archive)
+        except Exception as e:
+            self.ui(lambda: self.show_error("Ошибка архива: %s" % e))
+
+    def render_archive(self):
+        if self.closed:
+            return
+        self.ld_view.setVisibility(View.GONE)
+        self.archive_box.removeAllViews()
+        t = self.theme
+
+        # Current folder header
+        lbl_dir = TextView(self.act)
+        lbl_dir.setText("Папка: /%s" % self.cur_dir)
+        lbl_dir.setTextColor(t["accent"])
+        lbl_dir.setTextSize(14.0)
+        lbl_dir.setTypeface(Typeface.DEFAULT_BOLD)
+        lbl_dir.setPadding(0, 0, 0, self.dp(10))
+        self.archive_box.addView(lbl_dir)
+
+        # Up navigation button if inside subfolder
+        if self.cur_dir:
+            btn_up = TextView(self.act)
+            btn_up.setText("📁 .. (Наверх)")
+            btn_up.setTextColor(t["fg"])
+            btn_up.setTextSize(15.0)
+            btn_up.setPadding(0, self.dp(8), 0, self.dp(8))
+            btn_up.setOnClickListener(Click(self.archive_go_up))
+            self.archive_box.addView(btn_up)
+
+        # Filter items for current level
+        dirs, files = set(), []
+        prefix = self.cur_dir
+        for node in self.archive_nodes:
+            norm = node.name.lstrip("/")
+            if prefix and not norm.startswith(prefix):
+                continue
+            rel = norm[len(prefix):].lstrip("/")
+            if not rel:
+                continue
+            parts = rel.split("/", 1)
+            if len(parts) > 1:
+                dirs.add(parts[0])
+            elif node.is_dir:
+                dirs.add(parts[0])
+            else:
+                files.append((parts[0], node))
+
+        # Show directories
+        for d in sorted(dirs, key=natural):
+            row = TextView(self.act)
+            row.setText("📁 %s/" % d)
+            row.setTextColor(t["accent"])
+            row.setTextSize(15.0)
+            row.setTypeface(Typeface.DEFAULT_BOLD)
+            row.setPadding(0, self.dp(8), 0, self.dp(8))
+            subpath = (prefix + d + "/") if prefix else (d + "/")
+            row.setOnClickListener(Click(lambda sp=subpath: self.archive_open_dir(sp)))
+            self.archive_box.addView(row)
+
+        # Show files
+        for fname, node in sorted(files, key=lambda x: natural(x[0])):
+            row = LinearLayout(self.act)
+            row.setOrientation(LinearLayout.HORIZONTAL)
+            row.setPadding(0, self.dp(6), 0, self.dp(6))
+
+            t_name = TextView(self.act)
+            t_name.setText("📄 %s" % fname)
+            t_name.setTextColor(t["fg"])
+            t_name.setTextSize(14.5)
+            t_name.setLayoutParams(LLP(0, -2, 1.0))
+
+            t_info = TextView(self.act)
+            t_info.setText("%s · %s" % (human_size(node.size), node.stamp))
+            t_info.setTextColor(t["sub"])
+            t_info.setTextSize(12.0)
+
+            row.addView(t_name)
+            row.addView(t_info)
+            row.setOnClickListener(Click(lambda n=node.name: self.extract_and_open(n)))
+            self.archive_box.addView(row)
+
+    def archive_open_dir(self, d):
+        self.cur_dir = d
+        self.render_archive()
+
+    def archive_go_up(self):
+        parts = self.cur_dir.rstrip("/").split("/")
+        self.cur_dir = "/".join(parts[:-1]) + ("/" if len(parts) > 1 else "")
+        self.render_archive()
+
+    def extract_and_open(self, file_path):
+        self.toast("Распаковка файла…")
+        def job():
+            try:
+                dest_dir = get_plugin_cache_dir() if get_plugin_cache_dir else "/tmp"
+                os.makedirs(dest_dir, exist_ok=True)
+                out_path = os.path.join(dest_dir, os.path.basename(file_path))
+                if zipfile.is_zipfile(self.path):
+                    with zipfile.ZipFile(self.path) as z:
+                        with z.open(file_path) as src, open(out_path, "wb") as dst:
+                            dst.write(src.read())
+                else:
+                    with tarfile.open(self.path, "r:*") as tf:
+                        f = tf.extractfile(file_path)
+                        if f:
+                            with open(out_path, "wb") as dst:
+                                dst.write(f.read())
+                self.ui(lambda: self.plugin.open_file_internal(self.act, out_path, os.path.basename(out_path), None))
+            except Exception as e:
+                self.toast("Не удалось распаковать: %s" % e, True)
+        threading.Thread(target=job, daemon=True).start()
+
+    # ---- PDF & Image Page
+    def show_page(self, idx):
+        if self.closed or self.renderer is None:
+            return
+        self.index = max(0, min(self.count - 1, idx))
+        self.token += 1
+        tok = self.token
+        self.update_counter()
+        if idx in self.cache:
+            self.set_bitmap(self.cache[idx])
+            return
+
+        self.ld_view.setVisibility(View.VISIBLE)
+        def job():
+            try:
+                page = self.renderer.openPage(self.index)
+                pw, ph = page.getWidth(), page.getHeight()
+                scale = min(self.dm.widthPixels * 2.2 / pw, 3400.0 / max(pw, ph))
+                bmp = Bitmap.createBitmap(int(pw * scale), int(ph * scale), BitmapConfig.ARGB_8888)
+                bmp.eraseColor(jint(-1))
+                page.render(bmp, None, None, PdfPage.RENDER_MODE_FOR_DISPLAY)
+                page.close()
+                self.cache[self.index] = bmp
+                if tok == self.token:
+                    self.ui(lambda: self.set_bitmap(bmp))
+            except Exception as e:
+                log("DocViewer PDF error: %s" % e)
+        threading.Thread(target=job, daemon=True).start()
+
+    def set_bitmap(self, bmp):
+        if self.closed or bmp is None:
+            return
+        self.ld_view.setVisibility(View.GONE)
+        self.src_bitmap = bmp
+        self.display_bitmap(bmp)
+
+    def display_bitmap(self, src):
+        bmp = src
+        if self.rot:
+            m = Matrix()
+            m.postRotate(float(self.rot))
+            bmp = Bitmap.createBitmap(src, 0, 0, src.getWidth(), src.getHeight(), m, True)
+        self.bitmap = bmp
+        self.iv.setImageBitmap(bmp)
+        self.apply_invert()
+        self.reset_matrix()
+
+    def apply_invert(self):
+        if self.iv is None:
+            return
+        if self.invert:
+            m = jarray(jfloat)([
+                -1.0, 0.0, 0.0, 0.0, 255.0,
+                0.0, -1.0, 0.0, 0.0, 255.0,
+                0.0, 0.0, -1.0, 0.0, 255.0,
+                0.0, 0.0, 0.0, 1.0, 0.0,
+            ])
+            self.iv.setColorFilter(ColorMatrixColorFilter(ColorMatrix(m)))
+        else:
+            self.iv.clearColorFilter()
+
+    def reset_matrix(self):
+        if not self.bitmap:
+            return
+        vw, vh = float(self.iv.getWidth() or self.dm.widthPixels), float(self.iv.getHeight() or self.dm.heightPixels)
+        bw, bh = float(self.bitmap.getWidth()), float(self.bitmap.getHeight())
+        sc = min(vw / bw, vh / bh)
+        self.matrix.reset()
+        self.matrix.postScale(sc, sc)
+        self.matrix.postTranslate((vw - bw * sc) / 2.0, (vh - bh * sc) / 2.0)
+        self.iv.setImageMatrix(self.matrix)
+
+    def zoom_by(self, f, fx, fy):
+        self.matrix.postScale(float(f), float(f), float(fx), float(fy))
+        self.iv.setImageMatrix(self.matrix)
+
+    def load_image(self):
+        try:
+            bmp = BitmapFactory.decodeFile(self.path)
+            self.rot = exif_rotation(self.path)
+            self.ui(lambda: self.set_bitmap(bmp))
+        except Exception as e:
+            self.ui(lambda: self.show_error(str(e)))
+
+    # ---- Navigation & Menu
+    def go(self, idx):
+        if idx < 0 or idx >= self.count:
+            return
+        if self.kind == "pdf":
+            self.show_page(idx)
+        elif self.kind == "text":
+            self.show_text_page(idx)
+
+    def update_counter(self):
+        if hasattr(self, "txt_counter") and self.count > 1:
+            self.txt_counter.setText("%d / %d" % (self.index + 1, self.count))
+            self.btn_prev.setAlpha(0.35 if self.index <= 0 else 1.0)
+            self.btn_next.setAlpha(0.35 if self.index >= self.count - 1 else 1.0)
+
+    def open_menu(self):
+        items, actions = [], []
+        def add(label, fn):
+            items.append(label)
+            actions.append(fn)
+
+        if self.kind == "text":
+            add("Номера строк: %s" % ("Выключить" if self.line_numbers else "Включить"), self.toggle_lines)
+            add("Размер шрифта: +", lambda: self.adjust_font(1.0))
+            add("Размер шрифта: -", lambda: self.adjust_font(-1.0))
+            add("Копировать страницу", self.copy_page)
+            add("Копировать весь текст", self.copy_all)
+            if self.doc and self.doc.raw:
+                add("Сменить кодировку", self.encoding_dialog)
+        if self.kind in ("pdf", "image"):
+            add("Ночной режим: %s" % ("Выключить" if self.invert else "Включить"), self.toggle_invert)
+            add("Повернуть на 90°", self.rotate_image)
+        if self.count > 1:
+            add("Перейти к странице…", self.jump_dialog)
+        add("Поделиться файлом", self.share)
+        add("Открыть в системе", self.open_external)
+
+        b = AlertBuilder(self.act)
+        b.setItems(jarray(JString)(items), DlgClick(lambda w: actions[w]()))
+        b.show()
+
+    def toggle_lines(self):
+        self.line_numbers = not self.line_numbers
+        self.show_text_page(self.index)
+
+    def adjust_font(self, delta):
+        self.text_size = max(10.0, min(30.0, self.text_size + delta))
+        self.tv.setTextSize(self.text_size)
+
+    def toggle_invert(self):
+        self.invert = not self.invert
+        self.apply_invert()
+
+    def rotate_image(self):
+        self.rot = (self.rot + 90) % 360
+        if self.src_bitmap:
+            self.display_bitmap(self.src_bitmap)
+
+    def copy_page(self):
+        if self.pages:
+            self.copy_text(self.pages[self.index])
+
+    def copy_all(self):
+        if self.pages:
+            self.copy_text("\n\n".join(self.pages))
+
+    def copy_text(self, text):
+        try:
+            cm = cast(ClipboardManager, self.act.getSystemService("clipboard"))
+            cm.setPrimaryClip(ClipData.newPlainText("text", text))
+            self.toast("Текст скопирован в буфер!")
+        except Exception as e:
+            self.toast("Ошибка копирования: %s" % e, True)
+
+    def jump_dialog(self):
+        et = EditText(self.act)
+        et.setInputType(InputType.TYPE_CLASS_NUMBER)
+        et.setText(str(self.index + 1))
+        et.setSelectAllOnFocus(True)
+        def on_jump(w):
+            val = str(et.getText()).strip()
+            if val.isdigit():
+                self.go(int(val) - 1)
+        b = AlertBuilder(self.act)
+        b.setTitle("Страница (1 - %d)" % self.count)
+        b.setView(et)
+        b.setPositiveButton("Перейти", DlgClick(on_jump))
+        b.setNegativeButton("Отмена", None)
+        b.show()
+
+    def encoding_dialog(self):
+        names = [n for n, _ in ENCODINGS]
+        def on_pick(w):
+            self.enc = ENCODINGS[w][1]
+            self.load_text_doc()
+        b = AlertBuilder(self.act)
+        b.setTitle("Выбор кодировки")
+        b.setItems(jarray(JString)(names), DlgClick(on_pick))
+        b.show()
+
+    def share(self):
+        try:
+            FileProvider = find_class("androidx.core.content.FileProvider")
+            uri = FileProvider.getUriForFile(self.act, str(self.act.getPackageName()) + ".provider", JFile(self.path))
+            it = Intent(Intent.ACTION_SEND)
+            it.setType(self.mime or "*/*")
+            it.putExtra(Intent.EXTRA_STREAM, uri)
+            it.addFlags(1)
+            self.act.startActivity(Intent.createChooser(it, "Поделиться файлом"))
+        except Exception as e:
+            self.toast(str(e), True)
+
+    def open_external(self):
+        try:
+            FileProvider = find_class("androidx.core.content.FileProvider")
+            uri = FileProvider.getUriForFile(self.act, str(self.act.getPackageName()) + ".provider", JFile(self.path))
+            it = Intent(Intent.ACTION_VIEW)
+            it.setDataAndType(uri, self.mime or "*/*")
+            it.addFlags(1)
+            self.act.startActivity(Intent.createChooser(it, "Открыть в приложении"))
+        except Exception as e:
+            self.toast(str(e), True)
+
+    def on_touch(self, ev):
+        try:
+            self.scale_det.onTouchEvent(ev)
+            self.gest_det.onTouchEvent(ev)
+            if ev.getActionMasked() == MotionEvent.ACTION_MOVE and not self.scale_det.isInProgress():
+                # Pan handling
+                self.matrix.postTranslate(ev.getX() - getattr(self, "lx", ev.getX()), ev.getY() - getattr(self, "ly", ev.getY()))
+                self.iv.setImageMatrix(self.matrix)
+            self.lx, self.ly = ev.getX(), ev.getY()
+        except Exception:
+            pass
+        return True
+
+    def on_key(self, code, ev):
+        if code in (24, 25) and self.plugin.get_setting("volume", True) and ev.getAction() == 0:
+            step = 1 if code == 25 else -1
+            self.go(self.index + step)
+            return True
+        return False
+
+    def show_error(self, err):
+        self.ld_view.setText(err)
+        self.ld_view.setTextColor(argb(255, 255, 100, 100))
+
+    def close(self):
+        if self.dlg:
+            self.dlg.dismiss()
+
+    def cleanup(self):
+        self.closed = True
+        try:
+            if self.renderer:
+                self.renderer.close()
+            if self.pfd:
+                self.pfd.close()
+        except Exception:
+            pass
+
+
+# ----------------------------------------------------------------- Dynamic Proxies
+class Click(dynamic_proxy(OnClick)):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+    def onClick(self, v):
+        self.fn()
+
+
+class DlgClick(dynamic_proxy(OnDlgClick)):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+    def onClick(self, d, w):
+        self.fn(w)
+
+
+class Touch(dynamic_proxy(OnTouch)):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+    def onTouch(self, v, ev):
+        return self.fn(ev)
+
+
+class KeyL(dynamic_proxy(OnKey)):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+    def onKey(self, d, c, ev):
+        return bool(self.fn(c, ev))
+
+
+class DismissL(dynamic_proxy(OnDismiss)):
+    def __init__(self, fn):
+        super().__init__()
+        self.fn = fn
+    def onDismiss(self, d):
+        self.fn()
+
+
+class ScaleL(dynamic_proxy(OnScale)):
+    def __init__(self, v):
+        super().__init__()
+        self.v = v
+    def onScale(self, det):
+        self.v.zoom_by(det.getScaleFactor(), det.getFocusX(), det.getFocusY())
+        return True
+    def onScaleBegin(self, det):
+        return True
+    def onScaleEnd(self, det):
+        pass
+
+
+class GestureL(dynamic_proxy(OnGesture, OnDoubleTap)):
+    def __init__(self, v):
+        super().__init__()
+        self.v = v
+    def onDown(self, e): return True
+    def onShowPress(self, e): pass
+    def onSingleTapUp(self, e): return False
+    def onScroll(self, e1, e2, dx, dy): return False
+    def onLongPress(self, e): pass
+    def onFling(self, e1, e2, vx, vy):
+        if abs(vx) > 800 and abs(vx) > abs(vy) * 1.5:
+            self.v.go(self.v.index + (1 if vx < 0 else -1))
+            return True
+        return False
+    def onSingleTapConfirmed(self, e): return False
+    def onDoubleTap(self, e):
+        self.v.reset_matrix()
+        return True
+    def onDoubleTapEvent(self, e): return False
+
+
+def exif_rotation(path):
+    try:
+        ori = int(ExifInterface(path).getAttributeInt("Orientation", 1))
+        return {3: 180, 6: 90, 8: 270}.get(ori, 0)
+    except Exception:
+        return 0
+
+
+# ----------------------------------------------------------------- Hook Fallback
+class OpenHook(MethodHook):
+    def __init__(self, plugin, ret_bool):
+        super().__init__()
+        self.plugin = plugin
+        self.ret_bool = ret_bool
+
+    def before_hooked_method(self, param):
+        try:
+            args = param.args
+            if args and self.plugin.try_open_args(args):
+                param.setResult(True if self.ret_bool else None)
+        except Exception as e:
+            log("YumiDocViewer hook error: %s" % e)
+
+
+# ----------------------------------------------------------------- Main Plugin Class
+class YumiDocViewerPlugin(BasePlugin):
+    def on_plugin_load(self):
+        self.viewers = []
+        self.fc_secrets = {}
+
+        # 1. Official Yumigram FilesController registration
+        if FilesController is not None:
+            for ext in EXT_FORMAT.keys():
+                try:
+                    sec = FilesController.register(ext=ext, on_click=self.on_fc_open)
+                    if sec:
+                        self.fc_secrets[ext] = sec
+                except Exception as e:
+                    pass
+            log("YumiDocViewer: registered %d extensions in FilesController" % len(self.fc_secrets))
+
+        # 2. MethodHook fallback for universal coverage
+        try:
+            AndroidUtilities = find_class("org.telegram.messenger.AndroidUtilities")
+            for m in AndroidUtilities.getDeclaredMethods():
+                if str(m.getName()) == "openForView":
+                    is_bool = str(m.getReturnType().getName()) == "boolean"
+                    self.hook_method(m, OpenHook(self, is_bool))
+        except Exception as e:
+            log("YumiDocViewer: fallback hook setup: %s" % e)
+
+    def on_plugin_unload(self):
+        if FilesController is not None and self.fc_secrets:
+            for ext, sec in list(self.fc_secrets.items()):
+                try:
+                    FilesController.unregister(ext, sec)
+                except Exception:
+                    pass
+        for v in list(self.viewers):
+            try:
+                run_on_ui_thread(v.close)
+            except Exception:
+                pass
+
+    def create_settings(self):
+        return [
+            Header(text="Yumi Doc Viewer Pro"),
+            Switch(key="enabled", text="Включить просмотрщик в клиенте", default=True),
+            Header(text="Опции просмотра"),
+            Switch(key="line_numbers", text="Номера строк в коде и тексте", default=False),
+            Switch(key="wrap", text="Перенос длинных строк", default=True),
+            Switch(key="volume", text="Листать кнопками громкости", default=True),
+            Switch(key="keepon", text="Не гасить экран при чтении", default=True),
+            Switch(key="invert", text="Ночной режим для PDF по умолчанию", default=False),
+        ]
+
+    def on_fc_open(self, args):
+        if not self.get_setting("enabled", True):
+            return False
+        path = args.get("path")
+        name = args.get("file_name") or (os.path.basename(path) if path else "document")
+        mime = args.get("mime")
+        act = args.get("activity") or (get_last_fragment().getParentActivity() if get_last_fragment() else None)
+        if not path or not os.path.exists(path) or not act:
+            return False
+        return self.open_file_internal(act, path, name, mime)
+
+    def try_open_args(self, args):
+        if not self.get_setting("enabled", True) or not args or args[0] is None:
+            return False
+        first = args[0]
+        cname = str(first.getClass().getName())
+        path, name, mime = None, None, ""
+        FileLoader = find_class("org.telegram.messenger.FileLoader")
+
+        if cname.endswith("MessageObject"):
+            owner = first.messageOwner
+            if owner.attachPath and os.path.exists(str(owner.attachPath)):
+                path = str(owner.attachPath)
+            else:
+                f = FileLoader.getInstance(first.currentAccount).getPathToMessage(owner)
+                if f and f.exists():
+                    path = str(f.getAbsolutePath())
+            doc = first.getDocument()
+            if doc:
+                mime = str(doc.mime_type or "")
+                name = str(FileLoader.getDocumentFileName(doc))
+        elif cname == "java.io.File":
+            path = str(first.getAbsolutePath())
+            if len(args) > 1 and args[1]: name = str(args[1])
+            if len(args) > 2 and args[2]: mime = str(args[2])
+
+        if not path or not os.path.isfile(path) or os.path.getsize(path) == 0:
+            return False
+        name = name or os.path.basename(path)
+        frag = get_last_fragment()
+        act = frag.getParentActivity() if frag else None
+        if not act:
+            return False
+        return self.open_file_internal(act, path, name, mime)
+
+    def open_file_internal(self, act, path, name, mime):
+        fmt = detect_format(name, mime)
+        if fmt in TEXTUAL or fmt == "sniff":
+            if not looks_like_text(path):
+                return False
+            fmt = "text"
+        if not fmt:
+            return False
+
+        ext = file_ext(name) or file_ext(path)
+        renderer, pfd, count = None, None, 1
+        if fmt == "pdf":
+            try:
+                pfd = ParcelFileDescriptor.open(JFile(path), ParcelFileDescriptor.MODE_READ_ONLY)
+                renderer = PdfRenderer(pfd)
+                count = renderer.getPageCount()
+            except Exception:
+                return False
+
+        run_on_ui_thread(lambda: self.launch_viewer(act, path, name, fmt, ext, mime, renderer, pfd, count))
+        return True
+
+    def launch_viewer(self, act, path, name, fmt, ext, mime, renderer, pfd, count):
+        try:
+            viewer = YumiDocViewer(self, act, path, name, fmt, ext, mime, renderer, pfd, count)
+            self.viewers.append(viewer)
+            viewer.show()
+        except Exception as e:
+            log("YumiDocViewer launch error: %s" % e)

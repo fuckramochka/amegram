@@ -1,0 +1,822 @@
+__id__ = "game_arcade"
+__name__ = "Offline Arcade Games"
+__version__ = "2.0"
+__min_version__ = "12.0.0"
+__author__ = "Yumi Team & @Art_727 & @lerowplug"
+__description__ = "100% офлайн ігри: Chrome Dino, 2048 та Flappy Bird прямо в клієнті. Працюють абсолютно без інтернету, без реклами, з автоматичною пропозицією зіграти при втраті зв'язку!"
+__icon__ = "ArtPack99/34"
+__category__ = ["fun"]
+
+import gc
+import weakref
+
+from android.graphics import Color
+from android.view import Gravity, ViewGroup, WindowManager
+from base_plugin import BasePlugin, HookResult, HookStrategy, MenuItemData, MenuItemType
+from client_utils import get_last_fragment
+from android_utils import run_on_ui_thread, log
+from hook_utils import find_class
+from java import dynamic_proxy, jclass
+from ui.settings import Header, Switch, Text, Divider
+from ui.bulletin import BulletinHelper
+from org.telegram.messenger import LocaleController
+
+# ----------------------------------------------------------------- Offline Game 1: Chrome Dino (HTML5 Canvas)
+DINO_HTML = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
+html, body { width:100%; height:100%; background:#202124; overflow:hidden; font-family:monospace; touch-action:none; }
+canvas { display:block; width:100%; height:100%; }
+#ui { position:absolute; top:24px; right:24px; color:#9aa0a6; font-size:20px; font-weight:bold; letter-spacing:2px; }
+#hint { position:absolute; bottom:28px; width:100%; text-align:center; color:#5f6368; font-size:15px; }
+</style>
+</head>
+<body>
+<div id="ui">HI <span id="hi">00000</span> &nbsp; <span id="score">00000</span></div>
+<canvas id="c"></canvas>
+<div id="hint">Торкніться екрана, щоб стрибнути</div>
+<script>
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var scoreEl = document.getElementById('score');
+var hiEl = document.getElementById('hi');
+var hintEl = document.getElementById('hint');
+
+var W, H, groundY;
+function resize() {
+    W = canvas.width = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+    groundY = H * 0.72;
+}
+window.addEventListener('resize', resize);
+resize();
+
+var hi = parseInt(localStorage.getItem('dino_hi') || '0', 10);
+hiEl.textContent = String(hi).padStart(5, '0');
+
+var state = 'start'; // start, play, over
+var score = 0, speed = 6, frame = 0;
+var dino = { x: 50, y: 0, w: 44, h: 48, vy: 0, jump: -14, grounded: true };
+var obstacles = [];
+var nextObs = 90;
+
+function resetGame() {
+    score = 0;
+    speed = 6;
+    frame = 0;
+    obstacles = [];
+    nextObs = 80;
+    dino.y = groundY - dino.h;
+    dino.vy = 0;
+    dino.grounded = true;
+    state = 'play';
+    hintEl.style.display = 'none';
+}
+
+function tap() {
+    if (state === 'start' || state === 'over') {
+        resetGame();
+        return;
+    }
+    if (dino.grounded) {
+        dino.vy = dino.jump;
+        dino.grounded = false;
+    }
+}
+window.addEventListener('pointerdown', tap);
+window.addEventListener('keydown', function(e) { if(e.code==='Space'||e.code==='ArrowUp') tap(); });
+
+function drawDino(x, y, w, h, leg) {
+    ctx.fillStyle = '#e8eaed';
+    // Body & Head
+    ctx.fillRect(x + 12, y, 24, 20);
+    ctx.fillRect(x + 28, y + 4, 12, 10);
+    // Eye
+    ctx.fillStyle = '#202124';
+    ctx.fillRect(x + 20, y + 4, 4, 4);
+    // Body
+    ctx.fillStyle = '#e8eaed';
+    ctx.fillRect(x + 6, y + 16, 24, 20);
+    ctx.fillRect(x, y + 20, 8, 12);
+    // Legs
+    if (dino.grounded) {
+        if (leg) {
+            ctx.fillRect(x + 8, y + 36, 6, 12);
+            ctx.fillRect(x + 20, y + 36, 6, 8);
+        } else {
+            ctx.fillRect(x + 8, y + 36, 6, 8);
+            ctx.fillRect(x + 20, y + 36, 6, 12);
+        }
+    } else {
+        ctx.fillRect(x + 10, y + 36, 6, 10);
+        ctx.fillRect(x + 18, y + 36, 6, 10);
+    }
+}
+
+function drawCactus(x, y, w, h) {
+    ctx.fillStyle = '#5bb974';
+    ctx.fillRect(x + w * 0.35, y, w * 0.3, h);
+    ctx.fillRect(x, y + h * 0.25, w, h * 0.2);
+    ctx.fillRect(x, y + h * 0.25, w * 0.25, h * 0.45);
+    ctx.fillRect(x + w * 0.75, y + h * 0.15, w * 0.25, h * 0.45);
+}
+
+function loop() {
+    ctx.fillStyle = '#202124';
+    ctx.fillRect(0, 0, W, H);
+
+    // Draw Ground Line
+    ctx.strokeStyle = '#5f6368';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(W, groundY);
+    ctx.stroke();
+
+    if (state === 'play') {
+        frame++;
+        score += 0.15;
+        speed = 6 + Math.min(8, score * 0.005);
+        scoreEl.textContent = String(Math.floor(score)).padStart(5, '0');
+
+        // Physics
+        dino.vy += 0.8;
+        dino.y += dino.vy;
+        if (dino.y >= groundY - dino.h) {
+            dino.y = groundY - dino.h;
+            dino.vy = 0;
+            dino.grounded = true;
+        }
+
+        // Obstacles
+        nextObs--;
+        if (nextObs <= 0) {
+            var h = 34 + Math.random() * 24;
+            var w = 22 + Math.random() * 12;
+            obstacles.push({ x: W + 20, y: groundY - h, w: w, h: h });
+            nextObs = 60 + Math.random() * 70 - Math.min(30, speed * 2);
+        }
+
+        for (var i = obstacles.length - 1; i >= 0; i--) {
+            var o = obstacles[i];
+            o.x -= speed;
+            drawCactus(o.x, o.y, o.w, o.h);
+
+            // Collision Box
+            if (dino.x + 8 < o.x + o.w && dino.x + dino.w - 8 > o.x &&
+                dino.y + 6 < o.y + o.h && dino.y + dino.h > o.y) {
+                state = 'over';
+                hintEl.textContent = 'ГРА ЗАКІНЧЕНА · Натисніть, щоб повторити';
+                hintEl.style.display = 'block';
+                if (score > hi) {
+                    hi = Math.floor(score);
+                    localStorage.setItem('dino_hi', hi);
+                    hiEl.textContent = String(hi).padStart(5, '0');
+                }
+            }
+            if (o.x + o.w < -20) obstacles.splice(i, 1);
+        }
+    } else if (state === 'start') {
+        dino.y = groundY - dino.h;
+    }
+
+    drawDino(dino.x, dino.y, dino.w, dino.h, Math.floor(frame / 6) % 2 === 0);
+    requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>"""
+
+# ----------------------------------------------------------------- Offline Game 2: 2048 (HTML5 / Touch)
+GAME_2048_HTML = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
+html, body { width:100%; height:100%; background:#faf8ef; font-family:"Clear Sans", "Helvetica Neue", Arial, sans-serif; display:flex; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; touch-action:none; }
+#top { width:340px; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.title { font-size:48px; font-weight:bold; color:#776e65; }
+.scores { display:flex; gap:8px; }
+.box { background:#bbada0; color:#fff; border-radius:6px; padding:6px 14px; text-align:center; min-width:70px; }
+.box-lbl { font-size:11px; text-transform:uppercase; color:#eee4da; }
+.box-val { font-size:20px; font-weight:bold; }
+#grid { width:340px; height:340px; background:#bbada0; border-radius:8px; display:grid; grid-template-columns:repeat(4, 1fr); grid-gap:10px; padding:10px; position:relative; }
+.cell { width:100%; height:100%; background:rgba(238,228,218,0.35); border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:bold; color:#776e65; transition:0.1s transform; }
+.c-2 { background:#eee4da; }
+.c-4 { background:#ede0c8; }
+.c-8 { background:#f2b179; color:#f9f6f2; }
+.c-16 { background:#f59563; color:#f9f6f2; }
+.c-32 { background:#f67c5f; color:#f9f6f2; }
+.c-64 { background:#f65e3b; color:#f9f6f2; }
+.c-128 { background:#edcf72; color:#f9f6f2; font-size:24px; }
+.c-256 { background:#edcc61; color:#f9f6f2; font-size:24px; }
+.c-512 { background:#edc850; color:#f9f6f2; font-size:24px; }
+.c-1024 { background:#edc53f; color:#f9f6f2; font-size:20px; }
+.c-2048 { background:#edc22e; color:#f9f6f2; font-size:20px; box-shadow:0 0 15px rgba(243,215,116,0.5); }
+#btn { margin-top:14px; background:#8f7a66; color:#f9f6f2; font-size:16px; font-weight:bold; padding:10px 24px; border-radius:6px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="top">
+  <div class="title">2048</div>
+  <div class="scores">
+    <div class="box"><div class="box-lbl">Рахунок</div><div class="box-val" id="score">0</div></div>
+    <div class="box"><div class="box-lbl">Кращий</div><div class="box-val" id="best">0</div></div>
+  </div>
+</div>
+<div id="grid"></div>
+<div id="btn" onclick="init()">Нова гра</div>
+
+<script>
+var board, score = 0, best = parseInt(localStorage.getItem('2048_best') || '0', 10);
+document.getElementById('best').textContent = best;
+var grid = document.getElementById('grid');
+
+function init() {
+    board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];
+    score = 0;
+    updateScore(0);
+    addTile();
+    addTile();
+    render();
+}
+
+function updateScore(add) {
+    score += add;
+    document.getElementById('score').textContent = score;
+    if (score > best) {
+        best = score;
+        localStorage.setItem('2048_best', best);
+        document.getElementById('best').textContent = best;
+    }
+}
+
+function addTile() {
+    var empty = [];
+    for (var r=0; r<4; r++) for (var c=0; c<4; c++) if (!board[r][c]) empty.push({r:r, c:c});
+    if (!empty.length) return;
+    var spot = empty[Math.floor(Math.random() * empty.length)];
+    board[spot.r][spot.c] = Math.random() < 0.9 ? 2 : 4;
+}
+
+function render() {
+    grid.innerHTML = '';
+    for (var r=0; r<4; r++) {
+        for (var c=0; c<4; c++) {
+            var val = board[r][c];
+            var div = document.createElement('div');
+            div.className = 'cell ' + (val ? 'c-' + val : '');
+            div.textContent = val || '';
+            grid.appendChild(div);
+        }
+    }
+}
+
+function slide(row) {
+    var arr = row.filter(function(v){ return v; });
+    for (var i=0; i<arr.length-1; i++) {
+        if (arr[i] === arr[i+1]) {
+            arr[i] *= 2;
+            updateScore(arr[i]);
+            arr.splice(i+1, 1);
+        }
+    }
+    while (arr.length < 4) arr.push(0);
+    return arr;
+}
+
+function move(dir) { // 0: left, 1: right, 2: up, 3: down
+    var changed = false;
+    if (dir === 0 || dir === 1) {
+        for (var r=0; r<4; r++) {
+            var row = board[r].slice();
+            if (dir === 1) row.reverse();
+            var next = slide(row);
+            if (dir === 1) next.reverse();
+            for (var c=0; c<4; c++) {
+                if (board[r][c] !== next[c]) changed = true;
+                board[r][c] = next[c];
+            }
+        }
+    } else {
+        for (var c=0; c<4; c++) {
+            var col = [board[0][c], board[1][c], board[2][c], board[3][c]];
+            if (dir === 3) col.reverse();
+            var next = slide(col);
+            if (dir === 3) next.reverse();
+            for (var r=0; r<4; r++) {
+                if (board[r][c] !== next[r]) changed = true;
+                board[r][c] = next[r];
+            }
+        }
+    }
+    if (changed) {
+        addTile();
+        render();
+    }
+}
+
+// Swipe handling
+var sx, sy;
+window.addEventListener('touchstart', function(e){ sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, false);
+window.addEventListener('touchend', function(e){
+    if (!sx || !sy) return;
+    var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > Math.abs(dy)) {
+        if (Math.abs(dx) > 30) move(dx > 0 ? 1 : 0);
+    } else {
+        if (Math.abs(dy) > 30) move(dy > 0 ? 3 : 2);
+    }
+    sx = sy = null;
+}, false);
+
+window.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowLeft') move(0);
+    if (e.key === 'ArrowRight') move(1);
+    if (e.key === 'ArrowUp') move(2);
+    if (e.key === 'ArrowDown') move(3);
+});
+
+init();
+</script>
+</body>
+</html>"""
+
+# ----------------------------------------------------------------- Offline Game 3: Flappy Bird (HTML5 Canvas)
+FLAPPY_HTML = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
+html, body { width:100%; height:100%; background:#4ec0ca; overflow:hidden; font-family:sans-serif; touch-action:none; }
+canvas { display:block; width:100%; height:100%; }
+#ui { position:absolute; top:30px; width:100%; text-align:center; color:#fff; font-size:42px; font-weight:900; text-shadow:2px 2px 4px rgba(0,0,0,0.5); }
+#msg { position:absolute; top:45%; width:100%; text-align:center; color:#fff; font-size:22px; font-weight:bold; text-shadow:1px 1px 3px rgba(0,0,0,0.6); }
+</style>
+</head>
+<body>
+<div id="ui">0</div>
+<div id="msg">Торкніться, щоб летіти</div>
+<canvas id="c"></canvas>
+<script>
+var canvas = document.getElementById('c');
+var ctx = canvas.getContext('2d');
+var ui = document.getElementById('ui');
+var msg = document.getElementById('msg');
+
+var W, H;
+function resize() { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+var state = 'start'; // start, play, over
+var score = 0, best = parseInt(localStorage.getItem('flappy_best') || '0', 10);
+var bird = { x: 70, y: 0, r: 16, vy: 0, jump: -7.5, grav: 0.38 };
+var pipes = [], timer = 0;
+
+function reset() {
+    bird.y = H * 0.45;
+    bird.vy = 0;
+    pipes = [];
+    score = 0;
+    timer = 0;
+    ui.textContent = '0';
+    state = 'play';
+    msg.style.display = 'none';
+}
+
+function tap() {
+    if (state === 'start' || state === 'over') {
+        reset();
+        return;
+    }
+    bird.vy = bird.jump;
+}
+window.addEventListener('pointerdown', tap);
+
+function loop() {
+    // Sky
+    ctx.fillStyle = '#4ec0ca';
+    ctx.fillRect(0, 0, W, H);
+
+    // City & Clouds Silhouette
+    ctx.fillStyle = '#cbf1f4';
+    ctx.fillRect(0, H - 120, W, 80);
+
+    // Ground
+    ctx.fillStyle = '#ded895';
+    ctx.fillRect(0, H - 40, W, 40);
+    ctx.fillStyle = '#73bf2e';
+    ctx.fillRect(0, H - 40, W, 8);
+
+    if (state === 'play') {
+        bird.vy += bird.grav;
+        bird.y += bird.vy;
+
+        // Spawn Pipes
+        timer++;
+        if (timer % 95 === 0) {
+            var gap = 140;
+            var topH = 50 + Math.random() * (H - 40 - gap - 100);
+            pipes.push({ x: W + 20, top: topH, bot: topH + gap, w: 52, scored: false });
+        }
+
+        for (var i = pipes.length - 1; i >= 0; i--) {
+            var p = pipes[i];
+            p.x -= 3.2;
+
+            // Draw Pipes
+            ctx.fillStyle = '#73bf2e';
+            ctx.strokeStyle = '#558a22';
+            ctx.lineWidth = 3;
+            // Top pipe
+            ctx.fillRect(p.x, 0, p.w, p.top);
+            ctx.strokeRect(p.x, 0, p.w, p.top);
+            // Bottom pipe
+            ctx.fillRect(p.x, p.bot, p.w, H - 40 - p.bot);
+            ctx.strokeRect(p.x, p.bot, p.w, H - 40 - p.bot);
+
+            // Collision check
+            if (bird.x + bird.r > p.x && bird.x - bird.r < p.x + p.w) {
+                if (bird.y - bird.r < p.top || bird.y + bird.r > p.bot) {
+                    gameOver();
+                }
+            }
+
+            // Score check
+            if (!p.scored && p.x + p.w < bird.x) {
+                p.scored = true;
+                score++;
+                ui.textContent = score;
+            }
+
+            if (p.x < -60) pipes.splice(i, 1);
+        }
+
+        // Floor / Ceiling check
+        if (bird.y + bird.r >= H - 40 || bird.y - bird.r <= 0) {
+            gameOver();
+        }
+    }
+
+    // Draw Bird
+    ctx.save();
+    ctx.translate(bird.x, bird.y);
+    var angle = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, bird.vy * 0.08));
+    ctx.rotate(angle);
+    ctx.fillStyle = '#f7d02c';
+    ctx.beginPath();
+    ctx.arc(0, 0, bird.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    // Eye
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(6, -6, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(8, -6, 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Beak
+    ctx.fillStyle = '#f85b2b';
+    ctx.beginPath();
+    ctx.arc(10, 3, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    requestAnimationFrame(loop);
+}
+
+function gameOver() {
+    state = 'over';
+    if (score > best) {
+        best = score;
+        localStorage.setItem('flappy_best', best);
+    }
+    msg.innerHTML = 'ГРА ЗАКІНЧЕНА<br><span style="font-size:16px;">Кращий: ' + best + ' · Торкніться для рестарту</span>';
+    msg.style.display = 'block';
+}
+
+reset();
+state = 'start';
+msg.style.display = 'block';
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>"""
+
+
+# ----------------------------------------------------------------- Main Arcade Plugin Class
+class YumiArcadePlugin(BasePlugin):
+    def __init__(self):
+        super().__init__()
+        self.current_dialog = None
+        self.menu_items = {}
+        self.observer = None
+        self.last_connection_state = -1
+
+    def on_plugin_load(self):
+        try:
+            self.update_menu_items()
+            self.add_on_send_message_hook()
+            self.setup_network_listener()
+        except Exception as e:
+            log(f"[YumiArcade] Init failed: {e}")
+
+    def on_plugin_unload(self):
+        try:
+            if self.current_dialog is not None:
+                try:
+                    self.current_dialog.dismiss()
+                except Exception:
+                    pass
+                self.current_dialog = None
+
+            for item_id in list(self.menu_items.values()):
+                if item_id:
+                    try:
+                        self.remove_menu_item(item_id)
+                    except Exception:
+                        pass
+            self.menu_items.clear()
+            self.teardown_network_listener()
+            gc.collect()
+        except Exception as e:
+            log(f"[YumiArcade] Unload error: {e}")
+
+    def create_settings(self):
+        plugin_ref = weakref.proxy(self)
+        return [
+            Header(text="Офлайн Аркади (Yumi Arcade)"),
+            Switch(key="offline_prompt", text="Пропонувати гру, коли пропадає інтернет", default=True),
+            Switch(key="show_close_btn", text="Кнопка закриття «✕»", default=True),
+            Switch(key="show_in_menu", text="Показувати в бічному меню", default=True, on_change=lambda *_: plugin_ref.update_menu_items()),
+            Switch(key="keep_screen_on", text="Не гасити екран під час гри", default=True),
+            Divider(),
+            Text(text="🦖 Chrome Dino (Офлайн)", on_click=lambda *_: plugin_ref.launch_game("dino", "Chrome Dino"), icon="msg_bot"),
+            Text(text="🔢 2048 (Офлайн)", on_click=lambda *_: plugin_ref.launch_game("2048", "2048"), icon="msg_bot"),
+            Text(text="🐦 Flappy Bird (Офлайн)", on_click=lambda *_: plugin_ref.launch_game("flappy", "Flappy Bird"), icon="msg_bot"),
+            Divider(),
+            Text(text="🎮 Відкрити вибір гри (Arcade Hub)", on_click=lambda *_: plugin_ref.show_arcade_hub(), icon="msg_game")
+        ]
+
+    def update_menu_items(self):
+        for item_id in list(self.menu_items.values()):
+            if item_id:
+                try:
+                    self.remove_menu_item(item_id)
+                except Exception:
+                    pass
+        self.menu_items.clear()
+
+        plugin_ref = weakref.proxy(self)
+        if self.get_setting("show_in_menu", True):
+            try:
+                self.menu_items["drawer_hub"] = self.add_menu_item(
+                    MenuItemData(menu_type=MenuItemType.DRAWER_MENU, text="🎮 Офлайн Ігри", on_click=lambda *_: plugin_ref.show_arcade_hub(), icon="msg_game")
+                )
+            except Exception as e:
+                log(f"[YumiArcade] Drawer error: {e}")
+
+        try:
+            self.menu_items["chat_hub"] = self.add_menu_item(
+                MenuItemData(menu_type=MenuItemType.CHAT_ACTION_MENU, text="🎮 Офлайн Ігри", on_click=lambda *_: plugin_ref.show_arcade_hub(), icon="msg_game")
+            )
+        except Exception as e:
+            log(f"[YumiArcade] Chat menu error: {e}")
+
+    def on_send_message_hook(self, account, params):
+        if hasattr(params, 'message') and params.message:
+            msg = params.message.strip().lower()
+            if msg in (".game", ".games", ".arcade", ".play"):
+                self.show_arcade_hub()
+                return HookResult(strategy=HookStrategy.CANCEL)
+            elif msg == ".dino":
+                self.launch_game("dino", "Chrome Dino")
+                return HookResult(strategy=HookStrategy.CANCEL)
+            elif msg == ".2048":
+                self.launch_game("2048", "2048")
+                return HookResult(strategy=HookStrategy.CANCEL)
+            elif msg == ".flappy":
+                self.launch_game("flappy", "Flappy Bird")
+                return HookResult(strategy=HookStrategy.CANCEL)
+        return HookResult()
+
+    # ----------------------------------------------------------------- Connection State Monitoring
+    def setup_network_listener(self):
+        try:
+            NotificationCenter = find_class("org.telegram.messenger.NotificationCenter")
+            did_update_id = getattr(NotificationCenter, "didUpdateConnectionState", 0)
+            if not did_update_id:
+                return
+
+            w = weakref.ref(self)
+            NotificationDelegate = find_class("org.telegram.messenger.NotificationCenter$NotificationCenterDelegate")
+
+            class NetObserver(dynamic_proxy(NotificationDelegate)):
+                def didReceivedNotification(self, nid, account, args):
+                    inst = w()
+                    if inst and nid == did_update_id:
+                        inst.check_connection(account)
+
+            self.observer = NetObserver()
+            NotificationCenter.getGlobalInstance().addObserver(self.observer, did_update_id)
+        except Exception as e:
+            log(f"[YumiArcade] Network listener setup error: {e}")
+
+    def teardown_network_listener(self):
+        try:
+            if self.observer:
+                NotificationCenter = find_class("org.telegram.messenger.NotificationCenter")
+                did_update_id = getattr(NotificationCenter, "didUpdateConnectionState", 0)
+                NotificationCenter.getGlobalInstance().removeObserver(self.observer, did_update_id)
+                self.observer = None
+        except Exception:
+            pass
+
+    def check_connection(self, account):
+        try:
+            ConnectionsManager = find_class("org.telegram.tgnet.ConnectionsManager")
+            state = ConnectionsManager.getInstance(account).getConnectionState()
+            # 2 = ConnectionStateWaitingForNetwork
+            if state == 2 and self.last_connection_state != 2:
+                self.last_connection_state = 2
+                if self.get_setting("offline_prompt", True):
+                    run_on_ui_thread(self.on_offline_detected)
+            elif state != 2:
+                self.last_connection_state = state
+        except Exception as e:
+            log(f"[YumiArcade] Connection check error: {e}")
+
+    def on_offline_detected(self):
+        frag = get_last_fragment()
+        if not frag or not frag.getParentActivity():
+            return
+        # Show interactive Telegram Bulletin
+        try:
+            if BulletinHelper is not None:
+                BulletinHelper.show_info("📡 Немає інтернету? Напишіть .game або відкрийте ігри з меню!", frag)
+        except Exception:
+            pass
+
+    # ----------------------------------------------------------------- Arcade Hub (Selection Dialog)
+    def show_arcade_hub(self):
+        w = weakref.ref(self)
+
+        def run():
+            inst = w()
+            if not inst:
+                return
+            frag = get_last_fragment()
+            if not frag or not frag.getParentActivity():
+                return
+            act = frag.getParentActivity()
+
+            AlertBuilder = find_class("android.app.AlertDialog$Builder")
+            OnDlgClick = find_class("android.content.DialogInterface$OnClickListener")
+
+            items = [
+                "🦖 Chrome Dino (Біжи та стрибай)",
+                "🔢 2048 (Класична головоломка)",
+                "🐦 Flappy Bird (Ретро аркада)"
+            ]
+
+            class Pick(dynamic_proxy(OnDlgClick)):
+                def onClick(self, d, which):
+                    if which == 0:
+                        inst.launch_game("dino", "Chrome Dino")
+                    elif which == 1:
+                        inst.launch_game("2048", "2048")
+                    elif which == 2:
+                        inst.launch_game("flappy", "Flappy Bird")
+
+            b = AlertBuilder(act)
+            b.setTitle("🎮 Офлайн Ігри (Yumi Arcade)")
+            JString = find_class("java.lang.String")
+            from java import jarray
+            b.setItems(jarray(JString)(items), Pick())
+            b.setNegativeButton("Закрити", None)
+            b.show()
+
+        run_on_ui_thread(run)
+
+    # ----------------------------------------------------------------- Game Launcher
+    def launch_game(self, game_type="dino", title="Game"):
+        html_map = {
+            "dino": DINO_HTML,
+            "2048": GAME_2048_HTML,
+            "flappy": FLAPPY_HTML
+        }
+        game_html = html_map.get(game_type, DINO_HTML)
+        w = weakref.ref(self)
+
+        def run():
+            inst = w()
+            if inst is None:
+                return
+            try:
+                if inst.current_dialog is not None:
+                    try:
+                        inst.current_dialog.dismiss()
+                    except Exception:
+                        pass
+                    inst.current_dialog = None
+
+                fragment = get_last_fragment()
+                if not fragment or not fragment.getParentActivity():
+                    return
+                act = fragment.getParentActivity()
+                if act.isFinishing() or (hasattr(act, "isDestroyed") and act.isDestroyed()):
+                    return
+
+                Frame = find_class("android.widget.FrameLayout")
+                WebView = find_class("android.webkit.WebView")
+                TextView = find_class("android.widget.TextView")
+                Dialog = find_class("android.app.Dialog")
+                OnClick = find_class("android.view.View$OnClickListener")
+                OnDismiss = find_class("android.content.DialogInterface$OnDismissListener")
+
+                orig_orient = act.getRequestedOrientation()
+                act.setRequestedOrientation(1)  # Portrait
+
+                layout = Frame(act)
+                layout.setBackgroundColor(Color.parseColor("#202124"))
+
+                webview = WebView(act)
+                webview.setVerticalScrollBarEnabled(False)
+                webview.setHorizontalScrollBarEnabled(False)
+
+                settings = webview.getSettings()
+                settings.setJavaScriptEnabled(True)
+                settings.setDomStorageEnabled(True)
+                settings.setDatabaseEnabled(True)
+                settings.setUseWideViewPort(True)
+                settings.setLoadWithOverviewMode(True)
+
+                # 100% OFFLINE: load directly from embedded string with zero network!
+                webview.loadDataWithBaseURL("https://offline.arcade/", game_html, "text/html", "utf-8", None)
+                layout.addView(webview, ViewGroup.LayoutParams(-1, -1))
+
+                # Close Button «✕»
+                if inst.get_setting("show_close_btn", True):
+                    btn = TextView(act)
+                    btn.setText("✕")
+                    btn.setTextSize(20.0)
+                    btn.setTextColor(Color.WHITE)
+                    btn.setGravity(Gravity.CENTER)
+                    btn.setBackgroundColor(Color.parseColor("#66000000"))
+                    btn.setPadding(30, 15, 30, 15)
+
+                    lp = Frame.LayoutParams(-2, -2)
+                    lp.gravity = Gravity.TOP | Gravity.RIGHT
+                    lp.setMargins(0, 30, 30, 0)
+                    layout.addView(btn, lp)
+
+                    class Click(dynamic_proxy(OnClick)):
+                        def onClick(self, v):
+                            if inst.current_dialog:
+                                inst.current_dialog.dismiss()
+                    btn.setOnClickListener(Click())
+
+                dialog = Dialog(act, 16974122)
+                dialog.setContentView(layout)
+                inst.current_dialog = dialog
+
+                window = dialog.getWindow()
+                if window:
+                    window.setLayout(-1, -1)
+                    if inst.get_setting("keep_screen_on", True):
+                        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    window.getDecorView().setSystemUiVisibility(5894)
+
+                class Dismiss(dynamic_proxy(OnDismiss)):
+                    def onDismiss(self, d):
+                        try:
+                            if inst:
+                                inst.current_dialog = None
+                            if webview:
+                                webview.stopLoading()
+                                webview.destroy()
+                            if act and not act.isFinishing():
+                                act.setRequestedOrientation(orig_orient)
+                            gc.collect()
+                        except Exception:
+                            pass
+
+                dialog.setOnDismissListener(Dismiss())
+                dialog.show()
+
+            except Exception as e:
+                log(f"[YumiArcade] Launch error: {e}")
+
+        run_on_ui_thread(run)

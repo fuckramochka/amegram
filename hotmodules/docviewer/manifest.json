@@ -1,0 +1,17 @@
+{
+  "id": "docviewer",
+  "version": "1.0.0",
+  "branch": "stable",
+  "entry": "com.amegram.mods.docviewer.DocViewerModule",
+  "name": "Doc Viewer Pro",
+  "minApp": 7112,
+  "description": "Вбудований перегляд PDF, Office (DOCX, XLSX, PPTX, ODF), книг (EPUB, FB2), коду та інтерактивних архівів у клієнті.",
+  "changelog": "Версія 1.0.0: нативний модуль перегляду документів та архівів всередині Yumigram.",
+  "author": "Yumi Team",
+  "category": "tools",
+  "featured": true,
+  "permissions": [
+    "hook_ui",
+    "storage"
+  ]
+}

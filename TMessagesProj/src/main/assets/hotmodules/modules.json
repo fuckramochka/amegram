@@ -573,7 +573,7 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "arcade-1.0.0.hmod",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/arcade-1.0.0.hmod",
           "sha256": "f6ac89cf58670f792b4cf2ef09b32796281e363a0862b5212a29a5e6c3d5259f",
           "minApp": 7112,
           "changelog": "Версія 1.0.0: автономні офлайн ігри Chrome Dino, 2048 та Flappy Bird.",
@@ -585,7 +585,7 @@
       },
       "history": [],
       "author": "Yumi Team",
-      "category": "fun",
+      "category": "media",
       "featured": true
     },
     {
@@ -596,7 +596,7 @@
       "branches": {
         "stable": {
           "version": "1.0.0",
-          "url": "docviewer-1.0.0.hmod",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/docviewer-1.0.0.hmod",
           "sha256": "4ce5c60413d47336bee1ac6d6f1e9e55362c9ff2e94286f4c9e65a6124a7516d",
           "minApp": 7112,
           "changelog": "Версія 1.0.0: нативний перегляд файлів у клієнті з підтримкою тем та архівів.",
@@ -609,7 +609,7 @@
       },
       "history": [],
       "author": "Yumi Team",
-      "category": "tools",
+      "category": "power",
       "featured": true
     }
   ]

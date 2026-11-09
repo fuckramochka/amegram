@@ -110,6 +110,16 @@ public final class HotCatalog {
         return null;
     }
 
+    /** Об'єднує модулі, додаючи відсутні (наприклад, із локальних assets). */
+    public void mergeMissing(HotCatalog other) {
+        if (other == null || other.modules == null) return;
+        for (Entry e : other.modules) {
+            if (find(e.id) == null) {
+                modules.add(e);
+            }
+        }
+    }
+
     /** Унікальні категорії в порядку появи (для чипів фільтра). */
     public List<String> categories() {
         List<String> res = new ArrayList<>();

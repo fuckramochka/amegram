@@ -568,6 +568,10 @@ public final class HotModulesManager {
         init(ApplicationLoader.applicationContext);
         new Thread(() -> {
             HotCatalog cached = readCachedCatalog();
+            HotCatalog asset = readAssetCatalog();
+            if (cached != null && asset != null) {
+                cached.mergeMissing(asset);
+            }
             long cacheTime = prefs().getLong("catalog_time", 0);
             boolean fresh = System.currentTimeMillis() - cacheTime < HotConfig.CATALOG_TTL_MS;
             if (!force && cached != null && fresh) {
@@ -577,6 +581,9 @@ public final class HotModulesManager {
             try {
                 String json = HotDownloader.get(HotConfig.CATALOG_URL);
                 HotCatalog catalog = HotCatalog.parse(json);
+                if (asset != null) {
+                    catalog.mergeMissing(asset);
+                }
                 prefs().edit().putString("catalog_json", json)
                         .putLong("catalog_time", System.currentTimeMillis()).apply();
                 post(cb, true, "", catalog);
@@ -585,7 +592,6 @@ public final class HotModulesManager {
                 if (cached != null) {
                     post(cb, true, "cached", cached);
                 } else {
-                    HotCatalog asset = readAssetCatalog();
                     if (asset != null) {
                         post(cb, true, "asset", asset);
                     } else {

@@ -8,7 +8,7 @@
   "description": "100% офлайн ігри: Chrome Dino, 2048 та Flappy Bird без інтернету та реклами.",
   "changelog": "Версія 1.0.0: нативний модуль офлайн аркадних ігор із авто-пропозицією при втраті зв'язку.",
   "author": "Yumi Team",
-  "category": "fun",
+  "category": "media",
   "featured": true,
   "permissions": [
     "hook_ui"

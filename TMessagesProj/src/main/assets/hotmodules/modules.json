@@ -1,5 +1,5 @@
 {
-  "updated": 1728634500,
+  "updated": 1731179000,
   "modules": [
     {
       "id": "player",
@@ -595,19 +595,33 @@
       "entry": "com.amegram.mods.docviewer.DocViewerModule",
       "branches": {
         "stable": {
+          "version": "1.1.0",
+          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/docviewer-1.1.0.hmod",
+          "sha256": "074779009085626b38478168fdb0cafbe94a55ecbc8c7d5d5b6bcfc0b9b82206",
+          "minApp": 7112,
+          "changelog": "Версія 1.1.0: виправлено відображення Word (DOCX/DOC/RTF), вбудовано нативний XML/DOM парсер та стилізований WebView.",
+          "permissions": [
+            "hook_ui",
+            "storage"
+          ],
+          "sizeBytes": 14222
+        }
+      },
+      "history": [
+        {
+          "branch": "stable",
           "version": "1.0.0",
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/docviewer-1.0.0.hmod",
           "sha256": "023ce8b3fe058bc45b562775726be2132ff1eb33fa9fbedeb7e7162e0d06c1ac",
+          "sizeBytes": 13558,
           "minApp": 7112,
           "changelog": "Версія 1.0.0: нативний перегляд файлів у клієнті з підтримкою тем та архівів.",
           "permissions": [
             "hook_ui",
             "storage"
-          ],
-          "sizeBytes": 13558
+          ]
         }
-      },
-      "history": [],
+      ],
       "author": "Yumi Team",
       "category": "power",
       "featured": true

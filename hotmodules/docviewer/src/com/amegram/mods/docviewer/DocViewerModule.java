@@ -203,8 +203,10 @@ public class DocViewerModule implements HotModule {
         if (ext == null) return false;
         ext = ext.toLowerCase(Locale.ROOT);
         return "pdf".equals(ext) || "zip".equals(ext) || "tar".equals(ext) || "gz".equals(ext)
-                || "docx".equals(ext) || "doc".equals(ext) || "xlsx".equals(ext) || "xls".equals(ext)
-                || "pptx".equals(ext) || "ppt".equals(ext) || "epub".equals(ext) || "fb2".equals(ext)
+                || "docx".equals(ext) || "doc".equals(ext) || "rtf".equals(ext)
+                || "xlsx".equals(ext) || "xls".equals(ext)
+                || "pptx".equals(ext) || "ppt".equals(ext)
+                || "epub".equals(ext) || "fb2".equals(ext)
                 || "txt".equals(ext) || "log".equals(ext) || "json".equals(ext) || "csv".equals(ext)
                 || "xml".equals(ext) || "py".equals(ext) || "java".equals(ext) || "kt".equals(ext)
                 || "c".equals(ext) || "cpp".equals(ext) || "h".equals(ext) || "js".equals(ext)
@@ -226,27 +228,20 @@ public class DocViewerModule implements HotModule {
             Activity act = (Activity) laClass.getField("instance").get(null);
             if (act == null || act.isFinishing()) return;
 
-            FrameLayout root = new FrameLayout(act);
+            LinearLayout root = new LinearLayout(act);
+            root.setOrientation(LinearLayout.VERTICAL);
             root.setBackgroundColor(Color.parseColor("#18181e"));
-
-            if ("zip".equals(ext) || "tar".equals(ext) || "gz".equals(ext)) {
-                buildArchiveView(act, root, file);
-            } else if ("pdf".equals(ext)) {
-                buildPdfView(act, root, file);
-            } else {
-                buildWebView(act, root, file, ext);
-            }
 
             // Top Header Bar
             LinearLayout topBar = new LinearLayout(act);
             topBar.setOrientation(LinearLayout.HORIZONTAL);
             topBar.setGravity(Gravity.CENTER_VERTICAL);
-            topBar.setBackgroundColor(Color.parseColor("#E6202028"));
+            topBar.setBackgroundColor(Color.parseColor("#202028"));
             topBar.setPadding(30, 20, 30, 20);
 
             TextView btnBack = new TextView(act);
             btnBack.setText("←");
-            btnBack.setTextSize(22f);
+            btnBack.setTextSize(24f);
             btnBack.setTextColor(Color.WHITE);
             btnBack.setGravity(Gravity.CENTER);
             btnBack.setPadding(10, 10, 30, 10);
@@ -270,10 +265,15 @@ public class DocViewerModule implements HotModule {
             LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f);
             topBar.addView(titleBox, tlp);
 
-            FrameLayout.LayoutParams fblp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            fblp.gravity = Gravity.TOP;
-            root.addView(topBar, fblp);
-            topBar.bringToFront();
+            root.addView(topBar, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+            if ("zip".equals(ext) || "tar".equals(ext) || "gz".equals(ext)) {
+                buildArchiveView(act, root, file);
+            } else if ("pdf".equals(ext)) {
+                buildPdfView(act, root, file);
+            } else {
+                buildWebView(act, root, file, ext);
+            }
 
             final Dialog dialog = new Dialog(act, android.R.style.Theme_Black_NoTitleBar_Fullscreen);
             dialog.setContentView(root);
@@ -297,7 +297,7 @@ public class DocViewerModule implements HotModule {
         }
     }
 
-    private void buildWebView(Activity act, FrameLayout root, File file, String ext) {
+    private void buildWebView(Activity act, LinearLayout root, File file, String ext) {
         WebView webView = new WebView(act);
         WebSettings ws = webView.getSettings();
         ws.setJavaScriptEnabled(false);
@@ -311,10 +311,8 @@ public class DocViewerModule implements HotModule {
         webView.setBackgroundColor(Color.parseColor("#18181e"));
 
         String bodyContent;
-        if ("docx".equals(ext)) {
-            bodyContent = parseDocx(file);
-        } else if ("doc".equals(ext)) {
-            bodyContent = parseLegacyDoc(file);
+        if ("docx".equals(ext) || "doc".equals(ext) || "rtf".equals(ext)) {
+            bodyContent = parseDocOrDocx(file);
         } else if ("xlsx".equals(ext) || "xls".equals(ext)) {
             bodyContent = parseXlsx(file);
         } else if ("pptx".equals(ext) || "ppt".equals(ext)) {
@@ -334,8 +332,7 @@ public class DocViewerModule implements HotModule {
         String fullHtml = wrapHtml(bodyContent);
         webView.loadDataWithBaseURL(null, fullHtml, "text/html", "utf-8", null);
 
-        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-        lp.topMargin = 130;
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f);
         root.addView(webView, lp);
     }
 
@@ -356,6 +353,28 @@ public class DocViewerModule implements HotModule {
                 + "</style></head><body>"
                 + body
                 + "</body></html>";
+    }
+
+    private String parseDocOrDocx(File file) {
+        try (FileInputStream fis = new FileInputStream(file)) {
+            byte[] magic = new byte[8];
+            int n = fis.read(magic);
+            if (n >= 4 && magic[0] == 0x50 && magic[1] == 0x4B) { // 'P', 'K' -> ZIP -> DOCX
+                return parseDocx(file);
+            }
+            if (n >= 5 && magic[0] == '{' && magic[1] == '\\' && magic[2] == 'r' && magic[3] == 't' && magic[4] == 'f') {
+                return parseRtf(file);
+            }
+            if (n >= 4 && (magic[0] & 0xFF) == 0xD0 && (magic[1] & 0xFF) == 0xCF) { // OLE2 -> .doc
+                return parseLegacyDoc(file);
+            }
+        } catch (Throwable ignore) {
+        }
+        try {
+            return parseDocx(file);
+        } catch (Throwable t) {
+            return parseLegacyDoc(file);
+        }
     }
 
     private String parseDocx(File file) {
@@ -392,6 +411,24 @@ public class DocViewerModule implements HotModule {
         boolean isCell = name.endsWith(":tc") || name.equals("tc");
         boolean isBreak = name.endsWith(":br") || name.equals("br");
         boolean isTab = name.endsWith(":tab") || name.equals("tab");
+        boolean isRun = name.endsWith(":r") || name.equals("r");
+
+        boolean hasBold = false;
+        boolean hasItalic = false;
+        if (isRun) {
+            NodeList children = node.getChildNodes();
+            for (int i = 0; i < children.getLength(); i++) {
+                String cname = children.item(i).getNodeName();
+                if (cname.endsWith(":rPr") || cname.equals("rPr")) {
+                    NodeList rprChildren = children.item(i).getChildNodes();
+                    for (int j = 0; j < rprChildren.getLength(); j++) {
+                        String rname = rprChildren.item(j).getNodeName();
+                        if (rname.endsWith(":b") || rname.equals("b")) hasBold = true;
+                        if (rname.endsWith(":i") || rname.equals("i")) hasItalic = true;
+                    }
+                }
+            }
+        }
 
         if (isTable) sb.append("<table border='1' cellspacing='0' cellpadding='6'>");
         if (isRow) sb.append("<tr>");
@@ -399,16 +436,38 @@ public class DocViewerModule implements HotModule {
         if (isPara) sb.append("<p>");
         if (isBreak) sb.append("<br/>");
         if (isTab) sb.append("&emsp;");
+        if (hasBold) sb.append("<b>");
+        if (hasItalic) sb.append("<i>");
 
         NodeList children = node.getChildNodes();
         for (int i = 0; i < children.getLength(); i++) {
             extractDocxNode(children.item(i), sb);
         }
 
+        if (hasItalic) sb.append("</i>");
+        if (hasBold) sb.append("</b>");
         if (isPara) sb.append("</p>\n");
         if (isCell) sb.append("</td>");
         if (isRow) sb.append("</tr>\n");
         if (isTable) sb.append("</table>\n");
+    }
+
+    private String parseRtf(File file) {
+        StringBuilder sb = new StringBuilder("<p>");
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                line = line.replaceAll("\\\\[a-zA-Z0-9\\-]+", "");
+                line = line.replace("{", "").replace("}", "").trim();
+                if (!line.isEmpty()) {
+                    sb.append(escapeHtml(line)).append("<br/>");
+                }
+            }
+            sb.append("</p>");
+        } catch (Throwable t) {
+            return "<p style='color:#E57373;'>Помилка RTF: " + escapeHtml(t.getMessage()) + "</p>";
+        }
+        return sb.toString();
     }
 
     private String parseLegacyDoc(File file) {
@@ -610,11 +669,11 @@ public class DocViewerModule implements HotModule {
         return sb.toString();
     }
 
-    private void buildArchiveView(Activity act, FrameLayout root, File file) {
+    private void buildArchiveView(Activity act, LinearLayout root, File file) {
         ScrollView sv = new ScrollView(act);
         LinearLayout box = new LinearLayout(act);
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(35, 140, 35, 60);
+        box.setPadding(35, 20, 35, 60);
 
         try (ZipFile zf = new ZipFile(file)) {
             Enumeration<? extends ZipEntry> entries = zf.entries();
@@ -638,10 +697,11 @@ public class DocViewerModule implements HotModule {
         }
 
         sv.addView(box, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-        root.addView(sv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f);
+        root.addView(sv, lp);
     }
 
-    private void buildPdfView(Activity act, FrameLayout root, File file) {
+    private void buildPdfView(Activity act, LinearLayout root, File file) {
         try {
             ParcelFileDescriptor pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
             PdfRenderer renderer = new PdfRenderer(pfd);
@@ -650,7 +710,7 @@ public class DocViewerModule implements HotModule {
             ScrollView sv = new ScrollView(act);
             LinearLayout box = new LinearLayout(act);
             box.setOrientation(LinearLayout.VERTICAL);
-            box.setPadding(20, 140, 20, 60);
+            box.setPadding(20, 20, 20, 60);
 
             int limit = Math.min(pageCount, 15);
             for (int i = 0; i < limit; i++) {
@@ -673,13 +733,15 @@ public class DocViewerModule implements HotModule {
             pfd.close();
 
             sv.addView(box, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
-            root.addView(sv, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f);
+            root.addView(sv, lp);
         } catch (Throwable t) {
             TextView tv = new TextView(act);
             tv.setText("Помилка PDF: " + t.getMessage());
             tv.setTextColor(Color.RED);
-            tv.setPadding(40, 150, 40, 40);
-            root.addView(tv);
+            tv.setPadding(40, 40, 40, 40);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1.0f);
+            root.addView(tv, lp);
         }
     }
 

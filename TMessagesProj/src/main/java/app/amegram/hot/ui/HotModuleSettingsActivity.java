@@ -992,7 +992,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if (r == null) return false;
         if ("player".equals(moduleId)) {
             if ("player_settings_open".equals(r.id)) {
-                new app.miogram.bridge.player.MiogramPlayerSectionSheet(getParentActivity(), getResourceProvider(), null, "lyrics", true).show();
+                app.miogram.bridge.player.YumiPlayerSettingsSheet.show(getParentActivity(), getResourceProvider());
                 return true;
             }
             if ("player_playlists_open".equals(r.id)) {

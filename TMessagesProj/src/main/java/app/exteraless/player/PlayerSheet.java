@@ -94,7 +94,9 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
     private final PlayerIcon moreIcon = PlayerIcon.fill(PlayerIcon.MORE, 24);
     private final TextView headerLabel;
     private final TextView headerTitle;
+    private final app.miogram.bridge.player.YumiFluidAuraView fluidAuraView;
     private final CoverImage cover;
+    private final app.miogram.bridge.player.YumiVinylView vinylView;
     private final LinearLayout titleRow;
     private final TextView titleView;
     private final TextView artistView;
@@ -262,6 +264,9 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         root.setWillNotDraw(false);
         containerView = root;
 
+        fluidAuraView = new app.miogram.bridge.player.YumiFluidAuraView(context);
+        root.addView(fluidAuraView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
+
         layout = new PlayerLayout(context);
         root.addView(layout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.MATCH_PARENT));
 
@@ -309,6 +314,10 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         cover.setElevation(dp(14));
         cover.setOnTouchListener(this::onCoverTouch);
         layout.addView(cover);
+
+        vinylView = new app.miogram.bridge.player.YumiVinylView(context);
+        vinylView.setVisibility(View.GONE);
+        layout.addView(vinylView);
 
         titleRow = new LinearLayout(context);
         titleRow.setOrientation(LinearLayout.HORIZONTAL);
@@ -1032,6 +1041,17 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         updateSpeed();
         updatePlayState(animated);
         updateProgress();
+
+        if (vinylView != null) {
+            boolean vinylOn = app.miogram.bridge.player.MiogramPlayerPrefs.isVinylModeEnabled();
+            vinylView.setVisibility(vinylOn ? View.VISIBLE : View.GONE);
+            cover.setVisibility(vinylOn ? View.GONE : View.VISIBLE);
+            vinylView.setPlaying(!MediaController.getInstance().isMessagePaused());
+            Bitmap bmp = cover.getImageReceiver() != null ? cover.getImageReceiver().getBitmap() : null;
+            if (bmp != null) {
+                vinylView.setCoverBitmap(bmp);
+            }
+        }
     }
 
     private void onSeed(MessageObject mo, int seed) {
@@ -1169,6 +1189,12 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
                 cover.setScaleX(scale);
                 cover.setScaleY(scale);
             }
+        }
+        if (fluidAuraView != null) {
+            fluidAuraView.setPlaying(playing);
+        }
+        if (vinylView != null) {
+            vinylView.setPlaying(playing);
         }
     }
 
@@ -1598,6 +1624,10 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
                 PlayerActions.saveToMusic(activity, mo, root, rp);
             });
         }
+        o.add(R.drawable.msg_add, app.miogram.bridge.MiogramLocale.get("Додати до плейлиста...", "Добавить в плейлист...", "Add to Playlist..."), () -> {
+            o.dismiss();
+            app.miogram.bridge.playlist.YumiAddToPlaylistSheet.show(activity, mo, rp);
+        });
         o.add(R.drawable.msg_shareout, getString(R.string.ShareFile), () -> {
             o.dismiss();
             PlayerActions.share(activity, mo);
@@ -1621,7 +1651,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
         });
         o.add(R.drawable.msg_settings, app.miogram.bridge.MiogramLocale.get("Налаштування плеера Юми", "Настройки плеера Юми", "Yumi Player Settings"), () -> {
             o.dismiss();
-            new app.miogram.bridge.player.MiogramPlayerSectionSheet(activity, rp, null, "lyrics", true).show();
+            app.miogram.bridge.player.YumiPlayerSettingsSheet.show(activity, rp);
         });
         o.addIf(mo.getId() > 0, R.drawable.msg_message, getString(R.string.ShowInChat), () -> {
             o.dismiss();
@@ -1740,6 +1770,15 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
     private void applyColors(PlayerColors c) {
         colors = c;
         root.invalidate();
+
+        if (fluidAuraView != null) {
+            boolean auraOn = app.miogram.bridge.player.MiogramPlayerPrefs.isFluidAuraEnabled();
+            fluidAuraView.setVisibility(auraOn ? View.VISIBLE : View.GONE);
+            if (auraOn && c != null) {
+                fluidAuraView.setColors(c.primaryContainer, c.secondaryContainer, c.surfaceVariant, c.surface);
+                fluidAuraView.setPlaying(!MediaController.getInstance().isMessagePaused());
+            }
+        }
         collapseIcon.setColor(c.onSurface);
         moreIcon.setColor(c.onSurface);
         collapseButton.setBackground(Theme.createSelectorDrawable(c.ripple(), Theme.RIPPLE_MASK_CIRCLE_20DP));
@@ -1849,6 +1888,9 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             stageHeight = topCoverGap + coverSize + coverTitleGap + titleH;
             int coverSpec = MeasureSpec.makeMeasureSpec(coverSize, MeasureSpec.EXACTLY);
             cover.measure(coverSpec, coverSpec);
+            if (vinylView != null) {
+                vinylView.measure(coverSpec, coverSpec);
+            }
             lyricsPanel.measure(exactW, MeasureSpec.makeMeasureSpec(stageHeight, MeasureSpec.EXACTLY));
             setMeasuredDimension(width, height);
         }
@@ -1867,6 +1909,9 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             int stageTop = y;
             int coverLeft = (width - coverSize) / 2;
             cover.layout(coverLeft, y + topCoverGap, coverLeft + coverSize, y + topCoverGap + coverSize);
+            if (vinylView != null) {
+                vinylView.layout(coverLeft, y + topCoverGap, coverLeft + coverSize, y + topCoverGap + coverSize);
+            }
             int titleTop = y + topCoverGap + coverSize + coverTitleGap;
             titleRow.layout(side, titleTop, side + contentW, titleTop + titleRow.getMeasuredHeight());
             lyricsPanel.layout(side, stageTop, side + contentW, stageTop + stageHeight);

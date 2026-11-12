@@ -1,0 +1,13 @@
+{
+  "name": "yumi-badges-worker",
+  "version": "2.0.0",
+  "description": "Cloudflare Worker Edge API for Yumi community badges",
+  "main": "src/index.js",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

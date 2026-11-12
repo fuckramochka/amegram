@@ -77,6 +77,30 @@ public class YumiPlaylist {
         }
     }
 
+    public boolean contains(MessageObject mo) {
+        if (mo == null) return false;
+        long docId = mo.getDocument() != null ? mo.getDocument().id : 0;
+        String t = mo.getMusicTitle();
+        String a = mo.getMusicAuthor();
+        for (Track track : tracks) {
+            if (docId != 0 && track.docId == docId) return true;
+            if (track.dialogId == mo.getDialogId() && track.messageId == mo.getId()) return true;
+            if (t != null && t.equalsIgnoreCase(track.title) && a != null && a.equalsIgnoreCase(track.artist)) return true;
+        }
+        return false;
+    }
+
+    public boolean addTrack(MessageObject mo) {
+        if (mo == null || !mo.isMusic()) return false;
+        Track t = Track.fromMessageObject(mo);
+        if (t != null) {
+            tracks.add(t);
+            updatedAt = System.currentTimeMillis();
+            return true;
+        }
+        return false;
+    }
+
     public JSONObject toJson() {
         JSONObject json = new JSONObject();
         try {

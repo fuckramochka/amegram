@@ -288,10 +288,13 @@ public class LyricsView extends FrameLayout {
     }
 
     private long currentMs() {
+        long base;
         if (MediaController.getInstance().isMessagePaused()) {
-            return positionMs;
+            base = positionMs;
+        } else {
+            base = positionMs + Math.min(2000, SystemClock.elapsedRealtime() - positionAt);
         }
-        return positionMs + Math.min(2000, SystemClock.elapsedRealtime() - positionAt);
+        return Math.max(0L, base + app.miogram.bridge.player.MiogramPlayerPrefs.getLyricsOffsetMs());
     }
 
     private boolean isPlaying() {
@@ -566,24 +569,46 @@ public class LyricsView extends FrameLayout {
             if (isInterlude()) {
                 drawInterlude(canvas, live, progress, alpha, now);
             } else if (live) {
-                int filled = ColorUtils.setAlphaComponent(colorActive, (int) (alpha * baseAlpha));
+                int mode = app.miogram.bridge.player.MiogramPlayerPrefs.getLyricsKaraokeMode();
+                boolean glowOn = app.miogram.bridge.player.MiogramPlayerPrefs.isLyricsActiveGlow();
+                int customCol = app.miogram.bridge.player.MiogramPlayerPrefs.getLyricsActiveColor();
+                int glowColor = customCol != 0 ? customCol : colorActive;
+
+                int filled = ColorUtils.setAlphaComponent(glowColor, (int) (alpha * baseAlpha));
                 int unfilled = ColorUtils.setAlphaComponent(colorActive, (int) (alpha * baseAlpha * UNFILLED_ALPHA));
-                float height = layout.getHeight();
-                LinearGradient fill = new LinearGradient(0, 0, 0, 1, filled, unfilled, Shader.TileMode.CLAMP);
-                fillMatrix.setScale(1f, Math.max(1f, height * 0.2f));
-                fillMatrix.postTranslate(0, (progress * 1.2f - 0.2f) * height);
-                fill.setLocalMatrix(fillMatrix);
-                paint.setShader(fill);
-                paint.setColor(0xffffffff);
-                float g = glow(progress);
-                if (g > 0.01f) {
-                    paint.setShadowLayer(dp(4 + 2 * g), 0, 0, ColorUtils.setAlphaComponent(colorActive, (int) (g * 0.35f * baseAlpha)));
+
+                if (mode == app.miogram.bridge.player.MiogramPlayerPrefs.KARAOKE_MODE_LINE) {
+                    paint.setShader(null);
+                    paint.setColor(filled);
+                    if (glowOn) {
+                        paint.setShadowLayer(dp(8), 0, 0, ColorUtils.setAlphaComponent(glowColor, (int) (0.55f * baseAlpha)));
+                    } else {
+                        paint.clearShadowLayer();
+                    }
+                    layout.draw(canvas);
+                    paint.clearShadowLayer();
                 } else {
+                    float width = layout.getWidth();
+                    float cut = Math.max(0f, Math.min(width, progress * width));
+                    float blend = dp(mode == app.miogram.bridge.player.MiogramPlayerPrefs.KARAOKE_MODE_WORD ? 6 : 16);
+                    float x0 = Math.max(0f, cut - blend);
+                    float x1 = Math.min(width, cut + blend);
+                    if (x1 <= x0) x1 = x0 + 1f;
+
+                    LinearGradient fill = new LinearGradient(x0, 0, x1, 0,
+                            new int[]{filled, unfilled}, new float[]{0f, 1f}, Shader.TileMode.CLAMP);
+                    paint.setShader(fill);
+                    paint.setColor(0xFFFFFFFF);
+                    if (glowOn) {
+                        float g = glow(progress);
+                        paint.setShadowLayer(dp(5 + 3 * g), 0, 0, ColorUtils.setAlphaComponent(glowColor, (int) (0.45f * baseAlpha)));
+                    } else {
+                        paint.clearShadowLayer();
+                    }
+                    layout.draw(canvas);
+                    paint.setShader(null);
                     paint.clearShadowLayer();
                 }
-                layout.draw(canvas);
-                paint.setShader(null);
-                paint.clearShadowLayer();
             } else {
                 paint.setShader(null);
                 paint.clearShadowLayer();

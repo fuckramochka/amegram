@@ -1,0 +1,13 @@
+name = "yumi-badges-worker"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+FOUNDER_SECRET = "yumi_super_secret_founder_pass_2026"
+
+# Cloudflare KV Storage for persistent badge records
+# To create KV: npx wrangler kv:namespace create BADGES_KV
+# Then paste the id below:
+# [[kv_namespaces]]
+# binding = "BADGES_KV"
+# id = "your_kv_namespace_id_here"

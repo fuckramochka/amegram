@@ -513,6 +513,8 @@ public class ChatActivity extends BaseFragment implements
     private final static int nkbtn_exportAmagram = 2102;
     private final static int OPTION_SAVE_TO_VAULT = 9981;
     private final static int OPTION_INSTALL_USERBOT_MODULE = 9982;
+    private final static int OPTION_YUMI_ADD_TO_PLAYLIST = 9983;
+    private final static int OPTION_YUMI_PLAY_NEXT = 9984;
 
     public int shareAlertDebugMode = DEBUG_SHARE_ALERT_MODE_NORMAL;
     public boolean shareAlertDebugTopicsSlowMotion;
@@ -33180,6 +33182,17 @@ public class ChatActivity extends BaseFragment implements
                 }
             }
 
+            // Yumi Music Playlist & Queue
+            if (message != null && message.isMusic()) {
+                items.add(app.miogram.bridge.MiogramLocale.get("Додати до плейлиста...", "Добавить в плейлист...", "Add to Playlist..."));
+                options.add(OPTION_YUMI_ADD_TO_PLAYLIST);
+                icons.add(R.drawable.msg_add);
+
+                items.add(app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next"));
+                options.add(OPTION_YUMI_PLAY_NEXT);
+                icons.add(R.drawable.msg_arrow_forward);
+            }
+
             // Miogram Heroku Userbot: 1-Tap Module Install
             if (message != null && message.getDocument() != null) {
                 String dName = FileLoader.getDocumentFileName(message.getDocument());
@@ -35783,6 +35796,17 @@ public class ChatActivity extends BaseFragment implements
             case OPTION_INSTALL_USERBOT_MODULE:
                 installSelectedUserbotModule(selectedObject);
                 BotWebViewVibrationEffect.SELECTION_CHANGE.vibrate();
+                break;
+            case OPTION_YUMI_ADD_TO_PLAYLIST:
+                if (selectedObject != null && selectedObject.isMusic()) {
+                    app.miogram.bridge.playlist.YumiAddToPlaylistSheet.show(getParentActivity(), selectedObject, getResourceProvider());
+                }
+                break;
+            case OPTION_YUMI_PLAY_NEXT:
+                if (selectedObject != null && selectedObject.isMusic()) {
+                    app.miogram.bridge.playlist.YumiPlaylistManager.playNext(selectedObject);
+                    getBulletinFactory().createSimpleBulletin(R.drawable.msg_arrow_forward, app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next")).show();
+                }
                 break;
             case OPTION_RETRY: {
                 final MessageObject object = selectedObject;
@@ -51087,6 +51111,14 @@ public class ChatActivity extends BaseFragment implements
                         options.add(OPTION_SHARE);
                         icons.add(R.drawable.msg_shareout);
                     } else if (selectedObject.isMusic() && !selectedObject.isVoiceOnce() && !selectedObject.isRoundOnce()) {
+                        items.add(app.miogram.bridge.MiogramLocale.get("Додати до плейлиста...", "Добавить в плейлист...", "Add to Playlist..."));
+                        options.add(OPTION_YUMI_ADD_TO_PLAYLIST);
+                        icons.add(R.drawable.msg_add);
+
+                        items.add(app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next"));
+                        options.add(OPTION_YUMI_PLAY_NEXT);
+                        icons.add(R.drawable.msg_arrow_forward);
+
                         items.add(LocaleController.getString(R.string.SaveToMusic));
                         options.add(OPTION_SAVE_TO_DOWNLOADS_OR_MUSIC);
                         icons.add(R.drawable.msg_download);

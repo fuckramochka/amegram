@@ -97,23 +97,17 @@ public class MiogramDiscordLayout {
     private static volatile Boolean cachedDiscordEnabled = null;
 
     public static boolean isDiscordUiEnabled() {
-        Boolean c = cachedDiscordEnabled;
-        if (c != null) return c;
-        boolean v = getPrefs().getInt(KEY_UI_MODE, UI_MODE_TELEGRAM) == UI_MODE_DISCORD
-                || app.miogram.bridge.divine.MiogramDivineEngine.getCurrentPreset(null) == app.miogram.bridge.divine.MiogramDivineEngine.Preset.DISCORD_ULTRA;
-        cachedDiscordEnabled = v;
-        return v;
+        return false;
     }
 
     /** Called by every writer of the UI mode / divine preset. */
     public static void invalidateUiModeCache() {
-        cachedDiscordEnabled = null;
+        cachedDiscordEnabled = false;
     }
 
     public static void setDiscordUiEnabled(boolean enabled) {
-        getPrefs().edit().putInt(KEY_UI_MODE, enabled ? UI_MODE_DISCORD : UI_MODE_TELEGRAM).apply();
-        cachedDiscordEnabled = enabled
-                || app.miogram.bridge.divine.MiogramDivineEngine.getCurrentPreset(null) == app.miogram.bridge.divine.MiogramDivineEngine.Preset.DISCORD_ULTRA;
+        // Disabled in Yumi Material You single-UI architecture
+        cachedDiscordEnabled = false;
     }
 
     public static int getUiMode() {

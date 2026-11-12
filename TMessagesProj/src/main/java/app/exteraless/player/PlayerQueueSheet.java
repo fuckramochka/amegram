@@ -315,6 +315,10 @@ public class PlayerQueueSheet extends BottomSheet implements NotificationCenter.
             adapter.notifyDataSetChanged();
             updateSubtitle();
         });
+        o.add(R.drawable.msg_add, app.miogram.bridge.MiogramLocale.get("Додати до плейлиста...", "Добавить в плейлист...", "Add to Playlist..."), () -> {
+            o.dismiss();
+            app.miogram.bridge.playlist.YumiAddToPlaylistSheet.show(getContext(), mo, rp);
+        });
         o.add(R.drawable.msg_list, app.miogram.bridge.MiogramLocale.get("Зберегти чергу в .yumi", "Сохранить очередь в .yumi", "Save queue to .yumi"), () -> {
             o.dismiss();
             java.util.ArrayList<MessageObject> pl = MediaController.getInstance().getPlaylist();

@@ -12,6 +12,7 @@ import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -29,12 +30,15 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
+import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BulletinFactory;
+import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 
 import app.miogram.bridge.MiogramLocale;
@@ -169,6 +173,21 @@ public class YumiPlaylistSheet extends BottomSheet {
                 });
         actionsRow.addView(actionBtn, LayoutHelper.createLinear(0, 42, 1.0f));
 
+        // More options button (Add current, Import from queue, Rename, Delete)
+        ImageView menuBtn = new ImageView(activity);
+        menuBtn.setImageResource(R.drawable.ic_ab_other);
+        menuBtn.setColorFilter(new PorterDuffColorFilter(0xFFFFFFFF, PorterDuff.Mode.SRC_IN));
+        GradientDrawable menuBg = new GradientDrawable();
+        menuBg.setColor(0x22FFFFFF);
+        menuBg.setCornerRadius(AndroidUtilities.dp(21));
+        menuBtn.setBackground(menuBg);
+        menuBtn.setScaleType(ImageView.ScaleType.CENTER);
+        menuBtn.setOnClickListener(v -> {
+            MiogramHaptic.click(v);
+            showPlaylistMenu(v);
+        });
+        actionsRow.addView(menuBtn, LayoutHelper.createLinear(42, 42, 0, 8, 0, 0));
+
         header.addView(actionsRow, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
         root.addView(header, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP));
 
@@ -213,6 +232,99 @@ public class YumiPlaylistSheet extends BottomSheet {
         String dur = playlist.getFormattedDuration();
         String author = playlist.author != null ? playlist.author : "Yumigram";
         subtitleView.setText(author + " • " + count + " " + LocaleController.formatPluralString("OEPlayerTracks", count) + " • " + dur);
+    }
+
+    private void showPlaylistMenu(View anchor) {
+        ItemOptions o = ItemOptions.makeOptions(container, resourcesProvider, anchor, true);
+
+        MessageObject current = MediaController.getInstance().getPlayingMessageObject();
+        if (current != null && current.isMusic()) {
+            o.add(R.drawable.msg_add, MiogramLocale.get("Додати поточний трек", "Добавить текущий трек", "Add current track"), () -> {
+                o.dismiss();
+                if (!playlist.contains(current)) {
+                    playlist.addTrack(current);
+                    YumiPlaylistManager.savePlaylist(playlist);
+                    adapter.notifyItemInserted(playlist.tracks.size() - 1);
+                    updateSubtitle();
+                    BulletinFactory.of(container, resourcesProvider)
+                            .createSimpleBulletin(R.drawable.msg_saved, MiogramLocale.get("Додано поточний трек", "Добавлен текущий трек", "Current track added"))
+                            .show();
+                } else {
+                    BulletinFactory.of(container, resourcesProvider)
+                            .createSimpleBulletin(R.drawable.msg_info, MiogramLocale.get("Трек вже є у плейлисті", "Трек уже есть в плейлисте", "Track is already in playlist"))
+                            .show();
+                }
+            });
+        }
+
+        ArrayList<MessageObject> queue = MediaController.getInstance().getPlaylist();
+        if (queue != null && !queue.isEmpty()) {
+            o.add(R.drawable.msg_list, MiogramLocale.get("Імпортувати треки з черги", "Импортировать треки из очереди", "Import tracks from queue"), () -> {
+                o.dismiss();
+                int added = 0;
+                for (MessageObject mo : queue) {
+                    if (mo != null && mo.isMusic() && !playlist.contains(mo)) {
+                        playlist.addTrack(mo);
+                        added++;
+                    }
+                }
+                if (added > 0) {
+                    YumiPlaylistManager.savePlaylist(playlist);
+                    adapter.notifyDataSetChanged();
+                    updateSubtitle();
+                }
+                BulletinFactory.of(container, resourcesProvider)
+                        .createSimpleBulletin(R.drawable.msg_saved, MiogramLocale.get("Додано " + added + " треків", "Добавлено " + added + " треков", "Added " + added + " tracks"))
+                        .show();
+            });
+        }
+
+        o.add(R.drawable.msg_edit, MiogramLocale.get("Перейменувати", "Переименовать", "Rename"), () -> {
+            o.dismiss();
+            showRenameDialog();
+        });
+
+        if (isLocalFile) {
+            o.add(R.drawable.msg_delete, MiogramLocale.get("Видалити плейлист", "Удалить плейлист", "Delete playlist"), () -> {
+                o.dismiss();
+                YumiPlaylistManager.deletePlaylist(playlist.id);
+                dismiss();
+            });
+        }
+
+        o.show();
+    }
+
+    private void showRenameDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity, resourcesProvider);
+        builder.setTitle(MiogramLocale.get("Перейменувати плейлист", "Переименовать плейлист", "Rename Playlist"));
+        final EditText input = new EditText(activity);
+        input.setText(playlist.title != null ? playlist.title : "");
+        if (input.getText().length() > 0) {
+            input.setSelection(input.getText().length());
+        }
+        input.setTextColor(0xFFFFFFFF);
+        input.setHintTextColor(0x77FFFFFF);
+        input.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 16);
+        input.setSingleLine(true);
+        input.setPadding(AndroidUtilities.dp(20), AndroidUtilities.dp(14), AndroidUtilities.dp(20), AndroidUtilities.dp(14));
+
+        FrameLayout frame = new FrameLayout(activity);
+        frame.addView(input, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 8, 16, 8));
+        builder.setView(frame);
+
+        builder.setPositiveButton(LocaleController.getString(R.string.OK), (dialog, which) -> {
+            String name = input.getText().toString().trim();
+            if (!TextUtils.isEmpty(name)) {
+                playlist.title = name;
+                titleView.setText(name);
+                YumiPlaylistManager.savePlaylist(playlist);
+                updateSubtitle();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        builder.show();
+        input.requestFocus();
     }
 
     private TextView createPillButton(Context context, int bgCol, int textCol, int iconRes, String text, View.OnClickListener click) {

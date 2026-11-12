@@ -57,7 +57,7 @@ public class MiogramIosLayout {
     }
 
     public static boolean isIosPresetActive(Context context) {
-        return MiogramDivineEngine.getCurrentPreset(context) == MiogramDivineEngine.Preset.IOS_GLASS;
+        return false;
     }
 
     /**

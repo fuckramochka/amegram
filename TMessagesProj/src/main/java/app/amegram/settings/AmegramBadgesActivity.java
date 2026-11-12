@@ -216,11 +216,11 @@ public class AmegramBadgesActivity extends BaseFragment {
         } else if (item.id == ROW_SERVER_URL) {
             String current = MiogramSupabaseBridge.getYumiServerUrl(ctx);
             AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
-            builder.setTitle(MiogramLocale.get("Адреса сервера на ПК", "Адрес сервера на ПК", "Server URL on PC"));
+            builder.setTitle(MiogramLocale.get("Адреса Yumi Cloud API", "Адрес Yumi Cloud API", "Yumi Cloud API URL"));
             builder.setMessage(MiogramLocale.get(
-                    "Введіть IP-адресу вашого ПК (наприклад " + MiogramSupabaseBridge.DEFAULT_YUMI_SERVER_URL + ") або Cloudflare Tunnel URL:",
-                    "Введите IP-адрес вашего ПК (например " + MiogramSupabaseBridge.DEFAULT_YUMI_SERVER_URL + ") или Cloudflare Tunnel URL:",
-                    "Enter your PC IP address (e.g. " + MiogramSupabaseBridge.DEFAULT_YUMI_SERVER_URL + ") or Cloudflare Tunnel URL:"));
+                    "Введіть URL Cloudflare Worker (наприклад https://yumi-badges.workers.dev) або адресу власного сервера:",
+                    "Введите URL Cloudflare Worker (например https://yumi-badges.workers.dev) или адрес своего сервера:",
+                    "Enter Cloudflare Worker URL (e.g. https://yumi-badges.workers.dev) or custom server URL:"));
 
             FrameLayout frameLayout = new FrameLayout(getParentActivity());
             frameLayout.setPadding(AndroidUtilities.dp(24), 0, AndroidUtilities.dp(24), 0);

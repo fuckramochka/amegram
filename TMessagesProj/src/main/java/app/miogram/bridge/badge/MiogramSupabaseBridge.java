@@ -121,7 +121,7 @@ public class MiogramSupabaseBridge {
         getPrefs(null).edit().putBoolean(KEY_TELEMETRY_ENABLED, enabled).apply();
     }
 
-    public static final String DEFAULT_YUMI_SERVER_URL = "http://192.168.31.177:8765";
+    public static final String DEFAULT_YUMI_SERVER_URL = "";
     public static final String GITHUB_FALLBACK_URL = "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/badges/badges.json";
 
     public static String getYumiServerUrl(Context context) {
@@ -138,7 +138,7 @@ public class MiogramSupabaseBridge {
         if (ctx != null && url != null) {
             String clean = url.trim();
             if (!clean.isEmpty() && !clean.startsWith("http://") && !clean.startsWith("https://")) {
-                clean = "http://" + clean;
+                clean = "https://" + clean;
             }
             ctx.getSharedPreferences("badges_module_prefs", Context.MODE_PRIVATE)
                     .edit().putString("badges_laptop_url", clean).apply();

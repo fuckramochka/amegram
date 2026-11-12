@@ -44,9 +44,7 @@ public final class MiogramMinimalRail {
     private MiogramMinimalRail() {}
 
     public static boolean isActive(Context context) {
-        if (app.miogram.bridge.ui.discord.MiogramDiscordLayout.isDiscordUiEnabled()) return false;
-        if (app.miogram.bridge.ui.ios.MiogramIosLayout.isIosPresetActive(context)) return false;
-        return MiogramDivineEngine.isMinimalistActive(context);
+        return false;
     }
 
     public static View createMinimalRail(Context context) {

@@ -410,6 +410,10 @@ public final class HotModulesManager {
 
     public static boolean isModuleEnabled(String moduleId) {
         if (moduleId == null) return false;
+        // Core features are natively baked into Yumi without requiring external .hmod downloads
+        if ("player".equals(moduleId) || "ui".equals(moduleId) || "ai".equals(moduleId) || "badges".equals(moduleId)) {
+            return true;
+        }
         ensureFastCaches();
         if ("stt".equals(moduleId)) {
             return ENABLED_MODULES_CACHE.contains("ai") || ENABLED_MODULES_CACHE.contains("stt");
@@ -419,6 +423,9 @@ public final class HotModulesManager {
 
     public static boolean isModuleActive(String moduleId) {
         if (moduleId == null) return false;
+        if ("player".equals(moduleId) || "ui".equals(moduleId) || "ai".equals(moduleId) || "badges".equals(moduleId)) {
+            return true;
+        }
         if ("stt".equals(moduleId)) {
             return ACTIVE_MODULES.contains("ai") || ACTIVE_MODULES.contains("stt");
         }
@@ -426,13 +433,10 @@ public final class HotModulesManager {
     }
 
     /**
-     * Чи має бути активним візуальний шар Yumi. Це єдина точка вимкнення
-     * інтерфейсу: коли модуль "ui" вимкнено або видалено, ядро повертається
-     * до класичного вигляду, навіть якщо в AppearanceConfig лишився Expressive.
+     * Чи має бути активним візуальний шар Yumi. Нативно завжди активний.
      */
     public static boolean isUiModuleOn() {
-        ensureFastCaches();
-        return ENABLED_MODULES_CACHE.contains("ui");
+        return true;
     }
 
     // ---------- crash-ізоляція: карантин після 3 провалів ----------

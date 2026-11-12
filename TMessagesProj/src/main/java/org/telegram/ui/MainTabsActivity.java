@@ -582,9 +582,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             final boolean isChats = getStartPosition() == getPositionChats();
             final boolean isStretch = AppearanceConfig.isYumiBarStretch();
             final int fullMargin = isChats ? dp(72) : 0;
-            final int initialMargin = isStretch ? fullMargin : (fullMargin / 2);
-            final int leftMargin = LocaleController.isRTL ? initialMargin : 0;
-            final int rightMargin = LocaleController.isRTL ? 0 : initialMargin;
+            final int initialMargin = (isStretch && isChats) ? fullMargin : 0;
+            final int leftMargin = (isStretch && LocaleController.isRTL) ? initialMargin : 0;
+            final int rightMargin = (isStretch && !LocaleController.isRTL) ? initialMargin : 0;
             final int tabsGravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
             final int tabsWidth = isStretch ? LayoutHelper.MATCH_PARENT : LayoutHelper.WRAP_CONTENT;
             tabsViewWrapper.addView(tabsView, LayoutHelper.createFrame(tabsWidth, 60, tabsGravity, leftMargin, 0, rightMargin, 0));
@@ -1234,9 +1234,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
 
         final int fullTargetMargin = visible ? dp(72) : 0;
         final boolean isStretch = AppearanceConfig.isYumiBarStretch();
-        final int targetMargin = isStretch ? fullTargetMargin : (fullTargetMargin / 2);
+        final int targetMargin = (isStretch && visible) ? fullTargetMargin : 0;
         final FrameLayout.LayoutParams lp = tabsView != null ? (FrameLayout.LayoutParams) tabsView.getLayoutParams() : null;
-        final int currentMargin = lp != null ? (LocaleController.isRTL ? lp.leftMargin : lp.rightMargin) : 0;
+        final int currentMargin = lp != null ? (isStretch ? (LocaleController.isRTL ? lp.leftMargin : lp.rightMargin) : (lp.leftMargin + lp.rightMargin)) : 0;
 
         if (animated) {
             searchButton.animate().cancel();
@@ -1271,12 +1271,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                     if (p != null) {
                         p.width = isStretch ? FrameLayout.LayoutParams.MATCH_PARENT : FrameLayout.LayoutParams.WRAP_CONTENT;
                         p.gravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
-                        if (LocaleController.isRTL) {
-                            p.leftMargin = val;
-                            p.rightMargin = 0;
+                        if (isStretch) {
+                            if (LocaleController.isRTL) {
+                                p.leftMargin = val;
+                                p.rightMargin = 0;
+                            } else {
+                                p.leftMargin = 0;
+                                p.rightMargin = val;
+                            }
                         } else {
                             p.leftMargin = 0;
-                            p.rightMargin = val;
+                            p.rightMargin = 0;
                         }
                         tabsView.setLayoutParams(p);
                     }
@@ -1297,12 +1302,17 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             if (tabsView != null && lp != null) {
                 lp.width = isStretch ? FrameLayout.LayoutParams.MATCH_PARENT : FrameLayout.LayoutParams.WRAP_CONTENT;
                 lp.gravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
-                if (LocaleController.isRTL) {
-                    lp.leftMargin = targetMargin;
-                    lp.rightMargin = 0;
+                if (isStretch) {
+                    if (LocaleController.isRTL) {
+                        lp.leftMargin = targetMargin;
+                        lp.rightMargin = 0;
+                    } else {
+                        lp.leftMargin = 0;
+                        lp.rightMargin = targetMargin;
+                    }
                 } else {
                     lp.leftMargin = 0;
-                    lp.rightMargin = targetMargin;
+                    lp.rightMargin = 0;
                 }
                 tabsView.setLayoutParams(lp);
             }
@@ -1397,18 +1407,23 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         final boolean isStretch = AppearanceConfig.isYumiBarStretch();
         final boolean isChats = viewPager != null ? viewPager.getCurrentPosition() == getPositionChats() : true;
         final int fullMargin = isChats ? dp(72) : 0;
-        final int targetMargin = isStretch ? fullMargin : (fullMargin / 2);
+        final int targetMargin = (isStretch && isChats) ? fullMargin : 0;
 
         FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
         if (lp != null) {
             lp.width = isStretch ? FrameLayout.LayoutParams.MATCH_PARENT : FrameLayout.LayoutParams.WRAP_CONTENT;
             lp.gravity = Gravity.BOTTOM | (isStretch ? (LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT) : Gravity.CENTER_HORIZONTAL);
-            if (LocaleController.isRTL) {
-                lp.leftMargin = targetMargin;
-                lp.rightMargin = 0;
+            if (isStretch) {
+                if (LocaleController.isRTL) {
+                    lp.leftMargin = targetMargin;
+                    lp.rightMargin = 0;
+                } else {
+                    lp.leftMargin = 0;
+                    lp.rightMargin = targetMargin;
+                }
             } else {
                 lp.leftMargin = 0;
-                lp.rightMargin = targetMargin;
+                lp.rightMargin = 0;
             }
             tabsView.setLayoutParams(lp);
         }
@@ -1424,12 +1439,22 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabsViewWrapper.bringToFront();
         tabsViewWrapper.setElevation(dp(28));
 
-        final int targetLift = (int) (contentView.getHeight() * 0.42f);
+        final int targetLift = (int) (contentView.getHeight() * 0.52f + dp(32));
         tabsViewWrapper.animate()
                 .translationY(-targetLift)
                 .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
                 .setDuration(340L)
                 .start();
+
+        if (searchButton != null) {
+            searchButton.animate()
+                    .alpha(0f)
+                    .scaleX(0.4f)
+                    .scaleY(0.4f)
+                    .setDuration(220L)
+                    .start();
+            searchButton.setClickable(false);
+        }
 
         barCustomizerSheet = new YumiBarCustomizerSheet(getParentActivity(), this, new YumiBarCustomizerSheet.Callback() {
             @Override
@@ -1520,6 +1545,18 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                     isBarCustomizerOpen = false;
                 })
                 .start();
+
+        final boolean onChats = (viewPager == null || viewPager.getCurrentPosition() == getPositionChats());
+        if (searchButton != null && onChats) {
+            searchButton.setVisibility(View.VISIBLE);
+            searchButton.animate()
+                    .alpha(1f)
+                    .scaleX(1f)
+                    .scaleY(1f)
+                    .setDuration(240L)
+                    .start();
+            searchButton.setClickable(true);
+        }
 
         if (barCustomizerSheet != null) {
             final YumiBarCustomizerSheet sheet = barCustomizerSheet;
@@ -1850,15 +1887,21 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
             if (tabsMarginAnimator == null && tabsView != null) {
                 final FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) tabsView.getLayoutParams();
                 if (lp != null) {
-                    final int targetMargin = onChats ? dp(72) : 0;
-                    final int curMargin = LocaleController.isRTL ? lp.leftMargin : lp.rightMargin;
+                    final boolean isStretch = AppearanceConfig.isYumiBarStretch();
+                    final int targetMargin = (onChats && isStretch) ? dp(72) : 0;
+                    final int curMargin = isStretch ? (LocaleController.isRTL ? lp.leftMargin : lp.rightMargin) : (lp.leftMargin + lp.rightMargin);
                     if (curMargin != targetMargin) {
-                        if (LocaleController.isRTL) {
-                            lp.leftMargin = targetMargin;
-                            lp.rightMargin = 0;
+                        if (isStretch) {
+                            if (LocaleController.isRTL) {
+                                lp.leftMargin = targetMargin;
+                                lp.rightMargin = 0;
+                            } else {
+                                lp.leftMargin = 0;
+                                lp.rightMargin = targetMargin;
+                            }
                         } else {
                             lp.leftMargin = 0;
-                            lp.rightMargin = targetMargin;
+                            lp.rightMargin = 0;
                         }
                         tabsView.setLayoutParams(lp);
                     }

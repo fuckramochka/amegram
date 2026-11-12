@@ -179,14 +179,20 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             float unselectedTabWidth;
 
             if (isStretch) {
-                float remainingWidth = maxTotalWidthForTabs - selectedTabWidth;
-                unselectedTabWidth = Math.max(dp(40), remainingWidth / unselectedCount);
-                if (selectedTabWidth + unselectedTabWidth * unselectedCount > maxTotalWidthForTabs) {
-                    float scale = maxTotalWidthForTabs / (selectedTabWidth + unselectedTabWidth * unselectedCount);
-                    selectedTabWidth *= scale;
-                    unselectedTabWidth *= scale;
+                if (hideTitles) {
+                    float equalWidth = visibleCount > 0 ? (maxTotalWidthForTabs / (float) visibleCount) : dp(52);
+                    selectedTabWidth = equalWidth;
+                    unselectedTabWidth = equalWidth;
                 } else {
-                    unselectedTabWidth = (maxTotalWidthForTabs - selectedTabWidth) / unselectedCount;
+                    float remainingWidth = maxTotalWidthForTabs - selectedTabWidth;
+                    unselectedTabWidth = Math.max(dp(40), remainingWidth / unselectedCount);
+                    if (selectedTabWidth + unselectedTabWidth * unselectedCount > maxTotalWidthForTabs) {
+                        float scale = maxTotalWidthForTabs / (selectedTabWidth + unselectedTabWidth * unselectedCount);
+                        selectedTabWidth *= scale;
+                        unselectedTabWidth *= scale;
+                    } else {
+                        unselectedTabWidth = (maxTotalWidthForTabs - selectedTabWidth) / unselectedCount;
+                    }
                 }
             } else {
                 unselectedTabWidth = dp(52);
@@ -484,7 +490,9 @@ public class MainTabsLayout extends AnimatedLinearLayout {
             if (MainTabsUiHelper.isFloatingPill()) {
                 final float h = dp(48);
                 final float top = (getHeight() - h) / 2f;
-                selectorRect.set(x - sWidth / 2f + dp(2), top, x + sWidth / 2f - dp(2), top + h);
+                final boolean hideTitles = xyz.nextalone.nagram.NaConfig.INSTANCE.getMainTabsHideTitles().Bool();
+                final float selW = hideTitles ? Math.min(sWidth, dp(56)) : sWidth;
+                selectorRect.set(x - selW / 2f + dp(2), top, x + selW / 2f - dp(2), top + h);
                 final float r = dp(24);
                 canvas.drawRoundRect(selectorRect, r, r, selectorPaint);
             } else if (MainTabsUiHelper.isMaterial3NavigationBar()) {

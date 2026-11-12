@@ -4336,6 +4336,10 @@ public class AndroidUtilities {
 
     public static boolean openForView(File f, String fileName, String mimeType, final Activity activity, Theme.ResourcesProvider resourcesProvider, boolean restrict) {
         if (f != null && f.exists()) {
+            // Yumi Playlist handler (.yumi / .yumiplay)
+            if (app.miogram.bridge.playlist.YumiPlaylistSheet.openIfPlaylist(activity, f, resourcesProvider)) {
+                return true;
+            }
             // exteraless plugins: плагин может перехватить открытие файла по расширению.
             if (app.exteraless.plugins.files.FilesControllerJava.dispatchOpenFile(f, fileName, mimeType, null, activity, null, UserConfig.selectedAccount)) {
                 return true;

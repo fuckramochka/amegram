@@ -20423,11 +20423,12 @@ public class ChatActivity extends BaseFragment implements
     private static final int MESSAGE_TYPE_NEKOX_SETTINGS_JSON = 23;
     private static final int MESSAGE_TYPE_FONT = 100;
 
-    /** New .mio-* names with legacy .nekox-* fallback. */
+    /** New .yumi-* / .mio-* names with legacy .nekox-* fallback. */
     private static boolean isMioSettingsBackupName(String name) {
         if (name == null) return false;
         String lower = name.toLowerCase();
-        return lower.endsWith(".mio-settings.json") || lower.endsWith(".nekox-settings.json");
+        return lower.endsWith(".yumi-settings.json") || lower.endsWith(".mio-settings.json")
+                || lower.endsWith(".nekox-settings.json") || (lower.contains("yumigram-settings") && lower.endsWith(".json"));
     }
 
     private static boolean isMioStickersBackupName(String name) {

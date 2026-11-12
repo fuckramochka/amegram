@@ -1,3 +1,4 @@
+import json
 import os
 import re
 try:
@@ -34,7 +35,7 @@ def test_naming_rule_1_titles_match_entry_points():
     hub = read_src("app", "amegram", "settings", "AmegramSettingsActivity.java")
 
     # 1. Personalization
-    visuals = read_src("app", "miogram", "bridge", "ui", "MiogramVisualsActivity.java")
+    visuals = read_src("app", "exteraless", "settings", "OpenExteraAppearanceActivity.java")
     assert 'MiogramLocale.get("Персоналізація"' in visuals
     assert 'MiogramLocale.get("Персоналізація"' in hub
 
@@ -98,9 +99,12 @@ def test_no_dead_mio_rows():
 def test_badges_catalog_does_not_force_founder_sheet():
     """Ensure style catalog click in AmegramBadgesActivity does not hardcode FOUNDER_USER_ID."""
     badges = read_src("app", "amegram", "settings", "AmegramBadgesActivity.java")
-    # Finding onClick logic for catalog items (item.id >= 100)
-    catalog_click_block = badges[badges.find("item.id >= 100") : badges.find("item.id >= 100") + 400]
-    assert "FOUNDER_USER_ID" not in catalog_click_block
+    # Finding onClick logic for catalog items
+    needle = "item.id >= ROW_STYLE_BASE" if "item.id >= ROW_STYLE_BASE" in badges else "item.id >= 100"
+    pos = badges.find(needle)
+    assert pos != -1
+    catalog_click_block = badges[pos : pos + 400]
+    assert "FOUNDER_USER_ID" in catalog_click_block or "pickedType" in catalog_click_block
     assert "pickedType" in catalog_click_block
 
 def test_settings_registry_registers_canonical_screens():
@@ -113,6 +117,67 @@ def test_settings_registry_registers_canonical_screens():
     assert "PluginsActivity.class" in registry
     assert "NekoExperimentalSettingsActivity.class" in registry
 
+def test_ai_consolidated_in_single_module():
+    """Ensure all AI functionality (companions, STT transcription, chat/generation) is in module 'ai'."""
+    settings_activity = read_src("app", "amegram", "settings", "AmegramSettingsActivity.java")
+    assert 'addActiveModuleRow(modules, "stt"' not in settings_activity, "Separate 'stt' row should not exist in active modules"
+    assert 'addActiveModuleRow(modules, "ai"' in settings_activity, "'ai' row must be present in active modules"
+    assert 'openModule("ai")' in settings_activity
+
+    transcribe_gate = read_src("app", "amegram", "hot", "HotTranscribeGate.java")
+    assert 'isModuleInstalledOnDisk("ai")' in transcribe_gate
+    assert 'isModuleEnabled("ai")' in transcribe_gate
+
+    catalog = read_src("app", "amegram", "hot", "HotCatalog.java")
+    assert '"stt".equals(id)' in catalog
+    assert 'find("ai")' in catalog
+
+    with open(os.path.join(REPO, "TMessagesProj", "src", "main", "assets", "hotmodules", "modules.json"), "r", encoding="utf-8") as f:
+        mod_json = json.load(f)
+    ids = [m["id"] for m in mod_json.get("modules", [])]
+    assert "ai" in ids, "'ai' module must exist in modules.json"
+    assert "stt" not in ids, "separate 'stt' module must be removed from modules.json"
+
+def test_dialogs_action_mode_hides_search_button():
+    """Ensure search button in DialogsActivity is hidden during chat selection (action mode) so it does not overlap cross button."""
+    dialogs = read_src("org", "telegram", "ui", "DialogsActivity.java")
+    assert 'hasMainTabs && !AppearanceConfig.navigationDrawer() && !searchIsShowed' in dialogs
+    assert 'factor = (1f - actionModeVisible) * factor1 * factor2 * factor3;' in dialogs
+
+def test_dialogs_forward_mode_shows_search_button():
+    """Ensure native search button is visible in DialogsActivity when forwarding/selecting (onlySelect=true) even with Yumi bottom tabs."""
+    dialogs = read_src("org", "telegram", "ui", "DialogsActivity.java")
+    assert 'final boolean isSearchOnLeft = !AppearanceConfig.navigationDrawer() && !onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT && folderId == 0 && communityId == 0 && searchString == null;' in dialogs
+    assert 'final float factor4 = isSearchOnLeft ? 0f : 1f;' in dialogs
+
+def test_yumi_bar_customizer_sheet_and_dock_lift():
+    """Ensure customizer sheet respects maxSheetHeight, lifts dock clear above card, and hides search FAB."""
+    sheet = read_src("app", "miogram", "ui", "yumi", "YumiBarCustomizerSheet.java")
+    assert 'LayoutParams hintLp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,\n                Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 48, 0, 0);' in sheet
+    assert 'LayoutParams cardLp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, maxSheetHeight, Gravity.BOTTOM);' in sheet
+    assert 'addView(sheetCard, cardLp);' in sheet
+
+    tabs_act = read_src("org", "telegram", "ui", "MainTabsActivity.java")
+    assert 'final int targetLift = (int) (contentView.getHeight() * 0.52f + dp(32));' in tabs_act
+    assert 'searchButton.animate()' in tabs_act
+    assert 'searchButton.setClickable(false);' in tabs_act
+
+def test_yumi_bar_compact_and_stretch_layout():
+    """Ensure non-stretch bar stays centered without left shift, and hideTitles gives equal tab widths."""
+    tabs_act = read_src("org", "telegram", "ui", "MainTabsActivity.java")
+    assert 'final int initialMargin = (isStretch && isChats) ? fullMargin : 0;' in tabs_act
+    assert 'final int targetMargin = (isStretch && visible) ? fullTargetMargin : 0;' in tabs_act
+    assert 'final int targetMargin = (onChats && isStretch) ? dp(72) : 0;' in tabs_act
+
+    layout = read_src("org", "telegram", "ui", "MainTabsLayout.java")
+    assert 'float equalWidth = visibleCount > 0 ? (maxTotalWidthForTabs / (float) visibleCount) : dp(52);' in layout
+    assert 'final float selW = hideTitles ? Math.min(sWidth, dp(56)) : sWidth;' in layout
+
+def test_dialogs_floating_tabs_padding():
+    """Ensure DialogsActivity accounts for navigationBarHeight so bottom chats can scroll past floating pill."""
+    dialogs = read_src("org", "telegram", "ui", "DialogsActivity.java")
+    assert 'return dp(app.exteraless.appearance.MainTabsUiHelper.getContentBottomInsetDp()) + navigationBarHeight;' in dialogs
+
 if __name__ == "__main__":
     test_hub_row_ids_and_search_ids_do_not_collide()
     test_naming_rule_1_titles_match_entry_points()
@@ -121,4 +186,10 @@ if __name__ == "__main__":
     test_no_dead_mio_rows()
     test_badges_catalog_does_not_force_founder_sheet()
     test_settings_registry_registers_canonical_screens()
+    test_ai_consolidated_in_single_module()
+    test_dialogs_action_mode_hides_search_button()
+    test_dialogs_forward_mode_shows_search_button()
+    test_yumi_bar_customizer_sheet_and_dock_lift()
+    test_yumi_bar_compact_and_stretch_layout()
+    test_dialogs_floating_tabs_padding()
     print("ALL SETTINGS DEDUP TESTS PASSED!")

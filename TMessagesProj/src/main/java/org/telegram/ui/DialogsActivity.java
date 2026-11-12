@@ -9520,8 +9520,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         actionBarColorAnimator.addUpdateListener(valueAnimator -> {
             viewPages[0].setTranslationY(finalTranslateListHeight * (1f - progressToActionMode));
             progressToActionMode = (float) valueAnimator.getAnimatedValue();
+            final boolean hideBackButton = hasMainTabs && !AppearanceConfig.navigationDrawer() && !searchIsShowed;
             for (int i = 0; i < actionBar.getChildCount(); i++) {
-                if (actionBar.getChildAt(i).getVisibility() == View.VISIBLE && actionBar.getChildAt(i) != actionBar.getActionMode() && actionBar.getChildAt(i) != actionBar.getBackButton()) {
+                if (actionBar.getChildAt(i).getVisibility() == View.VISIBLE && actionBar.getChildAt(i) != actionBar.getActionMode() && (hideBackButton ? true : actionBar.getChildAt(i) != actionBar.getBackButton())) {
                     actionBar.getChildAt(i).setAlpha(1f - progressToActionMode);
                 }
             }
@@ -10547,8 +10548,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             actionBarColorAnimator.addUpdateListener(valueAnimator -> {
                 progressToActionMode = (float) valueAnimator.getAnimatedValue();
                 viewPages[0].setTranslationY(-finalTranslateListHeight * progressToActionMode);
+                final boolean hideBackButton = hasMainTabs && !AppearanceConfig.navigationDrawer() && !searchIsShowed;
                 for (int i = 0; i < actionBar.getChildCount(); i++) {
-                    if (actionBar.getChildAt(i).getVisibility() == View.VISIBLE && actionBar.getChildAt(i) != actionBar.getActionMode() && actionBar.getChildAt(i) != actionBar.getBackButton()) {
+                    if (actionBar.getChildAt(i).getVisibility() == View.VISIBLE && actionBar.getChildAt(i) != actionBar.getActionMode() && (hideBackButton ? true : actionBar.getChildAt(i) != actionBar.getBackButton())) {
                         actionBar.getChildAt(i).setAlpha(1f - progressToActionMode);
                     }
                 }
@@ -15315,6 +15317,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         }
         checkUi_itemOptionsVisibility();
         checkUi_itemBackButtonVisibility();
+        checkUi_itemSearchVisibility();
     }
 
     private void checkUi_itemBackButtonVisibility() {
@@ -15325,7 +15328,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factor1 = 1f - animatorSearchVisible.getFloatValue();
         final float factor2 = 1f - getRightSlidingProgress();
         final float factor3 = 1f - animatorDoneButtonVisible.getFloatValue();
-        final float factor = Math.max(progressToActionMode, factor1 * factor2 * factor3);
+        final float factor;
+        if (hasMainTabs && !AppearanceConfig.navigationDrawer() && !searchIsShowed) {
+            final float actionModeVisible = Math.max(progressToActionMode, animatorActionModeVisible.getFloatValue());
+            factor = (1f - actionModeVisible) * factor1 * factor2 * factor3;
+        } else {
+            factor = Math.max(progressToActionMode, factor1 * factor2 * factor3);
+        }
         FragmentFloatingButton.setAnimatedVisibility(actionBar.getBackButton(), factor);
     }
 
@@ -15371,7 +15380,8 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         final float factor1 = animatorSearchButtonVisible.getFloatValue();
         final float factor2 = 1f - getRightSlidingProgress();
         final float factor3 = 1f - animatorDoneButtonVisible.getFloatValue();
-        final float factor4 = AppearanceConfig.navigationDrawer() ? 1f : 0f;
+        final boolean isSearchOnLeft = !AppearanceConfig.navigationDrawer() && !onlySelect && initialDialogsType == DIALOGS_TYPE_DEFAULT && folderId == 0 && communityId == 0 && searchString == null;
+        final float factor4 = isSearchOnLeft ? 0f : 1f;
         final float factor = factor0 * factor1 * factor2 * factor3 * factor4;
         FragmentFloatingButton.setAnimatedVisibility(searchItem, factor);
         if (dialogStoriesCell != null) {
@@ -15472,10 +15482,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         } else if (!MainTabsLayout.isBottomNavigationFloating()) {
             return getDockedTabsPadding();
         } else {
-            // Floating tabs overlay: with clipToPadding(false) and viewPager already
-            // accounting for navigationBarHeight, reserve only the floating dock height
-            // so the last item scrolls past the pill without a gaping void.
-            return dp(app.exteraless.appearance.MainTabsUiHelper.getContentBottomInsetDp());
+            // Floating tabs overlay: with clipToPadding(false), reserve the floating dock
+            // inset plus navigationBarHeight so the last item can scroll past the pill and nav bar.
+            return dp(app.exteraless.appearance.MainTabsUiHelper.getContentBottomInsetDp()) + navigationBarHeight;
         }
     }
 

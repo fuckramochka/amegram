@@ -513,4 +513,143 @@ public class MiogramPlayerPrefs {
         getPrefs().edit().putBoolean("lyrics_hint_in_chat_input", enabled).apply();
         notifyChanged();
     }
+
+    // --- Lyrics Karaoke Mode (Построчно, Пословно, Послогово) ---
+
+    public static final int KARAOKE_MODE_LINE = 0;
+    public static final int KARAOKE_MODE_WORD = 1;
+    public static final int KARAOKE_MODE_SYLLABLE = 2;
+
+    public static int getLyricsKaraokeMode() {
+        return getPrefs().getInt("lyrics_karaoke_mode", KARAOKE_MODE_WORD);
+    }
+
+    public static void setLyricsKaraokeMode(int mode) {
+        getPrefs().edit().putInt("lyrics_karaoke_mode", Math.max(0, Math.min(2, mode))).apply();
+        notifyChanged();
+    }
+
+    public static long getLyricsOffsetMs() {
+        return getPrefs().getLong("lyrics_offset_ms", 0L);
+    }
+
+    public static void setLyricsOffsetMs(long offsetMs) {
+        getPrefs().edit().putLong("lyrics_offset_ms", offsetMs).apply();
+        notifyChanged();
+    }
+
+    // --- Visualizer & Styles ---
+
+    public static final int VIZ_STYLE_WAVEFORM = 0;
+    public static final int VIZ_STYLE_CIRCULAR_GLOW = 1;
+    public static final int VIZ_STYLE_SPECTRUM_BARS = 2;
+
+    public static int getVisualizerStyle() {
+        return getPrefs().getInt("viz_style", VIZ_STYLE_SPECTRUM_BARS);
+    }
+
+    public static void setVisualizerStyle(int style) {
+        getPrefs().edit().putInt("viz_style", Math.max(0, Math.min(2, style))).apply();
+        notifyChanged();
+    }
+
+    // --- Fluid Mesh Aura Background ---
+
+    public static boolean isFluidAuraEnabled() {
+        return getPrefs().getBoolean("fluid_aura_enabled", true);
+    }
+
+    public static void setFluidAuraEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("fluid_aura_enabled", enabled).apply();
+        notifyChanged();
+    }
+
+    public static int getFluidAuraSpeed() {
+        return getPrefs().getInt("fluid_aura_speed", 2);
+    }
+
+    public static void setFluidAuraSpeed(int speed) {
+        getPrefs().edit().putInt("fluid_aura_speed", Math.max(1, Math.min(5, speed))).apply();
+        notifyChanged();
+    }
+
+    // --- Vinyl 2.0 Mode & Tonearm ---
+
+    public static boolean isVinylModeEnabled() {
+        return getPrefs().getBoolean("vinyl_mode_enabled", false);
+    }
+
+    public static void setVinylModeEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("vinyl_mode_enabled", enabled).apply();
+        notifyChanged();
+    }
+
+    public static boolean isVinylArmEnabled() {
+        return getPrefs().getBoolean("vinyl_arm_enabled", true);
+    }
+
+    public static void setVinylArmEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("vinyl_arm_enabled", enabled).apply();
+        notifyChanged();
+    }
+
+    // --- 3D Cover Flip Transition ---
+
+    public static boolean isCover3dEnabled() {
+        return getPrefs().getBoolean("cover_3d_enabled", true);
+    }
+
+    public static void setCover3dEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("cover_3d_enabled", enabled).apply();
+        notifyChanged();
+    }
+
+    // --- Mini-Player Gestures & Dynamic Island ---
+
+    public static boolean isMiniPlayerGesturesEnabled() {
+        return getPrefs().getBoolean("mini_player_gestures_enabled", true);
+    }
+
+    public static void setMiniPlayerGesturesEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("mini_player_gestures_enabled", enabled).apply();
+        notifyChanged();
+    }
+
+    public static boolean isDynamicIslandMiniPlayer() {
+        return getPrefs().getBoolean("dynamic_island_mini_player", true);
+    }
+
+    public static void setDynamicIslandMiniPlayer(boolean enabled) {
+        getPrefs().edit().putBoolean("dynamic_island_mini_player", enabled).apply();
+        notifyChanged();
+    }
+
+    // --- Audio Playback & Sound Engine (Crossfade, Skip Silence, Resume) ---
+
+    public static int getCrossfadeDurationSec() {
+        return getPrefs().getInt("crossfade_duration_sec", 0); // 0 = off, 1..12 sec
+    }
+
+    public static void setCrossfadeDurationSec(int sec) {
+        getPrefs().edit().putInt("crossfade_duration_sec", Math.max(0, Math.min(12, sec))).apply();
+        notifyChanged();
+    }
+
+    public static boolean isSkipSilenceEnabled() {
+        return getPrefs().getBoolean("skip_silence_enabled", false);
+    }
+
+    public static void setSkipSilenceEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("skip_silence_enabled", enabled).apply();
+        notifyChanged();
+    }
+
+    public static boolean isResumePlaybackEnabled() {
+        return getPrefs().getBoolean("resume_playback_enabled", true);
+    }
+
+    public static void setResumePlaybackEnabled(boolean enabled) {
+        getPrefs().edit().putBoolean("resume_playback_enabled", enabled).apply();
+        notifyChanged();
+    }
 }

@@ -123,7 +123,7 @@ public class SettingsHelper {
                     fragment = neko_fragment = new OpenExteraGeneralActivity();
                     break;
                 case "appearance":
-                    fragment = neko_fragment = new app.exteraless.settings.OpenExteraAppearanceActivity();
+                    fragment = neko_fragment = new app.miogram.bridge.ui.MiogramVisualsActivity();
                     break;
                 case "chats":
                     fragment = neko_fragment = new OpenExteraChatsActivity();
@@ -157,7 +157,7 @@ public class SettingsHelper {
                     break;
                 case "appearance":
                 case "visuals":
-                    fragment = neko_fragment = new app.exteraless.settings.OpenExteraAppearanceActivity();
+                    fragment = neko_fragment = new app.miogram.bridge.ui.MiogramVisualsActivity();
                     break;
                 case "privacy":
                 case "security":

@@ -122,57 +122,9 @@
       "featured": false
     },
     {
-      "id": "stt",
-      "name": "ШІ-Розшифровка",
-      "description": "Розпізнавання голосу та кружечків на базі Google Gemini або OpenAI Whisper BYOK.",
-      "entry": "com.amegram.mods.stt.SttModule",
-      "branches": {
-        "stable": {
-          "version": "1.0.2",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.2.hmod",
-          "sha256": "5fa44270a962acde49761d28e7e8f5c906568145d38e3446c30837cf5d4878c4",
-          "minApp": 7112,
-          "changelog": "Версія 1.0.2: перехід на Gemini 3.5 Flash Lite (в 10 разів вищі ліміти), резервний ланцюг, форматування емоцій та автопідхоплення ключа з клієнта.",
-          "permissions": [
-            "network"
-          ],
-          "sizeBytes": 7924
-        }
-      },
-      "history": [
-        {
-          "branch": "stable",
-          "version": "1.0.1",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.1.hmod",
-          "sha256": "cd7a4c2ed15e7f5b74ccc1a728c9b0b0e15243e19b62e72c6f411e8494fe5677",
-          "sizeBytes": 6129,
-          "minApp": 7112,
-          "changelog": "Detect the real audio/video MIME type before transcription.",
-          "permissions": [
-            "network"
-          ]
-        },
-        {
-          "branch": "stable",
-          "version": "1.0.0",
-          "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/stt-1.0.0.hmod",
-          "sha256": "46e4853e9becb7879752868ea020be8573f5cf068d909c7172b4cf0c1dc22095",
-          "sizeBytes": 5615,
-          "minApp": 7112,
-          "changelog": "",
-          "permissions": [
-            "network"
-          ]
-        }
-      ],
-      "author": "Yumi Team",
-      "category": "media",
-      "featured": false
-    },
-    {
       "id": "ai",
-      "name": "ШІ-Супутниці",
-      "description": "Інтерактивні цифрові супутниці Юмі & Міо з пам'яттю, настроєм та кастомними підказками.",
+      "name": "Штучний інтелект (ШІ)",
+      "description": "Єдиний комплекс ШІ: розпізнавання голосових та кружечків (STT Gemini/Whisper), цифрові супутниці Юмі & Міо, генерація відповідей та розумний редактор.",
       "entry": "com.amegram.mods.ai.AiModule",
       "branches": {
         "stable": {
@@ -180,7 +132,7 @@
           "url": "https://raw.githubusercontent.com/fuckramochka/yuimodules/main/hmods/ai-1.0.2.hmod",
           "sha256": "d3ce73551e00914f71aad3388a42d951dd205d84215698a1ede24d00c5a2165f",
           "minApp": 7112,
-          "changelog": "Версія 1.0.2: чистий інтерфейс провайдера без фейкових перемикачів, синхронізація ключа з ядром.",
+          "changelog": "Версія 1.0.2: єдиний ШІ-комплекс (STT розпізнавання голосу Gemini/Whisper + супутниці Юмі & Міо + генерація відповідей).",
           "permissions": [
             "network"
           ],
@@ -201,7 +153,7 @@
           ]
         }
       ],
-      "author": "AmeGram Team",
+      "author": "Yumi Team",
       "category": "power",
       "featured": true
     },

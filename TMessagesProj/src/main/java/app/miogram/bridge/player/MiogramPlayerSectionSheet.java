@@ -266,6 +266,21 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
                     MiogramPlayerPrefs.setCoverElevation(val);
                     apply();
                 });
+        addToggleRow(root, context, MiogramLocale.get("Режим вінілу (Vinyl 2.0)", "Режим винила (Vinyl 2.0)", "Vinyl 2.0 Mode"),
+                MiogramPlayerPrefs.isVinylModeEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setVinylModeEnabled(enabled);
+                    apply();
+                });
+        addToggleRow(root, context, MiogramLocale.get("Анімована голка (тонарм)", "Анимированная игла (тонарм)", "Animated tonearm"),
+                MiogramPlayerPrefs.isVinylArmEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setVinylArmEnabled(enabled);
+                    apply();
+                });
+        addToggleRow(root, context, MiogramLocale.get("3D-перехід обкладинок", "3D-переход обложек", "3D cover transition"),
+                MiogramPlayerPrefs.isCover3dEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setCover3dEnabled(enabled);
+                    apply();
+                });
     }
 
     private void buildText(LinearLayout root, Context context) {
@@ -336,6 +351,15 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
                     MiogramPlayerPrefs.setVisualizerEnabled(enabled);
                     apply();
                 });
+        addSegmentRow(root, context, MiogramLocale.get("Стиль візуалізатора", "Стиль визуализатора", "Visualizer style"),
+                new String[]{
+                        MiogramLocale.get("Хвиля", "Волна", "Waveform"),
+                        MiogramLocale.get("Кругове сяйво", "Круговое сияние", "Circular Glow"),
+                        MiogramLocale.get("Спектр", "Спектр", "Spectrum Bars")
+                }, MiogramPlayerPrefs.getVisualizerStyle(), index -> {
+                    MiogramPlayerPrefs.setVisualizerStyle(index);
+                    apply();
+                });
         addLabel(root, context, MiogramLocale.get("Колір смуг візуалізатора", "Цвет полос визуалайзера", "Visualizer bar color"));
         addPaletteRow(root, context, MiogramPlayerPrefs.getVisualizerColor(), visualizerColorSwatches, color -> {
             MiogramPlayerPrefs.setVisualizerColor(color);
@@ -379,6 +403,48 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
             apply();
         });
         refreshPalette(glowSwatches, MiogramPlayerPrefs.getButtonGlowColor());
+
+        addSliderRow(root, context, MiogramLocale.get("Кросфейд (плавний перехід)", "Кроссфейд (плавный переход)", "Crossfade duration"),
+                MiogramPlayerPrefs.getCrossfadeDurationSec(), 0, 12, " s", val -> {
+                    MiogramPlayerPrefs.setCrossfadeDurationSec(val);
+                });
+        addToggleRow(root, context, MiogramLocale.get("Пропуск тиші (Skip Silence)", "Пропуск тишины (Skip Silence)", "Skip silence"),
+                MiogramPlayerPrefs.isSkipSilenceEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setSkipSilenceEnabled(enabled);
+                });
+        addToggleRow(root, context, MiogramLocale.get("Зберігати трек і час після перезапуску", "Сохранять трек и время после перезапуска", "Resume track & position on restart"),
+                MiogramPlayerPrefs.isResumePlaybackEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setResumePlaybackEnabled(enabled);
+                });
+
+        addLabel(root, context, MiogramLocale.get("Плейлисти .yumi", "Плейлисты .yumi", "Yumi Playlists"));
+        addActionButton(root, context, MiogramLocale.get("Зберегти поточну чергу в .yumi", "Сохранить текущую очередь в .yumi", "Save current queue as .yumi"), v -> {
+            MiogramHaptic.click(v);
+            java.util.ArrayList<org.telegram.messenger.MessageObject> pl = org.telegram.messenger.MediaController.getInstance().getPlaylist();
+            if (pl != null && !pl.isEmpty()) {
+                app.miogram.bridge.playlist.YumiPlaylist newPl = app.miogram.bridge.playlist.YumiPlaylistManager.createFromQueue(null, pl);
+                if (newPl != null) {
+                    org.telegram.ui.Components.BulletinFactory.of(container, resourcesProvider)
+                            .createSimpleBulletin(org.telegram.messenger.R.drawable.msg_saved, MiogramLocale.get("Чергу збережено як .yumi плейлист", "Очередь сохранена как .yumi плейлист", "Queue saved as .yumi playlist"))
+                            .show();
+                }
+            } else {
+                org.telegram.ui.Components.BulletinFactory.of(container, resourcesProvider)
+                        .createSimpleBulletin(org.telegram.messenger.R.drawable.msg_info, MiogramLocale.get("Черга відтворення порожня", "Очередь воспроизведения пуста", "Playback queue is empty"))
+                        .show();
+            }
+        });
+        addActionButton(root, context, MiogramLocale.get("Мої плейлисти .yumi", "Мои плейлисты .yumi", "My .yumi Playlists"), v -> {
+            MiogramHaptic.click(v);
+            java.util.List<app.miogram.bridge.playlist.YumiPlaylist> all = app.miogram.bridge.playlist.YumiPlaylistManager.getAllPlaylists();
+            if (!all.isEmpty() && getOwnerActivity() != null) {
+                app.miogram.bridge.playlist.YumiPlaylistSheet.showPlaylist(getOwnerActivity(), all.get(0), resourcesProvider);
+            } else {
+                org.telegram.ui.Components.BulletinFactory.of(container, resourcesProvider)
+                        .createSimpleBulletin(org.telegram.messenger.R.drawable.msg_info, MiogramLocale.get("Немає збережених плейлистів", "Нет сохранённых плейлистов", "No saved playlists"))
+                        .show();
+            }
+        });
     }
 
     // ---------------- Background ----------------
@@ -512,6 +578,16 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
         addSliderRow(root, context, MiogramLocale.get("Яскравість", "Яркость", "Brightness"),
                 (int) (MiogramPlayerPrefs.getBgBrightness() * 100), 20, 160, "%", val -> {
                     MiogramPlayerPrefs.setBgBrightness(val / 100.0f);
+                    apply();
+                });
+        addToggleRow(root, context, MiogramLocale.get("Живий градієнт Fluid Aura", "Живой градиент Fluid Aura", "Fluid Mesh Aura background"),
+                MiogramPlayerPrefs.isFluidAuraEnabled(), enabled -> {
+                    MiogramPlayerPrefs.setFluidAuraEnabled(enabled);
+                    apply();
+                });
+        addSliderRow(root, context, MiogramLocale.get("Швидкість хвиль Fluid Aura", "Скорость волн Fluid Aura", "Aura speed"),
+                MiogramPlayerPrefs.getFluidAuraSpeed(), 1, 5, "", val -> {
+                    MiogramPlayerPrefs.setFluidAuraSpeed(val);
                     apply();
                 });
     }
@@ -704,6 +780,20 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
     // ---------------- Lyrics ----------------
 
     private void buildLyrics(LinearLayout root, Context context) {
+        addSegmentRow(root, context, MiogramLocale.get("Режим караоке", "Режим караоке", "Karaoke mode"),
+                new String[]{
+                        MiogramLocale.get("Построчно", "Построчно", "Line"),
+                        MiogramLocale.get("Пословно", "Пословно", "Word"),
+                        MiogramLocale.get("Послогово", "Послогово", "Syllable")
+                }, MiogramPlayerPrefs.getLyricsKaraokeMode(), index -> {
+                    MiogramPlayerPrefs.setLyricsKaraokeMode(index);
+                    apply();
+                });
+        addSliderRow(root, context, MiogramLocale.get("Зсув таймінгу (LRC Offset)", "Смещение тайминга (LRC Offset)", "Lyrics sync offset"),
+                (int) (MiogramPlayerPrefs.getLyricsOffsetMs() / 100), -30, 30, "00 ms", val -> {
+                    MiogramPlayerPrefs.setLyricsOffsetMs(val * 100L);
+                    apply();
+                });
         addSliderRow(root, context, MiogramLocale.get("Розмір шрифту", "Размер шрифта", "Font size"),
                 MiogramPlayerPrefs.getLyricsFontSize(), 14, 28, "", val -> {
                     MiogramPlayerPrefs.setLyricsFontSize(val);
@@ -743,6 +833,25 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
         try {
             if (playerLayout != null) playerLayout.applyCustomization();
         } catch (Throwable ignore) {}
+    }
+
+    private void addActionButton(LinearLayout parent, Context context, String text, View.OnClickListener click) {
+        TextView btn = new TextView(context);
+        btn.setText(text);
+        btn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        btn.setTypeface(AndroidUtilities.bold());
+        btn.setTextColor(0xFFFFFFFF);
+        btn.setGravity(Gravity.CENTER);
+        btn.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(12), AndroidUtilities.dp(16), AndroidUtilities.dp(12));
+        GradientDrawable gd = new GradientDrawable();
+        gd.setColor(accentColor);
+        gd.setCornerRadius(AndroidUtilities.dp(14));
+        btn.setBackground(gd);
+        btn.setOnClickListener(click);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = AndroidUtilities.dp(10);
+        lp.bottomMargin = AndroidUtilities.dp(6);
+        parent.addView(btn, lp);
     }
 
     private void addLabel(LinearLayout parent, Context context, String text) {

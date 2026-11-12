@@ -222,6 +222,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     private void writeInt(String key, int value) {
+        invalidateVisualConfig();
         try {
             if (host != null) host.putInt(key, value);
         } catch (Throwable ignore) {
@@ -234,6 +235,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     private void writeBool(String key, boolean value) {
+        invalidateVisualConfig();
         try {
             if (host != null) host.putBool(key, value);
         } catch (Throwable ignore) {
@@ -246,6 +248,7 @@ public class UiModule implements HotModule, HotUi {
     }
 
     private void markTouched() {
+        invalidateVisualConfig();
         writeBool(KEY_TOUCHED, true);
         try {
             if (host != null) {
@@ -265,18 +268,52 @@ public class UiModule implements HotModule, HotUi {
         }
     }
 
+    // In-memory cached visual config
+    private volatile boolean cachedConfigValid = false;
+    private volatile int cachedStyleMode = 1;
+    private volatile int cachedChatListStyle = CHAT_STYLE_FLAT;
+    private volatile boolean cachedChatPinnedAccent = true;
+    private volatile boolean cachedChatSquircleAvatars = true;
+    private volatile boolean cachedChatCardOutline = true;
+    private volatile boolean cachedChatCardsTouch = true;
+    private volatile float cachedCardRadius = 22f;
+    private volatile float cachedCardSideMargin = 12f;
+    private volatile float cachedCardVerticalMargin = 3.5f;
+    private volatile boolean cachedTimePill = true;
+
+    public void invalidateVisualConfig() {
+        cachedConfigValid = false;
+    }
+
+    private void ensureVisualConfig() {
+        if (cachedConfigValid) return;
+        cachedStyleMode = readInt(KEY_STYLE, readInt("style", 1)) == 0 ? 0 : 1;
+        cachedChatListStyle = readInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
+        cachedChatPinnedAccent = readBool(KEY_CHAT_PINNED_ACCENT, true);
+        cachedChatSquircleAvatars = readBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
+        cachedChatCardOutline = readBool(KEY_CHAT_CARD_OUTLINE, true);
+        cachedChatCardsTouch = readBool(KEY_CHAT_CARDS_TOUCH, true);
+        cachedCardRadius = readInt(KEY_CARD_RADIUS, 22);
+        cachedCardSideMargin = readInt(KEY_CARD_MARGIN_SIDE, 12);
+        cachedCardVerticalMargin = readInt(KEY_CARD_MARGIN_V, 35) / 10f;
+        cachedTimePill = readInt(KEY_TIME_BADGE_STYLE, 0) == 0;
+        cachedConfigValid = true;
+    }
+
     @Override
     public int styleMode() {
-        int v = readInt(KEY_STYLE, readInt("style", 1));
-        return v == 0 ? 0 : 1;
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedStyleMode;
     }
 
     public int chatListStyle() {
-        return readInt(KEY_CHAT_STYLE, CHAT_STYLE_FLAT);
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedChatListStyle;
     }
 
     public boolean isChatPinnedAccent() {
-        return readBool(KEY_CHAT_PINNED_ACCENT, true);
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedChatPinnedAccent;
     }
 
     public boolean isYumiLogin() {
@@ -288,15 +325,18 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public boolean isChatSquircleAvatars() {
-        return readBool(KEY_CHAT_SQUIRCLE_AVATARS, true);
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedChatSquircleAvatars;
     }
 
     public boolean isChatCardOutline() {
-        return readBool(KEY_CHAT_CARD_OUTLINE, true);
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedChatCardOutline;
     }
 
     public boolean isChatCardsTouch() {
-        return readBool(KEY_CHAT_CARDS_TOUCH, true);
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedChatCardsTouch;
     }
 
     public int accentMode() {
@@ -316,16 +356,18 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public float cardRadius() {
-        return readInt(KEY_CARD_RADIUS, 22);
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedCardRadius;
     }
 
     public float cardSideMargin() {
-        return readInt(KEY_CARD_MARGIN_SIDE, 12);
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedCardSideMargin;
     }
 
     public float cardVerticalMargin() {
-        int v = readInt(KEY_CARD_MARGIN_V, 35);
-        return v / 10f;
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedCardVerticalMargin;
     }
 
     public float navRadius() {
@@ -337,7 +379,8 @@ public class UiModule implements HotModule, HotUi {
     }
 
     public boolean isTimePillEnabled() {
-        return readInt(KEY_TIME_BADGE_STYLE, 0) == 0;
+        if (!cachedConfigValid) ensureVisualConfig();
+        return cachedTimePill;
     }
 
     public boolean isNavExpandActivePillEnabled() {

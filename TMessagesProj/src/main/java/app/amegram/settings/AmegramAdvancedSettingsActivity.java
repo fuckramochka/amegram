@@ -37,6 +37,7 @@ public class AmegramAdvancedSettingsActivity extends BaseFragment {
     private static final int ROW_EXTERA_CHATS = 12;
     private static final int ROW_EXTERA_OTHER = 13;
     private static final int ROW_MIO_CHATS = 20;
+    private static final int ROW_BACKUP = 30;
 
     private UniversalRecyclerView listView;
 
@@ -109,6 +110,13 @@ public class AmegramAdvancedSettingsActivity extends BaseFragment {
                         "Камера, субпапки, стикеры и действия с сообщениями",
                         "Camera, subfolders, stickers and message actions")));
 
+        items.add(UItem.asHeader(MiogramLocale.get("Резервне копіювання", "Резервное копирование", "Backup & Restore")));
+        items.add(YumiSettingCell.Factory.of(ROW_BACKUP, R.drawable.yumi_ic_storage, 0xFF4CAF50,
+                MiogramLocale.get("Експорт усіх налаштувань", "Экспорт всех настроек", "Export All Settings"),
+                MiogramLocale.get("Повний бекап усіх параметрів клієнта у файл",
+                        "Полный бэкап всех параметров клиента в файл",
+                        "Complete backup of all client settings to a file")));
+
         items.add(UItem.asShadow(MiogramLocale.get(
                 "Поступово ці екрани зливаються з основними. Новий верхній рівень — лише «Клієнт → …».",
                 "Постепенно эти экраны сливаются с основными. Новый верхний уровень — только «Клиент → …».",
@@ -130,6 +138,8 @@ public class AmegramAdvancedSettingsActivity extends BaseFragment {
             presentFragment(new OpenExteraOtherActivity());
         } else if (item.id == ROW_MIO_CHATS) {
             presentFragment(new MiogramChatsSettingsActivity());
+        } else if (item.id == ROW_BACKUP) {
+            tw.nekomimi.nekogram.helpers.SettingsBackupHelper.backupSettings(getParentActivity(), getResourceProvider());
         }
     }
 

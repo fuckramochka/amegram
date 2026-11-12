@@ -8127,6 +8127,10 @@ public class Theme {
 
     public static void reloadAllResources(Context context) {
         destroyResources();
+        try {
+            app.amegram.theme.YumiMd3.invalidateCache();
+        } catch (Throwable ignore) {
+        }
         if (chat_msgInDrawable != null) {
             chat_msgInDrawable = null;
             currentColor = 0;

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.view.View;
 
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.Theme;
@@ -63,6 +64,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private static final int ROW_DATA_STORAGE = 54;
     private static final int ROW_CHANNEL = 55;
     private static final int ROW_ADVANCED = 56;
+    private static final int ROW_BACKUP_SETTINGS = 57;
 
     // Класичні екрани Neko / Extera. Більше не мають верхнього рівня:
     // доступні з екрана «Додатково» та з контекстних посилань.
@@ -94,6 +96,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     private static final int SEARCH_VAULT = 84;
     private static final int SEARCH_SYSTEM_MODULES = 85;
     private static final int SEARCH_HISTORY = 86;
+    private static final int SEARCH_BACKUP_SETTINGS = 87;
 
     /** Сторонні модули получают стабильный диапазон идентификаторов. */
     private static final int ROW_CUSTOM_BASE = 1000;
@@ -232,6 +235,9 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         addSearchRow(model, SEARCH_HISTORY, R.drawable.yumi_ic_history,
                 MiogramLocale.get("Історія та видалені повідомлення", "История и удалённые сообщения", "History & deleted messages"),
                 MiogramLocale.get("Лабораторія: збереження видалених, regex, glyphs", "Лаборатория: сохранение удалённых, regex, glyphs", "Lab: deleted messages, regex, glyphs"));
+        addSearchRow(model, SEARCH_BACKUP_SETTINGS, R.drawable.yumi_ic_storage,
+                MiogramLocale.get("Експорт усіх налаштувань", "Экспорт всех настроек", "Export all settings"),
+                MiogramLocale.get("Резервна копія, експорт та відновлення налаштувань", "Резервная копия, экспорт и восстановление настроек", "Backup, export and restore settings"));
     }
 
     private void addSearchRow(YumiSettingsModel model, int id, int icon, CharSequence title, CharSequence subtitle) {
@@ -293,10 +299,10 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
         boolean aiInstalled = HotModulesManager.isModuleInstalled("ai");
         model.quick.add(quick(ROW_AI, "ai", R.drawable.yumi_ic_auto_awesome, YumiMd3.primary(),
-                MiogramLocale.get("ШІ-асистент", "ИИ-ассистент", "AI assistant"),
+                MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial intelligence (AI)"),
                 aiInstalled
-                        ? MiogramLocale.get("Ame / KAngel поруч", "Ame / KAngel рядом", "Ame / KAngel is here")
-                        : MiogramLocale.get("Встановити Ame / KAngel", "Установить Ame / KAngel", "Install Ame / KAngel")));
+                        ? MiogramLocale.get("Супутниці, STT та генерація", "Спутницы, STT и генерация", "Companions, STT & generation")
+                        : MiogramLocale.get("Встановити ШІ-комплекс", "Установить ИИ-комплекс", "Install AI suite")));
 
         boolean playerInstalled = HotModulesManager.isModuleInstalled("player");
         model.quick.add(quick(ROW_PLAYER, "player", R.drawable.yumi_ic_music, YumiMd3.tertiary(),
@@ -364,7 +370,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Material Design 3 та навігація", "Material Design 3 и навигация", "Material Design 3 & navigation"));
         addActiveModuleRow(modules, "ai", ROW_AI, R.drawable.yumi_ic_auto_awesome, YumiMd3.primary(),
                 MiogramLocale.get("Штучний інтелект (ШІ)", "Искусственный интеллект (ИИ)", "Artificial intelligence (AI)"),
-                MiogramLocale.get("ШІ-супутниці Yumi & Mio, чат і генерація", "ИИ-спутницы Yumi & Mio, чат и генерация", "Yumi & Mio companion, chat & generation"));
+                MiogramLocale.get("ШІ-супутниці, розпізнавання голосових (STT), чат і генерація", "ИИ-спутницы, распознавание голосовых (STT), чат и генерация", "AI companions, voice transcription (STT), chat & generation"));
         addActiveModuleRow(modules, "player", ROW_PLAYER, R.drawable.yumi_ic_music, YumiMd3.primary(),
                 MiogramLocale.get("Пошук музики та тексти", "Поиск музыки и тексты", "Music search & lyrics"),
                 MiogramLocale.get("Пошук у сервісах, відтворення, LRC", "Поиск в сервисах, воспроизведение, LRC", "Music service search, playback & LRC"));
@@ -380,9 +386,6 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         addActiveModuleRow(modules, "ame", ROW_AME, R.drawable.yumi_ic_customize, YumiMd3.primary(),
                 MiogramLocale.get("Кастомізація UI", "Кастомизация UI", "Customization"),
                 MiogramLocale.get("Картки профілю, діалоги, ефекти", "Карточки профиля, диалоги, эффекты", "Profile cards, dialogs, visual effects"));
-        addActiveModuleRow(modules, "stt", ROW_STT, R.drawable.yumi_ic_voice, YumiMd3.primary(),
-                MiogramLocale.get("Розпізнавання мовлення", "Распознавание речи", "Speech recognition"),
-                MiogramLocale.get("Розшифровка голосових і відео", "Расшифровка голосовых и видео", "Transcribe voice and video messages"));
         addActiveModuleRow(modules, "automation", ROW_AUTOMATION, R.drawable.yumi_ic_bolt, YumiMd3.primary(),
                 MiogramLocale.get("Автоматизація", "Автоматизация", "Automation"),
                 MiogramLocale.get("Синхронізація, резервні копії, очищення", "Синхронизация, резервные копии, очистка", "Sync, backups and cleanup"));
@@ -391,7 +394,7 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
                 MiogramLocale.get("Збереження завантажень у папки чатів", "Сохранение загрузок в папки чатов", "Save downloads into chat folders"));
 
         for (HotModulesManager.InstalledInfo info : active) {
-            if (info == null || info.manifest == null || BUILTIN_IDS.contains(info.manifest.id) || HotModulesManager.isSystem(info.manifest.id)) {
+            if (info == null || info.manifest == null || BUILTIN_IDS.contains(info.manifest.id) || info.manifest.isSystem || HotModulesManager.isSystem(info.manifest.id)) {
                 continue;
             }
             if (!HotModulesManager.isModuleActive(info.manifest.id)) {
@@ -427,6 +430,9 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         YumiSettingsModel.Section system = section(
                 MiogramLocale.get("Система", "Система", "System"),
                 null);
+        system.rows.add(row(ROW_BACKUP_SETTINGS, R.drawable.yumi_ic_storage, YumiMd3.primary(),
+                MiogramLocale.get("Резервне копіювання", "Резервное копирование", "Backup & Restore"),
+                MiogramLocale.get("Експорт та імпорт усіх налаштувань клієнта", "Экспорт и импорт всех настроек клиента", "Export and import all client settings")));
         system.rows.add(row(ROW_NEKO_EXPERIMENTAL, R.drawable.yumi_ic_science, YumiMd3.primary(),
                 MiogramLocale.get("Лабораторія", "Лаборатория", "Laboratory"),
                 MiogramLocale.get("Видалені повідомлення, regex, безліміти та експерименти", "Удалённые сообщения, regex, безлимиты и эксперименты", "Deleted messages, regex, unlimited and experiments")));
@@ -615,6 +621,8 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             openSettingsFragment(new AmegramUpdateSettingsActivity());
         } else if (id == ROW_ABOUT) {
             openSettingsFragment(new MiogramAboutActivity());
+        } else if (id == ROW_BACKUP_SETTINGS || id == SEARCH_BACKUP_SETTINGS) {
+            openBackupSettingsDialog();
         } else if (id == ROW_GHOST) {
             openModule("ghost");
         } else if (id == ROW_VAULT || id == SEARCH_VAULT) {
@@ -625,12 +633,10 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
             openModule("ame");
         } else if (id == ROW_TIKTOK) {
             openModule("tiktok");
-        } else if (id == ROW_AI) {
+        } else if (id == ROW_AI || id == ROW_STT) {
             openModule("ai");
         } else if (id == ROW_EXPERIMENTAL) {
             openModule("experimental");
-        } else if (id == ROW_STT) {
-            openModule("stt");
         } else if (id == ROW_AUTOMATION) {
             openModule("automation");
         } else if (id == ROW_UI) {
@@ -640,6 +646,98 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         } else if (id == ROW_DEMO) {
             openModule("demo");
         }
+    }
+
+    private static final int REQUEST_CODE_IMPORT_SETTINGS = 1205;
+
+    private void openBackupSettingsDialog() {
+        if (getParentActivity() == null) return;
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity(), getResourceProvider());
+        builder.setTitle(MiogramLocale.get("Резервне копіювання", "Резервное копирование", "Backup & Restore"));
+        CharSequence[] items = new CharSequence[]{
+                MiogramLocale.get("Експорт усіх налаштувань", "Экспорт всех настроек", "Export all settings"),
+                MiogramLocale.get("Імпорт налаштувань із файлу", "Импорт настроек из файла", "Import settings from file"),
+                MiogramLocale.get("Скинути налаштування", "Сбросить настройки", "Reset settings")
+        };
+        int[] icons = new int[]{
+                R.drawable.export_solar,
+                R.drawable.import_solar,
+                R.drawable.msg_reset_solar
+        };
+        builder.setItems(items, icons, (dialog, which) -> {
+            if (which == 0) {
+                tw.nekomimi.nekogram.helpers.SettingsBackupHelper.backupSettings(getParentActivity(), getResourceProvider());
+            } else if (which == 1) {
+                openImportSettingsPicker();
+            } else if (which == 2) {
+                showResetSettingsDialog();
+            }
+        });
+        builder.setNegativeButton(LocaleController.getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
+    private void openImportSettingsPicker() {
+        android.content.Intent intent = new android.content.Intent(android.content.Intent.ACTION_GET_CONTENT);
+        intent.setType("*/*");
+        intent.addCategory(android.content.Intent.CATEGORY_OPENABLE);
+        try {
+            startActivityForResult(intent, REQUEST_CODE_IMPORT_SETTINGS);
+        } catch (Exception e) {
+            tw.nekomimi.nekogram.utils.AlertUtil.showSimpleAlert(getParentActivity(), e);
+        }
+    }
+
+    @Override
+    public void onActivityResultFragment(int requestCode, int resultCode, android.content.Intent data) {
+        if (requestCode != REQUEST_CODE_IMPORT_SETTINGS) {
+            super.onActivityResultFragment(requestCode, resultCode, data);
+            return;
+        }
+        if (resultCode != android.app.Activity.RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        android.net.Uri uri = data.getData();
+        java.io.File file = new java.io.File(org.telegram.messenger.AndroidUtilities.getCacheDir(),
+                java.util.UUID.randomUUID().toString().replace("-", "") + ".yumi-settings.json");
+        try (java.io.InputStream input = org.telegram.messenger.ApplicationLoader.applicationContext.getContentResolver().openInputStream(uri)) {
+            if (input == null) return;
+            try (java.io.OutputStream output = new java.io.FileOutputStream(file)) {
+                byte[] buffer = new byte[4096];
+                int read;
+                while ((read = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, read);
+                }
+                output.flush();
+            }
+        } catch (Exception e) {
+            tw.nekomimi.nekogram.utils.AlertUtil.showSimpleAlert(getParentActivity(), e);
+            return;
+        }
+        tw.nekomimi.nekogram.helpers.SettingsBackupHelper.importSettings(getParentActivity(), file);
+    }
+
+    private void showResetSettingsDialog() {
+        if (getParentActivity() == null) return;
+        tw.nekomimi.nekogram.utils.AlertUtil.showConfirm(getParentActivity(),
+                LocaleController.getString(R.string.OEGeneralResetSettings),
+                LocaleController.getString(R.string.OEGeneralResetSettingsInfo),
+                R.drawable.msg_reset,
+                LocaleController.getString(R.string.OEGeneralResetSettings),
+                true,
+                () -> {
+                    app.exteraless.general.GeneralHelper.resetSettings();
+                    LocaleController.getInstance().recreateFormatters();
+                    Theme.reloadAllResources(getParentActivity());
+                    if (getParentLayout() != null) {
+                        getParentLayout().rebuildAllFragmentViews(false, false);
+                    }
+                    getNotificationCenter().postNotificationName(org.telegram.messenger.NotificationCenter.mainUserInfoChanged);
+                    getNotificationCenter().postNotificationName(org.telegram.messenger.NotificationCenter.dialogFiltersUpdated);
+                    getNotificationCenter().postNotificationName(org.telegram.messenger.NotificationCenter.dialogsNeedReload, true);
+                    showToast(LocaleController.getString(R.string.OEGeneralResetSettingsDone));
+                    refresh();
+                });
     }
 
     private void openChannel() {

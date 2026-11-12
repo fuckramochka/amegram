@@ -285,6 +285,35 @@ public final class YumiChatRowRenderer {
     }
 
     private static final class Row {
+        private static volatile boolean sFieldsResolved = false;
+        private static Field sNameLayoutField;
+        private static Field sMessageLayoutField;
+        private static Field sTimeLayoutField;
+        private static Field sUnreadCountField;
+        private static Field sMentionCountField;
+        private static Field sMarkUnreadField;
+        private static Field sDialogMutedField;
+        private static Method sGetIsPinnedMethod;
+
+        private static void resolveFields(Class<?> type) {
+            if (sFieldsResolved) return;
+            synchronized (Row.class) {
+                if (sFieldsResolved) return;
+                try {
+                    sNameLayoutField = field(type, "nameLayout");
+                    sMessageLayoutField = field(type, "messageLayout");
+                    sTimeLayoutField = field(type, "timeLayout");
+                    sUnreadCountField = field(type, "unreadCount");
+                    sMentionCountField = field(type, "mentionCount");
+                    sMarkUnreadField = field(type, "markUnread");
+                    sDialogMutedField = field(type, "dialogMuted");
+                    sGetIsPinnedMethod = type.getMethod("getIsPinned");
+                } catch (Throwable ignore) {
+                }
+                sFieldsResolved = true;
+            }
+        }
+
         Layout nameLayout;
         Layout messageLayout;
         Layout timeLayout;
@@ -337,20 +366,20 @@ public final class YumiChatRowRenderer {
         void read(View cell) {
             try {
                 final Class<?> type = cell.getClass();
-                nameLayout = (Layout) field(type, "nameLayout").get(cell);
-                messageLayout = (Layout) field(type, "messageLayout").get(cell);
-                timeLayout = (Layout) field(type, "timeLayout").get(cell);
-                final Field unread = field(type, "unreadCount");
-                unreadCount = unread.getInt(cell);
-                final Field mention = field(type, "mentionCount");
-                mentionCount = mention.getInt(cell);
-                final Field mark = field(type, "markUnread");
-                markUnread = mark.getBoolean(cell);
-                final Field mutedField = field(type, "dialogMuted");
-                muted = mutedField.getBoolean(cell);
-                final Method isPinned = type.getMethod("getIsPinned");
-                final Object pinnedValue = isPinned.invoke(cell);
-                pinned = pinnedValue instanceof Boolean && (Boolean) pinnedValue;
+                resolveFields(type);
+                nameLayout = sNameLayoutField != null ? (Layout) sNameLayoutField.get(cell) : null;
+                messageLayout = sMessageLayoutField != null ? (Layout) sMessageLayoutField.get(cell) : null;
+                timeLayout = sTimeLayoutField != null ? (Layout) sTimeLayoutField.get(cell) : null;
+                unreadCount = sUnreadCountField != null ? sUnreadCountField.getInt(cell) : 0;
+                mentionCount = sMentionCountField != null ? sMentionCountField.getInt(cell) : 0;
+                markUnread = sMarkUnreadField != null && sMarkUnreadField.getBoolean(cell);
+                muted = sDialogMutedField != null && sDialogMutedField.getBoolean(cell);
+                if (sGetIsPinnedMethod != null) {
+                    final Object pinnedValue = sGetIsPinnedMethod.invoke(cell);
+                    pinned = pinnedValue instanceof Boolean && (Boolean) pinnedValue;
+                } else {
+                    pinned = false;
+                }
                 if (mentionCount > 0) {
                     badgeText = "@";
                 } else if (unreadCount > 99) {

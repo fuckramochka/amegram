@@ -76,16 +76,56 @@ public class PlayerMiniView extends FrameLayout implements NotificationCenter.No
         card.setOrientation(LinearLayout.HORIZONTAL);
         card.setGravity(Gravity.CENTER_VERTICAL);
         card.setPadding(dp(10), 0, dp(6), 0);
-        cardBg.setCornerRadius(dp(20));
+        int cornerRad = app.miogram.bridge.player.MiogramPlayerPrefs.isDynamicIslandMiniPlayer() ? dp(26) : dp(20);
+        cardBg.setCornerRadius(cornerRad);
         card.setBackground(cardBg);
         card.setOutlineProvider(new ViewOutlineProvider() {
             @Override
             public void getOutline(View view, Outline outline) {
-                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), dp(20));
+                outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), cornerRad);
             }
         });
         card.setClipToOutline(true);
         card.setElevation(dp(6));
+        android.view.GestureDetector gestureDetector = new android.view.GestureDetector(context, new android.view.GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onSingleTapConfirmed(android.view.MotionEvent e) {
+                Md3Player.open(fragment, PlayerMiniView.this);
+                return true;
+            }
+
+            @Override
+            public boolean onFling(android.view.MotionEvent e1, android.view.MotionEvent e2, float velocityX, float velocityY) {
+                if (!app.miogram.bridge.player.MiogramPlayerPrefs.isMiniPlayerGesturesEnabled()) {
+                    return false;
+                }
+                if (e1 == null || e2 == null) return false;
+                float dx = e2.getX() - e1.getX();
+                float dy = e2.getY() - e1.getY();
+                if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > dp(40) && Math.abs(velocityX) > 350) {
+                    if (dx > 0) {
+                        app.miogram.bridge.customui.MiogramHaptic.click(card);
+                        MediaController.getInstance().playPreviousMessage(false);
+                    } else {
+                        app.miogram.bridge.customui.MiogramHaptic.click(card);
+                        MediaController.getInstance().playNextMessage();
+                    }
+                    return true;
+                } else if (dy < -dp(40) && Math.abs(velocityY) > 350) {
+                    app.miogram.bridge.customui.MiogramHaptic.click(card);
+                    Md3Player.open(fragment, PlayerMiniView.this);
+                    return true;
+                }
+                return false;
+            }
+        });
+        card.setOnTouchListener((v, event) -> {
+            boolean handled = gestureDetector.onTouchEvent(event);
+            if (event.getAction() == android.view.MotionEvent.ACTION_UP && !handled) {
+                v.performClick();
+            }
+            return true;
+        });
         card.setOnClickListener(v -> Md3Player.open(fragment, this));
         card.setContentDescription(getString(R.string.OEPlayerOpen));
         addView(card, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, HEIGHT_DP, Gravity.BOTTOM, 12, 0, 12, 12));

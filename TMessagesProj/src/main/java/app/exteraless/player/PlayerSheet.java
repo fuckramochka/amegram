@@ -1600,6 +1600,27 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             o.dismiss();
             PlayerActions.share(activity, mo);
         });
+        o.add(R.drawable.msg_stories_save, app.miogram.bridge.MiogramLocale.get("Музична картка для Stories", "Музыкальная карточка для Stories", "Music Story Card"), () -> {
+            o.dismiss();
+            Bitmap bmp = cover != null && cover.getImageReceiver() != null ? cover.getImageReceiver().getBitmap() : null;
+            app.miogram.bridge.player.YumiMusicCardGenerator.shareCard(activity, mo, bmp, null);
+        });
+        o.add(R.drawable.msg_list, app.miogram.bridge.MiogramLocale.get("Зберегти чергу як .yumi", "Сохранить очередь как .yumi", "Save queue as .yumi"), () -> {
+            o.dismiss();
+            ArrayList<MessageObject> pl = MediaController.getInstance().getPlaylist();
+            if (pl != null && !pl.isEmpty()) {
+                app.miogram.bridge.playlist.YumiPlaylist newPl = app.miogram.bridge.playlist.YumiPlaylistManager.createFromQueue(null, pl);
+                if (newPl != null) {
+                    BulletinFactory.of(container, rp)
+                            .createSimpleBulletin(R.drawable.msg_saved, app.miogram.bridge.MiogramLocale.get("Збережено в .yumi плейлист", "Сохранено в .yumi плейлист", "Saved to .yumi playlist"))
+                            .show();
+                }
+            }
+        });
+        o.add(R.drawable.menu_feature_edit, app.miogram.bridge.MiogramLocale.get("Налаштування плеера Юми", "Настройки плеера Юми", "Yumi Player Settings"), () -> {
+            o.dismiss();
+            new app.miogram.bridge.player.MiogramPlayerSectionSheet(activity, rp, null, "lyrics", true).show();
+        });
         o.addIf(mo.getId() > 0, R.drawable.msg_message, getString(R.string.ShowInChat), () -> {
             o.dismiss();
             dismissImmediately();
@@ -1661,19 +1682,26 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
 
     private void setCoverDrag(float dx) {
         cover.setTranslationX(dx);
-        cover.setRotation(dx / dp(40));
+        if (app.miogram.bridge.player.MiogramPlayerPrefs.isCover3dEnabled()) {
+            cover.setCameraDistance(dp(12000));
+            cover.setRotationY(-dx / dp(16));
+            cover.setScaleX(1f - Math.min(Math.abs(dx) / dp(800), 0.15f));
+            cover.setScaleY(1f - Math.min(Math.abs(dx) / dp(800), 0.15f));
+        } else {
+            cover.setRotation(dx / dp(40));
+        }
         cover.setAlpha(1f - Math.min(Math.abs(dx) / dp(420), 0.4f));
     }
 
     private void finishCoverDrag(float dx) {
         if (Math.abs(dx) < dp(70)) {
-            cover.animate().translationX(0).rotation(0).alpha(1f).setDuration(450).setInterpolator(EMPHASIZED).start();
+            cover.animate().translationX(0).rotation(0).rotationY(0).scaleX(1f).scaleY(1f).alpha(1f).setDuration(450).setInterpolator(EMPHASIZED).start();
             return;
         }
         boolean next = dx < 0;
         float out = (next ? -1 : 1) * layout.getWidth();
         coverAnimating = true;
-        cover.animate().translationX(out).rotation(out / dp(40) / 4f).alpha(0f).setDuration(180).setInterpolator(CubicBezierInterpolator.EASE_IN).withEndAction(() -> {
+        cover.animate().translationX(out).rotationY(next ? -45f : 45f).scaleX(0.85f).scaleY(0.85f).alpha(0f).setDuration(180).setInterpolator(CubicBezierInterpolator.EASE_IN).withEndAction(() -> {
             if (next) {
                 MediaController.getInstance().playNextMessage();
             } else {
@@ -1685,7 +1713,8 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             }
             cover.setTranslationX(-out * 0.35f);
             cover.setRotation(0);
-            cover.animate().translationX(0).alpha(1f).setDuration(450).setInterpolator(EMPHASIZED).withEndAction(() -> coverAnimating = false).start();
+            cover.setRotationY(next ? 45f : -45f);
+            cover.animate().translationX(0).rotationY(0).scaleX(1f).scaleY(1f).alpha(1f).setDuration(450).setInterpolator(EMPHASIZED).withEndAction(() -> coverAnimating = false).start();
         }).start();
     }
 

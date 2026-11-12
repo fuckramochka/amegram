@@ -48,6 +48,9 @@ public class HotModuleSettingsActivity extends BaseFragment {
     }
 
     public HotModuleSettingsActivity(String moduleId) {
+        if ("stt".equals(moduleId)) {
+            moduleId = "ai";
+        }
         this.moduleId = moduleId != null ? moduleId : "";
     }
 
@@ -153,6 +156,16 @@ public class HotModuleSettingsActivity extends BaseFragment {
         // AI_WORD шлях існує (MiogramLyricsEngine.SOURCE_AI_WORD + MiogramLyricsView.transcribeWithAiWordTimed) — не чіпаємо, тільки вхід.
         if ("player".equals(moduleId)) {
             try {
+                if (!hasRowId("player_settings_open")) {
+                    rows.add(HotRow.button("player_settings_open",
+                            MiogramLocale.get("Налаштування плеера Юми", "Настройки плеера Юми", "Yumi Player Settings"),
+                            MiogramLocale.get("Караоке, візуалізатор, вініл, кросфейд, стилі", "Караоке, визуализатор, винил, кроссфейд, стили", "Karaoke, visualizer, vinyl, crossfade, styles")));
+                }
+                if (!hasRowId("player_playlists_open")) {
+                    rows.add(HotRow.button("player_playlists_open",
+                            MiogramLocale.get("Плейлисти .yumi", "Плейлисты .yumi", "Yumi Playlists"),
+                            MiogramLocale.get("Створення, імпорт та керування треками", "Создание, импорт и управление треками", "Create, import & manage tracks")));
+                }
                 if (!hasRowId("player_lyrics_open")) {
                     rows.add(HotRow.button("player_lyrics_open",
                             MiogramLocale.get("Тексти пісень (LRC + ШІ)", "Тексты песен (LRC + ИИ)", "Lyrics (LRC + AI)"),
@@ -978,6 +991,22 @@ public class HotModuleSettingsActivity extends BaseFragment {
     private boolean handleCustomAction(HotRow r) {
         if (r == null) return false;
         if ("player".equals(moduleId)) {
+            if ("player_settings_open".equals(r.id)) {
+                new app.miogram.bridge.player.MiogramPlayerSectionSheet(getParentActivity(), getResourceProvider(), null, "lyrics", true).show();
+                return true;
+            }
+            if ("player_playlists_open".equals(r.id)) {
+                java.util.List<app.miogram.bridge.playlist.YumiPlaylist> all = app.miogram.bridge.playlist.YumiPlaylistManager.getAllPlaylists();
+                if (!all.isEmpty()) {
+                    app.miogram.bridge.playlist.YumiPlaylistSheet.showPlaylist(getParentActivity(), all.get(0), getResourceProvider());
+                } else {
+                    app.miogram.bridge.playlist.YumiPlaylist empty = new app.miogram.bridge.playlist.YumiPlaylist(
+                            MiogramLocale.get("Мій плейлист", "Мой плейлист", "My Playlist"), "Yumigram");
+                    app.miogram.bridge.playlist.YumiPlaylistManager.savePlaylist(empty);
+                    app.miogram.bridge.playlist.YumiPlaylistSheet.showPlaylist(getParentActivity(), empty, getResourceProvider());
+                }
+                return true;
+            }
             if ("player_lyrics_open".equals(r.id)) {
                 openPlayerLyrics();
                 return true;

@@ -107,6 +107,9 @@ public final class HotCatalog {
         for (Entry e : modules) {
             if (e.id.equals(id)) return e;
         }
+        if ("stt".equals(id)) {
+            return find("ai");
+        }
         return null;
     }
 

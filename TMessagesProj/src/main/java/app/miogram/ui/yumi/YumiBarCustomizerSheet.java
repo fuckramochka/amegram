@@ -96,7 +96,7 @@ public class YumiBarCustomizerSheet extends FrameLayout {
         hintPill.setScaleY(0.85f);
 
         LayoutParams hintLp = LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT,
-                Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 80, 0, 0);
+                Gravity.CENTER_HORIZONTAL | Gravity.TOP, 0, 48, 0, 0);
         addView(hintPill, hintLp);
 
         // 3. Bottom sheet with dock customization controls
@@ -388,9 +388,8 @@ public class YumiBarCustomizerSheet extends FrameLayout {
 
         // Restrict maximum sheet card height so lifted dock stays fully visible
         int maxSheetHeight = (int) (AndroidUtilities.displaySize.y * 0.52f);
-        LayoutParams cardLp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM);
-        cardLp.height = Math.min(cardLp.height, maxSheetHeight);
-        addView(sheetCard, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM));
+        LayoutParams cardLp = LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, maxSheetHeight, Gravity.BOTTOM);
+        addView(sheetCard, cardLp);
 
         // Populate reorder list initially
         refreshOrderList(context);

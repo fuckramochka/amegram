@@ -157,13 +157,13 @@ public final class HotModuleMeta {
                 new String[]{"ghost", "vault"}));
         res.add(new Pack("media", "",
                 MiogramLocale.get("Медіа", "Медиа", "Media"),
-                MiogramLocale.get("Плеєр + TikTok + розшифровка голосу",
-                        "Плеер + TikTok + расшифровка голоса", "Player + TikTok + voice STT"),
-                new String[]{"player", "tiktok", "stt"}));
+                MiogramLocale.get("Плеєр + TikTok",
+                        "Плеер + TikTok", "Player + TikTok"),
+                new String[]{"player", "tiktok"}));
         res.add(new Pack("power", "",
                 MiogramLocale.get("Потужність", "Мощь", "Power"),
-                MiogramLocale.get("ШІ-супутник + автоматизація + кастом + папки + інтерфейс",
-                        "ИИ-спутник + автоматизация + кастом + папки + интерфейс", "AI buddy + automation + custom + folders + interface"),
+                MiogramLocale.get("ШІ-комплекс + автоматизація + кастом + папки + інтерфейс",
+                        "ИИ-комплекс + автоматизация + кастом + папки + интерфейс", "AI suite + automation + custom + folders + interface"),
                 new String[]{"ai", "automation", "ame", "fileorganization", "ui"}));
         res.add(new Pack("start", "",
                 MiogramLocale.get("Старт", "Старт", "Start"),
@@ -204,17 +204,11 @@ public final class HotModuleMeta {
                     "Плеер без ватермарок, чистые URL и синхронизация",
                     "Watermark-free player, clean URLs & sync");
         }
-        if ("stt".equals(id)) {
+        if ("ai".equals(id) || "stt".equals(id)) {
             return MiogramLocale.get(
-                    "ШІ-транскрипція голосових через Gemini або Whisper",
-                    "ИИ-транскрибация голосовых через Gemini или Whisper",
-                    "AI transcription via Gemini or Whisper");
-        }
-        if ("ai".equals(id)) {
-            return MiogramLocale.get(
-                    "ШІ-супутниці Yumi & Mio з пам'яттю та чатом",
-                    "ИИ-спутницы Yumi & Mio с памятью и чатом",
-                    "AI companions Yumi & Mio with memory & chat");
+                    "Штучний інтелект: цифрові супутниці Yumi & Mio, розпізнавання голосових (STT) через Gemini/Whisper, розумні відповіді та ШІ-редактор",
+                    "Искусственный интеллект: цифровые спутницы Yumi & Mio, распознавание голосовых (STT) через Gemini/Whisper, умные ответы и ИИ-редактор",
+                    "Artificial Intelligence: Yumi & Mio companions, voice transcription (STT) via Gemini/Whisper, smart replies & AI editor");
         }
         if ("experimental".equals(id)) {
             return MiogramLocale.get(

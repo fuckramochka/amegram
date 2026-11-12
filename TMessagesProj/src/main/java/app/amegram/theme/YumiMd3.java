@@ -131,32 +131,46 @@ public final class YumiMd3 {
     private static int sHeroMid;
     private static int sHeroEnd;
 
+    static {
+        try {
+            org.telegram.messenger.NotificationCenter.getGlobalInstance().addObserver((id, account, args) -> {
+                invalidateCache();
+            }, org.telegram.messenger.NotificationCenter.didSetNewTheme);
+        } catch (Throwable ignore) {
+        }
+    }
+
     public static void invalidateCache() {
         sCacheValid = false;
     }
 
-    private static synchronized void ensureCache() {
-        try {
-            int accentKey = 0;
-            try {
-                Theme.ThemeInfo activeTheme = Theme.getActiveTheme();
-                if (activeTheme != null) {
-                    accentKey = activeTheme.currentAccentId;
-                }
-            } catch (Throwable ignore) {
-            }
-            int key = Theme.getColor(Theme.key_windowBackgroundWhite)
-                    ^ Theme.getColor(Theme.key_chats_actionBackground)
-                    ^ Theme.getColor(Theme.key_featuredStickers_addButton)
-                    ^ accentKey
-                    ^ (Theme.isCurrentThemeDark() ? 0x55555555 : 0xAAAAAAAA);
-            if (sCacheValid && key == sLastKey) {
+    private static void ensureCache() {
+        if (sCacheValid) {
+            return;
+        }
+        synchronized (YumiMd3.class) {
+            if (sCacheValid) {
                 return;
             }
-            recomputeCache(key);
-        } catch (Throwable t) {
-            if (!sCacheValid) {
-                recomputeCache(0);
+            try {
+                int accentKey = 0;
+                try {
+                    Theme.ThemeInfo activeTheme = Theme.getActiveTheme();
+                    if (activeTheme != null) {
+                        accentKey = activeTheme.currentAccentId;
+                    }
+                } catch (Throwable ignore) {
+                }
+                int key = Theme.getColor(Theme.key_windowBackgroundWhite)
+                        ^ Theme.getColor(Theme.key_chats_actionBackground)
+                        ^ Theme.getColor(Theme.key_featuredStickers_addButton)
+                        ^ accentKey
+                        ^ (Theme.isCurrentThemeDark() ? 0x55555555 : 0xAAAAAAAA);
+                recomputeCache(key);
+            } catch (Throwable t) {
+                if (!sCacheValid) {
+                    recomputeCache(0);
+                }
             }
         }
     }

@@ -347,6 +347,9 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         } catch (Throwable ignore) {}
 
         MediaController.getInstance();
+        try {
+            app.miogram.bridge.player.YumiCrossfadeController.getInstance();
+        } catch (Throwable ignore) {}
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) { //TODO improve account
             ContactsController.getInstance(a).checkAppAccount();
             DownloadController.getInstance(a);

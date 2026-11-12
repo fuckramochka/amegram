@@ -676,7 +676,8 @@ public class MiogramLyricsView extends FrameLayout {
             return;
         }
 
-        int newActive = currentSong.findLineIndex(currentPositionMs);
+        long effectiveMs = Math.max(0L, currentPositionMs + MiogramPlayerPrefs.getLyricsOffsetMs());
+        int newActive = currentSong.findLineIndex(effectiveMs);
         if (newActive != activePosition) {
             int oldActive = activePosition;
             activePosition = newActive;
@@ -698,7 +699,7 @@ public class MiogramLyricsView extends FrameLayout {
             LyricsViewHolder holder = (LyricsViewHolder) recyclerView.findViewHolderForAdapterPosition(activePosition);
             if (holder != null) {
                 MiogramLrcModel.LrcLine line = currentSong.lines.get(activePosition);
-                float wordFraction = line.wordFraction(currentPositionMs);
+                float wordFraction = line.wordFraction(effectiveMs);
                 if (wordFraction >= 0f) {
                     holder.updateKaraokeProgress(wordFraction);
                     return;
@@ -706,12 +707,9 @@ public class MiogramLyricsView extends FrameLayout {
                 long nextTime = (activePosition + 1 < currentSong.lines.size())
                         ? currentSong.lines.get(activePosition + 1).timeMs
                         : (line.timeMs + 4000L);
-                // Stretch across the REAL line span (up to 60s): long sung lines
-                // used to finish filling at ~9.5s and sit static. Finish exactly
-                // at the next line with just a 200ms breather.
                 long lineDuration = Math.max(800L, Math.min(60000L, nextTime - line.timeMs));
                 long singingDuration = lineDuration > 800L ? (lineDuration - 200L) : (long) (lineDuration * 0.8f);
-                float fraction = Math.max(0f, Math.min(1f, (float) (currentPositionMs - line.timeMs) / (float) singingDuration));
+                float fraction = Math.max(0f, Math.min(1f, (float) (effectiveMs - line.timeMs) / (float) singingDuration));
                 holder.updateKaraokeProgress(fraction);
             }
         }
@@ -955,20 +953,62 @@ public class MiogramLyricsView extends FrameLayout {
 
         public void updateKaraokeProgress(float fraction) {
             if (TextUtils.isEmpty(rawText)) return;
+            int mode = MiogramPlayerPrefs.getLyricsKaraokeMode();
             int len = rawText.length();
-            int sungChars = Math.round(len * fraction);
+
+            if (mode == MiogramPlayerPrefs.KARAOKE_MODE_LINE) {
+                mainText.setText(rawText);
+                return;
+            }
+
+            int sungChars = 0;
+            if (mode == MiogramPlayerPrefs.KARAOKE_MODE_WORD) {
+                String[] words = rawText.split("\\s+");
+                if (words.length > 0) {
+                    int activeWordIdx = Math.min(words.length - 1, (int) (words.length * fraction));
+                    int chars = 0;
+                    for (int w = 0; w <= activeWordIdx; w++) {
+                        chars += words[w].length() + 1;
+                    }
+                    sungChars = Math.min(len, chars);
+                } else {
+                    sungChars = Math.round(len * fraction);
+                }
+            } else {
+                sungChars = calculateSyllableChars(rawText, fraction);
+            }
+
             sungChars = Math.max(0, Math.min(len, sungChars));
             if (sungChars == lastSungChars) return;
             lastSungChars = sungChars;
 
             android.text.SpannableString span = new android.text.SpannableString(rawText);
+            int activeCol = MiogramPlayerPrefs.getLyricsActiveColor();
+            int col = activeCol != 0 ? activeCol : 0xFFFFFFFF;
             if (sungChars > 0) {
-                span.setSpan(new android.text.style.ForegroundColorSpan(0xFFFFFFFF), 0, sungChars, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                span.setSpan(new android.text.style.ForegroundColorSpan(col), 0, sungChars, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             if (sungChars < len) {
                 span.setSpan(new android.text.style.ForegroundColorSpan(0x60FFFFFF), sungChars, len, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
             }
             mainText.setText(span, TextView.BufferType.SPANNABLE);
+        }
+
+        private static int calculateSyllableChars(String text, float fraction) {
+            if (TextUtils.isEmpty(text)) return 0;
+            int len = text.length();
+            java.util.List<Integer> breakPoints = new java.util.ArrayList<>();
+            for (int i = 0; i < len; i++) {
+                char c = Character.toLowerCase(text.charAt(i));
+                if ("aeiouyаеёиоуыэюя".indexOf(c) != -1 || Character.isWhitespace(c)) {
+                    breakPoints.add(i + 1);
+                }
+            }
+            if (breakPoints.isEmpty()) {
+                return Math.round(len * fraction);
+            }
+            int targetIdx = Math.min(breakPoints.size() - 1, (int) (breakPoints.size() * fraction));
+            return breakPoints.get(targetIdx);
         }
     }
 

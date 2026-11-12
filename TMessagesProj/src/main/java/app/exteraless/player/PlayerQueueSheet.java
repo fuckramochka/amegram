@@ -33,6 +33,8 @@ import org.telegram.messenger.R;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.ItemOptions;
+import android.app.Activity;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 
@@ -149,6 +151,7 @@ public class PlayerQueueSheet extends BottomSheet implements NotificationCenter.
         list.setVerticalScrollBarEnabled(false);
         list.setSelectorDrawableColor(0);
         list.setOnItemClickListener((view, position) -> onItemClick(position));
+        list.setOnItemLongClickListener((view, position) -> onItemLongClick(view, position));
         list.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
@@ -299,6 +302,43 @@ public class PlayerQueueSheet extends BottomSheet implements NotificationCenter.
         } else {
             mc.findMessageInPlaylistAndPlay(mo);
         }
+    }
+
+    private boolean onItemLongClick(View view, int position) {
+        MessageObject mo = itemAt(position);
+        if (mo == null) return false;
+        Theme.ResourcesProvider rp = colors.provider(resourcesProvider);
+        ItemOptions o = ItemOptions.makeOptions(container, rp, view, true);
+        o.add(R.drawable.msg_playback_forward, app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next"), () -> {
+            o.dismiss();
+            app.miogram.bridge.playlist.YumiPlaylistManager.playNext(mo);
+            adapter.notifyDataSetChanged();
+            updateSubtitle();
+        });
+        o.add(R.drawable.msg_list, app.miogram.bridge.MiogramLocale.get("Зберегти чергу в .yumi", "Сохранить очередь в .yumi", "Save queue to .yumi"), () -> {
+            o.dismiss();
+            java.util.ArrayList<MessageObject> pl = MediaController.getInstance().getPlaylist();
+            if (pl != null && !pl.isEmpty()) {
+                app.miogram.bridge.playlist.YumiPlaylistManager.createFromQueue(null, pl);
+            }
+        });
+        o.add(R.drawable.msg_stories_save, app.miogram.bridge.MiogramLocale.get("Музична картка для Stories", "Музыкальная карточка для Stories", "Music Story Card"), () -> {
+            o.dismiss();
+            Activity act = getContext() instanceof Activity ? (Activity) getContext() : null;
+            app.miogram.bridge.player.YumiMusicCardGenerator.shareCard(act, mo, null, null);
+        });
+        o.add(R.drawable.msg_delete, app.miogram.bridge.MiogramLocale.get("Видалити з черги", "Удалить из очереди", "Remove from queue"), () -> {
+            o.dismiss();
+            java.util.ArrayList<MessageObject> pl = MediaController.getInstance().getPlaylist();
+            if (pl != null && position >= 0 && position < pl.size()) {
+                pl.remove(position);
+                adapter.notifyItemRemoved(position);
+                adapter.notifyItemRangeChanged(position, pl.size() - position);
+                updateSubtitle();
+            }
+        });
+        o.show();
+        return true;
     }
 
     private class Adapter extends RecyclerListView.SelectionAdapter {

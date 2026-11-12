@@ -113,6 +113,62 @@ public final class HotModulesManager {
     private static final java.util.Set<String> ACTIVE_MODULES = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
     private static final Map<String, Object> SERVICES = new HashMap<>();
 
+    private static final Map<String, Manifest> MANIFEST_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final java.util.Set<String> INSTALLED_ON_DISK_CACHE = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
+    private static final java.util.Set<String> SYSTEM_MODULES_CACHE = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
+    private static final java.util.Set<String> ENABLED_MODULES_CACHE = java.util.Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<>());
+    private static volatile List<InstalledInfo> sInstalledListCache = null;
+    private static volatile boolean sFastCachesPopulated = false;
+
+    public static void invalidateFastCaches() {
+        sFastCachesPopulated = false;
+        sInstalledListCache = null;
+        try {
+            app.miogram.bridge.badge.MiogramBadgeManager.invalidateModuleEnabledCache();
+        } catch (Throwable ignore) {
+        }
+        try {
+            app.exteraless.appearance.AppearanceConfig.invalidateExpressiveCache();
+        } catch (Throwable ignore) {
+        }
+    }
+
+    private static synchronized void ensureFastCaches() {
+        if (sFastCachesPopulated && sInstalledListCache != null) {
+            return;
+        }
+        if (appContext == null) {
+            init(ApplicationLoader.applicationContext);
+        }
+        if (appContext == null) {
+            return;
+        }
+        List<InstalledInfo> list = listInstalledDiskInternal();
+        sInstalledListCache = Collections.unmodifiableList(list);
+
+        Set<String> installed = new HashSet<>();
+        Set<String> system = new HashSet<>();
+        Set<String> enabled = new HashSet<>();
+        for (InstalledInfo info : list) {
+            if (info.active) {
+                installed.add(info.manifest.id);
+                if (info.manifest.isSystem) {
+                    system.add(info.manifest.id);
+                }
+                if (info.enabled || info.manifest.isSystem) {
+                    enabled.add(info.manifest.id);
+                }
+            }
+        }
+        INSTALLED_ON_DISK_CACHE.clear();
+        INSTALLED_ON_DISK_CACHE.addAll(installed);
+        SYSTEM_MODULES_CACHE.clear();
+        SYSTEM_MODULES_CACHE.addAll(system);
+        ENABLED_MODULES_CACHE.clear();
+        ENABLED_MODULES_CACHE.addAll(enabled);
+        sFastCachesPopulated = true;
+    }
+
     /** Історичні ID колись вшитих модулів. APK тепер чистий (0 вбудованих),
      *  тому карти лишаються порожніми — лише для міграції старих префів. */
     public static final Map<String, String> BUILTIN_ENTRIES = new HashMap<>();
@@ -327,34 +383,17 @@ public final class HotModulesManager {
 
     public static boolean isModuleInstalledOnDisk(String moduleId) {
         if (moduleId == null) return false;
-        if (appContext == null) init(ApplicationLoader.applicationContext);
-        if (appContext == null) return false;
-        if (prefs().getBoolean("uninstalled_" + moduleId, false)) return false;
-        String active = prefs().getString("installed_" + moduleId, "");
-        if (!active.isEmpty()) {
-            File c = new File(new File(new File(root(), moduleId), active), "module.hmod");
-            if (c.exists()) return true;
+        ensureFastCaches();
+        if ("stt".equals(moduleId)) {
+            return INSTALLED_ON_DISK_CACHE.contains("ai") || INSTALLED_ON_DISK_CACHE.contains("stt");
         }
-        File modDir = new File(root(), moduleId);
-        if (modDir.exists() && modDir.isDirectory()) {
-            File[] vers = modDir.listFiles();
-            if (vers != null) {
-                for (File vdir : vers) {
-                    if (vdir.isDirectory() && new File(vdir, "module.hmod").exists()) return true;
-                }
-            }
-        }
-        return false;
+        return INSTALLED_ON_DISK_CACHE.contains(moduleId);
     }
 
     public static boolean isSystem(String moduleId) {
-        if (moduleId == null || !isModuleInstalledOnDisk(moduleId)) return false;
-        for (InstalledInfo info : listInstalled()) {
-            if (moduleId.equals(info.manifest.id) && info.active) {
-                return info.manifest.isSystem;
-            }
-        }
-        return false;
+        if (moduleId == null) return false;
+        ensureFastCaches();
+        return SYSTEM_MODULES_CACHE.contains(moduleId);
     }
 
     public static boolean isSystemAutoUpdateEnabled() {
@@ -371,17 +410,18 @@ public final class HotModulesManager {
 
     public static boolean isModuleEnabled(String moduleId) {
         if (moduleId == null) return false;
-        if (!isModuleInstalledOnDisk(moduleId)) return false;
-        if (isSystem(moduleId)) return true;
-        if (appContext == null) init(ApplicationLoader.applicationContext);
-        if (appContext == null) return false;
-        if (prefs().getBoolean("uninstalled_" + moduleId, false)) return false;
-        // Жодних авто-true: вимкнено за замовчуванням, вмикає лише юзер.
-        return prefs().getBoolean("enabled_" + moduleId, false);
+        ensureFastCaches();
+        if ("stt".equals(moduleId)) {
+            return ENABLED_MODULES_CACHE.contains("ai") || ENABLED_MODULES_CACHE.contains("stt");
+        }
+        return ENABLED_MODULES_CACHE.contains(moduleId);
     }
 
     public static boolean isModuleActive(String moduleId) {
         if (moduleId == null) return false;
+        if ("stt".equals(moduleId)) {
+            return ACTIVE_MODULES.contains("ai") || ACTIVE_MODULES.contains("stt");
+        }
         return ACTIVE_MODULES.contains(moduleId);
     }
 
@@ -391,17 +431,8 @@ public final class HotModulesManager {
      * до класичного вигляду, навіть якщо в AppearanceConfig лишився Expressive.
      */
     public static boolean isUiModuleOn() {
-        if (appContext == null) init(ApplicationLoader.applicationContext);
-        if (appContext == null) {
-            return false;
-        }
-        if (!isModuleInstalledOnDisk("ui")) {
-            return false;
-        }
-        if (prefs().getBoolean("uninstalled_ui", false)) {
-            return false;
-        }
-        return prefs().getBoolean("enabled_ui", false);
+        ensureFastCaches();
+        return ENABLED_MODULES_CACHE.contains("ui");
     }
 
     // ---------- crash-ізоляція: карантин після 3 провалів ----------
@@ -626,7 +657,16 @@ public final class HotModulesManager {
 
     // ---------- установленные ----------
 
-    public static synchronized List<InstalledInfo> listInstalled() {
+    public static List<InstalledInfo> listInstalled() {
+        ensureFastCaches();
+        List<InstalledInfo> cached = sInstalledListCache;
+        if (cached != null) {
+            return cached;
+        }
+        return Collections.emptyList();
+    }
+
+    private static synchronized List<InstalledInfo> listInstalledDiskInternal() {
         List<InstalledInfo> res = new ArrayList<>();
         if (appContext == null) return res;
         File r = root();
@@ -668,6 +708,18 @@ public final class HotModulesManager {
     }
 
     public static Manifest readManifest(File hmod) throws Exception {
+        if (hmod == null) throw new IllegalArgumentException("null hmod");
+        String cacheKey = null;
+        try {
+            if (hmod.exists()) {
+                cacheKey = hmod.getAbsolutePath() + ":" + hmod.length() + ":" + hmod.lastModified();
+                Manifest cached = MANIFEST_CACHE.get(cacheKey);
+                if (cached != null) {
+                    return cached;
+                }
+            }
+        } catch (Throwable ignore) {
+        }
         try (ZipFile zip = new ZipFile(hmod)) {
             ZipEntry e = zip.getEntry("manifest.json");
             if (e == null) throw new IllegalStateException("no manifest.json");
@@ -685,8 +737,12 @@ public final class HotModulesManager {
                 }
                 String type = o.optString("type", "addon");
                 boolean isSystem = o.optBoolean("system", false) || "system".equalsIgnoreCase(type) || "settings_ui".equals(id) || "badges".equals(id) || "kpm".equals(id);
-                return new Manifest(id, version, o.optString("branch", "stable"),
+                Manifest m = new Manifest(id, version, o.optString("branch", "stable"),
                         entry, o.optString("name", id), o.optInt("minApp", 0), type, isSystem);
+                if (cacheKey != null) {
+                    MANIFEST_CACHE.put(cacheKey, m);
+                }
+                return m;
             }
         }
     }
@@ -722,6 +778,7 @@ public final class HotModulesManager {
     }
 
     public static void notifyChanged() {
+        invalidateFastCaches();
         try {
             app.exteraless.appearance.AppearanceConfig.invalidateExpressiveCache();
         } catch (Throwable ignore) {
@@ -1222,6 +1279,9 @@ public final class HotModulesManager {
     // ---------- загрузка кода (только включённые) ----------
 
     public static synchronized Handle getHandle(String moduleId) {
+        if ("stt".equals(moduleId)) {
+            moduleId = "ai";
+        }
         Handle cached = LOADED.get(moduleId);
         if (cached != null) return cached;
         if (appContext == null) {
@@ -1421,24 +1481,27 @@ public final class HotModulesManager {
     private static void ensureInstalledAreReadOnly() {
         if (readOnlySweepDone) return;
         readOnlySweepDone = true;
-        try {
-            File r = root();
-            File[] modDirs = r.listFiles();
-            if (modDirs == null) return;
-            for (File modDir : modDirs) {
-                if (!modDir.isDirectory()) continue;
-                File[] vers = modDir.listFiles();
-                if (vers == null) continue;
-                for (File vdir : vers) {
-                    if (!vdir.isDirectory()) continue;
-                    makeReadOnly(new File(vdir, "module.hmod"));
+        org.telegram.messenger.Utilities.globalQueue.postRunnable(() -> {
+            try {
+                File r = root();
+                File[] modDirs = r.listFiles();
+                if (modDirs == null) return;
+                for (File modDir : modDirs) {
+                    if (!modDir.isDirectory()) continue;
+                    File[] vers = modDir.listFiles();
+                    if (vers == null) continue;
+                    for (File vdir : vers) {
+                        if (!vdir.isDirectory()) continue;
+                        makeReadOnly(new File(vdir, "module.hmod"));
+                    }
                 }
+            } catch (Throwable ignore) {
             }
-        } catch (Throwable ignore) {
-        }
+        });
     }
 
     private static synchronized void dropLoaded(String moduleId) {
+        invalidateFastCaches();
         ACTIVE_MODULES.remove(moduleId);
         Handle h = LOADED.remove(moduleId);
         if (h != null) {
@@ -1488,6 +1551,9 @@ public final class HotModulesManager {
 
     public static HotModule getModuleForSettings(String moduleId) {
         if (moduleId == null) return null;
+        if ("stt".equals(moduleId)) {
+            moduleId = "ai";
+        }
         Handle cached = LOADED.get(moduleId);
         if (cached != null && cached.instance != null) return cached.instance;
         if (appContext == null) init(ApplicationLoader.applicationContext);

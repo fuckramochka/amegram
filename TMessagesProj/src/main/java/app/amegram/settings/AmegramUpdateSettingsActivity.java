@@ -52,7 +52,7 @@ public class AmegramUpdateSettingsActivity extends BaseFragment {
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(MiogramLocale.get("Оновлення Yumigram", "Обновление Yumigram", "Yumigram updates"));
+        actionBar.setTitle(MiogramLocale.get("Оновлення застосунку", "Обновление приложения", "App updates"));
         actionBar.setActionBarMenuOnItemClick(new ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {

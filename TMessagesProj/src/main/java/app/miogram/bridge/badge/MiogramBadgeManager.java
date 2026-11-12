@@ -20,15 +20,32 @@ public class MiogramBadgeManager {
 
     public static final long FOUNDER_USER_ID = 8011880648L;
 
+    private static volatile Boolean sModuleEnabledCache = null;
+    private static volatile HotBadges sCachedService = null;
+    private static volatile boolean sServiceChecked = false;
+
+    public static void invalidateModuleEnabledCache() {
+        sModuleEnabledCache = null;
+        sCachedService = null;
+        sServiceChecked = false;
+    }
+
     @Nullable
     public static HotBadges getService() {
+        if (sServiceChecked) {
+            return sCachedService;
+        }
         try {
             Object s = HotModulesManager.getService(HotServices.BADGES);
             if (s instanceof HotBadges) {
-                return (HotBadges) s;
+                sCachedService = (HotBadges) s;
+                sServiceChecked = true;
+                return sCachedService;
             }
         } catch (Throwable ignore) {
         }
+        sServiceChecked = true;
+        sCachedService = null;
         return null;
     }
 
@@ -47,6 +64,16 @@ public class MiogramBadgeManager {
     }
 
     public static boolean isModuleEnabled() {
+        Boolean cached = sModuleEnabledCache;
+        if (cached != null) {
+            return cached;
+        }
+        boolean enabled = checkModuleEnabledInternal();
+        sModuleEnabledCache = enabled;
+        return enabled;
+    }
+
+    private static boolean checkModuleEnabledInternal() {
         try {
             if (!app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("badges")
                     || !app.amegram.hot.HotModulesManager.isModuleEnabled("badges")) {
@@ -64,6 +91,7 @@ public class MiogramBadgeManager {
     }
 
     public static void setModuleEnabled(boolean enabled) {
+        sModuleEnabledCache = enabled;
         try {
             android.content.Context ctx =
                     org.telegram.messenger.ApplicationLoader.applicationContext;

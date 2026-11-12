@@ -131,6 +131,35 @@ public final class SettingsBackupHelper {
         if (!isCloud) spToJSON("themeconfig", configJson, null);
         spToJSON("nkmrcfg", configJson, null, includeApiKeys);
 
+        if (!isCloud) {
+            spToJSON("mioconfig", configJson, null, includeApiKeys);
+            spToJSON("exteraconfig", configJson, null, includeApiKeys);
+            spToJSON("pillstackconfig", configJson, null, includeApiKeys);
+            spToJSON("amegram_module_prefs", configJson, null, includeApiKeys);
+            spToJSON("amegram_core_prefs", configJson, null, includeApiKeys);
+            spToJSON("hotmodules_prefs", configJson, null, includeApiKeys);
+            spToJSON("aiConfig", configJson, null, includeApiKeys);
+            spToJSON("exteraless_notifications", configJson, null, includeApiKeys);
+            try {
+                File prefsDir = new File(ApplicationLoader.applicationContext.getApplicationInfo().dataDir, "shared_prefs");
+                if (prefsDir.exists() && prefsDir.isDirectory()) {
+                    File[] files = prefsDir.listFiles();
+                    if (files != null) {
+                        for (File f : files) {
+                            String name = f.getName();
+                            if (name.endsWith(".xml")) {
+                                name = name.substring(0, name.length() - 4);
+                            }
+                            if (name.startsWith("hotmod_") || name.startsWith("plugin_") || name.startsWith("customui_")) {
+                                spToJSON(name, configJson, null, includeApiKeys);
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable ignore) {
+            }
+        }
+
         return configJson.toString(indentSpaces);
     }
 
@@ -173,11 +202,32 @@ public final class SettingsBackupHelper {
 
     public static void importSettingsConfirmed(Context context, File settingsFile) {
         try {
-            JsonObject configJson = GsonUtil.toJsonObject(FileUtil.readUtf8String(settingsFile));
+            JsonObject configJson = null;
+            if (settingsFile != null && (settingsFile.getName().endsWith(".extera") || settingsFile.getName().endsWith(".mio"))) {
+                try {
+                    configJson = app.exteraless.backup.EtgBackup.readBackup(settingsFile);
+                } catch (Throwable ignore) {
+                }
+            }
+            if (configJson == null && settingsFile != null) {
+                configJson = GsonUtil.toJsonObject(FileUtil.readUtf8String(settingsFile));
+            }
+            if (configJson == null) {
+                throw new IllegalStateException("Empty or corrupted settings file");
+            }
             importSettings(configJson);
 
+            try {
+                app.exteraless.appearance.AppearanceConfig.ensureLoaded();
+                app.exteraless.appearance.AppearanceConfig.invalidateExpressiveCache();
+                app.exteraless.appearance.AppearanceConfig.invalidateDividerStyle();
+                app.amegram.theme.YumiMd3.invalidateCache();
+                org.telegram.ui.MainTabsLayout.resetFloatingCache();
+            } catch (Throwable ignore) {
+            }
+
             AlertDialog restart = new AlertDialog(context, 0);
-            restart.setTitle(getString(R.string.NagramX));
+            restart.setTitle(app.miogram.bridge.MiogramLocale.get("Налаштування відновлено", "Настройки восстановлены", "Settings Restored"));
             restart.setMessage(getString(R.string.RestartAppToTakeEffect));
             restart.setPositiveButton(getString(R.string.OK), (__, ___) -> AppRestartHelper.triggerRebirth(context, new Intent(context, LaunchActivity.class)));
             restart.show();
@@ -188,6 +238,12 @@ public final class SettingsBackupHelper {
 
     @SuppressLint("ApplySharedPref")
     public static void importSettings(JsonObject configJson) throws JSONException {
+        try {
+            if (app.exteraless.backup.EtgBackup.countKnownKeys(configJson) > 0) {
+                app.exteraless.backup.EtgBackup.applyBackup(configJson);
+            }
+        } catch (Throwable ignore) {
+        }
         Map<String, Integer> configTypes = new HashMap<>();
         try {
             configTypes.putAll(NekoConfig.getConfigTypes());
@@ -291,8 +347,8 @@ public final class SettingsBackupHelper {
     public static void backupSettings(Context context, Theme.ResourcesProvider resourceProvider) {
         if (context == null) return;
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-        builder.setTitle(getString(R.string.BackupSettings));
+        AlertDialog.Builder builder = new AlertDialog.Builder(context, resourceProvider);
+        builder.setTitle(app.miogram.bridge.MiogramLocale.get("Експорт усіх налаштувань", "Экспорт всех настроек", "Export All Settings"));
 
         LinearLayout linearLayout = new LinearLayout(context);
         linearLayout.setOrientation(LinearLayout.VERTICAL);
@@ -312,7 +368,8 @@ public final class SettingsBackupHelper {
         builder.setPositiveButton(getString(R.string.ExportTheme), (dialog, which) -> {
             boolean includeApiKeys = checkBoxCell.isChecked();
             try {
-                File cacheFile = new File(AndroidUtilities.getCacheDir(), new Date() + ".mio-settings.json");
+                String timeStamp = new java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.US).format(new Date());
+                File cacheFile = new File(AndroidUtilities.getCacheDir(), "yumigram-settings-" + timeStamp + ".yumi-settings.json");
                 FileUtil.writeUtf8String(SettingsBackupHelper.backupSettingsJson(false, 4, includeApiKeys), cacheFile);
                 ShareUtil.shareFile(context, cacheFile);
             } catch (Exception e) {

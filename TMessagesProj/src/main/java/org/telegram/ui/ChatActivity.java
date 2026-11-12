@@ -35805,7 +35805,7 @@ public class ChatActivity extends BaseFragment implements
             case OPTION_YUMI_PLAY_NEXT:
                 if (selectedObject != null && selectedObject.isMusic()) {
                     app.miogram.bridge.playlist.YumiPlaylistManager.playNext(selectedObject);
-                    getBulletinFactory().createSimpleBulletin(R.drawable.msg_arrow_forward, app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next")).show();
+                    BulletinFactory.of(ChatActivity.this).createSimpleBulletin(R.drawable.msg_arrow_forward, app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next")).show();
                 }
                 break;
             case OPTION_RETRY: {

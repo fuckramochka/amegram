@@ -6,6 +6,7 @@ import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffColorFilter;
 import android.graphics.drawable.GradientDrawable;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -175,7 +176,7 @@ public class YumiPlayerSettingsSheet extends BottomSheet {
 
         // --- CARD 3: MINI-PLAYER (DYNAMIC ISLAND) ---
         LinearLayout miniCard = createCard(activity);
-        addCardHeader(miniCard, activity, R.drawable.msg_playback_play, MiogramLocale.get("Міні-плеєр", "Мини-плеер", "Mini-Player"));
+        addCardHeader(miniCard, activity, R.drawable.yumi_ic_play, MiogramLocale.get("Міні-плеєр", "Мини-плеер", "Mini-Player"));
 
         addSwitchRow(miniCard, activity, MiogramLocale.get("Dynamic Island капсула", "Dynamic Island капсула", "Dynamic Island pill"),
                 MiogramLocale.get("Паряща закруглена форма 26dp над нижньою навігацією", "Парящая закруглённая форма 26dp над нижней навигацией", "Floating rounded 26dp capsule above navigation"),

@@ -1775,7 +1775,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
             boolean auraOn = app.miogram.bridge.player.MiogramPlayerPrefs.isFluidAuraEnabled();
             fluidAuraView.setVisibility(auraOn ? View.VISIBLE : View.GONE);
             if (auraOn && c != null) {
-                fluidAuraView.setColors(c.primaryContainer, c.secondaryContainer, c.surfaceVariant, c.surface);
+                fluidAuraView.setColors(c.primaryContainer, c.secondaryContainer, c.surfaceContainer, c.surface);
                 fluidAuraView.setPlaying(!MediaController.getInstance().isMessagePaused());
             }
         }

@@ -56,7 +56,7 @@ public final class YumiPlayerState {
             ed.putLong(KEY_POS_MS, Math.max(0, positionMs));
             ed.putString(KEY_TITLE, current.getMusicTitle());
             ed.putString(KEY_ARTIST, current.getMusicAuthor());
-            ed.putInt(KEY_DURATION, current.getDuration());
+            ed.putInt(KEY_DURATION, (int) Math.round(current.getDuration()));
 
             if (queue != null && !queue.isEmpty()) {
                 JSONArray arr = new JSONArray();

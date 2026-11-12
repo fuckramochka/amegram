@@ -52,7 +52,7 @@ public final class YumiCrossfadeController implements NotificationCenter.Notific
         } else if (id == NotificationCenter.messagePlayingProgressDidChanged) {
             MessageObject current = MediaController.getInstance().getPlayingMessageObject();
             if (current != null && current.isMusic()) {
-                int totalDuration = current.audioPlayerDuration > 0 ? current.audioPlayerDuration : current.getDuration();
+                int totalDuration = current.audioPlayerDuration > 0 ? current.audioPlayerDuration : (int) Math.round(current.getDuration());
                 float progress = current.audioProgress;
                 long currentMs = (long) (progress * totalDuration * 1000L);
 

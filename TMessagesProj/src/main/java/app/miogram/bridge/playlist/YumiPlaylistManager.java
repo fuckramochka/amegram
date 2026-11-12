@@ -11,6 +11,7 @@ import androidx.core.content.FileProvider;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.FileLog;
+import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.NotificationCenter;
@@ -80,7 +81,7 @@ public final class YumiPlaylistManager {
 
     public static YumiPlaylist createFromQueue(String title, List<MessageObject> queue) {
         if (TextUtils.isEmpty(title)) {
-            title = "Playlist " + AndroidUtilities.formatDateAudio(System.currentTimeMillis() / 1000, true);
+            title = "Playlist " + LocaleController.formatDateAudio(System.currentTimeMillis() / 1000, true);
         }
         YumiPlaylist pl = new YumiPlaylist(title, "Yumigram");
         if (queue != null) {

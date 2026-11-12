@@ -1631,6 +1631,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return videoPlayer;
     }
 
+    public void setVolume(float customVolume) {
+        try {
+            if (audioPlayer != null) {
+                audioPlayer.setVolume(CastSync.isActive() ? 0.0f : customVolume);
+            } else if (videoPlayer != null) {
+                videoPlayer.setVolume(CastSync.isActive() ? 0.0f : customVolume);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
     private void startProgressTimer(final MessageObject currentPlayingMessageObject) {
         synchronized (progressTimerSync) {
             if (progressTimer != null) {

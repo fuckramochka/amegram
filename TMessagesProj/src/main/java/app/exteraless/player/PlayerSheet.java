@@ -31,6 +31,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
 
@@ -1617,7 +1619,7 @@ public class PlayerSheet extends BottomSheet implements NotificationCenter.Notif
                 }
             }
         });
-        o.add(R.drawable.menu_feature_edit, app.miogram.bridge.MiogramLocale.get("Налаштування плеера Юми", "Настройки плеера Юми", "Yumi Player Settings"), () -> {
+        o.add(R.drawable.msg_settings, app.miogram.bridge.MiogramLocale.get("Налаштування плеера Юми", "Настройки плеера Юми", "Yumi Player Settings"), () -> {
             o.dismiss();
             new app.miogram.bridge.player.MiogramPlayerSectionSheet(activity, rp, null, "lyrics", true).show();
         });

@@ -848,10 +848,7 @@ public class MiogramPlayerSectionSheet extends BottomSheet {
         gd.setCornerRadius(AndroidUtilities.dp(14));
         btn.setBackground(gd);
         btn.setOnClickListener(click);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        lp.topMargin = AndroidUtilities.dp(10);
-        lp.bottomMargin = AndroidUtilities.dp(6);
-        parent.addView(btn, lp);
+        parent.addView(btn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 10, 0, 6));
     }
 
     private void addLabel(LinearLayout parent, Context context, String text) {

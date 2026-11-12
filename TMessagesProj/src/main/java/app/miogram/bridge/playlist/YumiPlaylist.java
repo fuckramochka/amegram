@@ -187,7 +187,7 @@ public class YumiPlaylist {
             t.messageId = mo.getId();
             t.title = mo.getMusicTitle();
             t.artist = mo.getMusicAuthor();
-            t.duration = mo.getDuration();
+            t.duration = (int) Math.round(mo.getDuration());
 
             TLRPC.Document doc = mo.getDocument();
             if (doc != null) {

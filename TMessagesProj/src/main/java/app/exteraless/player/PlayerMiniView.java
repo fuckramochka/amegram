@@ -105,7 +105,7 @@ public class PlayerMiniView extends FrameLayout implements NotificationCenter.No
                 if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > dp(40) && Math.abs(velocityX) > 350) {
                     if (dx > 0) {
                         app.miogram.bridge.customui.MiogramHaptic.click(card);
-                        MediaController.getInstance().playPreviousMessage(false);
+                        MediaController.getInstance().playPreviousMessage();
                     } else {
                         app.miogram.bridge.customui.MiogramHaptic.click(card);
                         MediaController.getInstance().playNextMessage();

@@ -309,7 +309,7 @@ public class PlayerQueueSheet extends BottomSheet implements NotificationCenter.
         if (mo == null) return false;
         Theme.ResourcesProvider rp = colors.provider(resourcesProvider);
         ItemOptions o = ItemOptions.makeOptions(container, rp, view, true);
-        o.add(R.drawable.msg_playback_forward, app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next"), () -> {
+        o.add(R.drawable.msg_arrow_forward, app.miogram.bridge.MiogramLocale.get("Відтворити наступним", "Воспроизвести следующим", "Play Next"), () -> {
             o.dismiss();
             app.miogram.bridge.playlist.YumiPlaylistManager.playNext(mo);
             adapter.notifyDataSetChanged();

@@ -19574,7 +19574,13 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             releasePlayer(true);
         }
         if (currentMessageObject != null && !currentMessageObject.putInDownloadsStore) {
-            FileLoader.getInstance(currentAccount).cancelLoadFile(currentMessageObject.getDocument());
+            TLRPC.Document doc = currentMessageObject.getDocument();
+            if (doc != null) {
+                String fileName = FileLoader.getAttachFileName(doc);
+                if (fileName == null || !FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(doc);
+                }
+            }
         }
         isVisible = false;
         isVisibleOrAnimating = false;
@@ -20335,12 +20341,22 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     private void switchToNextIndex(int add, boolean init) {
         if (currentMessageObject != null) {
             releasePlayer(false);
-            FileLoader.getInstance(currentAccount).cancelLoadFile(currentMessageObject.getDocument());
+            TLRPC.Document doc = currentMessageObject.getDocument();
+            if (doc != null) {
+                String fileName = FileLoader.getAttachFileName(doc);
+                if (fileName == null || !FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(doc);
+                }
+            }
         } else if (currentPageBlock != null) {
             final TLObject media = pageBlocksAdapter.getMedia(currentIndex);
             if (media instanceof TLRPC.Document) {
                 releasePlayer(false);
-                FileLoader.getInstance(currentAccount).cancelLoadFile((TLRPC.Document) media);
+                TLRPC.Document doc = (TLRPC.Document) media;
+                String fileName = FileLoader.getAttachFileName(doc);
+                if (fileName == null || !FileLoader.getInstance(currentAccount).isLoadingFile(fileName)) {
+                    FileLoader.getInstance(currentAccount).cancelLoadFile(doc);
+                }
             }
         }
         if (groupedPhotosListView != null) {

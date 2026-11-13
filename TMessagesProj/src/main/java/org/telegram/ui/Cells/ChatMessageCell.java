@@ -6852,11 +6852,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             boolean loadDocumentFromImageReceiver = MessageObject.isStickerDocument(document) || MessageObject.isAnimatedStickerDocument(document, true) || MessageObject.isGifDocument(document) || MessageObject.isRoundVideoDocument(document);
             if (!loadDocumentFromImageReceiver) {
                 if (document != null) {
-                    FileLoader.getInstance(currentAccount).cancelLoadFile(document);
+                    String attachFileName = FileLoader.getAttachFileName(document);
+                    if (!FileLoader.getInstance(currentAccount).isLoadingFile(attachFileName)) {
+                        FileLoader.getInstance(currentAccount).cancelLoadFile(document);
+                    }
                 } else {
                     TLRPC.PhotoSize photo = FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, AndroidUtilities.getPhotoSize());
                     if (photo != null) {
-                        FileLoader.getInstance(currentAccount).cancelLoadFile(photo);
+                        String attachFileName = FileLoader.getAttachFileName(photo);
+                        if (!FileLoader.getInstance(currentAccount).isLoadingFile(attachFileName)) {
+                            FileLoader.getInstance(currentAccount).cancelLoadFile(photo);
+                        }
                     }
                 }
             }

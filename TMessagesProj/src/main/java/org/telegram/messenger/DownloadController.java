@@ -15,6 +15,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.os.Build;
+import android.os.PowerManager;
 import android.text.TextUtils;
 import android.util.Pair;
 import android.util.SparseArray;
@@ -461,6 +462,13 @@ public class DownloadController extends BaseController implements NotificationCe
         downloadQueueKeys.clear();
         downloadQueuePairs.clear();
         typingTimes.clear();
+        if (downloadWakeLock != null && downloadWakeLock.isHeld()) {
+            try {
+                downloadWakeLock.release();
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+        }
     }
 
     public int getMaxVideoBitrate() {
@@ -1147,6 +1155,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
         }
+        updateWakeLock();
     }
 
     protected void processDownloadObjects(int type, ArrayList<DownloadObject> objects) {
@@ -1252,6 +1261,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
         }
+        updateWakeLock();
     }
 
     public int generateObserverTag() {
@@ -1524,6 +1534,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 });
             }
             getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+            updateWakeLock();
         });
     }
 
@@ -1555,6 +1566,7 @@ public class DownloadController extends BaseController implements NotificationCe
                     putToUnviewedDownloads(parentObject);
                 }
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+            updateWakeLock();
                 getMessagesStorage().getStorageQueue().postRunnable(() -> {
                     try {
                         String req = String.format(Locale.ENGLISH, "UPDATE downloading_documents SET state = 1, date = %d WHERE hash = %d AND id = %d", System.currentTimeMillis(), parentObject.getDocument().dc_id,  parentObject.getDocument().id);
@@ -1621,6 +1633,7 @@ public class DownloadController extends BaseController implements NotificationCe
             }
             if (removed) {
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+            updateWakeLock();
                 if (reason == 0 && !parentObject.isAyuDeleted()) {
                     NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.showBulletin, Bulletin.TYPE_ERROR, LocaleController.formatString("MessageNotFound", R.string.MessageNotFound));
                 } else if (reason == -1) {
@@ -1647,6 +1660,7 @@ public class DownloadController extends BaseController implements NotificationCe
         public void run() {
             clearUnviewedDownloads();
             getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+            updateWakeLock();
         }
     };
     private void putToUnviewedDownloads(MessageObject parentObject) {
@@ -1665,6 +1679,7 @@ public class DownloadController extends BaseController implements NotificationCe
             unviewedDownloads.remove(messageId);
             if (unviewedDownloads.size() == 0) {
                 getNotificationCenter().postNotificationName(NotificationCenter.onDownloadingFilesChanged);
+            updateWakeLock();
             }
         }
     }
@@ -1829,5 +1844,41 @@ public class DownloadController extends BaseController implements NotificationCe
             preset = getCurrentMobilePreset();
         }
         return preset.preloadStories;
+    }
+
+    private PowerManager.WakeLock downloadWakeLock;
+
+    public void updateWakeLock() {
+        AndroidUtilities.runOnUIThread(() -> {
+            boolean hasDownloads = !downloadingFiles.isEmpty() || (getFileLoader() != null && getFileLoader().hasActiveDownloads());
+            if (hasDownloads) {
+                if (downloadWakeLock == null) {
+                    try {
+                        PowerManager pm = (PowerManager) ApplicationLoader.applicationContext.getSystemService(Context.POWER_SERVICE);
+                        if (pm != null) {
+                            downloadWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "amegram:downloads_lock");
+                            downloadWakeLock.setReferenceCounted(false);
+                        }
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                }
+                if (downloadWakeLock != null && !downloadWakeLock.isHeld()) {
+                    try {
+                        downloadWakeLock.acquire(45 * 60 * 1000L);
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                }
+            } else {
+                if (downloadWakeLock != null && downloadWakeLock.isHeld()) {
+                    try {
+                        downloadWakeLock.release();
+                    } catch (Throwable e) {
+                        FileLog.e(e);
+                    }
+                }
+            }
+        });
     }
 }

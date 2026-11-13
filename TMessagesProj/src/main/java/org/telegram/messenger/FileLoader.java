@@ -617,6 +617,7 @@ public class FileLoader extends BaseController {
             if (operation != null) {
                 FileLoaderPriorityQueue queue = operation.getQueue();
                 queue.cancel(operation);
+                getDownloadController().updateWakeLock();
             }
         });
         if (removed && document != null) {
@@ -639,6 +640,7 @@ public class FileLoader extends BaseController {
             FileLoadOperation operation2 = loadOperationPaths.remove(fileName);
             if (operation2 != null) {
                 operation2.getQueue().cancel(operation2);
+                getDownloadController().updateWakeLock();
             }
         });
         if (removed) {
@@ -745,6 +747,18 @@ public class FileLoader extends BaseController {
 
     public boolean isLoadingFile(final String fileName) {
         return fileName != null && loadOperationPathsUI.containsKey(fileName);
+    }
+
+    public boolean hasActiveDownloads() {
+        if (!loadOperationPathsUI.isEmpty()) {
+            return true;
+        }
+        for (FileLoadOperation operation : loadOperationPaths.values()) {
+            if (operation != null && !operation.isStory && !operation.isPreloadVideoOperation() && !operation.isPaused()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public float getBufferedProgressFromPosition(final float position, final String fileName) {
@@ -1069,6 +1083,7 @@ public class FileLoader extends BaseController {
         operation.setDelegate(fileLoadOperationDelegate);
 
         loadOperationPaths.put(finalFileName, operation);
+        getDownloadController().updateWakeLock();
         operation.setPriority(priority);
         if (stream == null) {
             stream = FileStreamLoadOperation.allStreams.get(documentId);
@@ -1212,6 +1227,7 @@ public class FileLoader extends BaseController {
             if (queue.remove(operation)) {
                 loadOperationPaths.remove(operation.getFileName());
                 queue.checkLoadingOperations(operation.isStory);
+                getDownloadController().updateWakeLock();
             }
         }, delay);
     }

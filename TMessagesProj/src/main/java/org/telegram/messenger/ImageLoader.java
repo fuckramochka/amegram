@@ -1942,14 +1942,22 @@ public class ImageLoader {
             if (imageReceiverArray.isEmpty()) {
                 if (imageLocation != null) {
                     if (!forceLoadingImages.containsKey(key)) {
+                        String attachFileName = null;
                         if (imageLocation.location != null) {
-                            FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.location, ext);
+                            attachFileName = FileLoader.getAttachFileName(imageLocation.location, ext);
                         } else if (imageLocation.document != null) {
-                            FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.document);
-                        } else if (imageLocation.secureDocument != null) {
-                            FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.secureDocument);
-                        } else if (imageLocation.webFile != null) {
-                            FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.webFile);
+                            attachFileName = FileLoader.getAttachFileName(imageLocation.document);
+                        }
+                        if (attachFileName == null || !FileLoader.getInstance(currentAccount).isLoadingFile(attachFileName)) {
+                            if (imageLocation.location != null) {
+                                FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.location, ext);
+                            } else if (imageLocation.document != null) {
+                                FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.document);
+                            } else if (imageLocation.secureDocument != null) {
+                                FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.secureDocument);
+                            } else if (imageLocation.webFile != null) {
+                                FileLoader.getInstance(currentAccount).cancelLoadFile(imageLocation.webFile);
+                            }
                         }
                     }
                 }

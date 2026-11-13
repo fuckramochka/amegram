@@ -90,11 +90,12 @@ public class FileLoaderPriorityQueue {
         int activeCount = 0;
         int lastPriority = 0;
         boolean pauseAllNextOperations = false;
-        int max = type == TYPE_LARGE ? MessagesController.getInstance(currentAccount).largeQueueMaxActiveOperations : MessagesController.getInstance(currentAccount).smallQueueMaxActiveOperations;
+        int max = type == TYPE_LARGE ? Math.max(8, MessagesController.getInstance(currentAccount).largeQueueMaxActiveOperations) : Math.max(12, MessagesController.getInstance(currentAccount).smallQueueMaxActiveOperations);
         tmpListOperations.clear();
         for (int i = 0; i < allOperations.size(); i++) {
             FileLoadOperation prevOperation = i > 0 ? allOperations.get(i - 1) : null;
             FileLoadOperation operation = allOperations.get(i);
+            boolean isPreloadOrStory = operation.isStory || operation.isPreloadVideoOperation();
             if (i > 0 && !pauseAllNextOperations) {
                 if (type == TYPE_LARGE) {
                     if (prevOperation != null && prevOperation.isStory && prevOperation.getPriority() >= PRIORITY_VALUE_MAX && operation.getPriority() <= PRIORITY_VALUE_LOW) {
@@ -102,26 +103,30 @@ public class FileLoaderPriorityQueue {
                     }
                 }
                 if (lastPriority > PRIORITY_VALUE_LOW && operation.getPriority() == PRIORITY_VALUE_LOW) {
-                    pauseAllNextOperations = true;
+                    if (isPreloadOrStory || !operation.wasStarted()) {
+                        pauseAllNextOperations = true;
+                    }
                 }
             }
             if (operation.preFinished) {
                 //operation will not use connections
                 //just skip
                 max++;
-//                if (BuildVars.DEBUG_PRIVATE_VERSION)
-//                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " "+operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => skip");
                 continue;
-            } else if (!pauseAllNextOperations && i < max) {
-//                if (BuildVars.DEBUG_PRIVATE_VERSION)
-//                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " " +operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => start");
+            } else if (!isPreloadOrStory && operation.wasStarted()) {
+                tmpListOperations.add(operation);
+                activeCount++;
+            } else if (!pauseAllNextOperations && activeCount < max) {
                 tmpListOperations.add(operation);
                 activeCount++;
             } else {
-//                if (BuildVars.DEBUG_PRIVATE_VERSION)
-//                    FileLog.d("{"+name+"}.checkLoadingOperationInternal: #" + i + " " +operation.getFileName()+" priority="+operation.getPriority()+" isStory="+operation.isStory+" preFinished="+ operation.preFinished+" pauseAllNextOperations=" + pauseAllNextOperations + " max=" + max + " => pause");
                 if (operation.wasStarted()) {
-                    operation.pause();
+                    if (isPreloadOrStory) {
+                        operation.pause();
+                    } else {
+                        tmpListOperations.add(operation);
+                        activeCount++;
+                    }
                 }
             }
             lastPriority = operation.getPriority();

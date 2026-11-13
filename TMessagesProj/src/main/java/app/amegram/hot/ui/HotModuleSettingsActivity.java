@@ -142,23 +142,23 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if (mod == null) {
             if ("ghost".equals(moduleId)) {
                 rows.add(HotRow.header(MiogramLocale.get("Параметри скритності", "Параметры скрытности", "Stealth parameters")));
-                rows.add(HotRow.toggle("ghost_hide_read",
+                rows.add(HotRow.switchRow("ghost_hide_read",
                         MiogramLocale.get("Приховувати прочитання", "Скрывать прочтение", "Hide read receipts"),
                         MiogramLocale.get("Не відправляти статус прочитання повідомлень", "Не отправлять статус прочтения сообщений", "Do not send read receipts"),
                         app.amegram.module.AmegramConfig.getBool("ghost_hide_read", true)));
-                rows.add(HotRow.toggle("ghost_hide_online",
+                rows.add(HotRow.switchRow("ghost_hide_online",
                         MiogramLocale.get("Приховувати онлайн", "Скрывать онлайн", "Hide online status"),
                         MiogramLocale.get("Не оновлювати статус присутності в мережі", "Не обновлять статус присутствия в сети", "Do not update online presence"),
                         app.amegram.module.AmegramConfig.getBool("ghost_hide_online", true)));
-                rows.add(HotRow.toggle("ghost_hide_typing",
+                rows.add(HotRow.switchRow("ghost_hide_typing",
                         MiogramLocale.get("Приховувати набір тексту", "Скрывать набор текста", "Hide typing status"),
                         MiogramLocale.get("Не показувати іншим, що ви пишете", "Не показывать другим, что вы пишете", "Do not show others that you are typing"),
                         app.amegram.module.AmegramConfig.getBool("ghost_hide_typing", true)));
-                rows.add(HotRow.toggle("ghost_mark_read_after_send",
+                rows.add(HotRow.switchRow("ghost_mark_read_after_send",
                         MiogramLocale.get("Читати після відправки", "Читать после отправки", "Mark read after send"),
                         MiogramLocale.get("Автоматично позначати чат прочитаним при відправці повідомлення", "Автоматически отмечать чат прочитанным при отправке сообщения", "Automatically mark chat read when sending a message"),
                         app.amegram.module.AmegramConfig.getBool("ghost_mark_read_after_send", true)));
-                rows.add(HotRow.toggle("ghost_offline_after_send",
+                rows.add(HotRow.switchRow("ghost_offline_after_send",
                         MiogramLocale.get("Офлайн після відправки", "Офлайн после отправки", "Offline after send"),
                         MiogramLocale.get("Миттєво повертати статус офлайн після відправки повідомлення", "Мгновенно возвращать статус офлайн после отправки сообщения", "Immediately return to offline after sending a message"),
                         app.amegram.module.AmegramConfig.getBool("ghost_offline_after_send", false)));
@@ -1064,7 +1064,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
         if (r == null) return false;
         if ("ghost".equals(moduleId)) {
             if ("ghost_exclusions_open".equals(r.id)) {
-                presentFragment(new app.miogram.bridge.privacy.MiogramPrivacySettingsActivity());
+                presentFragment(new app.miogram.bridge.ui.MiogramPrivacySettingsActivity());
                 return true;
             }
         }

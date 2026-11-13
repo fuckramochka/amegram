@@ -468,6 +468,14 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         // Amegram: swallow taps on the pill background itself so they don't fall
         // through to chats behind it (the wrapper must stay pass-through, see below).
         tabsView.setOnClickListener(v -> {});
+        tabsView.setOnLongClickListener(v -> {
+            if (!isBarCustomizerOpen) {
+                v.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS);
+                openBarCustomizer();
+                return true;
+            }
+            return false;
+        });
         // В M3 панель без внутренних
         // отступов и без ограничения ширины
         MainTabsUiHelper.applyTabsLayoutStyle(tabsView, dp(328 + DialogsActivity.MAIN_TABS_MARGIN * 2));
@@ -488,6 +496,9 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         tabs[INDEX_PROFILE].setOnLongClickListener(this::openAccountSelector);
         for (GlassTabView tab : tabs) {
             tab.setMainTabsCompact(compact);
+        }
+        for (int i = 0; i < tabs.length; i++) {
+            setupTabDragReordering(tabs[i], i);
         }
 
         tabsView.addTabToIgnoreClick(tabs[INDEX_CHATS]);
@@ -1437,13 +1448,13 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         isBarCustomizerOpen = true;
         tabsViewWrapper.bringToFront();
-        tabsViewWrapper.setElevation(dp(28));
+        tabsViewWrapper.setElevation(dp(20));
 
-        final int targetLift = (int) (contentView.getHeight() * 0.52f + dp(32));
         tabsViewWrapper.animate()
-                .translationY(-targetLift)
+                .scaleX(1.02f)
+                .scaleY(1.02f)
                 .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .setDuration(340L)
+                .setDuration(280L)
                 .start();
 
         if (searchButton != null) {
@@ -1535,9 +1546,10 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
         }
         tabsViewWrapper.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
         tabsViewWrapper.animate()
-                .translationY(0f)
+                .scaleX(1.0f)
+                .scaleY(1.0f)
                 .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                .setDuration(280L)
+                .setDuration(240L)
                 .withEndAction(() -> {
                     if (tabsViewWrapper != null) {
                         tabsViewWrapper.setElevation(dp(8));
@@ -1567,6 +1579,163 @@ public class MainTabsActivity extends ViewPagerActivity implements NotificationC
                 }
             });
         }
+    }
+
+    private void setupTabDragReordering(GlassTabView tabView, int tabIndex) {
+        if (tabView == null) return;
+        tabView.setOnTouchListener(new View.OnTouchListener() {
+            private float touchStartRawX;
+            private float touchStartRawY;
+            private boolean isDragging;
+            private ArrayList<Integer> initialOrder;
+            private ArrayList<Integer> currentOrder;
+            private float[] initialSlotCenterX;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent ev) {
+                if (!isBarCustomizerOpen) {
+                    return false;
+                }
+                int action = ev.getActionMasked();
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN: {
+                        touchStartRawX = ev.getRawX();
+                        touchStartRawY = ev.getRawY();
+                        isDragging = false;
+                        initialOrder = getVisibleTabIndices();
+                        currentOrder = new ArrayList<>(initialOrder);
+                        initialSlotCenterX = new float[initialOrder.size()];
+                        for (int i = 0; i < initialOrder.size(); i++) {
+                            View child = tabs[initialOrder.get(i)];
+                            if (child != null) {
+                                initialSlotCenterX[i] = child.getX() + child.getWidth() * 0.5f;
+                            }
+                        }
+                        if (v.getParent() != null) {
+                            v.getParent().requestDisallowInterceptTouchEvent(true);
+                        }
+                        return true;
+                    }
+                    case MotionEvent.ACTION_MOVE: {
+                        float dx = ev.getRawX() - touchStartRawX;
+                        float dy = ev.getRawY() - touchStartRawY;
+                        if (!isDragging && Math.abs(dx) > dp(6) && Math.abs(dx) > Math.abs(dy)) {
+                            isDragging = true;
+                            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                            v.animate().cancel();
+                            v.setScaleX(1.10f);
+                            v.setScaleY(1.10f);
+                            v.setTranslationZ(dp(16));
+                            v.bringToFront();
+                        }
+                        if (isDragging && initialOrder != null && currentOrder != null && initialSlotCenterX != null) {
+                            v.setTranslationX(dx);
+
+                            int currentSlot = currentOrder.indexOf(tabIndex);
+                            int initialSlot = initialOrder.indexOf(tabIndex);
+                            if (currentSlot >= 0 && initialSlot >= 0 && initialSlot < initialSlotCenterX.length) {
+                                float currentCenterX = initialSlotCenterX[initialSlot] + dx;
+
+                                // Check swap with next slot
+                                if (currentSlot < currentOrder.size() - 1 && currentSlot + 1 < initialSlotCenterX.length) {
+                                    int nextSlot = currentSlot + 1;
+                                    float nextCenterX = initialSlotCenterX[nextSlot];
+                                    boolean isNextToRight = nextCenterX > initialSlotCenterX[currentSlot];
+                                    if (isNextToRight ? (currentCenterX > nextCenterX) : (currentCenterX < nextCenterX)) {
+                                        int neighborId = currentOrder.get(nextSlot);
+                                        currentOrder.set(nextSlot, tabIndex);
+                                        currentOrder.set(currentSlot, neighborId);
+                                        v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                                        animateNeighborToSlot(neighborId, currentSlot);
+                                    }
+                                }
+
+                                // Check swap with prev slot
+                                if (currentSlot > 0 && currentSlot - 1 < initialSlotCenterX.length) {
+                                    int prevSlot = currentSlot - 1;
+                                    float prevCenterX = initialSlotCenterX[prevSlot];
+                                    boolean isPrevToLeft = prevCenterX < initialSlotCenterX[currentSlot];
+                                    if (isPrevToLeft ? (currentCenterX < prevCenterX) : (currentCenterX > prevCenterX)) {
+                                        int neighborId = currentOrder.get(prevSlot);
+                                        currentOrder.set(prevSlot, tabIndex);
+                                        currentOrder.set(currentSlot, neighborId);
+                                        v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                                        animateNeighborToSlot(neighborId, currentSlot);
+                                    }
+                                }
+                            }
+                        }
+                        return true;
+                    }
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL: {
+                        if (isDragging && initialOrder != null && currentOrder != null && initialSlotCenterX != null) {
+                            isDragging = false;
+                            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+
+                            int finalSlot = currentOrder.indexOf(tabIndex);
+                            int origSlot = initialOrder.indexOf(tabIndex);
+                            float targetDisplacement = (finalSlot >= 0 && origSlot >= 0 && finalSlot < initialSlotCenterX.length && origSlot < initialSlotCenterX.length)
+                                    ? (initialSlotCenterX[finalSlot] - initialSlotCenterX[origSlot])
+                                    : 0f;
+
+                            v.animate()
+                                    .translationX(targetDisplacement)
+                                    .scaleX(1.0f)
+                                    .scaleY(1.0f)
+                                    .translationZ(0f)
+                                    .setDuration(180L)
+                                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                                    .withEndAction(() -> {
+                                        commitNewDisplayOrder(currentOrder);
+                                    })
+                                    .start();
+                        } else if (isBarCustomizerOpen) {
+                            v.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                        }
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private void animateNeighborToSlot(int neighborTabId, int targetSlot) {
+                if (initialOrder == null || tabs == null || initialSlotCenterX == null) return;
+                View neighborView = tabs[neighborTabId];
+                if (neighborView == null) return;
+                int origSlot = initialOrder.indexOf(neighborTabId);
+                if (origSlot < 0 || origSlot >= initialSlotCenterX.length || targetSlot < 0 || targetSlot >= initialSlotCenterX.length) return;
+                float targetOffset = initialSlotCenterX[targetSlot] - initialSlotCenterX[origSlot];
+                neighborView.animate()
+                        .translationX(targetOffset)
+                        .setDuration(220L)
+                        .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                        .start();
+            }
+
+            private void commitNewDisplayOrder(ArrayList<Integer> newVisibleOrder) {
+                if (newVisibleOrder == null || displayOrder == null) return;
+                int[] newDisplayOrder = new int[displayOrder.length];
+                int visibleIdx = 0;
+                for (int i = 0; i < displayOrder.length; i++) {
+                    int currentTab = displayOrder[i];
+                    if (newVisibleOrder.contains(currentTab) && visibleIdx < newVisibleOrder.size()) {
+                        newDisplayOrder[i] = newVisibleOrder.get(visibleIdx++);
+                    } else {
+                        newDisplayOrder[i] = currentTab;
+                    }
+                }
+                displayOrder = newDisplayOrder;
+                AppearanceConfig.yumiBarTabsOrder.setConfigString(formatDisplayOrder(displayOrder));
+
+                for (int id : displayOrder) {
+                    if (id >= 0 && id < tabs.length && tabs[id] != null) {
+                        tabs[id].setTranslationX(0f);
+                    }
+                }
+                applyDisplayOrder();
+            }
+        });
     }
 
     public void setGestureSelectedOverride(float animatedPosition, boolean allow) {

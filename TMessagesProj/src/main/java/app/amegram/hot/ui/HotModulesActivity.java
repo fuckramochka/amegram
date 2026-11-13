@@ -65,7 +65,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
     @Override
     public View createView(Context context) {
         actionBar.setBackButtonImage(R.drawable.ic_ab_back);
-        actionBar.setTitle(MiogramLocale.get("Керування модулями", "Управление модулями", "Manage modules"));
+        actionBar.setTitle(MiogramLocale.get("Керування модулями (тимчасово)", "Управление модулями (временно)", "Manage modules (temporary)"));
         actionBar.setActionBarMenuOnItemClick(new org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick() {
             @Override
             public void onItemClick(int id) {
@@ -376,7 +376,7 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
             items.add(UItem.asCustom(buildSystemCoreCard(context, systemModules)));
         }
 
-        items.add(UItem.asHeader(MiogramLocale.get("Користувацькі модулі", "Пользовательские модули", "User modules")
+        items.add(UItem.asHeader(MiogramLocale.get("Користувацькі модулі (тимчасово)", "Пользовательские модули (временно)", "User modules (temporary)")
                 + " • " + filtered.size()
                 + MiogramLocale.get(" • увімкнено: ", " • включено: ", " • on: ") + enabledCount));
 
@@ -412,9 +412,9 @@ public class HotModulesActivity extends BaseFragment implements HotModulesManage
         }
 
         items.add(UItem.asShadow(MiogramLocale.get(
-                "Чистий клієнт: 0 модулів вбудовано — все ставиться з магазину. Вимкнений модуль вивантажується з пам'яті (0 KB RAM). Торкніть картку, щоб побачити опис і версії.",
-                "Чистый клиент: 0 модулей встроено — всё ставится из магазина. Выключенный модуль выгружается из памяти (0 KB RAM). Нажмите на карточку, чтобы увидеть описание и версии.",
-                "Clean client: 0 built-in — everything comes from the store. Disabled modules unload (0 KB RAM). Tap a card for details & versions.")));
+                "Тимчасовий розділ модулів: діє до завершення повного переходу на нативні компоненти клієнта. Вимкнений модуль вивантажується з пам'яті (0 KB RAM). Торкніть картку, щоб побачити опис і версії.",
+                "Временный раздел модулей: действует до завершения полного перехода на нативные компоненты клиента. Выключенный модуль выгружается из памяти (0 KB RAM). Нажмите на карточку, чтобы увидеть описание и версии.",
+                "Temporary modules section: active until full native components transition. Disabled modules unload (0 KB RAM). Tap a card for details & versions.")));
     }
 
     private View buildSystemCoreCard(Context context, List<HotModulesManager.InstalledInfo> systemModules) {

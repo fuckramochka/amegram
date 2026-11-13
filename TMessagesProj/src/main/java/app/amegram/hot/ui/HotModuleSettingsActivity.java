@@ -126,7 +126,7 @@ public class HotModuleSettingsActivity extends BaseFragment {
         Context context = getContext();
         if (context == null) return;
 
-        boolean isEnabled = HotModulesManager.isModuleEnabled(moduleId);
+        boolean isEnabled = "ghost".equals(moduleId) ? (app.amegram.module.features.ghost.AmegramGhostController.isOn() || HotModulesManager.isModuleEnabled(moduleId)) : HotModulesManager.isModuleEnabled(moduleId);
         items.add(UItem.asCustom(buildHeroCard(context, isEnabled)));
 
         if (!isEnabled) {
@@ -140,11 +140,38 @@ public class HotModuleSettingsActivity extends BaseFragment {
         HotModulesManager.Handle h = handle();
         HotModule mod = (h != null && h.instance != null) ? h.instance : HotModulesManager.getModuleForSettings(moduleId);
         if (mod == null) {
-            items.add(UItem.asCustom(buildInfoCard(context, MiogramLocale.get(
-                    "Модуль не знайдено або він видалений.",
-                    "Модуль не найден или удалён.",
-                    "Module not found or deleted."))));
-            return;
+            if ("ghost".equals(moduleId)) {
+                rows.add(HotRow.header(MiogramLocale.get("Параметри скритності", "Параметры скрытности", "Stealth parameters")));
+                rows.add(HotRow.toggle("ghost_hide_read",
+                        MiogramLocale.get("Приховувати прочитання", "Скрывать прочтение", "Hide read receipts"),
+                        MiogramLocale.get("Не відправляти статус прочитання повідомлень", "Не отправлять статус прочтения сообщений", "Do not send read receipts"),
+                        app.amegram.module.AmegramConfig.getBool("ghost_hide_read", true)));
+                rows.add(HotRow.toggle("ghost_hide_online",
+                        MiogramLocale.get("Приховувати онлайн", "Скрывать онлайн", "Hide online status"),
+                        MiogramLocale.get("Не оновлювати статус присутності в мережі", "Не обновлять статус присутствия в сети", "Do not update online presence"),
+                        app.amegram.module.AmegramConfig.getBool("ghost_hide_online", true)));
+                rows.add(HotRow.toggle("ghost_hide_typing",
+                        MiogramLocale.get("Приховувати набір тексту", "Скрывать набор текста", "Hide typing status"),
+                        MiogramLocale.get("Не показувати іншим, що ви пишете", "Не показывать другим, что вы пишете", "Do not show others that you are typing"),
+                        app.amegram.module.AmegramConfig.getBool("ghost_hide_typing", true)));
+                rows.add(HotRow.toggle("ghost_mark_read_after_send",
+                        MiogramLocale.get("Читати після відправки", "Читать после отправки", "Mark read after send"),
+                        MiogramLocale.get("Автоматично позначати чат прочитаним при відправці повідомлення", "Автоматически отмечать чат прочитанным при отправке сообщения", "Automatically mark chat read when sending a message"),
+                        app.amegram.module.AmegramConfig.getBool("ghost_mark_read_after_send", true)));
+                rows.add(HotRow.toggle("ghost_offline_after_send",
+                        MiogramLocale.get("Офлайн після відправки", "Офлайн после отправки", "Offline after send"),
+                        MiogramLocale.get("Миттєво повертати статус офлайн після відправки повідомлення", "Мгновенно возвращать статус офлайн после отправки сообщения", "Immediately return to offline after sending a message"),
+                        app.amegram.module.AmegramConfig.getBool("ghost_offline_after_send", false)));
+                rows.add(HotRow.button("ghost_exclusions_open",
+                        MiogramLocale.get("Винятки для чатів", "Исключения для чатов", "Chat exclusions"),
+                        MiogramLocale.get("Керування чатами, де режим привида вимкнено", "Управление чатами, где режим призрака выключен", "Manage chats where ghost mode is disabled")));
+            } else {
+                items.add(UItem.asCustom(buildInfoCard(context, MiogramLocale.get(
+                        "Модуль не знайдено або він видалений.",
+                        "Модуль не найден или удалён.",
+                        "Module not found or deleted."))));
+                return;
+            }
         }
 
         HotHost host = HotModulesManager.hostFor(moduleId);
@@ -368,14 +395,25 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
         View.OnClickListener toggle = v -> {
             card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-            boolean next = !HotModulesManager.isModuleEnabled(moduleId);
+            boolean cur = "ghost".equals(moduleId) ? (app.amegram.module.features.ghost.AmegramGhostController.isOn() || HotModulesManager.isModuleEnabled(moduleId)) : HotModulesManager.isModuleEnabled(moduleId);
+            boolean next = !cur;
             sw.setChecked(next, true);
-            HotModulesManager.setEnabled(moduleId, next, (ok, msg, data) -> {
+            if ("ghost".equals(moduleId)) {
+                app.amegram.module.AmegramConfig.setBool("ghost_enabled", next);
+            }
+            if (HotModulesManager.isModuleInstalled(moduleId)) {
+                HotModulesManager.setEnabled(moduleId, next, (ok, msg, data) -> {
+                    if (actionBar != null) actionBar.setTitle(resolveTitle());
+                    if (listView != null && listView.adapter != null) {
+                        listView.adapter.update(true);
+                    }
+                });
+            } else {
                 if (actionBar != null) actionBar.setTitle(resolveTitle());
                 if (listView != null && listView.adapter != null) {
                     listView.adapter.update(true);
                 }
-            });
+            }
         };
         card.setOnClickListener(toggle);
         sw.setOnClickListener(toggle);
@@ -444,7 +482,13 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
         boolean checked;
         try {
-            checked = host.getBool(r.id, r.checked);
+            if (r.id != null && r.id.startsWith("ghost_")) {
+                checked = app.amegram.module.AmegramConfig.getBool(r.id, r.checked);
+            } else if (host != null) {
+                checked = host.getBool(r.id, r.checked);
+            } else {
+                checked = r.checked;
+            }
         } catch (Throwable ignore) {
             checked = r.checked;
         }
@@ -455,13 +499,30 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
         View.OnClickListener clickAction = v -> {
             card.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
-            boolean cur = host.getBool(r.id, r.checked);
+            boolean cur;
+            if (r.id != null && r.id.startsWith("ghost_")) {
+                cur = app.amegram.module.AmegramConfig.getBool(r.id, r.checked);
+            } else if (host != null) {
+                cur = host.getBool(r.id, r.checked);
+            } else {
+                cur = r.checked;
+            }
             boolean next = !cur;
-            host.putBool(r.id, next);
+            if (r.id != null && r.id.startsWith("ghost_")) {
+                app.amegram.module.AmegramConfig.setBool(r.id, next);
+            }
+            if (host != null) {
+                try {
+                    host.putBool(r.id, next);
+                } catch (Throwable ignore) {
+                }
+            }
             sw.setChecked(next, true);
-            try {
-                mod.onSettingsToggle(r.id, next);
-            } catch (Throwable ignore) {
+            if (mod != null) {
+                try {
+                    mod.onSettingsToggle(r.id, next);
+                } catch (Throwable ignore) {
+                }
             }
             if ("ui".equals(moduleId)) {
                 try {
@@ -929,13 +990,24 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
     private void onClick(UItem item, View view, int position, float x, float y) {
         if (item.id == 10) {
-            boolean next = !HotModulesManager.isModuleEnabled(moduleId);
-            HotModulesManager.setEnabled(moduleId, next, (ok, msg, data) -> {
+            boolean cur = "ghost".equals(moduleId) ? (app.amegram.module.features.ghost.AmegramGhostController.isOn() || HotModulesManager.isModuleEnabled(moduleId)) : HotModulesManager.isModuleEnabled(moduleId);
+            boolean next = !cur;
+            if ("ghost".equals(moduleId)) {
+                app.amegram.module.AmegramConfig.setBool("ghost_enabled", next);
+            }
+            if (HotModulesManager.isModuleInstalled(moduleId)) {
+                HotModulesManager.setEnabled(moduleId, next, (ok, msg, data) -> {
+                    if (actionBar != null) actionBar.setTitle(resolveTitle());
+                    if (listView != null && listView.adapter != null) {
+                        listView.adapter.update(true);
+                    }
+                });
+            } else {
                 if (actionBar != null) actionBar.setTitle(resolveTitle());
                 if (listView != null && listView.adapter != null) {
                     listView.adapter.update(true);
                 }
-            });
+            }
             return;
         }
         int idx = item.id - 100;
@@ -990,6 +1062,12 @@ public class HotModuleSettingsActivity extends BaseFragment {
 
     private boolean handleCustomAction(HotRow r) {
         if (r == null) return false;
+        if ("ghost".equals(moduleId)) {
+            if ("ghost_exclusions_open".equals(r.id)) {
+                presentFragment(new app.miogram.bridge.privacy.MiogramPrivacySettingsActivity());
+                return true;
+            }
+        }
         if ("player".equals(moduleId)) {
             if ("player_settings_open".equals(r.id)) {
                 app.miogram.bridge.player.YumiPlayerSettingsSheet.show(getParentActivity(), getResourceProvider());

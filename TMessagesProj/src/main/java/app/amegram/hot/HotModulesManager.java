@@ -410,22 +410,22 @@ public final class HotModulesManager {
 
     public static boolean isModuleEnabled(String moduleId) {
         if (moduleId == null) return false;
-        // Core features are natively baked into Yumi without requiring external .hmod downloads
-        if ("player".equals(moduleId) || "ui".equals(moduleId) || "ai".equals(moduleId) || "badges".equals(moduleId)) {
-            return true;
-        }
         ensureFastCaches();
         if ("stt".equals(moduleId)) {
-            return ENABLED_MODULES_CACHE.contains("ai") || ENABLED_MODULES_CACHE.contains("stt");
+            return isModuleEnabled("ai") || ENABLED_MODULES_CACHE.contains("stt");
         }
-        return ENABLED_MODULES_CACHE.contains(moduleId);
+        if (ENABLED_MODULES_CACHE.contains(moduleId)) {
+            return true;
+        }
+        if (appContext != null && prefs().getBoolean("enabled_" + moduleId, false)) {
+            ENABLED_MODULES_CACHE.add(moduleId);
+            return true;
+        }
+        return false;
     }
 
     public static boolean isModuleActive(String moduleId) {
         if (moduleId == null) return false;
-        if ("player".equals(moduleId) || "ui".equals(moduleId) || "ai".equals(moduleId) || "badges".equals(moduleId)) {
-            return true;
-        }
         if ("stt".equals(moduleId)) {
             return ACTIVE_MODULES.contains("ai") || ACTIVE_MODULES.contains("stt");
         }
@@ -433,10 +433,10 @@ public final class HotModulesManager {
     }
 
     /**
-     * Чи має бути активним візуальний шар Yumi. Нативно завжди активний.
+     * Чи має бути активним візуальний шар Yumi.
      */
     public static boolean isUiModuleOn() {
-        return true;
+        return isModuleEnabled("ui");
     }
 
     // ---------- crash-ізоляція: карантин після 3 провалів ----------
@@ -1137,9 +1137,11 @@ public final class HotModulesManager {
         new Thread(() -> {
             if (enabled) {
                 prefs().edit().remove("uninstalled_" + moduleId).putBoolean("enabled_" + moduleId, true).apply();
+                invalidateFastCaches();
                 Handle h = getHandle(moduleId);
                 if (h == null || h.instance == null) {
                     prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
+                    invalidateFastCaches();
                     notifyChanged();
                     String why = getLastLoadError(moduleId);
                     String q = isQuarantined(moduleId) ? MiogramLocale.get(
@@ -1154,6 +1156,7 @@ public final class HotModulesManager {
             } else {
                 prefs().edit().putBoolean("enabled_" + moduleId, false).apply();
                 dropLoaded(moduleId);
+                invalidateFastCaches();
             }
             if ("ui".equals(moduleId)) {
                 HotUiGate.applyLive();

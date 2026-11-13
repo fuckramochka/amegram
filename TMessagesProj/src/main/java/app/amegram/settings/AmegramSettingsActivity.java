@@ -269,17 +269,15 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         model.hero.statSecurity = MiogramLocale.get("Приватність", "Приватность", "Privacy");
 
         // --- Швидкі перемикачі -----------------------------------------
+        boolean ghostOn = app.amegram.module.features.ghost.AmegramGhostController.isOn();
         boolean ghostInstalled = HotModulesManager.isModuleInstalled("ghost");
-        boolean ghostOn = ghostInstalled && HotModulesManager.isModuleEnabled("ghost");
         YumiSettingsModel.Quick ghost = quick(ROW_GHOST, "ghost", R.drawable.yumi_ic_ghost,
                 YumiMd3.primary(),
                 MiogramLocale.get("Режим привида", "Режим призрака", "Ghost mode"),
-                !ghostInstalled
-                        ? MiogramLocale.get("Встановити модуль", "Установить модуль", "Install module")
-                        : ghostOn
+                ghostOn
                         ? MiogramLocale.get("Онлайн і прочитання приховано", "Онлайн и прочтения скрыты", "Online & reads hidden")
                         : MiogramLocale.get("Увімкнути невидимість", "Включить невидимость", "Turn on invisibility"));
-        ghost.toggle = ghostInstalled;
+        ghost.toggle = true;
         ghost.checked = ghostOn;
         model.quick.add(ghost);
 
@@ -338,17 +336,17 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
 
         // --- Розширення -------------------------------------------------
         YumiSettingsModel.Section extensions = section(
-                MiogramLocale.get("Розширення", "Расширения", "Extensions"),
-                MiogramLocale.get("Модулі, плагіни та довідка", "Модули, плагины и справка", "Modules, plugins and guides"));
+                MiogramLocale.get("Розширення (тимчасово)", "Расширения (временно)", "Extensions (temporary)"),
+                MiogramLocale.get("Тимчасова модульна система до повної нативної заміни", "Временная модульная система до полной нативной замены", "Temporary module system until fully replaced natively"));
         extensions.rows.add(row(ROW_HOTMODULES, R.drawable.yumi_ic_extension, YumiMd3.primary(),
-                MiogramLocale.get("Керування модулями", "Управление модулями", "Manage modules"),
+                MiogramLocale.get("Керування модулями (тимчасово)", "Управление модулями (временно)", "Manage modules (temporary)"),
                 enabledCount > 0
-                        ? MiogramLocale.get("Увімкнено: " + enabledCount + " • Каталог та версії",
-                        "Включено: " + enabledCount + " • Каталог и версии",
-                        "Active: " + enabledCount + " • Catalog & versions")
-                        : MiogramLocale.get("Каталог модулів • 0 активних",
-                        "Каталог модулей • 0 активных",
-                        "Module catalog • 0 active")));
+                        ? MiogramLocale.get("Увімкнено: " + enabledCount + " • Каталог та версії (тимчасово)",
+                        "Включено: " + enabledCount + " • Каталог и версии (временно)",
+                        "Active: " + enabledCount + " • Catalog & versions (temporary)")
+                        : MiogramLocale.get("Каталог модулів (тимчасово) • 0 активних",
+                        "Каталог модулей (временно) • 0 активных",
+                        "Module catalog (temporary) • 0 active")));
         extensions.rows.add(row(ROW_PLUGINS, R.drawable.yumi_ic_apps, YumiMd3.primary(),
                 MiogramLocale.get("Плагіни", "Плагины", "Plugins"),
                 MiogramLocale.get("Python + Lua + Java скрипти", "Python + Lua + Java скрипты", "Python + Lua + Java scripts")));
@@ -522,6 +520,15 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
         if (moduleId == null || moduleId.isEmpty()) {
             return;
         }
+        if ("ghost".equals(moduleId)) {
+            app.amegram.module.AmegramConfig.setBool("ghost_enabled", enabled);
+            if (HotModulesManager.isModuleInstalled("ghost")) {
+                HotModulesManager.setEnabled("ghost", enabled, (ok, message, data) -> refresh());
+            } else {
+                refresh();
+            }
+            return;
+        }
         if (!HotModulesManager.isModuleInstalled(moduleId)) {
             openModule(moduleId);
             return;
@@ -542,6 +549,10 @@ public class AmegramSettingsActivity extends BaseFragment implements HotModulesM
     }
 
     private void openModule(String moduleId) {
+        if ("ghost".equals(moduleId)) {
+            openSettingsFragment(new HotModuleSettingsActivity("ghost"));
+            return;
+        }
         if (HotModulesManager.isModuleInstalled(moduleId)) {
             openSettingsFragment(new HotModuleSettingsActivity(moduleId));
         } else {

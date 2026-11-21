@@ -87,19 +87,37 @@ public final class AmegramLocalTranscriber {
                             callback.accept(formatted, null);
                         } else {
                             // Fallback to Gemini AI if Vosk failed
-                            TranscribeHelper.requestGeminiAi(mediaPath, video, callback);
+                            TranscribeHelper.requestGeminiAi(mediaPath, video, (res, err) -> {
+                                if (err == null && res != null) {
+                                    callback.accept("[Хмара Gemini] " + res, null);
+                                } else {
+                                    callback.accept(res, err);
+                                }
+                            });
                         }
                     });
                     return;
                 }
 
-                // 3. Fast fallback directly to Gemini AI
-                TranscribeHelper.requestGeminiAi(mediaPath, video, callback);
+                // 3. Fast fallback directly to Gemini AI (offline models absent)
+                TranscribeHelper.requestGeminiAi(mediaPath, video, (res, err) -> {
+                    if (err == null && res != null) {
+                        callback.accept("[Хмара Gemini] " + res, null);
+                    } else {
+                        callback.accept(res, err);
+                    }
+                });
 
             } catch (Throwable t) {
                 FileLog.e(TAG + " failed, falling back to Gemini AI: " + t.getMessage());
                 // Smooth fallback to Gemini Multimodal
-                TranscribeHelper.requestGeminiAi(mediaPath, video, callback);
+                TranscribeHelper.requestGeminiAi(mediaPath, video, (res, err) -> {
+                    if (err == null && res != null) {
+                        callback.accept("[Хмара Gemini] " + res, null);
+                    } else {
+                        callback.accept(res, err);
+                    }
+                });
             }
         });
     }
@@ -161,12 +179,24 @@ public final class AmegramLocalTranscriber {
                     if (video) clean = "[Кружечок] " + clean;
                     callback.accept(clean, null);
                 } else {
-                    TranscribeHelper.requestGeminiAi(mediaFile.getAbsolutePath(), video, callback);
+                    TranscribeHelper.requestGeminiAi(mediaFile.getAbsolutePath(), video, (res, err) -> {
+                        if (err == null && res != null) {
+                            callback.accept("[Хмара Gemini] " + res, null);
+                        } else {
+                            callback.accept(res, err);
+                        }
+                    });
                 }
 
             } catch (Throwable t) {
                 FileLog.e(TAG + " ONNX inference error: " + t.getMessage());
-                TranscribeHelper.requestGeminiAi(mediaFile.getAbsolutePath(), video, callback);
+                TranscribeHelper.requestGeminiAi(mediaFile.getAbsolutePath(), video, (res, err) -> {
+                    if (err == null && res != null) {
+                        callback.accept("[Хмара Gemini] " + res, null);
+                    } else {
+                        callback.accept(res, err);
+                    }
+                });
             }
         });
     }

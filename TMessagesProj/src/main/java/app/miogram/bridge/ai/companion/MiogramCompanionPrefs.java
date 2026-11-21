@@ -103,38 +103,18 @@ public class MiogramCompanionPrefs {
         getPrefs().edit().putString(KEY_GUIDE_SHOWN_VERSION, version).apply();
     }
 
-    public static int getAffection() {
-        return getPrefs().getInt(KEY_AFFECTION, 85);
-    }
-
-    public static void setAffection(int value) {
-        getPrefs().edit().putInt(KEY_AFFECTION, Math.max(0, Math.min(100, value))).apply();
-    }
-
-    public static int getStress() {
-        return getPrefs().getInt(KEY_STRESS, 25);
-    }
-
-    public static void setStress(int value) {
-        getPrefs().edit().putInt(KEY_STRESS, Math.max(0, Math.min(100, value))).apply();
-    }
-
-    public static int getDarkness() {
-        return getPrefs().getInt(KEY_DARKNESS, 40);
-    }
-
-    public static void setDarkness(int value) {
-        getPrefs().edit().putInt(KEY_DARKNESS, Math.max(0, Math.min(100, value))).apply();
-    }
-
-    public static long getFollowers() {
-        return getPrefs().getLong(KEY_FOLLOWERS, 1337420L);
-    }
-
-    public static void addFollowers(long count) {
-        long current = getFollowers();
-        getPrefs().edit().putLong(KEY_FOLLOWERS, Math.max(0, current + count)).apply();
-    }
+    // Tamagotchi stats deprecated & removed
+    public static int getAffection() { return 100; }
+    public static void setAffection(int value) {}
+    public static int getStress() { return 0; }
+    public static void setStress(int value) {}
+    public static int getDarkness() { return 0; }
+    public static void setDarkness(int value) {}
+    public static long getFollowers() { return 0L; }
+    public static void addFollowers(long count) {}
+    public static void applyStatDeltas(int deltaAffection, int deltaStress, int deltaDarkness, long deltaFollowers) {}
+    public static void brewTea() {}
+    public static void takeMagicPill() {}
 
     public static boolean isHeroCollapsed() {
         return getPrefs().getBoolean(KEY_HERO_COLLAPSED, false);
@@ -142,23 +122,6 @@ public class MiogramCompanionPrefs {
 
     public static void setHeroCollapsed(boolean collapsed) {
         getPrefs().edit().putBoolean(KEY_HERO_COLLAPSED, collapsed).apply();
-    }
-
-    public static void applyStatDeltas(int deltaAffection, int deltaStress, int deltaDarkness, long deltaFollowers) {
-        setAffection(getAffection() + deltaAffection);
-        setStress(getStress() + deltaStress);
-        setDarkness(getDarkness() + deltaDarkness);
-        if (deltaFollowers != 0) {
-            addFollowers(deltaFollowers);
-        }
-    }
-
-    public static void brewTea() {
-        applyStatDeltas(6, -20, -15, 100);
-    }
-
-    public static void takeMagicPill() {
-        brewTea();
     }
 
     public static class ChatMessage {

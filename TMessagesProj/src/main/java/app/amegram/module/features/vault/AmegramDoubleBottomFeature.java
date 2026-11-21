@@ -31,12 +31,12 @@ public class AmegramDoubleBottomFeature implements AmegramFeature {
 
     @Override
     public boolean isAvailable() {
-        return app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("vault");
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return isAvailable() && AmegramConfig.getBool("doublebottom_enabled", false);
+        return AmegramConfig.getBool("doublebottom_enabled", true);
     }
 
     @Override

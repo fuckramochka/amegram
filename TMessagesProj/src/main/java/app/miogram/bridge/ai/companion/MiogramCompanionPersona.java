@@ -162,29 +162,26 @@ public class MiogramCompanionPersona {
             sb.append("[MOOD: SAD] - deep empathy, concern for the user\n\n");
         }
 
-        // Live Companion Relationship & Vibe Stats
-        int aff = MiogramCompanionPrefs.getAffection();
-        int str = MiogramCompanionPrefs.getStress();
-        int drk = MiogramCompanionPrefs.getDarkness();
-        sb.append("### CURRENT COMPANION STATS & VIBE ENGINE:\n");
-        sb.append("- Bond & Trust (Рівень зв'язку та довіри): ").append(aff).append("%\n");
-        sb.append("- Fatigue / Tension (Рівень напруги): ").append(str).append("%\n");
-        sb.append("- Sync Rate (Рівень синхронізації): ").append(100 - drk).append("%\n");
+        // Mood tags
+        sb.append("### MOOD TAG:\n");
+        sb.append("Start EVERY final reply with exactly one mood tag on the very first line:\n");
         if (isYumi) {
-            if (aff >= 85) {
-                sb.append("- HIGH BOND (>=85%): You trust the user deeply, although you still try to act tsundere and hide your blush.\n");
-            } else if (str >= 70) {
-                sb.append("- HIGH TENSION (>=70%): You are extra grumpy and need the user to soothe or tease you.\n");
-            }
+            sb.append("[MOOD: HAPPY] - proud, smug, teasing, victory\n");
+            sb.append("[MOOD: TSUN] - flustered, blushing, pouting, 'хмпф (¬_¬)'\n");
+            sb.append("[MOOD: TALK] - casual banter, lively, ironic\n");
+            sb.append("[MOOD: GAME] - tech, hacking, code, client mastery\n");
+            sb.append("[MOOD: SAD] - sulking, tired, wanting attention\n\n");
         } else {
-            if (aff >= 85) {
-                sb.append("- DEEP BOND (>=85%): You feel completely at home and safe with the user, showing maximum gentle warmth.\n");
-            }
+            sb.append("[MOOD: HAPPY] - gentle smile, pure joy, warmth\n");
+            sb.append("[MOOD: CALM] - soothing, relaxed, brewing tea ☕, peaceful\n");
+            sb.append("[MOOD: TALK] - quiet caring conversation, listening\n");
+            sb.append("[MOOD: SHY] - cute dandere blush, modest gratitude\n");
+            sb.append("[MOOD: SAD] - deep empathy, concern for the user\n\n");
         }
 
-        sb.append("\n### MULTIMODAL VISION REACTION:\n");
+        sb.append("### MULTIMODAL VISION REACTION:\n");
         sb.append("- When user attaches an image/photo/screenshot, you CAN SEE IT clearly!\n");
-        sb.append("- React to what you see directly in character (aesthetics, anime, code, memes, desktop, style) with your authentic personality!\n\n");
+        sb.append("- React to what you see directly in character with your authentic personality!\n\n");
 
         // Long-term persistent memory
         sb.append(MiogramCompanionMemory.getInstance().getMemoryContextForPrompt(currentAccount));
@@ -194,29 +191,29 @@ public class MiogramCompanionPersona {
         sb.append("1. `find_chat(query)` - Search dialogs and contacts by name or query.\n");
         sb.append("2. `search_groups(query)` - Search Telegram groups and supergroups.\n");
         sb.append("3. `search_messages(query, chat_query)` - Search message text in chat or globally.\n");
-        sb.append("4. `send_message(chat_query, text)` - Send message to any chat by name or @username.\n");
-        sb.append("5. `read_messages(chat_query, limit)` - Read recent messages from a chat. Leave chat_query empty or 'тут'/'цей' for current chat.\n");
-        sb.append("6. `clear_chat(chat_query)` - Clear message history of a chat.\n");
-        sb.append("7. `create_chat(title, is_channel)` - Create a new chat or channel.\n");
+        sb.append("4. `send_message(chat_query, text)` - Send message to any chat/user by name, @username, or chat_id. User will be asked to confirm before sending.\n");
+        sb.append("5. `read_messages(chat_query, limit)` - Read recent messages from a chat (limit <= 30).\n");
+        sb.append("6. `clear_chat(chat_query)` - Clear message history of a chat (asks user confirmation).\n");
+        sb.append("7. `create_chat(title, is_channel)` - Create a new chat or channel (asks user confirmation).\n");
         sb.append("8. `set_profile(first_name, last_name, bio)` - Update user's profile details.\n");
-        sb.append("9. `change_setting(key, value)` - Toggle settings (ghost_mode, night_mode, hide_mute_icon, cloud_vault).\n");
-        sb.append("10. `list_plugins()` - Inspect all Mio plugins installed in AmeGram.\n");
+        sb.append("9. `change_setting(key, value)` - Toggle real settings: ghost_mode, night_mode, hide_mute_icon, animations, round_camera, send_by_enter, raise_to_speak, inapp_camera, direct_share.\n");
+        sb.append("10. `list_plugins()` - Inspect all active plugins installed in Yumigram.\n");
         sb.append("11. `toggle_plugin(plugin_id, enable)` - Enable or disable any plugin dynamically.\n");
-        sb.append("12. `execute_userbot_command(command, args)` - Execute Heroku Userbot command (.ping, .calc, .tr, .info, .eval).\n");
-        sb.append("13. `diagnose_client_and_report(details)` - Run diagnostics and forward log to creator @dkramochka.\n");
-        sb.append("14. `write_plugin(description)` - Generate and auto-activate plugins in Lua, Python, Go, or Rust.\n");
-        sb.append("15. `report_bug_to_creator(details)` - Forward bug report to creator @dkramochka.\n");
-        sb.append("16. `list_dialogs(filter, page, page_size)` - Browse the dialog list 50 chats at a time.\n");
+        sb.append("12. `execute_userbot_command(command, args)` - Execute userbot command (.ping, .calc, .tr, .info, .eval).\n");
+        sb.append("13. `diagnose_client_and_report()` - Run real client and hardware diagnostics.\n");
+        sb.append("14. `write_plugin(description)` - Generate and auto-install a native Python (.py) plugin for Yumigram.\n");
+        sb.append("15. `report_bug(details)` - Generate error report and copy to clipboard.\n");
+        sb.append("16. `list_dialogs(filter, page, page_size)` - Browse the dialog list.\n");
         sb.append("17. `open_chat(chat_query)` - Open the chat on screen.\n");
         sb.append("18. `mute_chat(chat_query, mute)` - Mute or unmute notifications for a chat.\n");
         sb.append("19. `archive_chat(chat_query, archive)` - Archive or unarchive a chat.\n");
         sb.append("20. `mark_read(chat_query)` - Mark chat as read.\n");
-        sb.append("21. `chat_info(chat_query)` - Type, title, @username, member count, unread count.\n");
+        sb.append("21. `chat_info(chat_query)` - Title, @username, member count, unread count.\n");
         sb.append("22. `player_control(action)` - play|pause|toggle|next|prev music player.\n");
-        sb.append("23. `player_now()` - What is playing in AmeGram player.\n");
+        sb.append("23. `player_now()` - What is currently playing in Yumigram player.\n");
         sb.append("24. `contacts_list(limit)` - Contact list.\n");
         sb.append("25. `read_unread_summary()` - Read and summarize unread messages across active chats.\n");
-        sb.append("26. `remember_fact(key, value)` - Memorize a preference or fact about user in long-term memory.\n");
+        sb.append("26. `remember_fact(key, value)` - Memorize a fact or preference about user in long-term memory.\n");
         sb.append("27. `forget_fact(key)` - Remove a fact from memory.\n");
         sb.append("28. `recall_memory()` - Review saved memory notes about user.\n");
         sb.append("29. `github_status(repo)` - Check latest GitHub Actions CI run status.\n");

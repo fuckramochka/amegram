@@ -122,15 +122,15 @@ public class MiogramCompanionMemory {
     public synchronized String getMemoryContextForPrompt(int account) {
         loadMemory();
         StringBuilder sb = new StringBuilder();
-        sb.append("### LONG-TERM MEMORY & P-CHAN CONTEXT (Learned Facts):\n");
+        sb.append("### LONG-TERM MEMORY & USER CONTEXT (Learned Facts):\n");
 
         // Dynamic auto-context from Telegram environment
         try {
             TLRPC.User me = UserConfig.getInstance(account).getCurrentUser();
             if (me != null) {
-                sb.append("- pchan_name: ").append(UserObject.getUserName(me)).append("\n");
+                sb.append("- user_name: ").append(UserObject.getUserName(me)).append("\n");
                 if (!TextUtils.isEmpty(me.username)) {
-                    sb.append("- pchan_telegram_username: @").append(me.username).append("\n");
+                    sb.append("- user_telegram_username: @").append(me.username).append("\n");
                 }
             }
         } catch (Throwable ignore) {}
@@ -145,12 +145,12 @@ public class MiogramCompanionMemory {
         try {
             String steamId = MiogramSteamManager.getInstance().getSelfSteamId();
             if (!TextUtils.isEmpty(steamId)) {
-                sb.append("- pchan_steam_id: ").append(steamId).append("\n");
+                sb.append("- user_steam_id: ").append(steamId).append("\n");
             }
         } catch (Throwable ignore) {}
 
         if (memoryMap.isEmpty()) {
-            sb.append("- (No custom facts learned yet. Autonomously use remember_fact to memorize new things about P-chan!)\n");
+            sb.append("- (No custom facts learned yet. Autonomously use remember_fact to memorize new things about the user!)\n");
         } else {
             for (Map.Entry<String, String> entry : memoryMap.entrySet()) {
                 sb.append("- ").append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");

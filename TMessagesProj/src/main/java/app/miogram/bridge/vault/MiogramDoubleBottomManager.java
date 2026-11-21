@@ -80,18 +80,14 @@ public class MiogramDoubleBottomManager {
      */
     public static boolean isModuleEnabled() {
         try {
-            if (!app.amegram.hot.HotModulesManager.isModuleInstalledOnDisk("vault")
-                    || !app.amegram.hot.HotModulesManager.isModuleEnabled("vault")) {
-                return false;
-            }
             Context ctx = ApplicationLoader.applicationContext;
             if (ctx != null) {
                 return ctx.getSharedPreferences("amegram_module_prefs", Context.MODE_PRIVATE)
-                        .getBoolean("doublebottom_enabled", false);
+                        .getBoolean("doublebottom_enabled", true);
             }
         } catch (Throwable ignore) {
         }
-        return false;
+        return true;
     }
 
     public static void setDuressActive(boolean active) {
@@ -118,6 +114,9 @@ public class MiogramDoubleBottomManager {
             SharedConfig.passcodeSalt = new byte[0];
             SharedConfig.appLocked = false;
             SharedConfig.saveConfig();
+            try {
+                org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.didSetPasscode);
+            } catch (Throwable ignore) {}
         }
     }
 
@@ -424,6 +423,9 @@ public class MiogramDoubleBottomManager {
         SharedConfig.passcodeHash = "";
         SharedConfig.appLocked = false;
         SharedConfig.saveConfig();
+        try {
+            org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.didSetPasscode);
+        } catch (Throwable ignore) {}
     }
 
     private static void syncToTelegramPasscode(String pin) {
@@ -439,6 +441,7 @@ public class MiogramDoubleBottomManager {
             SharedConfig.passcodeType = SharedConfig.PASSCODE_TYPE_PIN;
             SharedConfig.appLocked = false;
             SharedConfig.saveConfig();
+            org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.didSetPasscode);
         } catch (Exception e) {
             FileLog.e(e);
         }

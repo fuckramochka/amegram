@@ -117,11 +117,7 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         }
     };
 
-    private TextView statDay;
-    private TextView statFollowers;
-    private TextView statStress;
-    private TextView statAffection;
-    private TextView statDarkness;
+
 
     private ScrollView chatScrollView;
     private LinearLayout chatMessagesLayout;
@@ -549,23 +545,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         ameSpeechBubble.setEllipsize(TextUtils.TruncateAt.END);
         middleRow.addView(ameSpeechBubble, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 8, 0, 0, 0));
 
-        // Stats Row
+        // Capabilities Row
         LinearLayout statsBar = new LinearLayout(context);
         statsBar.setOrientation(LinearLayout.HORIZONTAL);
         statsBar.setGravity(Gravity.CENTER);
         ameSlideCard.addView(statsBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
-        statDay = createStatChip(context, "SYNC 95%", 0xFF9D4EDD);
-        statsBar.addView(statDay, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
-
-        statStress = createStatChip(context, "TSUN " + MiogramCompanionPrefs.getStress() + "%", 0xFFE84393);
-        statsBar.addView(statStress, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
-
-        statAffection = createStatChip(context, "BOND " + MiogramCompanionPrefs.getAffection() + "%", 0xFFFF70A6);
-        statsBar.addView(statAffection, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f, 0, 0, 3, 0));
-
-        statDarkness = createStatChip(context, "CORE " + MiogramCompanionPrefs.getDarkness() + "%", 0xFF6C5CE7);
-        statsBar.addView(statDarkness, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
+        statsBar.addView(createStatChip(context, "AI: GEMINI", 0xFF9D4EDD), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
+        statsBar.addView(createStatChip(context, "ROOT: CLIENT", 0xFFE84393), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
+        statsBar.addView(createStatChip(context, "AUTO: TOOLS", 0xFFFF70A6), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
+        statsBar.addView(createStatChip(context, "VISION: MULTI", 0xFF6C5CE7), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
         // Bottom Select / Active Button
         ameSelectBtn = new TextView(context);
@@ -654,23 +643,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         kangelSpeechBubble.setEllipsize(TextUtils.TruncateAt.END);
         middleRow.addView(kangelSpeechBubble, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 8, 0, 0, 0));
 
-        // Stats Row
+        // Capabilities Row
         LinearLayout statsBar = new LinearLayout(context);
         statsBar.setOrientation(LinearLayout.HORIZONTAL);
         statsBar.setGravity(Gravity.CENTER);
         kangelSlideCard.addView(statsBar, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 0, 0, 6));
 
-        TextView statDay2 = createStatChip(context, "CALM 98%", 0xFF2EC4B6);
-        statsBar.addView(statDay2, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
-
-        statFollowers = createStatChip(context, "WARM 95%", 0xFF00B4D8);
-        statsBar.addView(statFollowers, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f, 0, 0, 3, 0));
-
-        TextView statHype = createStatChip(context, "BOND 92%", 0xFFE84393);
-        statsBar.addView(statHype, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
-
-        TextView statBlessing = createStatChip(context, "CARE ☕", 0xFFFFB703);
-        statsBar.addView(statBlessing, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.1f));
+        statsBar.addView(createStatChip(context, "AI: GEMINI", 0xFF00B4D8), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
+        statsBar.addView(createStatChip(context, "ROOT: COPILOT", 0xFF2EC4B6), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
+        statsBar.addView(createStatChip(context, "AUTO: USERBOT", 0xFFE84393), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f, 0, 0, 3, 0));
+        statsBar.addView(createStatChip(context, "AUDIO: NEURAL", 0xFFFFB703), LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1.0f));
 
         // Bottom Select / Active Button
         kangelSelectBtn = new TextView(context);
@@ -708,29 +690,12 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     }
 
     private void updateStatsViews() {
-        boolean isYumi = MiogramCompanionPrefs.isYumiActive();
-        int str = MiogramCompanionPrefs.getStress();
-        int love = MiogramCompanionPrefs.getAffection();
-        int dark = MiogramCompanionPrefs.getDarkness();
-        long fol = MiogramCompanionPrefs.getFollowers();
-
-        if (statStress != null) statStress.setText(isYumi ? ("TSUN " + str + "%") : ("TIRED " + str + "%"));
-        if (statAffection != null) statAffection.setText("BOND " + love + "%");
-        if (statDarkness != null) statDarkness.setText("CORE " + dark + "%");
-        if (statFollowers != null) statFollowers.setText(isYumi ? ("SYNC " + formatFollowers(fol)) : ("WARM " + formatFollowers(fol)));
-
         if (compactStats != null) {
-            compactStats.setText((isYumi ? "TSUN " : "TIRED ") + str + "% • BOND " + love + "% • " + (isYumi ? "SYNC " : "WARM ") + formatFollowers(fol));
+            boolean isYumi = MiogramCompanionPrefs.isYumiActive();
+            compactStats.setText(isYumi
+                    ? "Gemini 3.5 Flash-Lite • Root Client Assistant"
+                    : "Gemini 3.5 Flash-Lite • Co-Pilot & Automation");
         }
-    }
-
-    private static String formatFollowers(long fol) {
-        if (fol >= 1_000_000) {
-            return String.format(Locale.US, "%.1fM", fol / 1_000_000.0f);
-        } else if (fol >= 1_000) {
-            return String.format(Locale.US, "%.1fK", fol / 1_000.0f);
-        }
-        return String.valueOf(fol);
     }
 
     private void snapCarouselToNearestPage() {
@@ -1527,14 +1492,18 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             try {
                 if (msg.toolParams != null) paramsObj = new JSONObject(msg.toolParams);
             } catch (Throwable ignore) {}
+            if (paramsObj == null) paramsObj = new JSONObject();
+            if (scopedDialogId != 0 && !paramsObj.has("chat_id") && !paramsObj.has("dialog_id")) {
+                try {
+                    paramsObj.put("chat_id", scopedDialogId);
+                } catch (Throwable ignore) {}
+            }
             MiogramCompanionToolbox.ActionRequest req = new MiogramCompanionToolbox.ActionRequest(msg.toolAction, paramsObj, false);
             app.miogram.bridge.ai.tools.MioTool.exec(currentAccount, req.name, req.params, resultText -> AndroidUtilities.runOnUIThread(() -> {
                 MiogramCompanionPrefs.ChatMessage resultMsg = new MiogramCompanionPrefs.ChatMessage(false, "✓ " + resultText, "happy", System.currentTimeMillis(), null, null);
                 history.add(resultMsg);
                 MiogramCompanionPrefs.saveHistory(history);
                 renderMessageBubble(resultMsg);
-                MiogramCompanionPrefs.applyStatDeltas(1, 0, 0, 500);
-                updateStatsViews();
             }));
         });
 
@@ -1547,13 +1516,13 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
 
             String reply = isAme
                     ? MiogramLocale.get(
-                            "Хмпф... раз ти забороняєш, то розбирайся сам (¬_¬) Я пальцем не поворухну!",
-                            "Хмпф... раз ты запрещаешь, то разбирайся сам (¬_¬) Я пальцем не пошевелю!",
-                            "Hmph... if you forbid it, deal with it yourself (¬_¬) I won't lift a finger!")
+                            "Хмпф... добре, дію скасовано (¬_¬) Нічого не надсилаю і не змінюю.",
+                            "Хмпф... ладно, действие отменено (¬_¬) Ничего не отправляю и не меняю.",
+                            "Hmph... fine, action canceled (¬_¬) Sending nothing and changing nothing.")
                     : MiogramLocale.get(
-                            "Звісно... я розумію. Скасовую дію, нічого зайвого чіпати не буду (´｡• ω •｡`)",
-                            "Конечно... я понимаю. Отменяю действие, ничего лишнего трогать не буду (´｡• ω •｡`)",
-                            "Of course... I understand. Canceling action, I won't touch anything (´｡• ω •｡`)");
+                            "Зрозуміла, скасовую операцію (´｡• ω •｡`) Безпека на першому місці.",
+                            "Поняла, отменяю операцию (´｡• ω •｡`) Безопасность на первом месте.",
+                            "Understood, canceling operation (´｡• ω •｡`) Safety comes first.");
             MiogramCompanionPrefs.ChatMessage cancelMsg = new MiogramCompanionPrefs.ChatMessage(false, reply, "sad", System.currentTimeMillis(), null, null);
             history.add(cancelMsg);
             MiogramCompanionPrefs.saveHistory(history);
@@ -1605,32 +1574,6 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
         MiogramCompanionPrefs.saveHistory(history);
         renderMessageBubble(userMsg);
 
-        // Dynamic Companion Stats reactivity (Multilingual):
-        String lower = query.toLowerCase(Locale.US);
-        if (lower.contains("чай") || lower.contains("tea") || lower.contains("завар") || lower.contains("чаю")
-                || lower.contains("herbata") || lower.contains("tee") || lower.contains("té") || lower.contains("thé") || lower.contains("cha") || lower.contains("brew")) {
-            MiogramCompanionPrefs.brewTea();
-            updateStatsViews();
-            MiogramHaptic.success(sendButton);
-            showActionBulletin("☕ " + MiogramLocale.get("Заварено запашний чай: Спокій +20%, Втома -15%", "Заварен ароматный чай: Покой +20%, Усталость -15%", "Brewed hot tea: Calm +20%, Fatigue -15%"));
-        } else if (lower.contains("дюск") || lower.contains("dysk") || lower.contains("пігулк") || lower.contains("пилюл") || lower.contains("таблетк")) {
-            MiogramCompanionPrefs.takeMagicPill();
-            updateStatsViews();
-            MiogramHaptic.success(sendButton);
-            showActionBulletin("☕ " + MiogramLocale.get("Заварено гарячий чай: Спокій +20%, Втома -15%", "Заварен горячий чай: Покой +20%, Усталость -15%", "Brewed hot tea: Calm +20%, Fatigue -15%"));
-        } else if (lower.contains("молодець") || lower.contains("топ") || lower.contains("красуня") || lower.contains("люблю") || lower.contains("найкраща") || lower.contains("дякую") || lower.contains("мило")
-                || lower.contains("good job") || lower.contains("cute") || lower.contains("love") || lower.contains("best") || lower.contains("thanks") || lower.contains("smart") || lower.contains("pretty")
-                || lower.contains("спасибо") || lower.contains("умница") || lower.contains("молодец") || lower.contains("милая") || lower.contains("люблю")
-                || lower.contains("dziękuję") || lower.contains("super") || lower.contains("danke") || lower.contains("gracias")) {
-            MiogramCompanionPrefs.applyStatDeltas(4, -8, 0, 150);
-            updateStatsViews();
-        } else if (lower.contains("дістала") || lower.contains("набридла") || lower.contains("відчепись") || lower.contains("тупа") || lower.contains("кринж")
-                || lower.contains("annoying") || lower.contains("stupid") || lower.contains("shut up") || lower.contains("cringe")
-                || lower.contains("достала") || lower.contains("надоела") || lower.contains("отвали") || lower.contains("тупая")) {
-            MiogramCompanionPrefs.applyStatDeltas(-10, 15, 10, 0);
-            updateStatsViews();
-        }
-
         isSending = true;
         if (sendIcon != null) sendIcon.setVisibility(View.GONE);
         if (sendProgress != null) sendProgress.setVisibility(View.VISIBLE);
@@ -1643,11 +1586,21 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
     private String buildPromptForTurn(String displayQuery, String modelQuery, List<AgentStepRecord> steps, boolean forceFinal) {
         TLRPC.User currentUser = UserConfig.getInstance(currentAccount).getCurrentUser();
         String userName = currentUser != null ? UserObject.getUserName(currentUser) : "User";
-        String systemPrompt = MiogramCompanionPersona.getSystemPrompt(MiogramCompanionPrefs.getActiveCompanion(), userName, scopedDialogId, currentAccount);
+        boolean isContinuation = steps != null && !steps.isEmpty();
 
         StringBuilder sb = new StringBuilder();
-        sb.append(systemPrompt).append("\n\n### CONVERSATION HISTORY:\n");
-        int start = Math.max(0, history.size() - 24);
+        if (isContinuation) {
+            sb.append("### TASK CONTINUATION (STEP ").append(steps.size() + 1).append("):\n");
+            sb.append("You are continuing a multi-step tool execution task as companion ")
+              .append(MiogramCompanionPrefs.isYumiActive() ? "Yumi" : "Mio").append(".\n");
+            sb.append("Perform the next tool action or provide the final in-character reply with [MOOD: ...] first.\n");
+        } else {
+            String systemPrompt = MiogramCompanionPersona.getSystemPrompt(MiogramCompanionPrefs.getActiveCompanion(), userName, scopedDialogId, currentAccount);
+            sb.append(systemPrompt);
+        }
+
+        sb.append("\n\n### CONVERSATION HISTORY:\n");
+        int start = Math.max(0, history.size() - 14);
         for (int i = start; i < history.size(); i++) {
             MiogramCompanionPrefs.ChatMessage m = history.get(i);
             if (i == history.size() - 1 && m.isUser && m.text.equals(displayQuery)) continue;
@@ -1655,16 +1608,16 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             if (m.imagePath != null) {
                 sb.append("[Photo attached: ").append(new File(m.imagePath).getName()).append("] ");
             }
-            sb.append(m.text).append("\n");
+            sb.append(MiogramCompanionToolbox.sanitizePii(m.text)).append("\n");
         }
 
         sb.append("\n### CURRENT TURN:\n");
-        sb.append("User: ").append(modelQuery).append("\n");
+        sb.append("User: ").append(MiogramCompanionToolbox.sanitizePii(modelQuery)).append("\n");
 
         if (steps != null && !steps.isEmpty()) {
             for (AgentStepRecord s : steps) {
                 sb.append("Companion: ").append(s.actionRaw).append("\n");
-                sb.append("[OBSERVATION: ").append(s.observation).append("]\n");
+                sb.append("[OBSERVATION: ").append(MiogramCompanionToolbox.sanitizePii(s.observation)).append("]\n");
             }
             if (forceFinal) {
                 sb.append("System: tools done — write the final in-character reply now ([MOOD: ...] first). No more tool calls.\n");
@@ -1706,6 +1659,13 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
             String cleanText = MiogramCompanionToolbox.stripActionBlock(MiogramCompanionToolbox.stripMoodTag(rawReply));
 
             if (action != null) {
+                if (scopedDialogId != 0 && action.params != null) {
+                    if (!action.params.has("chat_id") && !action.params.has("dialog_id")) {
+                        try {
+                            action.params.put("chat_id", scopedDialogId);
+                        } catch (Throwable ignore) {}
+                    }
+                }
                 if (action.sensitive) {
                     String actionName = action.name;
                     String actionParams = action.params != null ? action.params.toString() : null;
@@ -1738,9 +1698,6 @@ public class MiogramCompanionActivity extends BaseFragment implements Notificati
                     steps.add(new AgentStepRecord(actionRawStr, resultText != null ? resultText : ""));
                     if (agentResultIsError(resultText)) {
                         updateStageMood("sad");
-                    } else {
-                        MiogramCompanionPrefs.applyStatDeltas(1, 0, 0, 400 + (long)(Math.random() * 800));
-                        updateStatsViews();
                     }
                     executeAgentStep(stepIndex + 1, displayQuery, modelQuery, steps, activeBubble, null);
                 }));

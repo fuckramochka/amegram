@@ -167,8 +167,8 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
         hintView.setTextSize(14);
         hintView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteGrayText));
         hintView.setText(isReal ?
-                MiogramLocale.get("Введіть PIN для повного доступу до всіх чатів та акаунтів (мін. 4 цифри):", "Введите PIN для полного доступа ко всем чатам и аккаунтам (мин. 4 цифры):", "Enter PIN for full access to all chats and accounts (min 4 digits):") :
-                MiogramLocale.get("Введіть PIN під примусом. Він відкриє лише дозволені чати або аварійний акаунт:", "Введите PIN под принуждением. Он откроет только разрешенные чаты или аварийный аккаунт:", "Enter Duress PIN. It will reveal only allowed chats or decoy account:"));
+                MiogramLocale.get("Введіть 4-значний PIN для повного доступу до всіх чатів та акаунтів:", "Введите 4-значный PIN для полного доступа ко всем чатам и аккаунтам:", "Enter 4-digit PIN for full access to all chats and accounts:") :
+                MiogramLocale.get("Введіть 4-значний PIN під примусом. Він відкриє лише дозволені чати або аварійний акаунт:", "Введите 4-значный PIN под принуждением. Он откроет только разрешенные чаты или аварийный аккаунт:", "Enter 4-digit Duress PIN. It will reveal only allowed chats or decoy account:"));
         layout.addView(hintView);
 
         EditTextBoldCursor editText = new EditTextBoldCursor(getParentActivity());
@@ -176,6 +176,7 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
         editText.setGravity(Gravity.CENTER);
         editText.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
         editText.setTransformationMethod(PasswordTransformationMethod.getInstance());
+        editText.setFilters(new android.text.InputFilter[]{new android.text.InputFilter.LengthFilter(4)});
         editText.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         editText.setCursorColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlackText));
         // Raw PINs are not readable (hashed storage) — never pre-fill; an empty
@@ -214,8 +215,8 @@ public class MiogramDoubleBottomActivity extends BaseNekoSettingsActivity {
                     dialog.dismiss();
                     return; // keep existing PIN
                 }
-                if (pin.length() < 4) {
-                    showHint(MiogramLocale.get("PIN-код повинен містити щонайменше 4 цифри", "PIN-код должен содержать минимум 4 цифры", "PIN must be at least 4 digits"));
+                if (pin.length() != 4) {
+                    showHint(MiogramLocale.get("PIN-код повинен містити 4 цифри", "PIN-код должен содержать 4 цифры", "PIN must be 4 digits"));
                     return;
                 }
                 if (isReal && MiogramDoubleBottomManager.isSameAsDuress(pin)) {
